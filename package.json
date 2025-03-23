@@ -1,9 +1,13 @@
 {
   "name": "yola-fresh-utils",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Utility library for Yola Fresh projects",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc && tsc-alias",
     "prepare": "npm run build",
@@ -23,9 +27,6 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.0.0"
   },
-  "files": [
-    "dist"
-  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/yourusername/yola-fresh-utils.git"
