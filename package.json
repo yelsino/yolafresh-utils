@@ -1,0 +1,37 @@
+{
+  "name": "yola-fresh-utils",
+  "version": "1.0.0",
+  "description": "Utility library for Yola Fresh projects",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc && tsc-alias",
+    "prepare": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "utilities",
+    "typescript",
+    "formatting",
+    "dates",
+    "text"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "tsc-alias": "^1.8.11",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/yola-fresh-utils.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/yola-fresh-utils/issues"
+  },
+  "homepage": "https://github.com/yourusername/yola-fresh-utils#readme"
+}
