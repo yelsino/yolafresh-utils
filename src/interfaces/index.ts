@@ -32,7 +32,7 @@ export interface UpdateProducto {
   tipoActualizacion: string;
   precioCompra: number;
   precioVenta: number;
-  stock: string;
+  stock: EstadoStockEnum;
   creacion: Date;
   actualizacion: Date;
 }
