@@ -1,4 +1,4 @@
-import { OrderState } from "@utils/enums";
+import { EstadoStockEnum, OrderState } from "@utils/enums";
 import { TipoVentaEnum } from "@utils/enums";
 
 export interface Producto {
@@ -22,9 +22,8 @@ export interface Producto {
   peso: string;
   creacion?: Date;
   actualizacion?: Date;
-  stock: string;
+  stock: EstadoStockEnum;
   precioCompra: number;
-  precioVenta: number;
 }
 
 export interface UpdateProducto {
