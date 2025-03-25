@@ -9,7 +9,7 @@ npm install yola-fresh-utils
 # o
 yarn add yola-fresh-utils
 
-npm run generate-exports
+pnpm run generate-exports
 ```
 
 ## Uso

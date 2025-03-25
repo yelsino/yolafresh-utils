@@ -1,4 +1,4 @@
-import { MetodoPago } from "./finanzas";
+import { CuentaBancaria, MedioPagoDigital, MetodoPago } from "./finanzas";
 
 export enum CargosPersonal {
   SECRETARIO = 'SECRETARIO',
@@ -51,4 +51,25 @@ export interface Personal {
     personalName: string;
     metodoPago: MetodoPago;
     monto: number;
+  }
+
+  export interface Proveedor {
+    id?: string;
+    nombres: string;
+    fechaRegistro: Date
+    celular: string;
+    correo: string;
+    dni: string;
+    direccion: string;
+  }
+
+  export interface Proveedor {
+    id?: string;
+    nombre: string;
+    telefonos: string[];
+    cuentasBancarias: CuentaBancaria[];
+    mediosPagoDigital?: MedioPagoDigital[];
+    fechaRegistro: Date
+    ubicacion?: string;
+    categoria?: string;
   }
