@@ -58,8 +58,5 @@
   "bugs": {
     "url": "https://github.com/yourusername/yola-fresh-utils/issues"
   },
-  "homepage": "https://github.com/yourusername/yola-fresh-utils#readme",
-  "dependencies": {
-    "firebase": "^11.5.0"
-  }
+  "homepage": "https://github.com/yourusername/yola-fresh-utils#readme"
 }
