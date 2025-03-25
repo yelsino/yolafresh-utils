@@ -10,6 +10,10 @@ npm install yola-fresh-utils
 yarn add yola-fresh-utils
 
 pnpm run generate-exports
+pnpm run build
+git add .
+git commit -m "Update recent"
+git push
 ```
 
 ## Uso

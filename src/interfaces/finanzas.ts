@@ -1,20 +1,9 @@
 
-export enum MetodoPago {
-  DIGITAL = 'DIGITAL',
-  EFECTIVO = 'EFECTIVO'
-}
-export enum EstadoEgreso {
-  ACTIVO = 'ACTIVO',
-  ANULADO = 'ANULADO'
-}
+export type MetodoPago = 'DIGITAL' | 'EFECTIVO'
+export type EstadoEgreso = 'ACTIVO' | 'ANULADO'
 // export type TypeFinanza = 'Egreso' | 'Ingreso' | 'Credito' | 'Cambio'
-export enum TypeFinanza {
-  EGRESO = 'Egreso',
-  INGRESO = 'Ingreso',
-  CREDITO = 'Credito',
-  CAMBIO = 'Cambio',
-  ANULACION = 'Anulacion'
-}
+export type TypeFinanza = 'Egreso' | 'Ingreso' | 'Credito' | 'Cambio' | 'Anulacion'
+
 export interface Egreso {
   id?: string;
   monto: number;
@@ -29,15 +18,8 @@ export interface Egreso {
 }
 
 // Ingresos
-export enum TipoIngreso {
-  CREDITO = 'CREDITO',
-  AL_CONTADO = 'AL CONTADO'
-}
-export enum EstadoIngreso {
-  PAGADO = 'PAGADO',
-  ANULADO = 'ANULADO',
-  PENDIENTE = 'PENDIENTE'
-}
+export type TipoIngreso = 'CREDITO' | 'AL_CONTADO'
+export type EstadoIngreso = 'PAGADO' | 'ANULADO' | 'PENDIENTE'
 
 export interface Abono {
   id?: string;
@@ -64,11 +46,7 @@ export interface Ingreso {
   type: TypeFinanza
 }
 
-export enum EstadoCaja {
-  ABIERTA = 'ABIERTA',
-  CERRADA = 'CERRADA',
-  DEFICIT = 'DEFICIT'
-}
+export type EstadoCaja = 'ABIERTA' | 'CERRADA' | 'DEFICIT'
 
   export interface Caja {
     saldo: number;
