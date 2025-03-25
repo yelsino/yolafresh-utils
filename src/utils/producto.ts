@@ -1,5 +1,5 @@
-import { CARACTERISTICAS } from "@data/caracteristicas";
-import { Categoria } from "@interfaces/index";
+import { CARACTERISTICAS } from "@/data/caracteristicas";
+import { Categoria } from "@/interfaces/producto";
 
 export const getUrlProduct = (categorias: Categoria[], urlbase: string, categoriaId: string, productoId: string) => {
   const categoria = categorias.find((v) => v.id === categoriaId);

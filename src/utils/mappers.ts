@@ -1,5 +1,6 @@
-import { Carrito, Lista, Pedido, Producto } from "@interfaces/index";
-import type { OrderState, TipoVentaEnum } from "@utils/enums";
+import { Producto } from "@/interfaces/producto";
+import { OrderState, TipoVentaEnum } from "./enums";
+import { Carrito, Lista, Pedido } from "@/interfaces/pedido";
 
 export function productodbToProducto(producto: any): Producto {
   return {
@@ -23,8 +24,8 @@ export function productodbToProducto(producto: any): Producto {
     consideraciones: producto.consideraciones,
     caracteristicas: producto.caracteristicas,
     actualizacion: producto.actualizacion ? new Date(producto.actualizacion) : undefined,
-    stock: producto.stock || '0',
-    precioCompra: producto.precioCompra || 0,
+    precioCompra: producto.precioCompra,
+    stock: producto.stock
   };
 }
 

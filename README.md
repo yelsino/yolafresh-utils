@@ -8,6 +8,8 @@ Biblioteca de utilidades para proyectos Yola Fresh, tanto web como móvil.
 npm install yola-fresh-utils
 # o
 yarn add yola-fresh-utils
+
+npm run generate-exports
 ```
 
 ## Uso

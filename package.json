@@ -5,12 +5,35 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "typings": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./interfaces": {
+      "import": "./dist/interfaces/index.js",
+      "require": "./dist/interfaces/index.js",
+      "types": "./dist/interfaces/index.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/utils/index.js",
+      "require": "./dist/utils/index.js",
+      "types": "./dist/utils/index.d.ts"
+    },
+    "./data": {
+      "import": "./dist/data/index.js",
+      "require": "./dist/data/index.js",
+      "types": "./dist/data/index.d.ts"
+    }
+  },
   "files": [
     "dist"
   ],
   "scripts": {
     "build": "tsc && tsc-alias",
     "prepare": "npm run build",
+    "generate-exports": "ts-node scripts/generate-exports.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -23,6 +46,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.11",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.0.0"
@@ -34,5 +58,8 @@
   "bugs": {
     "url": "https://github.com/yourusername/yola-fresh-utils/issues"
   },
-  "homepage": "https://github.com/yourusername/yola-fresh-utils#readme"
+  "homepage": "https://github.com/yourusername/yola-fresh-utils#readme",
+  "dependencies": {
+    "firebase": "^11.5.0"
+  }
 }

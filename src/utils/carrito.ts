@@ -1,5 +1,6 @@
-import { Direccion, Usuario } from "@interfaces/index";
-import { carrito } from "@store/tienda";
+import { Direccion } from "@/interfaces/pedido";
+import { Usuario } from "@/interfaces/persons";
+import { carrito } from "src/store/tienda";
 
 export function actualizarCarrito(event: Event) {
 

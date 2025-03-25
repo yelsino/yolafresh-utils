@@ -1,4 +1,4 @@
-import { Carrito } from "@interfaces/index";
+import { Carrito } from "@/interfaces/pedido";
 
 // Simple store implementation
 class Store<T> {

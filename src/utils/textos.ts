@@ -1,4 +1,4 @@
-import { TipoVentaEnum } from "@utils/enums";
+import { TipoVentaEnum } from "./enums";
 
 export function formatearNumero(numero: number) {
   if (numero >= 1000) {

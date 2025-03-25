@@ -1,6 +1,7 @@
-import { Carrito } from "@interfaces/index";
-import { capitalizarPrimeraLetra, formatCantidad, formatearFecha, formatSolesPeruanos } from "@utils/textos";
-import { formatearHora } from "@utils/time";
+import {  capitalizarPrimeraLetra, formatCantidad, formatearFecha, formatSolesPeruanos } from "./textos";
+import { formatearHora } from "./time";
+
+import { Carrito } from "../interfaces/pedido";
 
 
 

@@ -1,9 +1,4 @@
-export interface Categoria {
-  id: string;
-  nombre: string;
-  tag: string;
-  [key: string]: any;
-}
+import { Categoria } from '../interfaces/producto';
 
 export const CATEGORIAS: Categoria[] = [
   {
