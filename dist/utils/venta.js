@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generarWhatsAppLink = generarWhatsAppLink;
 exports.generarCodigoAmigable = generarCodigoAmigable;
+exports.formatearHora = formatearHora;
 const textos_1 = require("./textos");
-const time_1 = require("./time");
 function generarWhatsAppLink(carrito) {
     var _a, _b, _c;
     const baseUrl = "https://wa.me/51944844745?text=";
@@ -17,7 +17,7 @@ function generarWhatsAppLink(carrito) {
     })
         .join("\n");
     const fechaEntrega = (0, textos_1.formatearFecha)(new Date());
-    const horaEntrega = (0, time_1.formatearHora)(carrito.horaEntrega);
+    const horaEntrega = formatearHora(carrito.horaEntrega);
     // Verificar si la forma de entrega es "tienda"
     const direccionORecojo = carrito.formaEntrega === "tienda"
         ? `*Recojo de Pedido:* _Recoger en tienda_`
@@ -43,4 +43,12 @@ function generarCodigoAmigable() {
         codigo += caracteres[indiceAleatorio];
     }
     return codigo.toUpperCase();
+}
+function formatearHora(horaObj) {
+    const { hora, minuto, periodo } = horaObj;
+    // Asegurarse de que la hora siempre tenga dos dígitos
+    const horaFormateada = hora.padStart(2, '0');
+    // Asegurarse de que los minutos siempre tengan dos dígitos
+    const minutoFormateado = minuto.padStart(2, '0');
+    return `${horaFormateada}:${minutoFormateado} ${periodo}`;
 }

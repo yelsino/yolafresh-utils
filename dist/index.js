@@ -1,4 +1,6 @@
 "use strict";
+// Este archivo es generado automáticamente
+// No modificar manualmente
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -14,22 +16,11 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-// Export interfaces
-__exportStar(require("./interfaces/index"), exports);
-// Export utilities
-__exportStar(require("./utils/enums"), exports);
-__exportStar(require("./utils/dates"), exports);
-__exportStar(require("./utils/validators"), exports);
-__exportStar(require("./utils/time"), exports);
-// Export original utility files
-__exportStar(require("./utils/carrito"), exports);
-__exportStar(require("./utils/filters"), exports);
-__exportStar(require("./utils/icons"), exports);
-__exportStar(require("./utils/listas"), exports);
-__exportStar(require("./utils/mappers"), exports);
-__exportStar(require("./utils/multimedia"), exports);
-__exportStar(require("./utils/producto"), exports);
-__exportStar(require("./utils/regex"), exports);
-__exportStar(require("./utils/textos"), exports);
-__exportStar(require("./utils/tools"), exports);
-__exportStar(require("./utils/venta"), exports);
+// Exportaciones por categoría
+__exportStar(require("./interfaces"), exports);
+__exportStar(require("./data"), exports);
+__exportStar(require("./utils"), exports);
+// También puedes exportar directamente los módulos más utilizados aquí si lo deseas
+// Por ejemplo:
+// export { Producto, UpdateProducto } from './interfaces/producto';
+// export { formatearFecha } from './utils/textos';

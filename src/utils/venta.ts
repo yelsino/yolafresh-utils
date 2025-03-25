@@ -1,7 +1,6 @@
 import {  capitalizarPrimeraLetra, formatCantidad, formatearFecha, formatSolesPeruanos } from "./textos";
-import { formatearHora } from "./time";
 
-import { Carrito } from "../interfaces/pedido";
+import { Carrito, Hora } from "../interfaces/pedido";
 
 
 
@@ -49,4 +48,16 @@ export function generarCodigoAmigable(): string {
     codigo += caracteres[indiceAleatorio];
   }
   return codigo.toUpperCase();
+}
+
+export function formatearHora(horaObj: Hora): string {
+  const { hora, minuto, periodo } = horaObj;
+
+  // Asegurarse de que la hora siempre tenga dos dígitos
+  const horaFormateada = hora.padStart(2, '0');
+
+  // Asegurarse de que los minutos siempre tengan dos dígitos
+  const minutoFormateado = minuto.padStart(2, '0');
+
+  return `${horaFormateada}:${minutoFormateado} ${periodo}`;
 }

@@ -26,9 +26,8 @@ function productodbToProducto(producto) {
         consideraciones: producto.consideraciones,
         caracteristicas: producto.caracteristicas,
         actualizacion: producto.actualizacion ? new Date(producto.actualizacion) : undefined,
-        stock: producto.stock || '0',
-        precioCompra: producto.precioCompra || 0,
-        precioVenta: producto.precioVenta || 0
+        precioCompra: producto.precioCompra,
+        stock: producto.stock
     };
 }
 function pedidodbToPedido(pedido) {

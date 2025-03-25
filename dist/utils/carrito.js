@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.actualizarCarrito = actualizarCarrito;
-const tienda_1 = require("../store/tienda");
+const tienda_1 = require("src/store/tienda");
 function actualizarCarrito(event) {
     const target = event.target;
     const dataCarrito = tienda_1.carrito.get();
