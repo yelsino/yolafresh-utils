@@ -2,7 +2,6 @@
 // No modificar manualmente
 
 // Exportaciones de utils
-export * from './carrito';
 export * from './dates';
 export * from './enums';
 export * from './filters';
