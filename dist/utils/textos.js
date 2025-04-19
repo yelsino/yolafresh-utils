@@ -38,6 +38,7 @@ exports.singularToAbbreviation = {
     [enums_1.TipoVentaEnum.Gramo]: 'gr',
     [enums_1.TipoVentaEnum.Mililitro]: 'ml',
     [enums_1.TipoVentaEnum.SixPack]: 'sixpack',
+    [enums_1.TipoVentaEnum.Atado]: 'atd',
 };
 exports.singularToAbbreviationv2 = {
     [enums_1.TipoVentaEnum.Kilogramo]: 'kg',
@@ -53,6 +54,7 @@ exports.singularToAbbreviationv2 = {
     [enums_1.TipoVentaEnum.Mililitro]: 'ml',
     [enums_1.TipoVentaEnum.Litro]: 'lt',
     [enums_1.TipoVentaEnum.SixPack]: '6 und',
+    [enums_1.TipoVentaEnum.Atado]: 'atd',
 };
 const pluralToAbbreviation = {
     [enums_1.TipoVentaEnum.Kilogramo]: 'kg',
@@ -68,6 +70,7 @@ const pluralToAbbreviation = {
     [enums_1.TipoVentaEnum.Mililitro]: 'mls',
     [enums_1.TipoVentaEnum.Litro]: 'lts',
     [enums_1.TipoVentaEnum.SixPack]: 'sixpack',
+    [enums_1.TipoVentaEnum.Atado]: 'atados',
 };
 function formatCantidad({ cantidad, tipoVenta, mayoreo = false, abreviado = false, categoriaId, }) {
     console.log(cantidad, tipoVenta, mayoreo, abreviado);
@@ -404,6 +407,7 @@ exports.convertionMedidasAbarrotes = {
     [enums_1.TipoVentaEnum.Mililitro]: 'unidad',
     [enums_1.TipoVentaEnum.Litro]: 'lt',
     [enums_1.TipoVentaEnum.SixPack]: 'sixpack',
+    [enums_1.TipoVentaEnum.Atado]: 'atd',
 };
 function formatMedidaAbarrotes(tipoVenta, categoriaId) {
     // Si no es la categoría específica (ej: categoríaId = 5) o es Kilogramo, devolvemos sólo el tipo en minúsculas

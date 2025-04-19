@@ -23,6 +23,8 @@ export const singularToAbbreviation: { [key in TipoVentaEnum]: string } = {
   [TipoVentaEnum.Gramo]: 'gr',
   [TipoVentaEnum.Mililitro]: 'ml',
   [TipoVentaEnum.SixPack]: 'sixpack',
+  [TipoVentaEnum.Atado]: 'atd',
+
 };
 export const singularToAbbreviationv2: { [key in TipoVentaEnum]: string } = {
   [TipoVentaEnum.Kilogramo]: 'kg',
@@ -38,6 +40,7 @@ export const singularToAbbreviationv2: { [key in TipoVentaEnum]: string } = {
   [TipoVentaEnum.Mililitro]: 'ml',
   [TipoVentaEnum.Litro]: 'lt',
   [TipoVentaEnum.SixPack]: '6 und',
+  [TipoVentaEnum.Atado]: 'atd',
 };
 
 
@@ -55,6 +58,7 @@ const pluralToAbbreviation: { [key in TipoVentaEnum]: string } = {
   [TipoVentaEnum.Mililitro]: 'mls',
   [TipoVentaEnum.Litro]: 'lts',
   [TipoVentaEnum.SixPack]: 'sixpack',
+  [TipoVentaEnum.Atado]: 'atados',
 };
 
 
@@ -474,6 +478,7 @@ export const convertionMedidasAbarrotes: { [key in TipoVentaEnum]: string } = {
   [TipoVentaEnum.Mililitro]: 'unidad',
   [TipoVentaEnum.Litro]: 'lt',
   [TipoVentaEnum.SixPack]: 'sixpack',
+  [TipoVentaEnum.Atado]: 'atd',
 };
 
 

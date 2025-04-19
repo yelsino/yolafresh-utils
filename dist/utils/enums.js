@@ -24,6 +24,7 @@ var TipoVentaEnum;
     TipoVentaEnum["Mililitro"] = "mililitro";
     TipoVentaEnum["Litro"] = "litro";
     TipoVentaEnum["SixPack"] = "sixpack";
+    TipoVentaEnum["Atado"] = "atado";
 })(TipoVentaEnum || (exports.TipoVentaEnum = TipoVentaEnum = {}));
 var EstadoStockEnum;
 (function (EstadoStockEnum) {

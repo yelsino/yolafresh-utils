@@ -18,7 +18,8 @@ export declare enum TipoVentaEnum {
     Gramo = "gramo",
     Mililitro = "mililitro",
     Litro = "litro",
-    SixPack = "sixpack"
+    SixPack = "sixpack",
+    Atado = "atado"
 }
 export declare enum EstadoStockEnum {
     STOCK_AGOTADO = "STOCK_AGOTADO",

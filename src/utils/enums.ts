@@ -21,6 +21,7 @@ export enum TipoVentaEnum {
   Mililitro = 'mililitro',
   Litro = 'litro',
   SixPack = 'sixpack',
+  Atado = 'atado',
 }
 
 export enum EstadoStockEnum {
