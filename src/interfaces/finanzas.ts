@@ -19,6 +19,7 @@ export interface Egreso {
 
 // Ingresos
 export type TipoIngreso = 'CREDITO' | 'AL_CONTADO'
+export type OrigenIngreso = "VENTA_DIA" | "RETORNO" | "PRESTAMO" | "APORTE"
 export type EstadoIngreso = 'PAGADO' | 'ANULADO' | 'PENDIENTE'
 
 export interface Abono {
@@ -39,6 +40,7 @@ export interface Ingreso {
   numeroOperacion: number;
   clienteId?: string;
   tipoIngreso: TipoIngreso
+  origenIngreso?: OrigenIngreso
   estado: EstadoIngreso;
   metodoPago?: MetodoPago;
   abonos?: Abono[];
