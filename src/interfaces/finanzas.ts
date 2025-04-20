@@ -19,7 +19,7 @@ export interface Egreso {
 
 // Ingresos
 export type TipoIngreso = 'CREDITO' | 'AL_CONTADO'
-export type OrigenIngreso = "VENTA_DIA" | "RETORNO" | "PRESTAMO" | "APORTE"
+export type OrigenIngreso = "VENTA_DIA" | "RETORNO" | "PRESTAMO" | "APORTE" | "COBRO_CREDITO"
 export type EstadoIngreso = 'PAGADO' | 'ANULADO' | 'PENDIENTE'
 
 export interface Abono {
