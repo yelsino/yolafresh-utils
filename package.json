@@ -33,7 +33,7 @@
   "scripts": {
     "build": "tsc && tsc-alias",
     "prepare": "npm run build",
-    "generate-exports": "ts-node scripts/generate-exports.ts",
+    "generate-exports": "cd scripts && npx ts-node generate-exports.ts && cd ..",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

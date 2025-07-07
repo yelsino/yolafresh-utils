@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-import * as path from 'path';
+const fs = require('fs');
+const path = require('path');
 
 // Directorios a escanear
 const directories = [
@@ -27,7 +27,7 @@ async function generateExportsForDirectory(dir: { path: string, prefix: string }
     const files = fs.readdirSync(fullPath);
     
     // Filtrar solo archivos .ts que no sean index.ts o archivos de prueba
-    const tsFiles = files.filter(file => 
+    const tsFiles = files.filter((file: string) => 
       file.endsWith('.ts') && 
       !file.endsWith('.test.ts') && 
       !file.endsWith('.spec.ts') && 

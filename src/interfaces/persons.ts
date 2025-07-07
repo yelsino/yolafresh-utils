@@ -53,15 +53,6 @@ export interface Personal {
     monto: number;
   }
 
-  export interface Proveedor {
-    id?: string;
-    nombres: string;
-    fechaRegistro: Date
-    celular: string;
-    correo: string;
-    dni: string;
-    direccion: string;
-  }
 
   export interface Proveedor {
     id?: string;

@@ -17,7 +17,7 @@ export declare function formatCantidad({ cantidad, tipoVenta, mayoreo, abreviado
 export declare function getCantidadNumerica({ cantidad }: {
     cantidad: number;
 }): number;
-type Versions = 'version1' | 'version2';
+type Versions = 'version1' | 'version2' | 'version3';
 export declare function abreviarTipoVenta(texto: string, version: Versions): string;
 export declare function formatSolesPeruanos(amount: number, version?: Versions): string;
 export declare function formatearFecha(fecha: string | Date): string;

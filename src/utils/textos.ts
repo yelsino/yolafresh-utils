@@ -188,7 +188,57 @@ export function getCantidadNumerica({ cantidad }: { cantidad: number }): number 
 
 
 
-type Versions = 'version1' | 'version2';
+type Versions = 'version1' | 'version2' | 'version3';
+
+// Mapa para convertir valores decimales a fracciones simbólicas para version3
+const decimalToSymbolicFraction: { [key: number]: string } = {
+  0.25: '¼',
+  0.5: '½',
+  0.75: '¾',
+};
+
+// Función para convertir números a fracciones simbólicas
+function convertToSymbolicFraction(value: string): string {
+  // Si no es un número, retornar el valor original
+  const numValue = parseFloat(value);
+  if (isNaN(numValue)) {
+    return value;
+  }
+  
+  // Extraer la parte entera y decimal
+  const integerPart = Math.floor(numValue);
+  const decimalPart = numValue - integerPart;
+  
+  // Redondear la parte decimal a 2 decimales para comparar con el mapa
+  const roundedDecimal = Math.round(decimalPart * 100) / 100;
+  
+  // Si es un número entero, retornar como está
+  if (roundedDecimal === 0) {
+    return integerPart.toString();
+  }
+  
+  // Buscar la fracción simbólica más cercana
+  let closestDecimal = 0;
+  let minDifference = 1;
+  
+  for (const decimal in decimalToSymbolicFraction) {
+    const diff = Math.abs(roundedDecimal - parseFloat(decimal));
+    if (diff < minDifference) {
+      minDifference = diff;
+      closestDecimal = parseFloat(decimal);
+    }
+  }
+  
+  // Si la diferencia es demasiado grande (más de 0.05), mantener el valor original
+  if (minDifference > 0.05) {
+    return numValue.toString();
+  }
+  
+  // Construir el resultado con la parte entera y la fracción simbólica
+  const symbolicFraction = decimalToSymbolicFraction[closestDecimal];
+  return integerPart > 0 ? `${integerPart}${symbolicFraction}` : symbolicFraction;
+}
+
 export function abreviarTipoVenta(texto: string, version: Versions): string {
   // Seleccionar el mapa de abreviaciones según la versión
   const singularMap =
@@ -199,6 +249,11 @@ export function abreviarTipoVenta(texto: string, version: Versions): string {
   return palabras
     .map((palabra) => {
       const palabraLower = palabra.toLowerCase();
+      
+      // Si es version3, intentar convertir números a fracciones simbólicas
+      if (version === 'version3' && /^\d+(\.\d+)?$/.test(palabra)) {
+        return convertToSymbolicFraction(palabra);
+      }
 
       // Revisa si la palabra coincide con un tipo de venta en singular
       for (const tipoVenta in TipoVentaEnum) {
