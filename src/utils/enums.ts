@@ -37,3 +37,18 @@ export enum TipoActualizacionEnum {
   STOCK = 'STOCK',
 }
 
+export enum MetodoPagoEnum {
+  DIGITAL = 'DIGITAL',
+  EFECTIVO = 'EFECTIVO',
+}
+
+export enum MedioPagoDigitalEnum {
+  YAPE = 'YAPE',
+  PLIN = 'PLIN',
+  TUNKI = 'TUNKI',
+  OTRO = 'OTRO',
+}
+
+export enum MedioPagoEfectivoEnum {
+  EFECTIVO = 'EFECTIVO',
+}

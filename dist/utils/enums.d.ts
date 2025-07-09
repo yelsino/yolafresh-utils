@@ -32,3 +32,16 @@ export declare enum TipoActualizacionEnum {
     DESCUENTO = "DESCUENTO",
     STOCK = "STOCK"
 }
+export declare enum MetodoPagoEnum {
+    DIGITAL = "DIGITAL",
+    EFECTIVO = "EFECTIVO"
+}
+export declare enum MedioPagoDigitalEnum {
+    YAPE = "YAPE",
+    PLIN = "PLIN",
+    TUNKI = "TUNKI",
+    OTRO = "OTRO"
+}
+export declare enum MedioPagoEfectivoEnum {
+    EFECTIVO = "EFECTIVO"
+}

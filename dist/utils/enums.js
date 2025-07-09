@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TipoActualizacionEnum = exports.EstadoStockEnum = exports.TipoVentaEnum = exports.OrderState = void 0;
+exports.MedioPagoEfectivoEnum = exports.MedioPagoDigitalEnum = exports.MetodoPagoEnum = exports.TipoActualizacionEnum = exports.EstadoStockEnum = exports.TipoVentaEnum = exports.OrderState = void 0;
 var OrderState;
 (function (OrderState) {
     OrderState["PENDIENTE"] = "PENDIENTE";
@@ -39,3 +39,19 @@ var TipoActualizacionEnum;
     TipoActualizacionEnum["DESCUENTO"] = "DESCUENTO";
     TipoActualizacionEnum["STOCK"] = "STOCK";
 })(TipoActualizacionEnum || (exports.TipoActualizacionEnum = TipoActualizacionEnum = {}));
+var MetodoPagoEnum;
+(function (MetodoPagoEnum) {
+    MetodoPagoEnum["DIGITAL"] = "DIGITAL";
+    MetodoPagoEnum["EFECTIVO"] = "EFECTIVO";
+})(MetodoPagoEnum || (exports.MetodoPagoEnum = MetodoPagoEnum = {}));
+var MedioPagoDigitalEnum;
+(function (MedioPagoDigitalEnum) {
+    MedioPagoDigitalEnum["YAPE"] = "YAPE";
+    MedioPagoDigitalEnum["PLIN"] = "PLIN";
+    MedioPagoDigitalEnum["TUNKI"] = "TUNKI";
+    MedioPagoDigitalEnum["OTRO"] = "OTRO";
+})(MedioPagoDigitalEnum || (exports.MedioPagoDigitalEnum = MedioPagoDigitalEnum = {}));
+var MedioPagoEfectivoEnum;
+(function (MedioPagoEfectivoEnum) {
+    MedioPagoEfectivoEnum["EFECTIVO"] = "EFECTIVO";
+})(MedioPagoEfectivoEnum || (exports.MedioPagoEfectivoEnum = MedioPagoEfectivoEnum = {}));
