@@ -1,6 +1,6 @@
 {
   "name": "yola-fresh-utils",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Utility library for Yola Fresh projects",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -25,6 +25,11 @@
       "import": "./dist/data/index.js",
       "require": "./dist/data/index.js",
       "types": "./dist/data/index.d.ts"
+    },
+    "./class": {
+      "import": "./dist/class/index.js",
+      "require": "./dist/class/index.js",
+      "types": "./dist/class/index.d.ts"
     }
   },
   "files": [
