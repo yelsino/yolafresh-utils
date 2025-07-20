@@ -1,4 +1,4 @@
-import { OrderState } from "@/utils/enums"
+import { OrderState, TipoVentaEnum } from "@/utils/enums"
 import { Producto } from "./producto"
 import { Usuario } from "./persons"
 
@@ -42,6 +42,8 @@ export interface IntemList {
     monto: number
     detalle: string[]
   }
+
+
   
   export interface Direccion {
     id: string

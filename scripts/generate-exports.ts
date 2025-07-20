@@ -6,6 +6,7 @@ const directories = [
   { path: '../src/utils', prefix: '' },
   { path: '../src/interfaces', prefix: '' },
   { path: '../src/data', prefix: '' },
+  { path: '../src/class', prefix: '' },
   // Puedes añadir más directorios aquí si es necesario
 ];
 
