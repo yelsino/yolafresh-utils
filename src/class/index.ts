@@ -3,3 +3,4 @@
 
 // Exportaciones de class
 export * from './ShoppingCart';
+export * from './Venta';
