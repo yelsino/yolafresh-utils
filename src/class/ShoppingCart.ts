@@ -1,11 +1,12 @@
 /**
- * Entidad VentaEnProceso - Encapsula toda la lógica de una venta en curso
+ * Entidad ShoppingCart - Encapsula toda la lógica de una venta en curso
  * Reutilizable para cualquier sistema POS
  * Simplificada: usa solo CarItem con congelación automática al guardar
  */
 
-import { MetodoPago, Producto } from "@/interfaces";
-import { TipoVentaEnum } from "@/utils/enums";
+import { Producto } from "@/interfaces";
+import { TipoVentaEnum } from "@/utils";
+
 
 export interface CarItem {
   id: string; // ID único para cada ítem del carrito
@@ -16,6 +17,7 @@ export interface CarItem {
   montoTotal?: number | null; // Monto total a pagar
   tipoVenta?: TipoVentaEnum; // Tipo de venta (kg, unidad, etc.)
   peso?: number; // Peso para productos pesables
+  descuento?: number; // Descuento aplicado al ítem
 }
 
 /**
@@ -48,10 +50,15 @@ export enum ProcedenciaVenta {
 }
 
 /**
+ * Tipos de pago disponibles
+ */
+export type TipoPagoVenta = 'Efectivo' | 'Digital' | 'Tarjeta';
+
+/**
  * Datos para el procesamiento de pago
  */
 export interface DatosPago {
-  metodoPago: MetodoPago;
+  metodoPago: TipoPagoVenta;
   dineroRecibido?: number;
   procedencia: ProcedenciaVenta;
   clienteColor?: string;
@@ -61,7 +68,7 @@ export interface DatosPago {
 }
 
 /**
- * Clase VentaEnProceso - Maneja toda la lógica de una venta en curso
+ * Clase ShoppingCart - Maneja toda la lógica de una venta en curso
  * Simplificada: trabaja solo con CarItem, congela al guardar
  */
 export class ShoppingCart {
@@ -252,12 +259,12 @@ export class ShoppingCart {
     const index = this._items.findIndex(item => item.id === itemId);
     if (index === -1) return false;
 
-    // Agregar descuento como propiedad adicional al CarItem
+    // Agregar descuento como propiedad al CarItem
     const item = this._items[index];
     this._items[index] = {
       ...item,
       descuento: Math.max(0, descuento)
-    } as CarItem & { descuento: number };
+    };
     
     return true;
   }
@@ -306,7 +313,7 @@ export class ShoppingCart {
    */
   get descuentoTotal(): number {
     return this._items.reduce((sum, item) => {
-      const descuento = (item as any).descuento || 0;
+      const descuento = item.descuento || 0;
       return sum + descuento;
     }, 0);
   }
@@ -444,4 +451,4 @@ export class ShoppingCart {
   getItemsAsCarItems(): CarItem[] {
     return [...this._items];
   }
-} 
+}
