@@ -265,7 +265,7 @@ interface CarItem {
 
 ```typescript
 // 1. Crear carrito para el país específico
-const carrito = ShoppingCart.paraPerú();
+const carrito = ShoppingCart.paraPeru();
 
 // 2. Agregar productos
 carrito.agregarProducto({
