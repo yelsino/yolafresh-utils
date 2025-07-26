@@ -14,19 +14,22 @@ import { ShoppingCart, Venta, ConfiguracionFiscal } from 'yola-fresh-utils';
 
 ```typescript
 // Para Perú (IGV 18%)
-const carritoPerú = ShoppingCart.paraPerú();
+const carritoPeru = ShoppingCart.paraPeru();
 
 // Para México (IVA 16%)
-const carritoMéxico = ShoppingCart.paraMéxico();
+const carritoMexico = ShoppingCart.paraMexico();
 
 // Para Colombia (IVA 19%)
 const carritoColombia = ShoppingCart.paraColombia();
+
+// Para Argentina (IVA 21%)
+const carritoArgentina = ShoppingCart.paraArgentina();
 
 // Sin impuestos
 const carritoSinImpuestos = ShoppingCart.sinImpuestos();
 
 // Cualquier país disponible
-const carritoArgentina = ShoppingCart.paraPais('ARGENTINA');
+const carritoEspana = ShoppingCart.paraPais('ESPANA');
 ```
 
 ### Configuración Personalizada
@@ -111,8 +114,8 @@ import { CONFIGURACIONES_FISCALES, ConfiguracionFiscalFactory } from 'yola-fresh
 console.log(ConfiguracionFiscalFactory.paisesDisponibles());
 
 // Usar configuraciones directamente
-const configPerú = CONFIGURACIONES_FISCALES.PERU;
-const configMéxico = CONFIGURACIONES_FISCALES.MEXICO;
+const configPeru = CONFIGURACIONES_FISCALES.PERU;
+const configMexico = CONFIGURACIONES_FISCALES.MEXICO;
 const configSinImpuestos = CONFIGURACIONES_FISCALES.SIN_IMPUESTOS;
 ```
 

@@ -513,14 +513,14 @@ export class ShoppingCart {
   /**
    * Crear ShoppingCart para Perú (IGV 18%)
    */
-  static paraPerú(id?: string): ShoppingCart {
+  static paraPeru(id?: string): ShoppingCart {
     return new ShoppingCart(id, CONFIGURACIONES_FISCALES.PERU);
   }
 
   /**
    * Crear ShoppingCart para México (IVA 16%)
    */
-  static paraMéxico(id?: string): ShoppingCart {
+  static paraMexico(id?: string): ShoppingCart {
     return new ShoppingCart(id, CONFIGURACIONES_FISCALES.MEXICO);
   }
 
@@ -529,6 +529,20 @@ export class ShoppingCart {
    */
   static paraColombia(id?: string): ShoppingCart {
     return new ShoppingCart(id, CONFIGURACIONES_FISCALES.COLOMBIA);
+  }
+
+  /**
+   * Crear ShoppingCart para Argentina (IVA 21%)
+   */
+  static paraArgentina(id?: string): ShoppingCart {
+    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.ARGENTINA);
+  }
+
+  /**
+   * Crear ShoppingCart para España (IVA 21%)
+   */
+  static paraEspana(id?: string): ShoppingCart {
+    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.ESPANA);
   }
 
   /**

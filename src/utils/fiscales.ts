@@ -51,7 +51,7 @@ export const CONFIGURACIONES_FISCALES = {
   } as ConfiguracionFiscal,
 
   // **EUROPA**
-  ESPAÑA: {
+  ESPANA: {
     tasaImpuesto: 0.21,
     aplicaImpuesto: true,
     nombreImpuesto: 'IVA'
