@@ -6,7 +6,7 @@
 
 import { Producto } from "@/interfaces";
 import { TipoVentaEnum } from "@/utils";
-
+import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "@/utils/fiscales";
 
 export interface CarItem {
   id: string; // ID único para cada ítem del carrito
@@ -76,14 +76,54 @@ export class ShoppingCart {
   public readonly fechaCreacion: Date;
   private _items: CarItem[] = [];
   private _notas?: string;
-  private _tasaImpuesto: number = 0.18; // IGV por defecto
+  private _configuracionFiscal: ConfiguracionFiscal;
 
-  constructor(id?: string, tasaImpuesto?: number) {
+  constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal) {
     this.id = id || `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     this.fechaCreacion = new Date();
-    if (tasaImpuesto !== undefined) {
-      this._tasaImpuesto = tasaImpuesto;
-    }
+    
+    // Configuración fiscal por defecto (puede ser sobrescrita)
+    this._configuracionFiscal = {
+      tasaImpuesto: configuracionFiscal?.tasaImpuesto ?? 0, // Por defecto SIN impuesto
+      aplicaImpuesto: configuracionFiscal?.aplicaImpuesto ?? false, // Por defecto NO aplica
+      nombreImpuesto: configuracionFiscal?.nombreImpuesto ?? 'Impuesto',
+      ...configuracionFiscal
+    };
+  }
+
+  // **MÉTODOS DE CONFIGURACIÓN FISCAL**
+
+  /**
+   * Configurar impuesto (IGV, IVA, etc.)
+   */
+  configurarImpuesto(configuracion: ConfiguracionFiscal): void {
+    this._configuracionFiscal = {
+      ...this._configuracionFiscal,
+      ...configuracion
+    };
+  }
+
+  /**
+   * Habilitar impuesto con tasa específica
+   */
+  habilitarImpuesto(tasa: number, nombre: string = 'IGV'): void {
+    this._configuracionFiscal = {
+      ...this._configuracionFiscal,
+      tasaImpuesto: Math.max(0, Math.min(1, tasa)), // Entre 0 y 1
+      aplicaImpuesto: true,
+      nombreImpuesto: nombre
+    };
+  }
+
+  /**
+   * Deshabilitar impuesto
+   */
+  deshabilitarImpuesto(): void {
+    this._configuracionFiscal = {
+      ...this._configuracionFiscal,
+      tasaImpuesto: 0,
+      aplicaImpuesto: false
+    };
   }
 
   // **MÉTODOS PRINCIPALES DE GESTIÓN**
@@ -322,8 +362,11 @@ export class ShoppingCart {
    * Calcular impuesto
    */
   get impuesto(): number {
+    if (!this._configuracionFiscal.aplicaImpuesto) {
+      return 0;
+    }
     const baseImponible = this.subtotal - this.descuentoTotal;
-    return Math.round(baseImponible * this._tasaImpuesto * 100) / 100;
+    return Math.round(baseImponible * (this._configuracionFiscal.tasaImpuesto || 0) * 100) / 100;
   }
 
   /**
@@ -367,11 +410,18 @@ export class ShoppingCart {
   }
 
   get tasaImpuesto(): number {
-    return this._tasaImpuesto;
+    return this._configuracionFiscal.tasaImpuesto || 0;
   }
 
   set tasaImpuesto(tasa: number) {
-    this._tasaImpuesto = Math.max(0, Math.min(1, tasa)); // Entre 0 y 1
+    this._configuracionFiscal.tasaImpuesto = Math.max(0, Math.min(1, tasa)); // Entre 0 y 1
+  }
+
+  /**
+   * Obtener configuración fiscal actual
+   */
+  get configuracionFiscal(): ConfiguracionFiscal {
+    return { ...this._configuracionFiscal };
   }
 
   /**
@@ -428,7 +478,9 @@ export class ShoppingCart {
         product: { ...item.product }
       })),
       notas: this._notas,
-      tasaImpuesto: this._tasaImpuesto,
+      tasaImpuesto: this._configuracionFiscal.tasaImpuesto,
+      aplicaImpuesto: this._configuracionFiscal.aplicaImpuesto,
+      nombreImpuesto: this._configuracionFiscal.nombreImpuesto,
       ...this.resumen
     };
   }
@@ -437,7 +489,11 @@ export class ShoppingCart {
    * Crear instancia desde JSON (para cargar desde base de datos)
    */
   static fromJSON(data: any): ShoppingCart {
-    const venta = new ShoppingCart(data.id, data.tasaImpuesto);
+    const venta = new ShoppingCart(data.id, {
+      tasaImpuesto: data.tasaImpuesto,
+      aplicaImpuesto: data.aplicaImpuesto,
+      nombreImpuesto: data.nombreImpuesto
+    });
     
     // Los items ya vienen como CarItems congelados
     venta._items = data.items || [];
@@ -450,5 +506,61 @@ export class ShoppingCart {
    */
   getItemsAsCarItems(): CarItem[] {
     return [...this._items];
+  }
+
+  // **MÉTODOS FACTORY ESTÁTICOS**
+
+  /**
+   * Crear ShoppingCart para Perú (IGV 18%)
+   */
+  static paraPerú(id?: string): ShoppingCart {
+    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.PERU);
+  }
+
+  /**
+   * Crear ShoppingCart para México (IVA 16%)
+   */
+  static paraMéxico(id?: string): ShoppingCart {
+    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.MEXICO);
+  }
+
+  /**
+   * Crear ShoppingCart para Colombia (IVA 19%)
+   */
+  static paraColombia(id?: string): ShoppingCart {
+    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.COLOMBIA);
+  }
+
+  /**
+   * Crear ShoppingCart sin impuestos
+   */
+  static sinImpuestos(id?: string): ShoppingCart {
+    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.SIN_IMPUESTOS);
+  }
+
+  /**
+   * Crear ShoppingCart con configuración personalizada
+   */
+  static conConfiguracion(configuracion: ConfiguracionFiscal, id?: string): ShoppingCart {
+    return new ShoppingCart(id, configuracion);
+  }
+
+  /**
+   * Crear ShoppingCart para cualquier país disponible
+   */
+  static paraPais(pais: keyof typeof CONFIGURACIONES_FISCALES, id?: string): ShoppingCart {
+    const config = CONFIGURACIONES_FISCALES[pais];
+    if (typeof config === 'function') {
+      throw new Error(`Use ShoppingCart.personalizado() para configuraciones personalizadas`);
+    }
+    return new ShoppingCart(id, config);
+  }
+
+  /**
+   * Crear ShoppingCart con tasa personalizada
+   */
+  static personalizado(tasaImpuesto: number, nombreImpuesto: string = 'Impuesto', id?: string): ShoppingCart {
+    const config = CONFIGURACIONES_FISCALES.PERSONALIZADO(tasaImpuesto, nombreImpuesto);
+    return new ShoppingCart(id, config);
   }
 }

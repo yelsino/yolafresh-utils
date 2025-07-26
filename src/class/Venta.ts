@@ -331,10 +331,34 @@ export class Venta implements IVenta {
       vendedorId?: string;
       dineroRecibido?: number;
       notas?: string;
+      // Nueva opción para sobrescribir configuración fiscal
+      configuracionFiscal?: {
+        tasaImpuesto?: number;
+        aplicaImpuesto?: boolean;
+        nombreImpuesto?: string;
+      };
     }
   ): Venta {
     const ahora = new Date();
-    const cambio = datosPago.dineroRecibido ? datosPago.dineroRecibido - carritoJSON.total : undefined;
+    
+    // Si se proporciona configuración fiscal, recalcular el impuesto
+    let impuestoFinal = carritoJSON.impuesto;
+    let totalFinal = carritoJSON.total;
+    
+    if (datosPago.configuracionFiscal) {
+      const { tasaImpuesto, aplicaImpuesto } = datosPago.configuracionFiscal;
+      
+      if (aplicaImpuesto && tasaImpuesto !== undefined) {
+        const baseImponible = carritoJSON.subtotal - (carritoJSON.descuentoTotal || 0);
+        impuestoFinal = Math.round(baseImponible * tasaImpuesto * 100) / 100;
+        totalFinal = Math.round((carritoJSON.subtotal - (carritoJSON.descuentoTotal || 0) + impuestoFinal) * 100) / 100;
+      } else if (!aplicaImpuesto) {
+        impuestoFinal = 0;
+        totalFinal = Math.round((carritoJSON.subtotal - (carritoJSON.descuentoTotal || 0)) * 100) / 100;
+      }
+    }
+    
+    const cambio = datosPago.dineroRecibido ? datosPago.dineroRecibido - totalFinal : undefined;
     
     return new Venta({
       id: `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
@@ -343,10 +367,15 @@ export class Venta implements IVenta {
       estado: OrderState.DESPACHADO,
       fechaCreacion: ahora,
       fechaActualizacion: ahora,
-      detalleVenta: carritoJSON,
+      detalleVenta: {
+        ...carritoJSON,
+        // Actualizar con los valores finales
+        impuesto: impuestoFinal,
+        total: totalFinal
+      },
       subtotal: carritoJSON.subtotal,
-      impuesto: carritoJSON.impuesto,
-      total: carritoJSON.total,
+      impuesto: impuestoFinal,
+      total: totalFinal,
       descuentoTotal: carritoJSON.descuentoTotal,
       notas: datosPago.notas,
       procedencia: datosPago.procedencia,

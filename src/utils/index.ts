@@ -5,6 +5,7 @@
 export * from './dates';
 export * from './enums';
 export * from './filters';
+export * from './fiscales';
 export * from './icons';
 export * from './listas';
 export * from './mappers';
