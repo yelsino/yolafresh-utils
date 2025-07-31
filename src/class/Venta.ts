@@ -1,22 +1,5 @@
 import { OrderState } from "@/utils";
-import { CarItem, ProcedenciaVenta, TipoPagoVenta } from "./ShoppingCart";
-
-
-
-
-export interface ShoppingCartJSON {
-  id: string;
-  fechaCreacion: string;
-  items: CarItem[];
-  subtotal: number;
-  impuesto: number;
-  total: number;
-  descuentoTotal: number;
-  cantidadItems: number;
-  cantidadTotal: number;
-  notas?: string;
-  tasaImpuesto: number;
-}
+import { CarItem, IShoppingCart, ProcedenciaVenta, TipoPagoVenta } from "./ShoppingCart";
 
 /**
  * Interfaz para datos inmutables de una venta
@@ -36,7 +19,7 @@ export interface IVenta {
   fechaActualizacion: Date;
   
   // === CARRITO COMPLETO (ÚNICA FUENTE) ===
-  detalleVenta: ShoppingCartJSON; // ⭐ TODA la información aquí
+  detalleVenta: IShoppingCart; // ⭐ TODA la información aquí
   
   // === CÁLCULOS FINANCIEROS ===
   subtotal: number;
@@ -49,10 +32,16 @@ export interface IVenta {
   procedencia: ProcedenciaVenta;
   tipoPago?: TipoPagoVenta;
   clienteColor?: string;
+  // IDs de trazabilidad
   clienteId?: string;
   vendedorId?: string;
   dineroRecibido?: number;
   cambio?: number;
+  
+  // === CAMPOS DE TRAZABILIDAD ADICIONALES ===
+  codigoVenta?: string;
+  numeroVenta?: string;
+  costoEnvio?: number;
 }
 
 /**
@@ -74,7 +63,7 @@ export class Venta implements IVenta {
   public readonly fechaCreacion: Date;
   public readonly fechaActualizacion: Date;
   
-  public readonly detalleVenta: ShoppingCartJSON;
+  public readonly detalleVenta: IShoppingCart;
   
   public readonly subtotal: number;
   public readonly impuesto: number;
@@ -85,10 +74,16 @@ export class Venta implements IVenta {
   public readonly procedencia: ProcedenciaVenta;
   public readonly tipoPago?: TipoPagoVenta;
   public readonly clienteColor?: string;
+  // IDs de trazabilidad
   public readonly clienteId?: string;
   public readonly vendedorId?: string;
   public readonly dineroRecibido?: number;
   public readonly cambio?: number;
+  
+  // === CAMPOS DE TRAZABILIDAD ADICIONALES ===
+  public readonly codigoVenta?: string;
+  public readonly numeroVenta?: string;
+  public readonly costoEnvio?: number;
 
   constructor(data: IVenta) {
     // Validaciones básicas
@@ -124,10 +119,16 @@ export class Venta implements IVenta {
     this.procedencia = data.procedencia;
     this.tipoPago = data.tipoPago;
     this.clienteColor = data.clienteColor;
+    // IDs de trazabilidad
     this.clienteId = data.clienteId;
     this.vendedorId = data.vendedorId;
     this.dineroRecibido = data.dineroRecibido;
     this.cambio = data.cambio;
+    
+    // Campos de trazabilidad adicionales
+    this.codigoVenta = data.codigoVenta;
+    this.numeroVenta = data.numeroVenta;
+    this.costoEnvio = data.costoEnvio;
 
     // Congelar la instancia completa
     Object.freeze(this);
@@ -254,10 +255,15 @@ export class Venta implements IVenta {
       procedencia: this.procedencia,
       tipoPago: this.tipoPago,
       clienteColor: this.clienteColor,
+      // IDs de trazabilidad
       clienteId: this.clienteId,
       vendedorId: this.vendedorId,
       dineroRecibido: this.dineroRecibido,
-      cambio: this.cambio
+      cambio: this.cambio,
+      // Campos de trazabilidad adicionales
+      codigoVenta: this.codigoVenta,
+      numeroVenta: this.numeroVenta,
+      costoEnvio: this.costoEnvio
     };
   }
 
@@ -281,10 +287,16 @@ export class Venta implements IVenta {
       procedencia: this.procedencia,
       tipoPago: this.tipoPago,
       clienteColor: this.clienteColor,
+      // Objetos completos de trazabilidad
+      // IDs de compatibilidad
       clienteId: this.clienteId,
       vendedorId: this.vendedorId,
       dineroRecibido: this.dineroRecibido,
-      cambio: this.cambio
+      cambio: this.cambio,
+      // Campos de trazabilidad adicionales
+      codigoVenta: this.codigoVenta,
+      numeroVenta: this.numeroVenta,
+      costoEnvio: this.costoEnvio
     };
   }
 
@@ -310,27 +322,37 @@ export class Venta implements IVenta {
       procedencia: doc.procedencia,
       tipoPago: doc.tipoPago,
       clienteColor: doc.clienteColor,
+      // IDs de trazabilidad
       clienteId: doc.clienteId,
       vendedorId: doc.vendedorId,
       dineroRecibido: doc.dineroRecibido,
-      cambio: doc.cambio
+      cambio: doc.cambio,
+      // Campos de trazabilidad adicionales
+      codigoVenta: doc.codigoVenta,
+      numeroVenta: doc.numeroVenta,
+      costoEnvio: doc.costoEnvio
     });
   }
 
   /**
-   * Crear Venta desde ShoppingCart (para procesar pago)
+   * Crear Venta desde IShoppingCart (para procesar pago)
    */
   static fromShoppingCart(
-    carritoJSON: ShoppingCartJSON,
+    carritoJSON: IShoppingCart,
     datosPago: {
       nombre: string;
       procedencia: ProcedenciaVenta;
       tipoPago?: TipoPagoVenta;
       clienteColor?: string;
+      // IDs de trazabilidad
       clienteId?: string;
       vendedorId?: string;
       dineroRecibido?: number;
       notas?: string;
+      // Campos de trazabilidad adicionales
+      codigoVenta?: string;
+      numeroVenta?: string;
+      costoEnvio?: number;
       // Nueva opción para sobrescribir configuración fiscal
       configuracionFiscal?: {
         tasaImpuesto?: number;
@@ -381,10 +403,15 @@ export class Venta implements IVenta {
       procedencia: datosPago.procedencia,
       tipoPago: datosPago.tipoPago,
       clienteColor: datosPago.clienteColor,
-      clienteId: datosPago.clienteId,
-      vendedorId: datosPago.vendedorId,
+      // IDs de trazabilidad
+      clienteId: datosPago.clienteId || carritoJSON.clienteId,
+      vendedorId: datosPago.vendedorId || carritoJSON.vendedorId,
       dineroRecibido: datosPago.dineroRecibido,
-      cambio: cambio
+      cambio: cambio,
+      // Campos de trazabilidad adicionales
+      codigoVenta: datosPago.codigoVenta,
+      numeroVenta: datosPago.numeroVenta,
+      costoEnvio: datosPago.costoEnvio
     });
   }
 
@@ -400,6 +427,11 @@ export class Venta implements IVenta {
     if (!data.detalleVenta?.items?.length) errores.push('La venta debe tener al menos un item');
     if ((data.total || 0) <= 0) errores.push('El total debe ser mayor a 0');
     if (!data.procedencia) errores.push('Procedencia es requerida');
+    
+    // Validaciones opcionales para campos de trazabilidad
+    if (data.costoEnvio !== undefined && data.costoEnvio < 0) {
+      errores.push('El costo de envío no puede ser negativo');
+    }
     
     return {
       valida: errores.length === 0,

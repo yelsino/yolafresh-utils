@@ -5,6 +5,7 @@
  */
 
 import { Producto } from "@/interfaces";
+import { Cliente, Personal } from "@/interfaces/persons";
 import { TipoVentaEnum } from "@/utils";
 import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "@/utils/fiscales";
 
@@ -54,29 +55,78 @@ export enum ProcedenciaVenta {
  */
 export type TipoPagoVenta = 'Efectivo' | 'Digital' | 'Tarjeta';
 
-/**
- * Datos para el procesamiento de pago
- */
-export interface DatosPago {
-  metodoPago: TipoPagoVenta;
-  dineroRecibido?: number;
-  procedencia: ProcedenciaVenta;
+
+
+export interface IShoppingCart {
+  id: string;
+  fechaCreacion: Date;
+  items: CarItem[];
+  subtotal: number;
+  impuesto: number;
+  total: number;
+  descuentoTotal: number;
+  cantidadItems: number;
+  cantidadTotal: number;
+  notas?: string;
+  tasaImpuesto: number;
+  // Campos de trazabilidad
   clienteColor?: string;
+  // IDs de trazabilidad
   clienteId?: string;
   vendedorId?: string;
+  // Datos de pago
+  metodoPago?: TipoPagoVenta;
+  dineroRecibido?: number;
+  procedencia?: ProcedenciaVenta;
+}
+
+/**
+ * Interfaz para la serialización JSON del ShoppingCart
+ */
+export interface ShoppingCartJSON {
+  id: string;
+  fechaCreacion: string;
+  items: any[]; // CarItems serializados
+  subtotal: number;
+  impuesto: number;
+  total: number;
+  descuentoTotal: number;
+  cantidadItems: number;
+  cantidadTotal: number;
   notas?: string;
+  tasaImpuesto: number;
+  // Campos de trazabilidad
+  clienteColor?: string;
+  // IDs de trazabilidad
+  clienteId?: string;
+  vendedorId?: string;
+  // Datos de pago
+  metodoPago?: TipoPagoVenta;
+  dineroRecibido?: number;
+  procedencia?: ProcedenciaVenta;
 }
 
 /**
  * Clase ShoppingCart - Maneja toda la lógica de una venta en curso
  * Simplificada: trabaja solo con CarItem, congela al guardar
  */
-export class ShoppingCart {
+
+export class ShoppingCart implements IShoppingCart {
   public readonly id: string;
   public readonly fechaCreacion: Date;
   private _items: CarItem[] = [];
   private _notas?: string;
   private _configuracionFiscal: ConfiguracionFiscal;
+  
+  // === CAMPOS DE TRAZABILIDAD ===
+  private _cliente?: Cliente;
+  private _vendedor?: Personal;
+  private _clienteColor?: string;
+  
+  // === DATOS DE PAGO ===
+  private _metodoPago?: TipoPagoVenta;
+  private _dineroRecibido?: number;
+  private _procedencia?: ProcedenciaVenta;
 
   constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal) {
     this.id = id || `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -385,8 +435,8 @@ export class ShoppingCart {
 
   // **GETTERS Y SETTERS**
 
-  get items(): readonly CarItem[] {
-    return Object.freeze([...this._items]);
+  get items(): CarItem[] {
+    return [...this._items];
   }
 
   get cantidadItems(): number {
@@ -415,6 +465,113 @@ export class ShoppingCart {
 
   set tasaImpuesto(tasa: number) {
     this._configuracionFiscal.tasaImpuesto = Math.max(0, Math.min(1, tasa)); // Entre 0 y 1
+  }
+
+  // **GETTERS Y SETTERS DE TRAZABILIDAD**
+
+  get cliente(): Cliente | undefined {
+    return this._cliente;
+  }
+
+  set cliente(value: Cliente | undefined) {
+    this._cliente = value;
+  }
+
+  get vendedor(): Personal | undefined {
+    return this._vendedor;
+  }
+
+  set vendedor(value: Personal | undefined) {
+    this._vendedor = value;
+  }
+
+  get clienteColor(): string | undefined {
+    return this._clienteColor;
+  }
+
+  set clienteColor(value: string | undefined) {
+    this._clienteColor = value;
+  }
+
+  // **GETTERS DE COMPATIBILIDAD (para IDs)**
+  
+  get clienteId(): string | undefined {
+    return this._cliente?.id;
+  }
+
+  get vendedorId(): string | undefined {
+    return this._vendedor?.id;
+  }
+
+  /**
+   * Configurar información de trazabilidad
+   */
+  configurarTrazabilidad(datos: {
+    cliente?: Cliente;
+    vendedor?: Personal;
+    clienteColor?: string;
+  }): void {
+    this._cliente = datos.cliente;
+    this._vendedor = datos.vendedor;
+    this._clienteColor = datos.clienteColor;
+  }
+
+  /**
+   * Configurar información de trazabilidad por IDs (método de compatibilidad)
+   * @deprecated Usar configurarTrazabilidad con objetos completos
+   */
+  configurarTrazabilidadPorIds(datos: {
+    clienteId?: string;
+    vendedorId?: string;
+    clienteColor?: string;
+  }): void {
+    // Este método mantiene compatibilidad pero se recomienda usar objetos completos
+    if (datos.clienteId && this._cliente?.id !== datos.clienteId) {
+      console.warn('Se está configurando clienteId sin objeto Cliente completo');
+    }
+    if (datos.vendedorId && this._vendedor?.id !== datos.vendedorId) {
+      console.warn('Se está configurando vendedorId sin objeto Personal completo');
+    }
+    this._clienteColor = datos.clienteColor;
+  }
+
+  // **GETTERS Y SETTERS DE DATOS DE PAGO**
+
+  get metodoPago(): TipoPagoVenta | undefined {
+    return this._metodoPago;
+  }
+
+  set metodoPago(value: TipoPagoVenta | undefined) {
+    this._metodoPago = value;
+  }
+
+  get dineroRecibido(): number | undefined {
+    return this._dineroRecibido;
+  }
+
+  set dineroRecibido(value: number | undefined) {
+    this._dineroRecibido = value;
+  }
+
+  get procedencia(): ProcedenciaVenta | undefined {
+    return this._procedencia;
+  }
+
+  set procedencia(value: ProcedenciaVenta | undefined) {
+    this._procedencia = value;
+  }
+
+  /**
+   * Configurar datos de pago
+   */
+  configurarPago(datos: {
+    metodoPago?: TipoPagoVenta;
+    dineroRecibido?: number;
+    procedencia?: ProcedenciaVenta;
+  }): void {
+    this._metodoPago = datos.metodoPago;
+    this._dineroRecibido = datos.dineroRecibido;
+    this._procedencia = datos.procedencia;
   }
 
   /**
@@ -481,6 +638,15 @@ export class ShoppingCart {
       tasaImpuesto: this._configuracionFiscal.tasaImpuesto,
       aplicaImpuesto: this._configuracionFiscal.aplicaImpuesto,
       nombreImpuesto: this._configuracionFiscal.nombreImpuesto,
+      // Campos de trazabilidad
+      clienteColor: this._clienteColor,
+      // IDs de trazabilidad
+      clienteId: this._cliente?.id,
+      vendedorId: this._vendedor?.id,
+      // Datos de pago
+      metodoPago: this._metodoPago,
+      dineroRecibido: this._dineroRecibido,
+      procedencia: this._procedencia,
       ...this.resumen
     };
   }
@@ -498,6 +664,23 @@ export class ShoppingCart {
     // Los items ya vienen como CarItems congelados
     venta._items = data.items || [];
     venta._notas = data.notas;
+    
+    // Cargar campos de trazabilidad
+    venta._clienteColor = data.clienteColor;
+    
+    // Cargar datos de pago
+    venta._metodoPago = data.metodoPago;
+    venta._dineroRecibido = data.dineroRecibido;
+    venta._procedencia = data.procedencia;
+    
+    // Compatibilidad: si hay IDs, crear objetos básicos para mantener compatibilidad interna
+    if (data.clienteId) {
+      venta._cliente = { id: data.clienteId } as Cliente;
+    }
+    if (data.vendedorId) {
+      venta._vendedor = { id: data.vendedorId } as Personal;
+    }
+    
     return venta;
   }
 
