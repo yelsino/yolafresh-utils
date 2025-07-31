@@ -67,33 +67,6 @@ export interface IShoppingCart {
   dineroRecibido?: number;
   procedencia?: ProcedenciaVenta;
 }
-
-/**
- * Interfaz para la serialización JSON del ShoppingCart
- */
-export interface ShoppingCartJSON {
-  id: string;
-  fechaCreacion: string;
-  items: any[]; // CarItems serializados
-  subtotal: number;
-  impuesto: number;
-  total: number;
-  descuentoTotal: number;
-  cantidadItems: number;
-  cantidadTotal: number;
-  notas?: string;
-  tasaImpuesto: number;
-  // Campos de trazabilidad
-  clienteColor?: string;
-  // IDs de trazabilidad
-  clienteId?: string;
-  vendedorId?: string;
-  // Datos de pago
-  metodoPago?: TipoPagoVenta;
-  dineroRecibido?: number;
-  procedencia?: ProcedenciaVenta;
-}
-
 /**
  * Clase ShoppingCart - Maneja toda la lógica de una venta en curso
  * Simplificada: trabaja solo con CarItem, congela al guardar
