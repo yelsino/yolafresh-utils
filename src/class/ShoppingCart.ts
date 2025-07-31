@@ -30,17 +30,7 @@ export interface OpcionesAgregarProducto {
   fromSelection?: boolean;
 }
 
-/**
- * Resumen de la venta
- */
-export interface ResumenVenta {
-  cantidadItems: number;
-  cantidadTotal: number;
-  subtotal: number;
-  descuentoTotal: number;
-  impuesto: number;
-  total: number;
-}
+
 
 export enum ProcedenciaVenta {
   Tienda = 'Tienda',
@@ -54,8 +44,6 @@ export enum ProcedenciaVenta {
  * Tipos de pago disponibles
  */
 export type TipoPagoVenta = 'Efectivo' | 'Digital' | 'Tarjeta';
-
-
 
 export interface IShoppingCart {
   id: string;
@@ -584,7 +572,7 @@ export class ShoppingCart implements IShoppingCart {
   /**
    * Obtener resumen completo de la venta
    */
-  get resumen(): ResumenVenta {
+  get resumen() {
     return {
       cantidadItems: this.cantidadItems,
       cantidadTotal: this.cantidadTotal,

@@ -25,18 +25,13 @@ export interface IVenta {
   subtotal: number;
   impuesto: number;
   total: number;
-  descuentoTotal?: number;
-  notas?: string;
   
   // === INFORMACIÓN DE PAGO ===
   procedencia: ProcedenciaVenta;
   tipoPago?: TipoPagoVenta;
-  clienteColor?: string;
   // IDs de trazabilidad
   clienteId?: string;
   vendedorId?: string;
-  dineroRecibido?: number;
-  cambio?: number;
   
   // === CAMPOS DE TRAZABILIDAD ADICIONALES ===
   codigoVenta?: string;
@@ -68,17 +63,12 @@ export class Venta implements IVenta {
   public readonly subtotal: number;
   public readonly impuesto: number;
   public readonly total: number;
-  public readonly descuentoTotal?: number;
-  public readonly notas?: string;
   
   public readonly procedencia: ProcedenciaVenta;
   public readonly tipoPago?: TipoPagoVenta;
-  public readonly clienteColor?: string;
   // IDs de trazabilidad
   public readonly clienteId?: string;
   public readonly vendedorId?: string;
-  public readonly dineroRecibido?: number;
-  public readonly cambio?: number;
   
   // === CAMPOS DE TRAZABILIDAD ADICIONALES ===
   public readonly codigoVenta?: string;
@@ -113,17 +103,12 @@ export class Venta implements IVenta {
     this.subtotal = data.subtotal;
     this.impuesto = data.impuesto;
     this.total = data.total;
-    this.descuentoTotal = data.descuentoTotal;
-    this.notas = data.notas;
     
     this.procedencia = data.procedencia;
     this.tipoPago = data.tipoPago;
-    this.clienteColor = data.clienteColor;
     // IDs de trazabilidad
     this.clienteId = data.clienteId;
     this.vendedorId = data.vendedorId;
-    this.dineroRecibido = data.dineroRecibido;
-    this.cambio = data.cambio;
     
     // Campos de trazabilidad adicionales
     this.codigoVenta = data.codigoVenta;
@@ -178,7 +163,6 @@ export class Venta implements IVenta {
     cantidadItems: number;
     cantidadTotal: number;
     subtotal: number;
-    descuentoTotal: number;
     impuesto: number;
     total: number;
   } {
@@ -186,7 +170,6 @@ export class Venta implements IVenta {
       cantidadItems: this.cantidadItems,
       cantidadTotal: this.cantidadTotal,
       subtotal: this.subtotal,
-      descuentoTotal: this.descuentoTotal || 0,
       impuesto: this.impuesto,
       total: this.total
     };
@@ -250,16 +233,11 @@ export class Venta implements IVenta {
       subtotal: this.subtotal,
       impuesto: this.impuesto,
       total: this.total,
-      descuentoTotal: this.descuentoTotal,
-      notas: this.notas,
       procedencia: this.procedencia,
       tipoPago: this.tipoPago,
-      clienteColor: this.clienteColor,
       // IDs de trazabilidad
       clienteId: this.clienteId,
       vendedorId: this.vendedorId,
-      dineroRecibido: this.dineroRecibido,
-      cambio: this.cambio,
       // Campos de trazabilidad adicionales
       codigoVenta: this.codigoVenta,
       numeroVenta: this.numeroVenta,
@@ -282,17 +260,11 @@ export class Venta implements IVenta {
       subtotal: this.subtotal,
       impuesto: this.impuesto,
       total: this.total,
-      descuentoTotal: this.descuentoTotal,
-      notas: this.notas,
       procedencia: this.procedencia,
       tipoPago: this.tipoPago,
-      clienteColor: this.clienteColor,
-      // Objetos completos de trazabilidad
       // IDs de compatibilidad
       clienteId: this.clienteId,
       vendedorId: this.vendedorId,
-      dineroRecibido: this.dineroRecibido,
-      cambio: this.cambio,
       // Campos de trazabilidad adicionales
       codigoVenta: this.codigoVenta,
       numeroVenta: this.numeroVenta,
@@ -317,16 +289,11 @@ export class Venta implements IVenta {
       subtotal: doc.subtotal,
       impuesto: doc.impuesto,
       total: doc.total,
-      descuentoTotal: doc.descuentoTotal,
-      notas: doc.notas,
       procedencia: doc.procedencia,
       tipoPago: doc.tipoPago,
-      clienteColor: doc.clienteColor,
       // IDs de trazabilidad
       clienteId: doc.clienteId,
       vendedorId: doc.vendedorId,
-      dineroRecibido: doc.dineroRecibido,
-      cambio: doc.cambio,
       // Campos de trazabilidad adicionales
       codigoVenta: doc.codigoVenta,
       numeroVenta: doc.numeroVenta,
@@ -343,12 +310,9 @@ export class Venta implements IVenta {
       nombre: string;
       procedencia: ProcedenciaVenta;
       tipoPago?: TipoPagoVenta;
-      clienteColor?: string;
       // IDs de trazabilidad
       clienteId?: string;
       vendedorId?: string;
-      dineroRecibido?: number;
-      notas?: string;
       // Campos de trazabilidad adicionales
       codigoVenta?: string;
       numeroVenta?: string;
@@ -371,16 +335,14 @@ export class Venta implements IVenta {
       const { tasaImpuesto, aplicaImpuesto } = datosPago.configuracionFiscal;
       
       if (aplicaImpuesto && tasaImpuesto !== undefined) {
-        const baseImponible = carritoJSON.subtotal - (carritoJSON.descuentoTotal || 0);
+        const baseImponible = carritoJSON.subtotal;
         impuestoFinal = Math.round(baseImponible * tasaImpuesto * 100) / 100;
-        totalFinal = Math.round((carritoJSON.subtotal - (carritoJSON.descuentoTotal || 0) + impuestoFinal) * 100) / 100;
+        totalFinal = Math.round((carritoJSON.subtotal + impuestoFinal) * 100) / 100;
       } else if (!aplicaImpuesto) {
         impuestoFinal = 0;
-        totalFinal = Math.round((carritoJSON.subtotal - (carritoJSON.descuentoTotal || 0)) * 100) / 100;
+        totalFinal = Math.round(carritoJSON.subtotal * 100) / 100;
       }
     }
-    
-    const cambio = datosPago.dineroRecibido ? datosPago.dineroRecibido - totalFinal : undefined;
     
     return new Venta({
       id: `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
@@ -398,16 +360,11 @@ export class Venta implements IVenta {
       subtotal: carritoJSON.subtotal,
       impuesto: impuestoFinal,
       total: totalFinal,
-      descuentoTotal: carritoJSON.descuentoTotal,
-      notas: datosPago.notas,
       procedencia: datosPago.procedencia,
       tipoPago: datosPago.tipoPago,
-      clienteColor: datosPago.clienteColor,
       // IDs de trazabilidad
       clienteId: datosPago.clienteId || carritoJSON.clienteId,
       vendedorId: datosPago.vendedorId || carritoJSON.vendedorId,
-      dineroRecibido: datosPago.dineroRecibido,
-      cambio: cambio,
       // Campos de trazabilidad adicionales
       codigoVenta: datosPago.codigoVenta,
       numeroVenta: datosPago.numeroVenta,
@@ -497,26 +454,11 @@ export class VentaCalculator {
   }
 
   /**
-   * Calcula el total de descuentos de una venta
-   */
-  static calcularDescuentoTotal(items: ItemVenta[]): number {
-    return items.reduce((sum, item) => sum + (item.descuento || 0), 0);
-  }
-
-  /**
    * Calcula el total de una venta
    */
   static calcularTotalVenta(items: ItemVenta[], impuesto: number = 0): number {
     const subtotal = this.calcularSubtotalVenta(items);
-    const descuento = this.calcularDescuentoTotal(items);
-    return subtotal - descuento + impuesto;
-  }
-
-  /**
-   * Calcula el cambio a devolver
-   */
-  static calcularCambio(total: number, dineroRecibido: number): number {
-    return Math.max(0, dineroRecibido - total);
+    return subtotal + impuesto;
   }
 }
 
