@@ -306,24 +306,7 @@ export class Venta implements IVenta {
    */
   static fromShoppingCart(
     carritoJSON: IShoppingCart,
-    datosPago: {
-      nombre: string;
-      procedencia: ProcedenciaVenta;
-      tipoPago?: TipoPagoVenta;
-      // IDs de trazabilidad
-      clienteId?: string;
-      vendedorId?: string;
-      // Campos de trazabilidad adicionales
-      codigoVenta?: string;
-      numeroVenta?: string;
-      costoEnvio?: number;
-      // Nueva opción para sobrescribir configuración fiscal
-      configuracionFiscal?: {
-        tasaImpuesto?: number;
-        aplicaImpuesto?: boolean;
-        nombreImpuesto?: string;
-      };
-    }
+    
   ): Venta {
     const ahora = new Date();
     
@@ -331,8 +314,8 @@ export class Venta implements IVenta {
     let impuestoFinal = carritoJSON.impuesto;
     let totalFinal = carritoJSON.total;
     
-    if (datosPago.configuracionFiscal) {
-      const { tasaImpuesto, aplicaImpuesto } = datosPago.configuracionFiscal;
+    if (carritoJSON.configuracionFiscal) {
+      const { tasaImpuesto, aplicaImpuesto } = carritoJSON.configuracionFiscal;
       
       if (aplicaImpuesto && tasaImpuesto !== undefined) {
         const baseImponible = carritoJSON.subtotal;
@@ -346,7 +329,7 @@ export class Venta implements IVenta {
     
     return new Venta({
       id: `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      nombre: datosPago.nombre,
+      nombre: carritoJSON.,
       type: 'venta',
       estado: OrderState.DESPACHADO,
       fechaCreacion: ahora,
@@ -360,15 +343,15 @@ export class Venta implements IVenta {
       subtotal: carritoJSON.subtotal,
       impuesto: impuestoFinal,
       total: totalFinal,
-      procedencia: datosPago.procedencia,
-      tipoPago: datosPago.tipoPago,
+      procedencia: carritoJSON.procedencia,
+      tipoPago: carritoJSON.tipoPago,
       // IDs de trazabilidad
-      clienteId: datosPago.clienteId || carritoJSON.clienteId,
-      vendedorId: datosPago.vendedorId || carritoJSON.vendedorId,
+      clienteId: carritoJSON.clienteId || carritoJSON.clienteId,
+      vendedorId: carritoJSON.vendedorId || carritoJSON.vendedorId,
       // Campos de trazabilidad adicionales
-      codigoVenta: datosPago.codigoVenta,
-      numeroVenta: datosPago.numeroVenta,
-      costoEnvio: datosPago.costoEnvio
+      codigoVenta: carritoJSON.codigoVenta,
+      numeroVenta: carritoJSON.numeroVenta,
+      costoEnvio: carritoJSON.costoEnvio
     });
   }
 

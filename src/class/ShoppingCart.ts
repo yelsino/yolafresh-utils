@@ -48,6 +48,7 @@ export type TipoPagoVenta = 'Efectivo' | 'Digital' | 'Tarjeta';
 export interface IShoppingCart {
   id: string;
   fechaCreacion: Date;
+  nombre: string;
   items: CarItem[];
   subtotal: number;
   impuesto: number;
@@ -66,6 +67,7 @@ export interface IShoppingCart {
   metodoPago?: TipoPagoVenta;
   dineroRecibido?: number;
   procedencia?: ProcedenciaVenta;
+  configuracionFiscal?: ConfiguracionFiscal;
 }
 /**
  * Clase ShoppingCart - Maneja toda la lógica de una venta en curso
@@ -75,6 +77,7 @@ export interface IShoppingCart {
 export class ShoppingCart implements IShoppingCart {
   public readonly id: string;
   public readonly fechaCreacion: Date;
+  public readonly nombre: string;
   private _items: CarItem[] = [];
   private _notas?: string;
   private _configuracionFiscal: ConfiguracionFiscal;
@@ -92,7 +95,7 @@ export class ShoppingCart implements IShoppingCart {
   constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal) {
     this.id = id || `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     this.fechaCreacion = new Date();
-    
+    this.nombre = '';
     // Configuración fiscal por defecto (puede ser sobrescrita)
     this._configuracionFiscal = {
       tasaImpuesto: configuracionFiscal?.tasaImpuesto ?? 0, // Por defecto SIN impuesto
