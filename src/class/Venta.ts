@@ -329,7 +329,7 @@ export class Venta implements IVenta {
     
     return new Venta({
       id: `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      nombre: carritoJSON.,
+      nombre: carritoJSON.nombre,
       type: 'venta',
       estado: OrderState.DESPACHADO,
       fechaCreacion: ahora,
@@ -343,15 +343,15 @@ export class Venta implements IVenta {
       subtotal: carritoJSON.subtotal,
       impuesto: impuestoFinal,
       total: totalFinal,
-      procedencia: carritoJSON.procedencia,
-      tipoPago: carritoJSON.tipoPago,
+      procedencia: carritoJSON.procedencia || ProcedenciaVenta.Tienda,
+      tipoPago: carritoJSON.metodoPago,
       // IDs de trazabilidad
       clienteId: carritoJSON.clienteId || carritoJSON.clienteId,
       vendedorId: carritoJSON.vendedorId || carritoJSON.vendedorId,
       // Campos de trazabilidad adicionales
-      codigoVenta: carritoJSON.codigoVenta,
-      numeroVenta: carritoJSON.numeroVenta,
-      costoEnvio: carritoJSON.costoEnvio
+      codigoVenta: "",
+      numeroVenta: "",
+      costoEnvio: 0
     });
   }
 
