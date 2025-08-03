@@ -346,8 +346,8 @@ export class Venta implements IVenta {
       procedencia: carritoJSON.procedencia || ProcedenciaVenta.Tienda,
       tipoPago: carritoJSON.metodoPago,
       // IDs de trazabilidad
-      clienteId: carritoJSON.clienteId || carritoJSON.clienteId,
-      vendedorId: carritoJSON.vendedorId || carritoJSON.vendedorId,
+      clienteId: carritoJSON.clienteId,
+      vendedorId: carritoJSON.personalId,
       // Campos de trazabilidad adicionales
       codigoVenta: "",
       numeroVenta: "",

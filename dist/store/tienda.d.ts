@@ -1,4 +1,4 @@
-import { Carrito } from "@/interfaces/pedido";
+import { Carrito } from "../interfaces/pedido";
 declare class Store<T> {
     private state;
     private initialState;
