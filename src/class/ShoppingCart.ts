@@ -59,15 +59,17 @@ export interface IShoppingCart {
   notas?: string;
   tasaImpuesto: number;
   // Campos de trazabilidad
+  cliente?: Cliente;
+  personal?: Personal;
   clienteColor?: string;
-  // IDs de trazabilidad
-  clienteId?: string;
-  vendedorId?: string;
   // Datos de pago
   metodoPago?: TipoPagoVenta;
   dineroRecibido?: number;
   procedencia?: ProcedenciaVenta;
   configuracionFiscal?: ConfiguracionFiscal;
+  // IDs de compatibilidad (computed properties)
+  readonly clienteId?: string;
+  readonly personalId?: string;
 }
 /**
  * Clase ShoppingCart - Maneja toda la lógica de una venta en curso
@@ -84,7 +86,7 @@ export class ShoppingCart implements IShoppingCart {
   
   // === CAMPOS DE TRAZABILIDAD ===
   private _cliente?: Cliente;
-  private _vendedor?: Personal;
+  private _personal?: Personal;
   private _clienteColor?: string;
   
   // === DATOS DE PAGO ===
@@ -92,10 +94,10 @@ export class ShoppingCart implements IShoppingCart {
   private _dineroRecibido?: number;
   private _procedencia?: ProcedenciaVenta;
 
-  constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal) {
+  constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal, nombre?: string) {
     this.id = id || `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     this.fechaCreacion = new Date();
-    this.nombre = '';
+    this.nombre = nombre || `Carrito-${Date.now()}`;
     // Configuración fiscal por defecto (puede ser sobrescrita)
     this._configuracionFiscal = {
       tasaImpuesto: configuracionFiscal?.tasaImpuesto ?? 0, // Por defecto SIN impuesto
@@ -441,12 +443,12 @@ export class ShoppingCart implements IShoppingCart {
     this._cliente = value;
   }
 
-  get vendedor(): Personal | undefined {
-    return this._vendedor;
+  get personal(): Personal | undefined {
+    return this._personal;
   }
 
-  set vendedor(value: Personal | undefined) {
-    this._vendedor = value;
+  set personal(value: Personal | undefined) {
+    this._personal = value;
   }
 
   get clienteColor(): string | undefined {
@@ -463,8 +465,8 @@ export class ShoppingCart implements IShoppingCart {
     return this._cliente?.id;
   }
 
-  get vendedorId(): string | undefined {
-    return this._vendedor?.id;
+  get personalId(): string | undefined {
+    return this._personal?.id;
   }
 
   /**
@@ -472,11 +474,11 @@ export class ShoppingCart implements IShoppingCart {
    */
   configurarTrazabilidad(datos: {
     cliente?: Cliente;
-    vendedor?: Personal;
+    personal?: Personal;
     clienteColor?: string;
   }): void {
     this._cliente = datos.cliente;
-    this._vendedor = datos.vendedor;
+    this._personal = datos.personal;
     this._clienteColor = datos.clienteColor;
   }
 
@@ -486,15 +488,15 @@ export class ShoppingCart implements IShoppingCart {
    */
   configurarTrazabilidadPorIds(datos: {
     clienteId?: string;
-    vendedorId?: string;
+    personalId?: string;
     clienteColor?: string;
   }): void {
     // Este método mantiene compatibilidad pero se recomienda usar objetos completos
     if (datos.clienteId && this._cliente?.id !== datos.clienteId) {
       console.warn('Se está configurando clienteId sin objeto Cliente completo');
     }
-    if (datos.vendedorId && this._vendedor?.id !== datos.vendedorId) {
-      console.warn('Se está configurando vendedorId sin objeto Personal completo');
+    if (datos.personalId && this._personal?.id !== datos.personalId) {
+      console.warn('Se está configurando personalId sin objeto Personal completo');
     }
     this._clienteColor = datos.clienteColor;
   }
@@ -592,6 +594,7 @@ export class ShoppingCart implements IShoppingCart {
     return {
       id: this.id,
       fechaCreacion: this.fechaCreacion.toISOString(),
+      nombre: this.nombre,
       // Congelar los CarItems tal como están
       items: this._items.map(item => ({
         ...item,
@@ -606,7 +609,7 @@ export class ShoppingCart implements IShoppingCart {
       clienteColor: this._clienteColor,
       // IDs de trazabilidad
       clienteId: this._cliente?.id,
-      vendedorId: this._vendedor?.id,
+      personalId: this._personal?.id,
       // Datos de pago
       metodoPago: this._metodoPago,
       dineroRecibido: this._dineroRecibido,
@@ -623,7 +626,7 @@ export class ShoppingCart implements IShoppingCart {
       tasaImpuesto: data.tasaImpuesto,
       aplicaImpuesto: data.aplicaImpuesto,
       nombreImpuesto: data.nombreImpuesto
-    });
+    }, data.nombre);
     
     // Los items ya vienen como CarItems congelados
     venta._items = data.items || [];
@@ -641,8 +644,8 @@ export class ShoppingCart implements IShoppingCart {
     if (data.clienteId) {
       venta._cliente = { id: data.clienteId } as Cliente;
     }
-    if (data.vendedorId) {
-      venta._vendedor = { id: data.vendedorId } as Personal;
+    if (data.personalId) {
+      venta._personal = { id: data.personalId } as Personal;
     }
     
     return venta;
@@ -660,68 +663,68 @@ export class ShoppingCart implements IShoppingCart {
   /**
    * Crear ShoppingCart para Perú (IGV 18%)
    */
-  static paraPeru(id?: string): ShoppingCart {
-    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.PERU);
+  static paraPeru(id?: string, nombre?: string): ShoppingCart {
+    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.PERU, nombre);
   }
 
   /**
    * Crear ShoppingCart para México (IVA 16%)
    */
-  static paraMexico(id?: string): ShoppingCart {
-    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.MEXICO);
+  static paraMexico(id?: string, nombre?: string): ShoppingCart {
+    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.MEXICO, nombre);
   }
 
   /**
    * Crear ShoppingCart para Colombia (IVA 19%)
    */
-  static paraColombia(id?: string): ShoppingCart {
-    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.COLOMBIA);
+  static paraColombia(id?: string, nombre?: string): ShoppingCart {
+    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.COLOMBIA, nombre);
   }
 
   /**
    * Crear ShoppingCart para Argentina (IVA 21%)
    */
-  static paraArgentina(id?: string): ShoppingCart {
-    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.ARGENTINA);
+  static paraArgentina(id?: string, nombre?: string): ShoppingCart {
+    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.ARGENTINA, nombre);
   }
 
   /**
    * Crear ShoppingCart para España (IVA 21%)
    */
-  static paraEspana(id?: string): ShoppingCart {
-    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.ESPANA);
+  static paraEspana(id?: string, nombre?: string): ShoppingCart {
+    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.ESPANA, nombre);
   }
 
   /**
    * Crear ShoppingCart sin impuestos
    */
-  static sinImpuestos(id?: string): ShoppingCart {
-    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.SIN_IMPUESTOS);
+  static sinImpuestos(id?: string, nombre?: string): ShoppingCart {
+    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.SIN_IMPUESTOS, nombre);
   }
 
   /**
    * Crear ShoppingCart con configuración personalizada
    */
-  static conConfiguracion(configuracion: ConfiguracionFiscal, id?: string): ShoppingCart {
-    return new ShoppingCart(id, configuracion);
+  static conConfiguracion(configuracion: ConfiguracionFiscal, id?: string, nombre?: string): ShoppingCart {
+    return new ShoppingCart(id, configuracion, nombre);
   }
 
   /**
    * Crear ShoppingCart para cualquier país disponible
    */
-  static paraPais(pais: keyof typeof CONFIGURACIONES_FISCALES, id?: string): ShoppingCart {
+  static paraPais(pais: keyof typeof CONFIGURACIONES_FISCALES, id?: string, nombre?: string): ShoppingCart {
     const config = CONFIGURACIONES_FISCALES[pais];
     if (typeof config === 'function') {
       throw new Error(`Use ShoppingCart.personalizado() para configuraciones personalizadas`);
     }
-    return new ShoppingCart(id, config);
+    return new ShoppingCart(id, config, nombre);
   }
 
   /**
    * Crear ShoppingCart con tasa personalizada
    */
-  static personalizado(tasaImpuesto: number, nombreImpuesto: string = 'Impuesto', id?: string): ShoppingCart {
+  static personalizado(tasaImpuesto: number, nombreImpuesto: string = 'Impuesto', id?: string, nombre?: string): ShoppingCart {
     const config = CONFIGURACIONES_FISCALES.PERSONALIZADO(tasaImpuesto, nombreImpuesto);
-    return new ShoppingCart(id, config);
+    return new ShoppingCart(id, config, nombre);
   }
 }

@@ -5,7 +5,15 @@ Esta librería proporciona clases completamente reutilizables para crear sistema
 ## 🚀 Instalación y Uso Básico
 
 ```typescript
-import { ShoppingCart, Venta, ConfiguracionFiscal } from 'yola-fresh-utils';
+import { 
+  ShoppingCart, 
+  Venta, 
+  ConfiguracionFiscal,
+  Cliente,
+  Personal,
+  CargosPersonal,
+  ProcedenciaVenta
+} from 'yola-fresh-utils';
 ```
 
 ## 🛒 ShoppingCart - Carrito de Compras
@@ -14,22 +22,22 @@ import { ShoppingCart, Venta, ConfiguracionFiscal } from 'yola-fresh-utils';
 
 ```typescript
 // Para Perú (IGV 18%)
-const carritoPeru = ShoppingCart.paraPeru();
+const carritoPeru = ShoppingCart.paraPeru('carrito-001', 'Mesa 5');
 
 // Para México (IVA 16%)
-const carritoMexico = ShoppingCart.paraMexico();
+const carritoMexico = ShoppingCart.paraMexico('carrito-002', 'Venta Mostrador');
 
 // Para Colombia (IVA 19%)
-const carritoColombia = ShoppingCart.paraColombia();
+const carritoColombia = ShoppingCart.paraColombia('carrito-003', 'Pedido Web');
 
 // Para Argentina (IVA 21%)
-const carritoArgentina = ShoppingCart.paraArgentina();
+const carritoArgentina = ShoppingCart.paraArgentina('carrito-004', 'Cliente Premium');
 
 // Sin impuestos
-const carritoSinImpuestos = ShoppingCart.sinImpuestos();
+const carritoSinImpuestos = ShoppingCart.sinImpuestos('carrito-005', 'Servicio Local');
 
 // Cualquier país disponible
-const carritoEspana = ShoppingCart.paraPais('ESPANA');
+const carritoEspana = ShoppingCart.paraPais('ESPANA', 'carrito-006', 'Exportación');
 ```
 
 ### Configuración Personalizada
@@ -64,6 +72,42 @@ const carItem = {
 };
 
 carrito.agregarProducto(carItem);
+
+// Configurar cliente y vendedor
+const cliente: Cliente = {
+  id: 'cliente-001',
+  nombres: 'Juan Pérez',
+  fechaRegistro: new Date(),
+  celular: '999123456',
+  correo: 'juan@email.com',
+  dni: '12345678',
+  direccion: 'Av. Lima 123',
+  pseudonimo: 'Juanito'
+};
+
+const personal: Personal = {
+  id: 'personal-001',
+  nombres: 'María González',
+  cargo: CargosPersonal.VENDEDOR,
+  username: 'mgonzalez',
+  password: 'password123',
+  dni: '87654321',
+  celular: '999654321',
+  direccion: 'Jr. Cusco 456',
+  registro: new Date()
+};
+
+carrito.configurarTrazabilidad({
+  cliente,
+  personal,
+  clienteColor: '#FF5733'
+});
+
+carrito.configurarPago({
+  metodoPago: 'Efectivo',
+  procedencia: ProcedenciaVenta.Tienda,
+  dineroRecibido: 100
+});
 ```
 
 ### Gestionar Impuestos en Tiempo Real

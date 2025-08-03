@@ -4,7 +4,8 @@ export enum CargosPersonal {
   SECRETARIO = 'SECRETARIO',
   ADMINISTRATIVO = 'ADMINISTRATIVO',
   REPONEDOR = 'REPONEDOR',
-  CAJERO = 'CAJERO'
+  CAJERO = 'CAJERO',
+  VENDEDOR = 'VENDEDOR'
 }
 
 export interface Personal {
@@ -18,6 +19,7 @@ export interface Personal {
     direccion: string;
     registro: Date
   }
+
 
   export interface Cliente {
     id?: string;
@@ -44,6 +46,7 @@ export interface Personal {
     tipoDocumento: string;
     document: string;
     idExterno: string;
+
   }
 
   export interface ValuesPersonals {
