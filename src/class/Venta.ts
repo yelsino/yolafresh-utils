@@ -310,7 +310,7 @@ export class Venta implements IVenta {
   ): Venta {
     const ahora = new Date();
     
-    // Si se proporciona configuración fiscal, recalcular el impuesto
+    // Si se proporciona configuestra fiscal, recalcular el impuesto
     let impuestoFinal = carritoJSON.impuesto;
     let totalFinal = carritoJSON.total;
     
@@ -329,13 +329,18 @@ export class Venta implements IVenta {
     
     return new Venta({
       id: `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      nombre: carritoJSON.nombre,
+      nombre: carritoJSON.nombre || `Venta-${Date.now()}`,
       type: 'venta',
       estado: OrderState.DESPACHADO,
       fechaCreacion: ahora,
       fechaActualizacion: ahora,
       detalleVenta: {
         ...carritoJSON,
+        // 🔧 FIX: Preservar objetos completos del cliente y personal
+        cliente: carritoJSON.cliente,
+        personal: carritoJSON.personal,
+        clienteId: carritoJSON.clienteId,
+        personalId: carritoJSON.personalId,
         // Actualizar con los valores finales
         impuesto: impuestoFinal,
         total: totalFinal
@@ -345,9 +350,9 @@ export class Venta implements IVenta {
       total: totalFinal,
       procedencia: carritoJSON.procedencia || ProcedenciaVenta.Tienda,
       tipoPago: carritoJSON.metodoPago,
-      // IDs de trazabilidad
+      // 🔧 FIX: IDs de trazabilidad corregidos
       clienteId: carritoJSON.clienteId,
-      vendedorId: carritoJSON.personalId,
+      vendedorId: carritoJSON.personalId, // ✅ Correcto: personalId del carrito
       // Campos de trazabilidad adicionales
       codigoVenta: "",
       numeroVenta: "",
