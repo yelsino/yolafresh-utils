@@ -125,7 +125,7 @@ export interface Ingreso {
    * Estado actual del ingreso
    * @description Indica el estado del procesamiento del ingreso
    */
-  estadiIngreso: EstadoIngreso;
+  estadoIngreso: EstadoIngreso;
   
   /** 
    * Método de pago utilizado (opcional)
