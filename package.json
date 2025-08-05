@@ -1,7 +1,35 @@
 {
   "name": "yola-fresh-utils",
   "version": "1.0.2",
-  "description": "Utility library for Yola Fresh projects",
+  "description": "🛒 Sistema POS completo y reutilizable con soporte fiscal para múltiples países. Incluye carrito de compras, gestión de ventas y configuraciones fiscales predefinidas.",
+  "keywords": [
+    "pos",
+    "punto-de-venta",
+    "carrito-compras",
+    "ecommerce",
+    "typescript",
+    "fiscal",
+    "igv",
+    "iva",
+    "peru",
+    "mexico",
+    "colombia",
+    "restaurant",
+    "retail"
+  ],
+  "homepage": "https://github.com/tu-usuario/yola-fresh-utils#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tu-usuario/yola-fresh-utils.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tu-usuario/yola-fresh-utils/issues"
+  },
+  "author": {
+    "name": "Tu Nombre",
+    "email": "tu-email@ejemplo.com"
+  },
+  "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "typings": "dist/index.d.ts",
@@ -41,27 +69,10 @@
     "generate-exports": "cd scripts && npx ts-node generate-exports.ts && cd ..",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [
-    "utilities",
-    "typescript",
-    "formatting",
-    "dates",
-    "text"
-  ],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.11",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/yourusername/yola-fresh-utils.git"
-  },
-  "bugs": {
-    "url": "https://github.com/yourusername/yola-fresh-utils/issues"
-  },
-  "homepage": "https://github.com/yourusername/yola-fresh-utils#readme"
+  }
 }

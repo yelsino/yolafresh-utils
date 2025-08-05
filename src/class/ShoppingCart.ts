@@ -9,16 +9,82 @@ import { Cliente, Personal } from "@/interfaces/persons";
 import { TipoVentaEnum } from "@/utils";
 import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "@/utils/fiscales";
 
+/**
+ * Representa un ítem individual en el carrito de compras
+ * 
+ * @description Contiene toda la información necesaria para un producto
+ * en el carrito, incluyendo cantidad, precios y configuraciones especiales
+ * 
+ * @example
+ * ```typescript
+ * const item: CarItem = {
+ *   id: 'item-001',
+ *   product: { id: 'prod-001', nombre: 'Manzana', precio: 5.50 },
+ *   quantity: 2.5,
+ *   peso: 2.5, // Para productos pesables
+ *   tipoVenta: TipoVentaEnum.Kilogramo
+ * };
+ * ```
+ */
 export interface CarItem {
-  id: string; // ID único para cada ítem del carrito
+  /** 
+   * Identificador único para cada ítem del carrito
+   * @description Se genera automáticamente para diferenciar items del mismo producto
+   */
+  id: string;
+  
+  /** 
+   * Información completa del producto
+   * @description Contiene todos los datos del producto (nombre, precio, etc.)
+   */
   product: Producto;
+  
+  /** 
+   * Cantidad del producto
+   * @description Para productos pesables, representa el peso
+   * @minimum 0.001
+   */
   quantity: number;
-  precioUnitario?: number; // Precio unitario configurado
-  montoModificado?: boolean; // Si el monto fue modificado manualmente
-  montoTotal?: number | null; // Monto total a pagar
-  tipoVenta?: TipoVentaEnum; // Tipo de venta (kg, unidad, etc.)
-  peso?: number; // Peso para productos pesables
-  descuento?: number; // Descuento aplicado al ítem
+  
+  /** 
+   * Precio unitario configurado (opcional)
+   * @description Si se proporciona, sobrescribe el precio del producto
+   * @minimum 0
+   */
+  precioUnitario?: number;
+  
+  /** 
+   * Indica si el monto fue modificado manualmente
+   * @description Cuando es true, el montoTotal no se recalcula automáticamente
+   */
+  montoModificado?: boolean;
+  
+  /** 
+   * Monto total a pagar por este ítem
+   * @description Se calcula automáticamente o se puede establecer manualmente
+   * @minimum 0
+   */
+  montoTotal?: number | null;
+  
+  /** 
+   * Tipo de venta del producto (opcional)
+   * @description Determina cómo se vende: por unidad, kilogramo, litro, etc.
+   */
+  tipoVenta?: TipoVentaEnum;
+  
+  /** 
+   * Peso para productos pesables (opcional)
+   * @description Solo se usa cuando el producto se vende por peso
+   * @minimum 0
+   */
+  peso?: number;
+  
+  /** 
+   * Descuento aplicado al ítem (opcional)
+   * @description Monto a descontar del total del ítem
+   * @minimum 0
+   */
+  descuento?: number;
 }
 
 /**
@@ -45,30 +111,173 @@ export enum ProcedenciaVenta {
  */
 export type TipoPagoVenta = 'Efectivo' | 'Digital' | 'Tarjeta';
 
+/**
+ * Interfaz principal del carrito de compras
+ * 
+ * @description Define la estructura completa de un carrito de compras,
+ * incluyendo items, cálculos, trazabilidad y configuración fiscal
+ * 
+ * @example
+ * ```typescript
+ * const carrito: IShoppingCart = {
+ *   id: 'cart-001',
+ *   fechaCreacion: new Date(),
+ *   nombre: 'Venta Mostrador',
+ *   items: [item1, item2],
+ *   subtotal: 100.00,
+ *   impuesto: 18.00,
+ *   total: 118.00,
+ *   descuentoTotal: 0,
+ *   cantidadItems: 2,
+ *   cantidadTotal: 5,
+ *   tasaImpuesto: 0.18
+ * };
+ * ```
+ */
 export interface IShoppingCart {
+  /** 
+   * Identificador único del carrito
+   * @description Se genera automáticamente al crear el carrito
+   */
   id: string;
+  
+  /** 
+   * Fecha y hora de creación del carrito
+   * @description Se establece automáticamente al instanciar
+   */
   fechaCreacion: Date;
+  
+  /** 
+   * Nombre descriptivo del carrito
+   * @description Ayuda a identificar el propósito del carrito
+   * @example "Mesa 5", "Venta Mostrador", "Pedido Web #123"
+   */
   nombre: string;
+  
+  /** 
+   * Lista de productos en el carrito
+   * @description Array de todos los items agregados al carrito
+   */
   items: CarItem[];
+  
+  /** 
+   * Subtotal sin impuestos ni descuentos
+   * @description Suma de todos los montos de los items
+   * @minimum 0
+   */
   subtotal: number;
+  
+  /** 
+   * Monto total de impuestos
+   * @description Se calcula automáticamente según la configuración fiscal
+   * @minimum 0
+   */
   impuesto: number;
+  
+  /** 
+   * Total final a pagar
+   * @description Subtotal + impuestos - descuentos
+   * @minimum 0
+   */
   total: number;
+  
+  /** 
+   * Total de descuentos aplicados
+   * @description Suma de todos los descuentos de los items
+   * @minimum 0
+   */
   descuentoTotal: number;
+  
+  /** 
+   * Cantidad de items únicos en el carrito
+   * @description Número de elementos diferentes en el array items
+   * @minimum 0
+   */
   cantidadItems: number;
+  
+  /** 
+   * Cantidad total de productos
+   * @description Suma de las cantidades de todos los items
+   * @minimum 0
+   */
   cantidadTotal: number;
+  
+  /** 
+   * Notas adicionales del carrito (opcional)
+   * @description Comentarios o instrucciones especiales
+   */
   notas?: string;
+  
+  /** 
+   * Tasa de impuesto aplicada
+   * @description Valor entre 0 y 1 (ej: 0.18 para 18%)
+   * @minimum 0
+   * @maximum 1
+   */
   tasaImpuesto: number;
-  // Campos de trazabilidad
+  
+  // === CAMPOS DE TRAZABILIDAD ===
+  
+  /** 
+   * Información completa del cliente (opcional)
+   * @description Objeto completo con todos los datos del cliente
+   */
   cliente?: Cliente;
+  
+  /** 
+   * Información completa del personal (opcional)
+   * @description Datos del empleado que maneja la venta
+   */
   personal?: Personal;
+  
+  /** 
+   * Color identificativo del cliente (opcional)
+   * @description Color hexadecimal para identificación visual
+   * @example "#FF5733", "#00FF00"
+   */
   clienteColor?: string;
-  // Datos de pago
+  
+  // === DATOS DE PAGO ===
+  
+  /** 
+   * Método de pago seleccionado (opcional)
+   * @description Forma en que se realizará el pago
+   */
   metodoPago?: TipoPagoVenta;
+  
+  /** 
+   * Dinero recibido del cliente (opcional)
+   * @description Monto entregado por el cliente
+   * @minimum 0
+   */
   dineroRecibido?: number;
+  
+  /** 
+   * Procedencia de la venta (opcional)
+   * @description Canal o lugar donde se originó la venta
+   */
   procedencia?: ProcedenciaVenta;
+  
+  /** 
+   * Configuración fiscal aplicada (opcional)
+   * @description Settings de impuestos y cálculos fiscales
+   */
   configuracionFiscal?: ConfiguracionFiscal;
-  // IDs de compatibilidad (computed properties)
+  
+  // === IDS DE COMPATIBILIDAD ===
+  
+  /** 
+   * ID del cliente (solo lectura)
+   * @description Se obtiene automáticamente del objeto cliente
+   * @readonly
+   */
   readonly clienteId?: string;
+  
+  /** 
+   * ID del personal (solo lectura)
+   * @description Se obtiene automáticamente del objeto personal
+   * @readonly
+   */
   readonly personalId?: string;
 }
 /**
