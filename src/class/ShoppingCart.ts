@@ -397,7 +397,7 @@ export class ShoppingCart implements IShoppingCart {
       // No normalizar quantity para pesables (preservar decimales). No pesables: entero >= 1
       quantity: esPesable
         ? (typeof carItem.quantity === 'number' ? carItem.quantity : (itemExistente.quantity ?? 1))
-        : Math.max(1, Math.round(carItem.quantity ?? 1)),
+        : Number(carItem.quantity ?? itemExistente.quantity ?? 1),
       precioUnitario: unit,
       montoModificado: !!carItem.montoModificado,
       // tipoVenta preferentemente del item, sino del producto
@@ -434,7 +434,7 @@ export class ShoppingCart implements IShoppingCart {
       product: carItem.product,
       quantity: esPesable
         ? (typeof carItem.quantity === 'number' ? carItem.quantity : 1)
-        : Math.max(1, Math.round(carItem.quantity ?? 1)),
+        : Number(carItem.quantity ?? 1),
       precioUnitario: unit,
       montoModificado: !!carItem.montoModificado,
       tipoVenta: (carItem.tipoVenta ?? (carItem.product.tipoVenta as TipoVentaEnum)),
@@ -461,7 +461,7 @@ export class ShoppingCart implements IShoppingCart {
     const unit = Number(carItem.precioUnitario ?? (carItem.product?.precio ?? 0)) || 0;
     const esPesable = this.esProductoPesable(((carItem.tipoVenta ?? carItem.product?.tipoVenta) as TipoVentaEnum));
     const peso = esPesable ? Number(carItem.peso ?? carItem.quantity ?? 0) : undefined;
-    const qty = esPesable ? 0 : Math.max(1, Math.round(Number(carItem.quantity || 0)));
+    const qty = esPesable ? 0 : Math.max(0, Number(carItem.quantity ?? 0));
     const base = esPesable ? unit * (peso || 0) : unit * qty;
     return Math.round(base * 100) / 100;
   }
@@ -499,7 +499,7 @@ export class ShoppingCart implements IShoppingCart {
       const newPeso = currentPeso + stepKg;
       updated.peso = newPeso;
     } else {
-      const currentQty = Math.max(1, Math.round(item.quantity || 0));
+      const currentQty = Number(item.quantity ?? 0);
       updated.quantity = currentQty + 1;
     }
 
@@ -534,7 +534,7 @@ export class ShoppingCart implements IShoppingCart {
       this._items[index] = updated;
       return true;
     } else {
-      const currentQty = Math.max(1, Math.round(item.quantity || 0));
+      const currentQty = Number(item.quantity ?? 0);
       const newQty = currentQty - 1;
       if (newQty <= 0) {
         this._items.splice(index, 1);
