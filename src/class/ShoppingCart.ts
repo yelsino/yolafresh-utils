@@ -394,10 +394,10 @@ export class ShoppingCart implements IShoppingCart {
       ...itemExistente,
       id: itemExistente.id,
       product: carItem.product,
-      // No normalizar quantity para pesables (no participa en cálculo). Para no pesables: entero >= 1
+      // No normalizar quantity para pesables (preservar decimales). No pesables: entero >= 1
       quantity: esPesable
-        ? (typeof carItem.quantity === 'number' ? Math.max(1, Math.round(carItem.quantity)) : (itemExistente.quantity || 1))
-        : Math.max(1, Math.round(carItem.quantity || 1)),
+        ? (typeof carItem.quantity === 'number' ? carItem.quantity : (itemExistente.quantity ?? 1))
+        : Math.max(1, Math.round(carItem.quantity ?? 1)),
       precioUnitario: unit,
       montoModificado: !!carItem.montoModificado,
       // tipoVenta preferentemente del item, sino del producto
@@ -433,8 +433,8 @@ export class ShoppingCart implements IShoppingCart {
       id: itemId,
       product: carItem.product,
       quantity: esPesable
-        ? (typeof carItem.quantity === 'number' ? Math.max(1, Math.round(carItem.quantity)) : 1)
-        : Math.max(1, Math.round(carItem.quantity || 1)),
+        ? (typeof carItem.quantity === 'number' ? carItem.quantity : 1)
+        : Math.max(1, Math.round(carItem.quantity ?? 1)),
       precioUnitario: unit,
       montoModificado: !!carItem.montoModificado,
       tipoVenta: (carItem.tipoVenta ?? (carItem.product.tipoVenta as TipoVentaEnum)),
@@ -830,7 +830,7 @@ export class ShoppingCart implements IShoppingCart {
   /**
    * Validar si la venta puede procesarse
    */
-  puedeProcesamse(): boolean {
+  puedeProcesarse(): boolean {
     return !this.estaVacia && this.total > 0;
   }
 
