@@ -362,18 +362,14 @@ export class ShoppingCart implements IShoppingCart {
     // Generar ID único para el nuevo ítem
     const nuevoItemId = carItem.id || `${carItem.product.id}-${Date.now()}`;
 
-    // Buscar ítem existente si estamos en modo edición
+    // Buscar ítem existente SOLO por itemId para evitar colisiones por productId
     let itemExistente: CarItem | undefined = undefined;
-    if (replaceCompletely) {
-      if (itemId) {
-        itemExistente = this._items.find(item => item.id === itemId);
-      } else {
-        itemExistente = this._items.find(item => item.product.id === carItem.product.id);
-      }
+    if (replaceCompletely && itemId) {
+      itemExistente = this._items.find(item => item.id === itemId);
     }
 
-    // Verificar si el producto es pesable
-    const esPesable = this.esProductoPesable(carItem.product.tipoVenta as TipoVentaEnum);
+    // Verificar si el producto es pesable considerando overrides en el item
+    const esPesable = this.esProductoPesable((carItem.tipoVenta ?? carItem.product.tipoVenta) as TipoVentaEnum);
 
     // Procesar según el caso
     if (itemExistente && replaceCompletely && !fromSelection) {
@@ -387,22 +383,38 @@ export class ShoppingCart implements IShoppingCart {
    * Actualizar un ítem existente
    */
   private actualizarItemExistente(itemExistente: CarItem, carItem: CarItem, esPesable: boolean): void {
-    const precioUnitario = carItem.precioUnitario || carItem.product.precio;
-    const peso = esPesable ? (carItem.peso || carItem.quantity) : undefined;
-    const montoTotal = this.calcularMontoTotal(carItem, precioUnitario, esPesable, peso);
+    const unit = Number(carItem.precioUnitario ?? carItem.product.precio) || 0;
+
+    // Compatibilidad legacy: si es pesable y no hay peso, pero quantity es decimal, interpretarlo como peso
+    const legacyPeso = esPesable && (carItem.peso == null) && typeof carItem.quantity === 'number' && !Number.isInteger(carItem.quantity)
+      ? Number(carItem.quantity)
+      : undefined;
+
+    const prepared: CarItem = {
+      ...itemExistente,
+      id: itemExistente.id,
+      product: carItem.product,
+      // No normalizar quantity para pesables (no participa en cálculo). Para no pesables: entero >= 1
+      quantity: esPesable
+        ? (typeof carItem.quantity === 'number' ? Math.max(1, Math.round(carItem.quantity)) : (itemExistente.quantity || 1))
+        : Math.max(1, Math.round(carItem.quantity || 1)),
+      precioUnitario: unit,
+      montoModificado: !!carItem.montoModificado,
+      // tipoVenta preferentemente del item, sino del producto
+      tipoVenta: (carItem.tipoVenta ?? (carItem.product.tipoVenta as TipoVentaEnum)),
+      // Peso solo para pesables; usar peso proporcionado o legacy
+      peso: esPesable ? Number(carItem.peso ?? legacyPeso ?? itemExistente.peso ?? itemExistente.quantity ?? 0) : undefined,
+      descuento: carItem.descuento ?? (itemExistente as any).descuento
+    } as CarItem;
+
+    // Calcular total respetando overrides
+    prepared.montoTotal = (prepared.montoModificado && carItem.montoTotal != null)
+      ? carItem.montoTotal as number
+      : this.calcularTotalLinea(prepared);
 
     const index = this._items.findIndex(item => item.id === itemExistente.id);
     if (index !== -1) {
-      this._items[index] = {
-        ...itemExistente,
-        product: carItem.product,  // Mantener producto completo
-        quantity: carItem.quantity,
-        precioUnitario,
-        montoModificado: carItem.montoModificado || false,
-        montoTotal,
-        tipoVenta: carItem.tipoVenta || (carItem.product.tipoVenta as TipoVentaEnum),
-        peso,
-      };
+      this._items[index] = prepared;
     }
   }
 
@@ -410,49 +422,48 @@ export class ShoppingCart implements IShoppingCart {
    * Agregar nuevo ítem
    */
   private agregarNuevoItem(carItem: CarItem, itemId: string, esPesable: boolean): void {
-    const cantidad = Math.max(carItem.quantity, 1);
-    const precioUnitario = carItem.precioUnitario || carItem.product.precio;
-    const peso = esPesable ? (carItem.peso || cantidad) : undefined;
-    const montoTotal = this.calcularMontoTotal(carItem, precioUnitario, esPesable, peso);
+    const unit = Number(carItem.precioUnitario ?? carItem.product.precio) || 0;
 
-    const nuevoItem: CarItem = {
+    // Compatibilidad legacy: si es pesable y no hay peso, pero quantity es decimal, interpretarlo como peso
+    const legacyPeso = esPesable && (carItem.peso == null) && typeof carItem.quantity === 'number' && !Number.isInteger(carItem.quantity)
+      ? Number(carItem.quantity)
+      : undefined;
+
+    const prepared: CarItem = {
       id: itemId,
-      product: carItem.product,  // Producto completo
-      quantity: cantidad,
-      precioUnitario,
-      montoModificado: carItem.montoModificado || false,
-      montoTotal,
-      tipoVenta: carItem.tipoVenta || (carItem.product.tipoVenta as TipoVentaEnum),
-      peso,
-    };
+      product: carItem.product,
+      quantity: esPesable
+        ? (typeof carItem.quantity === 'number' ? Math.max(1, Math.round(carItem.quantity)) : 1)
+        : Math.max(1, Math.round(carItem.quantity || 1)),
+      precioUnitario: unit,
+      montoModificado: !!carItem.montoModificado,
+      tipoVenta: (carItem.tipoVenta ?? (carItem.product.tipoVenta as TipoVentaEnum)),
+      peso: esPesable ? Number(carItem.peso ?? legacyPeso ?? carItem.quantity ?? 0) : undefined,
+      descuento: carItem.descuento
+    } as CarItem;
 
-    this._items.push(nuevoItem);
+    prepared.montoTotal = (prepared.montoModificado && carItem.montoTotal != null)
+      ? carItem.montoTotal as number
+      : this.calcularTotalLinea(prepared);
+
+    this._items.push(prepared);
   }
 
   /**
    * Calcular monto total de un ítem
    */
-  private calcularMontoTotal(
-    carItem: CarItem,
-    precioUnitario: number,
-    esPesable: boolean,
-    peso?: number
-  ): number {
-    // Si el monto fue modificado manualmente
-    if (carItem.montoModificado && carItem.montoTotal !== null && carItem.montoTotal !== undefined) {
-      return carItem.montoTotal;
+  private calcularTotalLinea(carItem: CarItem): number {
+    // Respetar overrides manuales
+    if (carItem.montoModificado && carItem.montoTotal != null) {
+      return Number(carItem.montoTotal);
     }
 
-    // Calcular según tipo de producto
-    let montoSinRedondear: number;
-    if (esPesable) {
-      montoSinRedondear = precioUnitario * (peso || carItem.quantity);
-    } else {
-      montoSinRedondear = precioUnitario * carItem.quantity;
-    }
-
-    // Redondear a dos decimales
-    return Math.round(montoSinRedondear * 100) / 100;
+    const unit = Number(carItem.precioUnitario ?? (carItem.product?.precio ?? 0)) || 0;
+    const esPesable = this.esProductoPesable(((carItem.tipoVenta ?? carItem.product?.tipoVenta) as TipoVentaEnum));
+    const peso = esPesable ? Number(carItem.peso ?? carItem.quantity ?? 0) : undefined;
+    const qty = esPesable ? 0 : Math.max(1, Math.round(Number(carItem.quantity || 0)));
+    const base = esPesable ? unit * (peso || 0) : unit * qty;
+    return Math.round(base * 100) / 100;
   }
 
   /**
@@ -471,37 +482,67 @@ export class ShoppingCart implements IShoppingCart {
   /**
    * Incrementar cantidad de un producto
    */
-  incrementarCantidad(productId: string): boolean {
-    const index = this._items.findIndex(item => item.product.id === productId);
+  incrementarCantidad(id: string, stepKg: number = 0.1): boolean {
+    // Buscar primero por itemId y luego por productId para compatibilidad
+    let index = this._items.findIndex(item => item.id === id);
+    if (index === -1) {
+      index = this._items.findIndex(item => item.product.id === id);
+    }
     if (index === -1) return false;
 
     const item = this._items[index];
-    this._items[index] = {
-      ...item,
-      quantity: item.quantity + 1,
-      montoTotal: this.recalcularMontoItem(item, item.quantity + 1)
-    };
+    const esPesable = this.esProductoPesable((item.tipoVenta ?? item.product.tipoVenta) as TipoVentaEnum);
+
+    const updated: CarItem = { ...item };
+    if (esPesable) {
+      const currentPeso = Number(item.peso ?? item.quantity ?? 0);
+      const newPeso = currentPeso + stepKg;
+      updated.peso = newPeso;
+    } else {
+      const currentQty = Math.max(1, Math.round(item.quantity || 0));
+      updated.quantity = currentQty + 1;
+    }
+
+    updated.montoTotal = item.montoModificado ? (item.montoTotal || 0) : this.calcularTotalLinea(updated);
+    this._items[index] = updated;
     return true;
   }
 
   /**
    * Decrementar cantidad de un producto
    */
-  decrementarCantidad(productId: string): boolean {
-    const index = this._items.findIndex(item => item.product.id === productId);
+  decrementarCantidad(id: string, stepKg: number = 0.1): boolean {
+    // Buscar primero por itemId y luego por productId para compatibilidad
+    let index = this._items.findIndex(item => item.id === id);
+    if (index === -1) {
+      index = this._items.findIndex(item => item.product.id === id);
+    }
     if (index === -1) return false;
 
     const item = this._items[index];
-    if (item.quantity > 1) {
-      this._items[index] = {
-        ...item,
-        quantity: item.quantity - 1,
-        montoTotal: this.recalcularMontoItem(item, item.quantity - 1)
-      };
+    const esPesable = this.esProductoPesable((item.tipoVenta ?? item.product.tipoVenta) as TipoVentaEnum);
+
+    if (esPesable) {
+      const currentPeso = Number(item.peso ?? item.quantity ?? 0);
+      const newPeso = currentPeso - stepKg;
+      if (newPeso <= 0) {
+        this._items.splice(index, 1);
+        return true;
+      }
+      const updated: CarItem = { ...item, peso: newPeso };
+      updated.montoTotal = item.montoModificado ? (item.montoTotal || 0) : this.calcularTotalLinea(updated);
+      this._items[index] = updated;
       return true;
     } else {
-      // Si la cantidad es 1, eliminar el ítem
-      this._items.splice(index, 1);
+      const currentQty = Math.max(1, Math.round(item.quantity || 0));
+      const newQty = currentQty - 1;
+      if (newQty <= 0) {
+        this._items.splice(index, 1);
+        return true;
+      }
+      const updated: CarItem = { ...item, quantity: newQty };
+      updated.montoTotal = item.montoModificado ? (item.montoTotal || 0) : this.calcularTotalLinea(updated);
+      this._items[index] = updated;
       return true;
     }
   }
