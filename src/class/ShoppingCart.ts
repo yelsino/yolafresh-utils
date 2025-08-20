@@ -847,10 +847,14 @@ export class ShoppingCart implements IShoppingCart {
       fechaCreacion: this.fechaCreacion, // mantener Date para estructura interna
       nombre: this.nombre,
       // Items congelados tal como están (copias superficiales)
-      items: this._items.map(item => ({
-        ...item,
-        product: { ...item.product }
-      })),
+      items: this._items.map(item => {
+        const { descripcion, titulo, ...productSnapshot } = item.product as any;
+        return {
+          ...item,
+          // Serializar producto completo menos campos irrelevantes indicados
+          product: productSnapshot
+        };
+      }),
       // Resumen actual (no recalcula cada ítem, usa valores presentes)
       subtotal: this.subtotal,
       descuentoTotal: this.descuentoTotal,
