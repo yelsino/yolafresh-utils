@@ -841,63 +841,71 @@ export class ShoppingCart implements IShoppingCart {
    * CONGELA los CarItems tal como están (datos inmutables)
    */
   toJSON() {
-    return {
+    // Devolver la misma estructura del carrito, preservando datos tal cual
+    const carrito: IShoppingCart = {
       id: this.id,
-      fechaCreacion: this.fechaCreacion.toISOString(),
+      fechaCreacion: this.fechaCreacion, // mantener Date para estructura interna
       nombre: this.nombre,
-      // Congelar los CarItems tal como están
+      // Items congelados tal como están (copias superficiales)
       items: this._items.map(item => ({
         ...item,
-        // Congelar el producto completo tal como estaba
         product: { ...item.product }
       })),
+      // Resumen actual (no recalcula cada ítem, usa valores presentes)
+      subtotal: this.subtotal,
+      descuentoTotal: this.descuentoTotal,
+      impuesto: this.impuesto,
+      total: this.total,
+      cantidadItems: this.cantidadItems,
+      cantidadTotal: this.cantidadTotal,
+      // Notas
       notas: this._notas,
-      tasaImpuesto: this._configuracionFiscal.tasaImpuesto,
-      aplicaImpuesto: this._configuracionFiscal.aplicaImpuesto,
-      nombreImpuesto: this._configuracionFiscal.nombreImpuesto,
-      // Campos de trazabilidad
+      // Configuración fiscal como objeto
+      configuracionFiscal: { ...this._configuracionFiscal },
+      // Compatibilidad legacy para consumidores existentes
+      tasaImpuesto: this._configuracionFiscal.tasaImpuesto || 0,
+      // Trazabilidad completa y IDs de compatibilidad
+      cliente: this._cliente ? { ...this._cliente } : undefined,
+      personal: this._personal ? { ...this._personal } : undefined,
       clienteColor: this._clienteColor,
-      // IDs de trazabilidad
       clienteId: this._cliente?.id,
       personalId: this._personal?.id,
       // Datos de pago
       metodoPago: this._metodoPago,
       dineroRecibido: this._dineroRecibido,
       procedencia: this._procedencia,
-      ...this.resumen
     };
+
+    return carrito;
   }
 
   /**
    * Crear instancia desde JSON (para cargar desde base de datos)
    */
   static fromJSON(data: any): ShoppingCart {
-    const venta = new ShoppingCart(data.id, {
+    // Preferir objeto de configuración fiscal completo; fallback a campos legacy
+    const configuracionFiscal = data.configuracionFiscal ?? {
       tasaImpuesto: data.tasaImpuesto,
       aplicaImpuesto: data.aplicaImpuesto,
       nombreImpuesto: data.nombreImpuesto
-    }, data.nombre);
-    
-    // Los items ya vienen como CarItems congelados
+    };
+
+    const venta = new ShoppingCart(data.id, configuracionFiscal, data.nombre);
+
+    // Ítems ya vienen como CarItems congelados; preservar tal cual
     venta._items = data.items || [];
     venta._notas = data.notas;
-    
-    // Cargar campos de trazabilidad
+
+    // Trazabilidad: aceptar objetos completos o fallback por ID
+    venta._cliente = data.cliente
+    venta._personal = data.personal
     venta._clienteColor = data.clienteColor;
-    
-    // Cargar datos de pago
+
+    // Datos de pago
     venta._metodoPago = data.metodoPago;
     venta._dineroRecibido = data.dineroRecibido;
     venta._procedencia = data.procedencia;
-    
-    // Compatibilidad: si hay IDs, crear objetos básicos para mantener compatibilidad interna
-    if (data.clienteId) {
-      venta._cliente = { id: data.clienteId } as Cliente;
-    }
-    if (data.personalId) {
-      venta._personal = { id: data.personalId } as Personal;
-    }
-    
+
     return venta;
   }
 
