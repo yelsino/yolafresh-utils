@@ -58,6 +58,11 @@
       "import": "./dist/class/index.js",
       "require": "./dist/class/index.js",
       "types": "./dist/class/index.d.ts"
+    },
+    "./store": {
+      "import": "./dist/store/index.js",
+      "require": "./dist/store/index.js",
+      "types": "./dist/store/index.d.ts"
     }
   },
   "files": [
