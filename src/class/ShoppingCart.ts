@@ -85,6 +85,14 @@ export interface CarItem {
    * @minimum 0
    */
   descuento?: number;
+
+  /** 
+   * Indica si la venta es un pedido
+   * @description Cuando es true, la venta se considera un pedido, el app debe crear una finanza de credito, la venta se marca como pendiente de pago
+   */
+  esPedido?: boolean;
+
+  
 }
 
 /**
@@ -258,11 +266,18 @@ export interface IShoppingCart {
    */
   procedencia?: ProcedenciaVenta;
   
-  /** 
+    /**
    * Configuración fiscal aplicada (opcional)
    * @description Settings de impuestos y cálculos fiscales
    */
   configuracionFiscal?: ConfiguracionFiscal;
+
+  /**
+   * Indica si toda la venta es un pedido
+   * @description Cuando es true, toda la venta se considera un pedido, 
+   * el app debe crear una finanza de crédito, la venta se marca como pendiente de pago
+   */
+  esPedido?: boolean;
   
   // === IDS DE COMPATIBILIDAD ===
   
@@ -302,6 +317,7 @@ export class ShoppingCart implements IShoppingCart {
   private _metodoPago?: TipoPagoVenta;
   private _dineroRecibido?: number;
   private _procedencia?: ProcedenciaVenta;
+  private _esPedido?: boolean;
 
   constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal, nombre?: string) {
     this.id = id || `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -777,6 +793,14 @@ export class ShoppingCart implements IShoppingCart {
     this._procedencia = value;
   }
 
+  get esPedido(): boolean | undefined {
+    return this._esPedido;
+  }
+
+  set esPedido(value: boolean | undefined) {
+    this._esPedido = value;
+  }
+
   /**
    * Configurar datos de pago
    */
@@ -784,10 +808,148 @@ export class ShoppingCart implements IShoppingCart {
     metodoPago?: TipoPagoVenta;
     dineroRecibido?: number;
     procedencia?: ProcedenciaVenta;
+    esPedido?: boolean;
   }): void {
     this._metodoPago = datos.metodoPago;
     this._dineroRecibido = datos.dineroRecibido;
     this._procedencia = datos.procedencia;
+    this._esPedido = datos.esPedido;
+  }
+
+  // **MÉTODOS ESPECÍFICOS PARA PEDIDOS**
+  // 
+  // Los pedidos permiten manejar ventas que requieren:
+  // - Finanzas de crédito (pago pendiente)
+  // - Gestión de clientes obligatoria
+  // - Separación de items entre pedidos y venta normal
+  // - Cálculos diferenciados para reporting
+  //
+  // Ejemplos de uso:
+  // 
+  // 1. Marcar todo el carrito como pedido:
+  //    carrito.marcarComoPedido({ cliente, notas: "Entrega mañana" });
+  //
+  // 2. Marcar items específicos como pedido:
+  //    carrito.marcarItemComoPedido("item-123", true);
+  //
+  // 3. Obtener totales separados:
+  //    const { pedidos, ventaNormal } = carrito.totalesSeparados;
+  //
+
+  /**
+   * Marcar la venta como pedido
+   * @description Configura la venta como pedido, lo que implica que:
+   * - Se debe crear una finanza de crédito
+   * - La venta se marca como pendiente de pago
+   * - Se puede configurar información adicional del pedido
+   */
+  marcarComoPedido(configuracion?: { 
+    cliente?: Cliente; 
+    fechaEntrega?: Date; 
+    anticipo?: number;
+    notas?: string;
+  }): void {
+    this._esPedido = true;
+    
+    if (configuracion) {
+      if (configuracion.cliente) {
+        this._cliente = configuracion.cliente;
+      }
+      if (configuracion.notas) {
+        this._notas = configuracion.notas;
+      }
+      // Nota: fechaEntrega y anticipo se pueden manejar en campos adicionales 
+      // o extender la interfaz según necesidades específicas
+    }
+  }
+
+
+
+  /**
+   * Desmarcar como pedido y convertir a venta normal
+   */
+  convertirAVentaNormal(): void {
+    this._esPedido = false;
+  }
+
+  /**
+   * Verificar si la venta es un pedido
+   */
+  get esUnPedido(): boolean {
+    return this._esPedido === true;
+  }
+
+  /**
+   * Verificar si algún item individual es un pedido
+   */
+  get tieneItemsPedido(): boolean {
+    return this._items.some(item => item.esPedido === true);
+  }
+
+  /**
+   * Obtener solo los items que son pedidos
+   */
+  get itemsPedido(): CarItem[] {
+    return this._items.filter(item => item.esPedido === true);
+  }
+
+  /**
+   * Obtener solo los items que NO son pedidos
+   */
+  get itemsVentaNormal(): CarItem[] {
+    return this._items.filter(item => item.esPedido !== true);
+  }
+
+  /**
+   * Marcar un item específico como pedido
+   */
+  marcarItemComoPedido(itemId: string, esPedido: boolean = true): boolean {
+    const index = this._items.findIndex(item => item.id === itemId);
+    if (index === -1) return false;
+
+    this._items[index] = {
+      ...this._items[index],
+      esPedido
+    };
+    
+    return true;
+  }
+
+  /**
+   * Calcular totales separados entre pedidos y venta normal
+   */
+  get totalesSeparados(): {
+    pedidos: { subtotal: number; impuesto: number; total: number; items: number };
+    ventaNormal: { subtotal: number; impuesto: number; total: number; items: number };
+  } {
+    const itemsPedido = this.itemsPedido;
+    const itemsVentaNormal = this.itemsVentaNormal;
+    
+    const subtotalPedidos = itemsPedido.reduce((sum, item) => sum + (item.montoTotal || 0), 0);
+    const subtotalVentaNormal = itemsVentaNormal.reduce((sum, item) => sum + (item.montoTotal || 0), 0);
+    
+    const impuestoPedidos = this._configuracionFiscal.aplicaImpuesto 
+      ? Math.round(subtotalPedidos * (this._configuracionFiscal.tasaImpuesto || 0) * 100) / 100
+      : 0;
+    
+    const impuestoVentaNormal = this._configuracionFiscal.aplicaImpuesto 
+      ? Math.round(subtotalVentaNormal * (this._configuracionFiscal.tasaImpuesto || 0) * 100) / 100
+      : 0;
+
+    return {
+      pedidos: {
+        subtotal: subtotalPedidos,
+        impuesto: impuestoPedidos,
+        total: subtotalPedidos + impuestoPedidos,
+        items: itemsPedido.length
+      },
+      ventaNormal: {
+        subtotal: subtotalVentaNormal,
+        impuesto: impuestoVentaNormal,
+        total: subtotalVentaNormal + impuestoVentaNormal,
+        items: itemsVentaNormal.length
+      }
+    };
   }
 
   /**
@@ -878,6 +1040,7 @@ export class ShoppingCart implements IShoppingCart {
       metodoPago: this._metodoPago,
       dineroRecibido: this._dineroRecibido,
       procedencia: this._procedencia,
+      esPedido: this._esPedido,
     };
 
     return carrito;
@@ -909,6 +1072,7 @@ export class ShoppingCart implements IShoppingCart {
     venta._metodoPago = data.metodoPago;
     venta._dineroRecibido = data.dineroRecibido;
     venta._procedencia = data.procedencia;
+    venta._esPedido = data.esPedido;
 
     return venta;
   }

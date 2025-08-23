@@ -22,6 +22,7 @@ export interface IVenta {
   detalleVenta: IShoppingCart; // ⭐ TODA la información aquí
   
   // === CÁLCULOS FINANCIEROS ===
+  costoEnvio?: number;
   subtotal: number;
   impuesto: number;
   total: number;
@@ -32,11 +33,13 @@ export interface IVenta {
   // IDs de trazabilidad
   clienteId?: string;
   vendedorId?: string;
+  finanzaId?: string;
   
   // === CAMPOS DE TRAZABILIDAD ADICIONALES ===
   codigoVenta?: string;
   numeroVenta?: string;
-  costoEnvio?: number;
+  esPedido?: boolean;
+  
 }
 
 /**
@@ -69,11 +72,13 @@ export class Venta implements IVenta {
   // IDs de trazabilidad
   public readonly clienteId?: string;
   public readonly vendedorId?: string;
+  public readonly finanzaId?: string;
   
   // === CAMPOS DE TRAZABILIDAD ADICIONALES ===
   public readonly codigoVenta?: string;
   public readonly numeroVenta?: string;
   public readonly costoEnvio?: number;
+  public readonly esPedido?: boolean;
 
   constructor(data: IVenta) {
     // Validaciones básicas
@@ -109,11 +114,13 @@ export class Venta implements IVenta {
     // IDs de trazabilidad
     this.clienteId = data.clienteId;
     this.vendedorId = data.vendedorId;
+    this.finanzaId = data.finanzaId;
     
     // Campos de trazabilidad adicionales
     this.codigoVenta = data.codigoVenta;
     this.numeroVenta = data.numeroVenta;
     this.costoEnvio = data.costoEnvio;
+    this.esPedido = data.esPedido;
 
     // Congelar la instancia completa
     Object.freeze(this);
@@ -154,6 +161,48 @@ export class Venta implements IVenta {
    */
   get esPendiente(): boolean {
     return this.estado === OrderState.PENDIENTE;
+  }
+
+  /**
+   * Verificar si la venta es un pedido
+   */
+  get esUnPedido(): boolean {
+    return this.esPedido === true || this.detalleVenta.esPedido === true;
+  }
+
+  /**
+   * Verificar si tiene items marcados como pedido
+   */
+  get tieneItemsPedido(): boolean {
+    return this.items.some(item => item.esPedido === true);
+  }
+
+  /**
+   * Obtener solo los items que son pedidos
+   */
+  get itemsPedido(): readonly CarItem[] {
+    return this.items.filter(item => item.esPedido === true);
+  }
+
+  /**
+   * Obtener solo los items que NO son pedidos  
+   */
+  get itemsVentaNormal(): readonly CarItem[] {
+    return this.items.filter(item => item.esPedido !== true);
+  }
+
+  /**
+   * Verificar si tiene finanza asociada
+   */
+  get tieneFinanzaAsociada(): boolean {
+    return this.finanzaId !== undefined && this.finanzaId !== null && this.finanzaId.trim() !== '';
+  }
+
+  /**
+   * Verificar si requiere finanza (es pedido pero no tiene finanza)
+   */
+  get requiereFinanza(): boolean {
+    return this.esUnPedido && !this.tieneFinanzaAsociada;
   }
 
   /**
@@ -238,10 +287,12 @@ export class Venta implements IVenta {
       // IDs de trazabilidad
       clienteId: this.clienteId,
       vendedorId: this.vendedorId,
+      finanzaId: this.finanzaId,
       // Campos de trazabilidad adicionales
       codigoVenta: this.codigoVenta,
       numeroVenta: this.numeroVenta,
-      costoEnvio: this.costoEnvio
+      costoEnvio: this.costoEnvio,
+      esPedido: this.esPedido
     };
   }
 
@@ -265,10 +316,12 @@ export class Venta implements IVenta {
       // IDs de compatibilidad
       clienteId: this.clienteId,
       vendedorId: this.vendedorId,
+      finanzaId: this.finanzaId,
       // Campos de trazabilidad adicionales
       codigoVenta: this.codigoVenta,
       numeroVenta: this.numeroVenta,
-      costoEnvio: this.costoEnvio
+      costoEnvio: this.costoEnvio,
+      esPedido: this.esPedido
     };
   }
 
@@ -294,10 +347,12 @@ export class Venta implements IVenta {
       // IDs de trazabilidad
       clienteId: doc.clienteId,
       vendedorId: doc.vendedorId,
+      finanzaId: doc.finanzaId,
       // Campos de trazabilidad adicionales
       codigoVenta: doc.codigoVenta,
       numeroVenta: doc.numeroVenta,
-      costoEnvio: doc.costoEnvio
+      costoEnvio: doc.costoEnvio,
+      esPedido: doc.esPedido
     });
   }
 
@@ -353,10 +408,12 @@ export class Venta implements IVenta {
       // 🔧 FIX: IDs de trazabilidad corregidos
       clienteId: carritoJSON.clienteId,
       vendedorId: carritoJSON.personalId, // ✅ Correcto: personalId del carrito
+      finanzaId: undefined, // finanzaId se asigna posteriormente si es necesario
       // Campos de trazabilidad adicionales
       codigoVenta: "",
       numeroVenta: "",
-      costoEnvio: 0
+      costoEnvio: 0,
+      esPedido: carritoJSON.esPedido
     });
   }
 
@@ -376,6 +433,20 @@ export class Venta implements IVenta {
     // Validaciones opcionales para campos de trazabilidad
     if (data.costoEnvio !== undefined && data.costoEnvio < 0) {
       errores.push('El costo de envío no puede ser negativo');
+    }
+
+    // Validaciones específicas para pedidos
+    if (data.esPedido === true) {
+      if (!data.clienteId && !data.detalleVenta?.clienteId && !data.detalleVenta?.cliente) {
+        errores.push('Un pedido debe tener un cliente asociado');
+      }
+    }
+
+    // Validaciones específicas para finanzas
+    if (data.finanzaId !== undefined && data.finanzaId !== null) {
+      if (typeof data.finanzaId !== 'string' || data.finanzaId.trim() === '') {
+        errores.push('finanzaId debe ser un string no vacío');
+      }
     }
     
     return {
