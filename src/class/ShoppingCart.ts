@@ -272,12 +272,18 @@ export interface IShoppingCart {
    */
   configuracionFiscal?: ConfiguracionFiscal;
 
-  /**
+  /** 
    * Indica si toda la venta es un pedido
    * @description Cuando es true, toda la venta se considera un pedido, 
    * el app debe crear una finanza de crédito, la venta se marca como pendiente de pago
    */
   esPedido?: boolean;
+
+  /** 
+   * ID de la finanza asociada (opcional)
+   * @description Vincula el carrito con una finanza específica para pedidos o ventas a crédito
+   */
+  finanzaId?: string;
   
   // === IDS DE COMPATIBILIDAD ===
   
@@ -318,6 +324,7 @@ export class ShoppingCart implements IShoppingCart {
   private _dineroRecibido?: number;
   private _procedencia?: ProcedenciaVenta;
   private _esPedido?: boolean;
+  private _finanzaId?: string;
 
   constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal, nombre?: string) {
     this.id = id || `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -801,6 +808,14 @@ export class ShoppingCart implements IShoppingCart {
     this._esPedido = value;
   }
 
+  get finanzaId(): string | undefined {
+    return this._finanzaId;
+  }
+
+  set finanzaId(value: string | undefined) {
+    this._finanzaId = value;
+  }
+
   /**
    * Configurar datos de pago
    */
@@ -809,11 +824,13 @@ export class ShoppingCart implements IShoppingCart {
     dineroRecibido?: number;
     procedencia?: ProcedenciaVenta;
     esPedido?: boolean;
+    finanzaId?: string;
   }): void {
     this._metodoPago = datos.metodoPago;
     this._dineroRecibido = datos.dineroRecibido;
     this._procedencia = datos.procedencia;
     this._esPedido = datos.esPedido;
+    this._finanzaId = datos.finanzaId;
   }
 
   // **MÉTODOS ESPECÍFICOS PARA PEDIDOS**
@@ -1036,11 +1053,13 @@ export class ShoppingCart implements IShoppingCart {
       clienteColor: this._clienteColor,
       clienteId: this._cliente?.id,
       personalId: this._personal?.id,
+      
       // Datos de pago
       metodoPago: this._metodoPago,
       dineroRecibido: this._dineroRecibido,
       procedencia: this._procedencia,
       esPedido: this._esPedido,
+      finanzaId: this._finanzaId,
     };
 
     return carrito;
@@ -1073,6 +1092,7 @@ export class ShoppingCart implements IShoppingCart {
     venta._dineroRecibido = data.dineroRecibido;
     venta._procedencia = data.procedencia;
     venta._esPedido = data.esPedido;
+    venta._finanzaId = data.finanzaId;
 
     return venta;
   }
