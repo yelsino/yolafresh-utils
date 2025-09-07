@@ -361,7 +361,8 @@ export class Venta implements IVenta {
    */
   static fromShoppingCart(
     carritoJSON: IShoppingCart,
-    
+    id: string,
+    options?: { nombre?: string }
   ): Venta {
     const ahora = new Date();
     
@@ -383,8 +384,8 @@ export class Venta implements IVenta {
     }
     
     return new Venta({
-      id: `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      nombre: carritoJSON.nombre || `Venta-${Date.now()}`,
+      id: id,
+      nombre: options?.nombre ?? carritoJSON.nombre ?? 'Venta',
       type: 'venta',
       estado: OrderState.DESPACHADO,
       fechaCreacion: ahora,
