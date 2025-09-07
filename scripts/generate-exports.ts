@@ -9,7 +9,6 @@ const directories = [
   { path: '../src/interfaces', prefix: '' },
   { path: '../src/data', prefix: '' },
   { path: '../src/class', prefix: '' },
-  { path: '../src/store', prefix: '' },
   // Puedes añadir más directorios aquí si es necesario
 ];
 
@@ -71,7 +70,6 @@ async function generateMainIndex() {
   exportStatements.push("export * from './data';");
   exportStatements.push("export * from './utils';");
   exportStatements.push("export * from './class';");
-  exportStatements.push("export * from './store';");
   exportStatements.push('');
   
   exportStatements.push('// También puedes exportar directamente los módulos más utilizados aquí si lo deseas');

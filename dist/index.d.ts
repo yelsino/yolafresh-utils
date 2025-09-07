@@ -2,4 +2,3 @@ export * from './interfaces';
 export * from './data';
 export * from './utils';
 export * from './class';
-export * from './store';

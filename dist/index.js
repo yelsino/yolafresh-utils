@@ -21,7 +21,6 @@ __exportStar(require("./interfaces"), exports);
 __exportStar(require("./data"), exports);
 __exportStar(require("./utils"), exports);
 __exportStar(require("./class"), exports);
-__exportStar(require("./store"), exports);
 // También puedes exportar directamente los módulos más utilizados aquí si lo deseas
 // Por ejemplo:
 // export { Producto, UpdateProducto } from './interfaces/producto';
