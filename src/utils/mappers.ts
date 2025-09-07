@@ -1,8 +1,8 @@
-import { Producto } from "@/interfaces/producto";
+import { IProducto } from "@/interfaces/producto";
 import { OrderState, TipoVentaEnum } from "./enums";
 import { Carrito, Lista, Pedido } from "@/interfaces/pedido";
 
-export function productodbToProducto(producto: any): Producto {
+export function productodbToProducto(producto: any): IProducto {
   return {
     id: producto.id,
     idPrimario: producto.idPrimario,

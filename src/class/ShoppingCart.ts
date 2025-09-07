@@ -4,7 +4,7 @@
  * Simplificada: usa solo CarItem con congelación automática al guardar
  */
 
-import { Producto } from "@/interfaces";
+import { IProducto } from "@/interfaces";
 import { Cliente, Personal } from "@/interfaces/persons";
 import { TipoVentaEnum } from "@/utils";
 import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "@/utils/fiscales";
@@ -37,7 +37,7 @@ export interface CarItem {
    * Información completa del producto
    * @description Contiene todos los datos del producto (nombre, precio, etc.)
    */
-  product: Producto;
+  product: IProducto;
   
   /** 
    * Cantidad del producto

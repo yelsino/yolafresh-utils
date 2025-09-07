@@ -1,6 +1,6 @@
 import { EstadoStockEnum, TipoActualizacionEnum, TipoVentaEnum } from "@/utils/enums";
 
-export interface Producto {
+export interface IProducto {
     id: string;
     idPrimario: string;
     mayoreo: boolean;
@@ -65,7 +65,7 @@ export interface BeneficiosProducto {
     descripcion: string
     imagen: string
     url: string
-    productos?: Producto[]
+    productos?: IProducto[]
   }
   
   export interface RecetasProducto {
