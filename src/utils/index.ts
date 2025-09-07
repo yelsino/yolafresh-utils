@@ -11,6 +11,7 @@ export * from './listas';
 export * from './mappers';
 export * from './medidas-converter';
 export * from './multimedia';
+export * from './naming-conventions';
 export * from './producto';
 export * from './regex';
 export * from './textos';

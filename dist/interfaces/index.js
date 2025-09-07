@@ -22,3 +22,4 @@ __exportStar(require("./finanzas"), exports);
 __exportStar(require("./pedido"), exports);
 __exportStar(require("./persons"), exports);
 __exportStar(require("./producto"), exports);
+__exportStar(require("./producto.update.interface"), exports);

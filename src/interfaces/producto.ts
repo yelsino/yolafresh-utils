@@ -25,16 +25,7 @@ export interface IProducto {
     precioCompra: number;
   }
   
-  export interface UpdateProducto {
-    id: string;
-    productoId: string;
-    tipoActualizacion: TipoActualizacionEnum;
-    precioCompra: number;
-    precioVenta: number;
-    stock: EstadoStockEnum;
-    creacion: Date;
-    actualizacion: Date;
-  }
+
 
   export interface Categoria {
     id: string;

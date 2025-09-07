@@ -1,5 +1,5 @@
 import { EstadoStockEnum, TipoActualizacionEnum, TipoVentaEnum } from '../utils/enums';
-import {  UpdateProducto, IProducto } from '../interfaces/producto';
+import { IProducto } from '../interfaces/producto';
 import { MedidasConverter, FormatMedidaOptions } from '../utils/medidas-converter';
 
 /**
@@ -406,6 +406,118 @@ export class Producto implements IProducto {
       esValido: errores.length === 0,
       errores
     };
+  }
+
+  /**
+   * Convierte las propiedades del producto a snake_case para bases de datos
+   * que requieren esta nomenclatura (ej: PostgreSQL, MySQL)
+   */
+  toSnakeCase(): Record<string, any> {
+    return {
+      id: this.id,
+      id_primario: this.idPrimario,
+      mayoreo: this.mayoreo,
+      cantidad_para_descuento: this.cantidadParaDescuento,
+      descuento_x_cantidad: this.descuentoXCantidad,
+      nombre: this.nombre,
+      precio: this.precio,
+      status: this.status,
+      url: this.url,
+      categorie_id: this.categorieId,
+      es_primario: this.esPrimario,
+      tipo_venta: this.tipoVenta,
+      fraccionable: this.fraccionable,
+      titulo: this.titulo,
+      consideraciones: this.consideraciones,
+      caracteristicas: this.caracteristicas,
+      descripcion: this.descripcion,
+      peso: this.peso,
+      fecha_creacion: this.creacion,
+      fecha_actualizacion: this.actualizacion,
+      stock: this.stock,
+      precio_compra: this.precioCompra,
+    };
+  }
+
+  /**
+   * Convierte datos con nomenclatura snake_case a formato IProducto
+   * @param data Objeto con propiedades en snake_case
+   * @returns Objeto que implementa IProducto con propiedades en camelCase
+   */
+  static fromSnakeCase(data: Record<string, any>): IProducto {
+    return {
+      id: data.id,
+      idPrimario: data.id_primario,
+      mayoreo: data.mayoreo,
+      cantidadParaDescuento: data.cantidad_para_descuento,
+      descuentoXCantidad: data.descuento_x_cantidad,
+      nombre: data.nombre,
+      precio: data.precio,
+      status: data.status,
+      url: data.url,
+      categorieId: data.categorie_id,
+      esPrimario: data.es_primario,
+      tipoVenta: data.tipo_venta,
+      fraccionable: data.fraccionable,
+      titulo: data.titulo,
+      consideraciones: data.consideraciones,
+      caracteristicas: data.caracteristicas,
+      descripcion: data.descripcion,
+      peso: data.peso,
+      creacion: data.fecha_creacion,
+      actualizacion: data.fecha_actualizacion,
+      stock: data.stock,
+      precioCompra: data.precio_compra,
+    };
+  }
+
+  /**
+   * Convierte un array de datos snake_case a objetos IProducto
+   * @param dataArray Array de objetos con propiedades en snake_case
+   * @returns Array de objetos que implementan IProducto
+   */
+  static fromSnakeCaseArray(dataArray: Record<string, any>[]): IProducto[] {
+    return dataArray.map(data => Producto.fromSnakeCase(data));
+  }
+
+  /**
+   * Utilidad genérica para convertir propiedades camelCase a snake_case
+   * Útil para otras clases que necesiten esta funcionalidad
+   */
+  static camelToSnakeCase(str: string): string {
+    return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+  }
+
+  /**
+   * Utilidad genérica para convertir propiedades snake_case a camelCase
+   * Útil para otras clases que necesiten esta funcionalidad
+   */
+  static snakeToCamelCase(str: string): string {
+    return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+  }
+
+  /**
+   * Convierte un objeto completo de camelCase a snake_case
+   */
+  static objectToSnakeCase(obj: Record<string, any>): Record<string, any> {
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      const snakeKey = Producto.camelToSnakeCase(key);
+      result[snakeKey] = value;
+    }
+    return result;
+  }
+
+  /**
+   * Convierte un objeto completo de snake_case a camelCase
+   */
+  static objectToCamelCase(obj: Record<string, any>): Record<string, any> {
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      const camelKey = Producto.snakeToCamelCase(key);
+      result[camelKey] = value;
+    }
+    return result;
   }
 
   // Método crearUpdateProducto eliminado - UpdateProducto debe ser una clase separada
