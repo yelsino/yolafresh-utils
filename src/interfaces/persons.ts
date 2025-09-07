@@ -36,6 +36,8 @@ export interface Personal {
   export interface Usuario {
     id: string;
     email: string;
+    username: string;
+    password: string;
     rol: string;
     nombres: string;
     apellidos?: string;
