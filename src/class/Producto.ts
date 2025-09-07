@@ -31,7 +31,7 @@ export interface ProductoFilters {
 
 /**
  * Clase Producto reutilizable que encapsula todas las operaciones complejas
- * relacionadas con productos en el sistema YolaFresh
+ * relacionadas con productos de comercio electrónico
  */
 export class Producto implements IProducto {
   // Propiedades de la interfaz IProducto
@@ -107,7 +107,7 @@ export class Producto implements IProducto {
     // Determinar opciones de formateo
     const formatOptions: FormatMedidaOptions = {
       abreviado,
-      abarrotes: categoriaId === "5",
+      abarrotes: false, // Configuración genérica - sin dependencia a categorías específicas
       plural: cantidad !== 1
     };
 
@@ -197,26 +197,7 @@ export class Producto implements IProducto {
     return this.stock === EstadoStockEnum.STOCK_AGOTADO;
   }
 
-  /**
-   * Obtiene la URL de imagen optimizada (si usa Cloudinary)
-   */
-  getImagenOptimizada(width?: number, height?: number, quality?: number): string {
-    if (!this.url) return '';
-    
-    // Si es una URL de Cloudinary, aplicar transformaciones
-    if (this.url.includes('cloudinary.com')) {
-      let transformations = [];
-      if (width) transformations.push(`w_${width}`);
-      if (height) transformations.push(`h_${height}`);
-      if (quality) transformations.push(`q_${quality}`);
-      
-      if (transformations.length > 0) {
-        return this.url.replace('/upload/', `/upload/${transformations.join(',')}/`);
-      }
-    }
-    
-    return this.url;
-  }
+  // Método getImagenOptimizada eliminado - dependencia específica a Cloudinary removida
 
   /**
    * Convierte el producto a formato JSON
@@ -427,20 +408,6 @@ export class Producto implements IProducto {
     };
   }
 
-  /**
-   * Crea un UpdateProducto para actualizar este producto
-   */
-  crearUpdateProducto(tipoActualizacion: TipoActualizacionEnum): UpdateProducto {
-    return {
-      id: this.id,
-      productoId: this.id,
-      tipoActualizacion,
-      precioCompra: this.precioCompra,
-      precioVenta: this.precio,
-      stock: this.stock,
-      creacion: this.creacion || new Date(),
-      actualizacion: new Date()
-    };
-  }
+  // Método crearUpdateProducto eliminado - UpdateProducto debe ser una clase separada
 }
 
