@@ -58,6 +58,44 @@ export interface ProductoAPI extends IProducto {
 | `tipoVenta`          | `tipo_venta`                |
 | `precioCompra`       | `precio_compra`             |
 
+### ⚠️ Consideraciones Especiales para SQLite
+
+**Tipos de Datos Booleanos:**
+SQLite no tiene un tipo de datos BOOLEAN nativo <mcreference link="https://www.sqlite.org/datatype3.html" index="3">3</mcreference>. En su lugar, los valores booleanos se almacenan como enteros:
+- `false` → `0`
+- `true` → `1`
+
+```typescript
+// En tu aplicación (TypeScript)
+const producto: IProducto = {
+  // ... otras propiedades
+  activo: true,        // boolean
+  disponible: false    // boolean
+};
+
+// Al transformar para SQLite
+const productoSQL: ProductoSQLite = {
+  ...objectToSnakeCase(producto),
+  activo: 1,          // true → 1
+  disponible: 0       // false → 0
+};
+```
+
+**Recomendaciones para Booleanos en SQLite:**
+1. Declara columnas booleanas como `INTEGER` con restricciones CHECK <mcreference link="https://sqldocs.org/sqlite-database/sqlite-boolean/" index="5">5</mcreference>
+2. Usa transformadores automáticos para convertir boolean ↔ number
+3. SQLite 3.23.0+ reconoce las palabras clave `TRUE` y `FALSE`, pero internamente siguen siendo 1 y 0 <mcreference link="https://www.sqlite.org/datatype3.html" index="3">3</mcreference>
+
+```sql
+-- Esquema SQLite recomendado
+CREATE TABLE productos (
+  producto_id TEXT PRIMARY KEY,
+  nombre_producto TEXT NOT NULL,
+  activo INTEGER CHECK (activo IN (0, 1)) DEFAULT 1,
+  disponible INTEGER CHECK (disponible IN (0, 1)) DEFAULT 1
+);
+```
+
 ## 💡 Ejemplos Prácticos
 
 ### Ejemplo 1: Guardar en SQLite

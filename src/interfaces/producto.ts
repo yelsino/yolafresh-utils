@@ -30,8 +30,15 @@ export interface IProducto {
   export interface Categoria {
     id: string;
     nombre: string;
-    tag?: string;
-    [key: string]: any;
+    tag: string;
+    descripcion: string;
+    icono: string;
+    color: string;
+    orden: number;
+    activa: boolean;
+    fechaCreacion: string;
+    subcategorias: string[];
+    imagen: string;
   }
 
 
