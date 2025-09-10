@@ -9,13 +9,14 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
+    "downlevelIteration": true,
+    "baseUrl": "./src",
     "paths": {
-      "@/*": ["src/*"],
-      "@utils/*": ["src/utils/*"],
-      "@interfaces/*": ["src/interfaces/*"],
-      "@store/*": ["src/store/*"],
-      "@data/*": ["src/data/*"]
+      "@/*": ["./*"],
+      "@utils/*": ["./utils/*"],
+      "@interfaces/*": ["./interfaces/*"],
+      "@store/*": ["./store/*"],
+      "@data/*": ["./data/*"]
     }
   },
   "include": ["src/**/*"],
