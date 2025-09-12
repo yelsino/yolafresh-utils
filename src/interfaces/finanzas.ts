@@ -181,7 +181,6 @@ export type EstadoCaja = 'ABIERTA' | 'CERRADA' | 'DEFICIT'
     saldoTotal: number; 
     fechaRegistro: Date; 
     codigoTransaccion: string; 
-    finanzaType: TypeFinanza
   }
 
   export interface CuentaBancaria {
