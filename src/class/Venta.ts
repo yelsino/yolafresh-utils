@@ -1,5 +1,5 @@
 import { OrderState } from "@/utils";
-import { CarItem, IShoppingCart, ProcedenciaVenta, TipoPagoVenta } from "./ShoppingCart";
+import { CarItem, IShoppingCart, ProcedenciaVenta, TipoPagoVenta, ShoppingCart } from "./ShoppingCart";
 
 /**
  * Interfaz para datos inmutables de una venta
@@ -103,7 +103,9 @@ export class Venta implements IVenta {
     this.fechaActualizacion = new Date(data.fechaActualizacion);
     
     // ⭐ Congelar el carrito para inmutabilidad
-    this.detalleVenta = Object.freeze({ ...data.detalleVenta });
+    // Crear instancia de ShoppingCart para usar sus métodos nativos
+    const shoppingCartInstance = ShoppingCart.fromJSON(data.detalleVenta);
+    this.detalleVenta = Object.freeze(shoppingCartInstance.toJSON());
     
     this.subtotal = data.subtotal;
     this.impuesto = data.impuesto;
