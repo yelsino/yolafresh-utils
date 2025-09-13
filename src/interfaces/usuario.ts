@@ -8,7 +8,7 @@ import { Entidad, Rol, SesionContexto } from "./entidades";
  * 
  * @example
  * ```typescript
- * const usuario: Usuario = {
+ * const usuario: IUsuario = {
  *   id: "usr_001",
  *   email: "juan@tienda.com",
  *   username: "juan.cajero",
@@ -21,7 +21,7 @@ import { Entidad, Rol, SesionContexto } from "./entidades";
  * };
  * ```
  */
-export interface Usuario {
+export interface IUsuario {
   /** Identificador único del usuario */
   id: string;
   
@@ -182,7 +182,7 @@ export interface LoginUsuario {
  */
 export interface LoginRespuesta {
   /** Usuario autenticado */
-  usuario: Usuario;
+  usuario: IUsuario;
   
   /** Token de acceso */
   token: string;

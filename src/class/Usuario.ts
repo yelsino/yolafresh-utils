@@ -6,7 +6,7 @@
  */
 
 import { 
-  Usuario as IUsuario, 
+  IUsuario, 
   CrearUsuario, 
   ConfiguracionUsuario,
   LoginUsuario 

@@ -5,13 +5,9 @@
  * en diferentes escenarios de un sistema de retail
  */
 
-import { 
-  Usuario, 
-  CrearUsuario, 
-  LoginUsuario, 
-  ConfiguracionUsuario 
-} from "../interfaces/usuario";
 
+
+import { IUsuario } from "..";
 import { 
   Entidad, 
   Rol, 
@@ -130,7 +126,7 @@ export function crearEjemploPersonal(): Personal {
 /**
  * Ejemplo: Crear usuario cliente
  */
-export function crearUsuarioCliente(): Usuario {
+export function crearUsuarioCliente(): IUsuario {
   const cliente = crearEjemploCliente();
   const rolCliente = crearRolPredefinido(RolesPredefinidos.CLIENTE, "rol_cli_001");
 
@@ -166,7 +162,7 @@ export function crearUsuarioCliente(): Usuario {
 /**
  * Ejemplo: Crear usuario cajero (personal)
  */
-export function crearUsuarioCajero(): Usuario {
+export function crearUsuarioCajero(): IUsuario {
   const personal = crearEjemploPersonal();
   const rolCajero = crearRolPredefinido(RolesPredefinidos.CAJERO, "rol_caj_001");
 
@@ -264,7 +260,7 @@ export function ejemploSesionUsuario() {
 /**
  * Ejemplo: Función que requiere permisos específicos
  */
-export function crearVenta(usuario: Usuario, datosVenta: any) {
+export function crearVenta(usuario: IUsuario, datosVenta: any) {
   // Middleware de validación
   requierePermiso(Permisos.VENTAS_CREAR)(usuario);
   
@@ -278,7 +274,7 @@ export function crearVenta(usuario: Usuario, datosVenta: any) {
 /**
  * Ejemplo: Función que requiere múltiples permisos
  */
-export function generarReporteVentas(usuario: Usuario) {
+export function generarReporteVentas(usuario: IUsuario) {
   const permisosRequeridos = [Permisos.VENTAS_VER, Permisos.VENTAS_REPORTES];
   
   if (!puedeMultiple(usuario, permisosRequeridos, true)) {
@@ -351,7 +347,7 @@ export function ejemploUsuarioMultipleEntidades() {
   const personal = crearEjemploPersonal();
   
   // Usuario que es tanto cliente como empleado
-  const usuario: Usuario = {
+  const usuario: IUsuario = {
     id: "usr_multi_001",
     email: "usuario@email.com",
     username: "usuario.multi",
