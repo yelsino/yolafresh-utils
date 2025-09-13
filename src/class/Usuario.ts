@@ -91,8 +91,8 @@ export class Usuario implements IUsuario {
   }
 
   // === GETTERS ===
-  get roles(): readonly Rol[] { return this._roles; }
-  get entidades(): readonly Entidad[] { return this._entidades; }
+  get roles(): Rol[] { return this._roles; }
+  get entidades(): Entidad[] { return this._entidades; }
   get activo(): boolean { return this._activo; }
   get fechaActualizacion(): Date { return this._fechaActualizacion; }
   get fechaUltimoAcceso(): Date | undefined { return this._fechaUltimoAcceso; }

@@ -27,6 +27,14 @@ import {
   PermisoValidator 
 } from 'yola-fresh-utils/class';
 
+// O desde el paquete principal (con alias)
+import { 
+  UsuarioClass as Usuario,
+  UsuarioManager, 
+  SesionManager, 
+  PermisoValidator 
+} from 'yola-fresh-utils';
+
 // Interfaces
 import { 
   CrearUsuario, 

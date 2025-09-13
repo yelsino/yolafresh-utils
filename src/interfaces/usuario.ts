@@ -131,7 +131,7 @@ export interface CrearUsuario {
   roleIds: string[];
   
   /** IDs de entidades a asociar */
-  ces : string[];
+  entidadIds: string[];
   
   /** Configuraciones iniciales (opcional) */
   configuraciones?: Partial<ConfiguracionUsuario>;

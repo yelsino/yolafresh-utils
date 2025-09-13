@@ -166,7 +166,11 @@ export class UsuarioManager {
       // Validar datos básicos
       const validacionDatos = this.validarDatosUsuario(datos);
       if (!validacionDatos.exito) {
-        return validacionDatos;
+        return {
+          exito: false,
+          mensaje: validacionDatos.mensaje,
+          codigoError: validacionDatos.codigoError
+        };
       }
 
       // Verificar unicidad de email y username
@@ -365,9 +369,19 @@ export class UsuarioManager {
         passwordHash: datos.password ? await this.configuracion.hashearPassword!(datos.password) : usuario.passwordHash,
         activo: datos.activo !== undefined ? datos.activo : usuario.activo,
         fechaActualizacion: new Date(),
-        configuraciones: datos.configuraciones ? 
-          { ...usuario.configuraciones, ...datos.configuraciones } : 
-          usuario.configuraciones
+        configuraciones: datos.configuraciones ? {
+          idioma: datos.configuraciones.idioma || usuario.configuraciones?.idioma || "es",
+          zonaHoraria: datos.configuraciones.zonaHoraria || usuario.configuraciones?.zonaHoraria || "America/Lima",
+          tema: datos.configuraciones.tema || usuario.configuraciones?.tema || "claro",
+          notificaciones: datos.configuraciones.notificaciones || usuario.configuraciones?.notificaciones || {
+            email: true,
+            push: true,
+            ventas: false,
+            stockBajo: false,
+            nuevosClientes: false
+          },
+          entidadPredeterminada: datos.configuraciones.entidadPredeterminada || usuario.configuraciones?.entidadPredeterminada
+        } : usuario.configuraciones
       };
 
       const usuarioActualizado = new Usuario(datosActualizados);
@@ -702,7 +716,7 @@ export class UsuarioManager {
       }
 
       if (filtros.rol) {
-        usuarios = usuarios.filter(u => u.tieneRol(filtros.rol));
+        usuarios = usuarios.filter(u => u.tieneRol(filtros.rol!));
       }
 
       if (filtros.tipoEntidad) {
