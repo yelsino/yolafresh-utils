@@ -10,7 +10,7 @@ import { SesionManager, ConfiguracionSesion } from "./SesionManager";
 import { PermisoValidator, ContextoValidacion } from "./PermisoValidator";
 
 import { 
-  Usuario as IUsuario,
+  IUsuario,
   CrearUsuario,
   ActualizarUsuario,
   LoginUsuario,

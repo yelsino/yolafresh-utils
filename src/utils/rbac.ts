@@ -5,7 +5,7 @@
  * Implementa un sistema robusto de control de acceso basado en roles
  */
 
-import { Usuario, LoginRespuesta } from "@/interfaces/usuario";
+import { IUsuario, LoginRespuesta } from "@/interfaces/usuario";
 import { Rol, Permisos, RolesPredefinidos, SesionContexto, Entidad } from "@/interfaces/entidades";
 
 /**
@@ -22,7 +22,7 @@ import { Rol, Permisos, RolesPredefinidos, SesionContexto, Entidad } from "@/int
  * }
  * ```
  */
-export function puede(usuario: Usuario, permiso: string): boolean {
+export function puede(usuario: IUsuario, permiso: string): boolean {
   // Verificar si el usuario está activo
   if (!usuario.activo || usuario.cuentaBloqueada) {
     return false;
@@ -34,7 +34,7 @@ export function puede(usuario: Usuario, permiso: string): boolean {
   }
 
   // Verificar si algún rol del usuario tiene el permiso
-  return usuario.roles.some(rol => 
+  return usuario.roles.some((rol: Rol) => 
     rol.activo && rol.permisos.includes(permiso)
   );
 }
@@ -46,8 +46,8 @@ export function puede(usuario: Usuario, permiso: string): boolean {
  * @param nombreRol - Nombre del rol a verificar
  * @returns true si tiene el rol, false en caso contrario
  */
-export function tieneRol(usuario: Usuario, nombreRol: string): boolean {
-  return usuario.roles.some(rol => 
+export function tieneRol(usuario: IUsuario, nombreRol: string): boolean {
+  return usuario.roles.some((rol: Rol) => 
     rol.activo && rol.nombre === nombreRol
   );
 }
@@ -59,8 +59,8 @@ export function tieneRol(usuario: Usuario, nombreRol: string): boolean {
  * @param entidadId - ID de la entidad
  * @returns true si puede acceder, false en caso contrario
  */
-export function puedeAccederEntidad(usuario: Usuario, entidadId: string): boolean {
-  return usuario.entidades.some(entidad => entidad.id === entidadId);
+export function puedeAccederEntidad(usuario: IUsuario, entidadId: string): boolean {
+  return usuario.entidades.some((entidad: Entidad) => entidad.id === entidadId);
 }
 
 /**
@@ -69,12 +69,12 @@ export function puedeAccederEntidad(usuario: Usuario, entidadId: string): boolea
  * @param usuario - Usuario del cual obtener permisos
  * @returns Array de permisos únicos
  */
-export function obtenerPermisos(usuario: Usuario): string[] {
+export function obtenerPermisos(usuario: IUsuario): string[] {
   const permisos = new Set<string>();
   
-  usuario.roles.forEach(rol => {
+  usuario.roles.forEach((rol: Rol) => {
     if (rol.activo) {
-      rol.permisos.forEach(permiso => permisos.add(permiso));
+      rol.permisos.forEach((permiso: string) => permisos.add(permiso));
     }
   });
   
@@ -90,7 +90,7 @@ export function obtenerPermisos(usuario: Usuario): string[] {
  * @returns true si cumple la condición, false en caso contrario
  */
 export function puedeMultiple(
-  usuario: Usuario, 
+  usuario: IUsuario, 
   permisos: string[], 
   requiereTodos: boolean = true
 ): boolean {
@@ -109,13 +109,13 @@ export function puedeMultiple(
  * @returns Contexto de sesión
  */
 export function crearSesionContexto(
-  usuario: Usuario, 
+  usuario: IUsuario, 
   entidadActivaId?: string
 ): SesionContexto {
   let entidadActiva: Entidad;
   
   if (entidadActivaId) {
-    const entidad = usuario.entidades.find(e => e.id === entidadActivaId);
+    const entidad = usuario.entidades.find((e: Entidad) => e.id === entidadActivaId);
     if (!entidad) {
       throw new Error(`Usuario no tiene acceso a la entidad ${entidadActivaId}`);
     }
@@ -124,7 +124,7 @@ export function crearSesionContexto(
     // Si no se especifica, usar la primera entidad o la predeterminada
     const entidadPredeterminada = usuario.configuraciones?.entidadPredeterminada;
     if (entidadPredeterminada) {
-      const entidad = usuario.entidades.find(e => e.id === entidadPredeterminada);
+        const entidad = usuario.entidades.find((e: Entidad) => e.id === entidadPredeterminada);
       entidadActiva = entidad || usuario.entidades[0];
     } else {
       entidadActiva = usuario.entidades[0];
@@ -134,7 +134,7 @@ export function crearSesionContexto(
   return {
     usuarioId: usuario.id,
     entidadActiva,
-    rolesActivos: usuario.roles.filter(rol => rol.activo),
+    rolesActivos: usuario.roles.filter((rol: Rol) => rol.activo),
     inicioSesion: new Date(),
     ultimaActividad: new Date()
   };
@@ -147,7 +147,7 @@ export function crearSesionContexto(
  * @returns Función middleware
  */
 export function requierePermiso(permisoRequerido: string) {
-  return (usuario: Usuario) => {
+  return (usuario: IUsuario) => {
     if (!puede(usuario, permisoRequerido)) {
       throw new Error(`Acceso denegado. Se requiere el permiso: ${permisoRequerido}`);
     }
@@ -162,7 +162,7 @@ export function requierePermiso(permisoRequerido: string) {
  * @returns Función middleware
  */
 export function requiereRol(rolRequerido: string) {
-  return (usuario: Usuario) => {
+  return (usuario: IUsuario) => {
     if (!tieneRol(usuario, rolRequerido)) {
       throw new Error(`Acceso denegado. Se requiere el rol: ${rolRequerido}`);
     }
@@ -179,7 +179,7 @@ export function requiereRol(rolRequerido: string) {
  * @returns true si puede realizar la acción, false en caso contrario
  */
 export function puedeEnEntidad(
-  usuario: Usuario, 
+  usuario: IUsuario, 
   permiso: string, 
   entidadId: string
 ): boolean {
@@ -194,13 +194,13 @@ export function puedeEnEntidad(
  * @returns Array de entidades accesibles
  */
 export function obtenerEntidadesAccesibles(
-  usuario: Usuario, 
+  usuario: IUsuario, 
   tipo?: string
 ): Entidad[] {
-  let entidades = usuario.entidades.filter(entidad => entidad.activo);
+  let entidades = usuario.entidades.filter((entidad: Entidad) => entidad.activo);
   
   if (tipo) {
-    entidades = entidades.filter(entidad => entidad.tipo === tipo);
+    entidades = entidades.filter((entidad: Entidad) => entidad.tipo === tipo);
   }
   
   return entidades;

@@ -1,14 +1,14 @@
 import {  capitalizarPrimeraLetra, formatCantidad, formatearFecha, formatSolesPeruanos } from "./textos";
 
 import { Carrito, Hora } from "../interfaces/pedido";
-import { Usuario } from "../interfaces/usuario";
+import { IUsuario } from "../interfaces/usuario";
 import { Cliente, Personal } from "../interfaces/persons";
 
 /**
  * Obtiene el nombre para mostrar de un usuario
  * Busca en las entidades asociadas para encontrar el nombre
  */
-function obtenerNombreUsuario(usuario: Usuario | null): string {
+function obtenerNombreUsuario(usuario: IUsuario | null): string {
   if (!usuario || !usuario.entidades || usuario.entidades.length === 0) {
     return "Usuario";
   }
