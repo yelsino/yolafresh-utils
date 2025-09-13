@@ -61,16 +61,11 @@
     }
   },
   "files": [
-    "dist",
-    "*.md",
-    "GUIA-*.md",
-    "SISTEMA-*.md"
+    "dist"
   ],
   "scripts": {
-    "build": "tsc && tsc-alias && npm run copy-docs",
-    "copy-docs": "node scripts/copy-docs.js",
-    "prepare": "node scripts/install-check.js",
-    "postinstall": "node scripts/install-check.js",
+    "build": "tsc && tsc-alias",
+    "prepare": "npm run build",
     "generate-exports": "cd scripts && npx ts-node generate-exports.ts && cd ..",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

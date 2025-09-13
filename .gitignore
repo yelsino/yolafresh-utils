@@ -5,8 +5,8 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Build output (comentado para permitir instalación desde GitHub)
-# dist/
+# Build output
+dist/
 build/
 lib/
 
