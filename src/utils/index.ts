@@ -13,6 +13,7 @@ export * from './medidas-converter';
 export * from './multimedia';
 export * from './naming-conventions';
 export * from './producto';
+export * from './rbac';
 export * from './regex';
 export * from './textos';
 export * from './tools';

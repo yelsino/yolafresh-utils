@@ -1,7 +1,32 @@
 import {  capitalizarPrimeraLetra, formatCantidad, formatearFecha, formatSolesPeruanos } from "./textos";
 
 import { Carrito, Hora } from "../interfaces/pedido";
+import { Usuario } from "../interfaces/usuario";
+import { Cliente, Personal } from "../interfaces/persons";
 
+/**
+ * Obtiene el nombre para mostrar de un usuario
+ * Busca en las entidades asociadas para encontrar el nombre
+ */
+function obtenerNombreUsuario(usuario: Usuario | null): string {
+  if (!usuario || !usuario.entidades || usuario.entidades.length === 0) {
+    return "Usuario";
+  }
+
+  // Buscar en las entidades una que tenga nombre
+  for (const entidad of usuario.entidades) {
+    if (entidad.tipo === "Cliente") {
+      const cliente = entidad as Cliente;
+      return cliente.nombres + (cliente.apellidos ? ` ${cliente.apellidos}` : '');
+    } else if (entidad.tipo === "Personal") {
+      const personal = entidad as Personal;
+      return personal.nombres;
+    }
+  }
+
+  // Fallback al username si no encontramos nombre en las entidades
+  return usuario.username || "Usuario";
+}
 
 
 export function generarWhatsAppLink(carrito: Carrito): string {
@@ -27,7 +52,7 @@ export function generarWhatsAppLink(carrito: Carrito): string {
 
   const mensaje = `*Lista de Compras de Vegetales*\n\n${listaDeCompras}\n\n` +
     `*Monto Total: ${formatSolesPeruanos(carrito.total, 'version1')}*\n\n` +
-    `*Solicitante:* _${capitalizarPrimeraLetra(carrito?.usuario?.nombres ?? "")}_\n` +
+    `*Solicitante:* _${capitalizarPrimeraLetra(obtenerNombreUsuario(carrito?.usuario))}_\n` +
     `*Fecha:* _${fechaEntrega}_\n` +
     `${direccionORecojo}\n` +
     `*Hora de Entrega:* _${horaEntrega}_\n\n` +

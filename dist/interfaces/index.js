@@ -18,8 +18,10 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 // Exportaciones de interfaces
 __exportStar(require("./compras"), exports);
+__exportStar(require("./entidades"), exports);
 __exportStar(require("./finanzas"), exports);
 __exportStar(require("./pedido"), exports);
 __exportStar(require("./persons"), exports);
 __exportStar(require("./producto"), exports);
 __exportStar(require("./producto.update.interface"), exports);
+__exportStar(require("./usuario"), exports);

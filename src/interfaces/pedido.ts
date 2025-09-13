@@ -1,6 +1,6 @@
 import { OrderState, TipoVentaEnum } from "@/utils/enums"
 import { IProducto } from "./producto"
-import { Usuario } from "./persons"
+import { Usuario } from "./usuario"
 
 export type Hora = {
     hora: string,

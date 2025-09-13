@@ -4,8 +4,30 @@ exports.generarWhatsAppLink = generarWhatsAppLink;
 exports.generarCodigoAmigable = generarCodigoAmigable;
 exports.formatearHora = formatearHora;
 const textos_1 = require("./textos");
+/**
+ * Obtiene el nombre para mostrar de un usuario
+ * Busca en las entidades asociadas para encontrar el nombre
+ */
+function obtenerNombreUsuario(usuario) {
+    if (!usuario || !usuario.entidades || usuario.entidades.length === 0) {
+        return "Usuario";
+    }
+    // Buscar en las entidades una que tenga nombre
+    for (const entidad of usuario.entidades) {
+        if (entidad.tipo === "Cliente") {
+            const cliente = entidad;
+            return cliente.nombres + (cliente.apellidos ? ` ${cliente.apellidos}` : '');
+        }
+        else if (entidad.tipo === "Personal") {
+            const personal = entidad;
+            return personal.nombres;
+        }
+    }
+    // Fallback al username si no encontramos nombre en las entidades
+    return usuario.username || "Usuario";
+}
 function generarWhatsAppLink(carrito) {
-    var _a, _b, _c;
+    var _a;
     const baseUrl = "https://wa.me/51944844745?text=";
     const listaDeCompras = carrito.items
         .map((item, index) => {
@@ -24,7 +46,7 @@ function generarWhatsAppLink(carrito) {
         : `*Dirección de Envío:* _${(_a = carrito === null || carrito === void 0 ? void 0 : carrito.direccion) === null || _a === void 0 ? void 0 : _a.nombre}_`;
     const mensaje = `*Lista de Compras de Vegetales*\n\n${listaDeCompras}\n\n` +
         `*Monto Total: ${(0, textos_1.formatSolesPeruanos)(carrito.total, 'version1')}*\n\n` +
-        `*Solicitante:* _${(0, textos_1.capitalizarPrimeraLetra)((_c = (_b = carrito === null || carrito === void 0 ? void 0 : carrito.usuario) === null || _b === void 0 ? void 0 : _b.nombres) !== null && _c !== void 0 ? _c : "")}_\n` +
+        `*Solicitante:* _${(0, textos_1.capitalizarPrimeraLetra)(obtenerNombreUsuario(carrito === null || carrito === void 0 ? void 0 : carrito.usuario))}_\n` +
         `*Fecha:* _${fechaEntrega}_\n` +
         `${direccionORecojo}\n` +
         `*Hora de Entrega:* _${horaEntrega}_\n\n` +
