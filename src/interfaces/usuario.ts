@@ -44,10 +44,10 @@ export interface IUsuario {
   activo: boolean;
   
   /** Fecha de creación del usuario */
-  fechaCreacion: Date;
+  createdAt: Date;
   
   /** Fecha de última actualización */
-  fechaActualizacion: Date;
+  updatedAt: Date;
   
   /** Fecha del último acceso al sistema */
   fechaUltimoAcceso?: Date;

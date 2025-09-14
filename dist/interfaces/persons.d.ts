@@ -87,7 +87,7 @@ export interface ContactoEmergencia {
  * Extiende de Entidad para integrarse con el sistema de usuarios y roles
  */
 export interface Cliente extends Entidad {
-    tipo: "Cliente";
+    tipoEntidad: "Cliente";
     nombres: string;
     apellidos?: string;
     celular: string;
@@ -108,24 +108,12 @@ export interface Cliente extends Entidad {
     /** Descuento especial asignado (porcentaje) */
     descuentoEspecial?: number;
     /** Categoría del cliente */
-    categoria: CategoriaCliente;
+    categoriaCliente: CategoriaCliente;
     /** Preferencias del cliente */
     preferencias?: PreferenciasCliente;
     /** Información de facturación */
     facturacion?: InformacionFacturacion;
 }
-/**
- * Categorías de cliente
- */
-export declare enum CategoriaCliente {
-    REGULAR = "regular",
-    VIP = "vip",
-    MAYORISTA = "mayorista",
-    CORPORATIVO = "corporativo"
-}
-/**
- * Preferencias del cliente
- */
 export interface PreferenciasCliente {
     /** Método de pago preferido */
     metodoPagoPreferido?: string;
@@ -172,7 +160,7 @@ export interface Proveedor extends Entidad {
     email: string;
     direccion: string;
     ubicacion?: string;
-    categoria?: string;
+    categoriaProveedor?: string;
     /** Cuentas bancarias del proveedor */
     cuentasBancarias: CuentaBancaria[];
     /** Medios de pago digital aceptados */

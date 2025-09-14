@@ -4,8 +4,8 @@
  * @description Implementa la lógica de negocio para usuarios, roles y entidades
  * Siguiendo el patrón establecido en ShoppingCart y Venta
  */
-import { IUsuario, CrearUsuario, ConfiguracionUsuario } from "../interfaces/usuario";
-import { Entidad, Rol, SesionContexto } from "../interfaces/entidades";
+import { IUsuario, CrearUsuario, ConfiguracionUsuario } from "@/interfaces/usuario";
+import { Entidad, Rol, SesionContexto } from "@/interfaces/entidades";
 /**
  * Clase Usuario - Maneja la lógica completa del usuario
  *

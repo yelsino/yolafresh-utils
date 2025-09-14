@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.obtenerCaracteristicas = exports.getUrlProduct = void 0;
-const caracteristicas_1 = require("../data/caracteristicas");
+const caracteristicas_1 = require("@/data/caracteristicas");
 const getUrlProduct = (categorias, urlbase, categoriaId, productoId) => {
     const categoria = categorias.find((v) => v.id === categoriaId);
     if (!categoria)

@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VentaCalculator = exports.Venta = void 0;
 exports.getVentaItems = getVentaItems;
 exports.getVentaItemsResumen = getVentaItemsResumen;
-const utils_1 = require("../utils");
+const utils_1 = require("@/utils");
 const ShoppingCart_1 = require("./ShoppingCart");
 /**
  * Clase Venta - Maneja toda la lógica de una venta finalizada

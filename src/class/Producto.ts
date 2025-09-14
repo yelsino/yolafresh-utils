@@ -53,8 +53,8 @@ export class Producto implements IProducto {
   caracteristicas: string;
   descripcion: string;
   peso: string;
-  creacion?: Date;
-  actualizacion?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   stock: EstadoStockEnum;
   precioCompra: number;
 
@@ -80,8 +80,8 @@ export class Producto implements IProducto {
     this.caracteristicas = data.caracteristicas || '';
     this.descripcion = data.descripcion || '';
     this.peso = data.peso || '';
-    this.creacion = data.creacion;
-    this.actualizacion = data.actualizacion;
+    this.createdAt = data.createdAt;
+    this.updatedAt = data.updatedAt;
     this.stock = data.stock || EstadoStockEnum.STOCK_MEDIO;
     this.precioCompra = data.precioCompra || 0;
   }
@@ -222,8 +222,8 @@ export class Producto implements IProducto {
       caracteristicas: this.caracteristicas,
       descripcion: this.descripcion,
       peso: this.peso,
-      creacion: this.creacion,
-      actualizacion: this.actualizacion,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
       stock: this.stock,
       precioCompra: this.precioCompra,
     };
@@ -234,7 +234,7 @@ export class Producto implements IProducto {
    */
   actualizar(data: Partial<IProducto>): void {
     Object.assign(this, data);
-    this.actualizacion = new Date();
+    this.updatedAt = new Date();
   }
 
   /**
@@ -290,13 +290,13 @@ export class Producto implements IProducto {
     if (filtros.fechaInicio) {
       const fechaInicio = new Date(filtros.fechaInicio);
       resultado = resultado.filter(p => 
-        p.creacion && p.creacion >= fechaInicio
+        p.createdAt && p.createdAt >= fechaInicio
       );
     }
     if (filtros.fechaFin) {
       const fechaFin = new Date(filtros.fechaFin);
       resultado = resultado.filter(p => 
-        p.creacion && p.creacion <= fechaFin
+        p.createdAt && p.createdAt <= fechaFin
       );
     }
 
@@ -432,8 +432,8 @@ export class Producto implements IProducto {
       caracteristicas: this.caracteristicas,
       descripcion: this.descripcion,
       peso: this.peso,
-      fecha_creacion: this.creacion,
-      fecha_actualizacion: this.actualizacion,
+      fecha_creacion: this.createdAt,
+      fecha_actualizacion: this.updatedAt,
       stock: this.stock,
       precio_compra: this.precioCompra,
     };
@@ -464,8 +464,8 @@ export class Producto implements IProducto {
       caracteristicas: data.caracteristicas,
       descripcion: data.descripcion,
       peso: data.peso,
-      creacion: data.fecha_creacion,
-      actualizacion: data.fecha_actualizacion,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
       stock: data.stock,
       precioCompra: data.precio_compra,
     };

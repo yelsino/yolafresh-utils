@@ -21,11 +21,11 @@ export interface Entidad {
     /** Identificador único de la entidad */
     id: string;
     /** Tipo de entidad que determina su comportamiento */
-    tipo: EntidadTipo;
+    tipoEntidad: EntidadTipo;
     /** Fecha de creación de la entidad */
-    fechaCreacion: Date;
+    createdAt: Date;
     /** Fecha de última actualización */
-    fechaActualizacion: Date;
+    updatedAt: Date;
     /** Estado activo/inactivo de la entidad */
     activo: boolean;
 }

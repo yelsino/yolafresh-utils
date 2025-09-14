@@ -30,8 +30,8 @@ class Producto {
         this.caracteristicas = data.caracteristicas || '';
         this.descripcion = data.descripcion || '';
         this.peso = data.peso || '';
-        this.creacion = data.creacion;
-        this.actualizacion = data.actualizacion;
+        this.createdAt = data.createdAt;
+        this.updatedAt = data.updatedAt;
         this.stock = data.stock || enums_1.EstadoStockEnum.STOCK_MEDIO;
         this.precioCompra = data.precioCompra || 0;
     }
@@ -158,8 +158,8 @@ class Producto {
             caracteristicas: this.caracteristicas,
             descripcion: this.descripcion,
             peso: this.peso,
-            creacion: this.creacion,
-            actualizacion: this.actualizacion,
+            createdAt: this.createdAt,
+            updatedAt: this.updatedAt,
             stock: this.stock,
             precioCompra: this.precioCompra,
         };
@@ -169,7 +169,7 @@ class Producto {
      */
     actualizar(data) {
         Object.assign(this, data);
-        this.actualizacion = new Date();
+        this.updatedAt = new Date();
     }
     /**
      * Crea una instancia de Producto desde datos JSON
@@ -214,11 +214,11 @@ class Producto {
         // Filtrar por fechas
         if (filtros.fechaInicio) {
             const fechaInicio = new Date(filtros.fechaInicio);
-            resultado = resultado.filter(p => p.creacion && p.creacion >= fechaInicio);
+            resultado = resultado.filter(p => p.createdAt && p.createdAt >= fechaInicio);
         }
         if (filtros.fechaFin) {
             const fechaFin = new Date(filtros.fechaFin);
-            resultado = resultado.filter(p => p.creacion && p.creacion <= fechaFin);
+            resultado = resultado.filter(p => p.createdAt && p.createdAt <= fechaFin);
         }
         // Ordenar resultados
         if (filtros.sortBy) {
@@ -336,8 +336,8 @@ class Producto {
             caracteristicas: this.caracteristicas,
             descripcion: this.descripcion,
             peso: this.peso,
-            fecha_creacion: this.creacion,
-            fecha_actualizacion: this.actualizacion,
+            fecha_creacion: this.createdAt,
+            fecha_actualizacion: this.updatedAt,
             stock: this.stock,
             precio_compra: this.precioCompra,
         };
@@ -367,8 +367,8 @@ class Producto {
             caracteristicas: data.caracteristicas,
             descripcion: data.descripcion,
             peso: data.peso,
-            creacion: data.fecha_creacion,
-            actualizacion: data.fecha_actualizacion,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at,
             stock: data.stock,
             precioCompra: data.precio_compra,
         };

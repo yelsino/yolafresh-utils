@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EstadoRelacionProveedor = exports.CategoriaCliente = exports.DiaSemana = exports.CargosPersonal = void 0;
+exports.EstadoRelacionProveedor = exports.DiaSemana = exports.CargosPersonal = void 0;
 var CargosPersonal;
 (function (CargosPersonal) {
     CargosPersonal["SECRETARIO"] = "SECRETARIO";
@@ -22,16 +22,6 @@ var DiaSemana;
     DiaSemana["SABADO"] = "sabado";
     DiaSemana["DOMINGO"] = "domingo";
 })(DiaSemana || (exports.DiaSemana = DiaSemana = {}));
-/**
- * Categorías de cliente
- */
-var CategoriaCliente;
-(function (CategoriaCliente) {
-    CategoriaCliente["REGULAR"] = "regular";
-    CategoriaCliente["VIP"] = "vip";
-    CategoriaCliente["MAYORISTA"] = "mayorista";
-    CategoriaCliente["CORPORATIVO"] = "corporativo";
-})(CategoriaCliente || (exports.CategoriaCliente = CategoriaCliente = {}));
 /**
  * Estado de la relación comercial con el proveedor
  */

@@ -6,8 +6,8 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ShoppingCart = exports.ProcedenciaVenta = void 0;
-const utils_1 = require("../utils");
-const fiscales_1 = require("../utils/fiscales");
+const utils_1 = require("@/utils");
+const fiscales_1 = require("@/utils/fiscales");
 var ProcedenciaVenta;
 (function (ProcedenciaVenta) {
     ProcedenciaVenta["Tienda"] = "Tienda";
