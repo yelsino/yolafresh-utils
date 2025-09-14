@@ -9,6 +9,14 @@ export enum CargosPersonal {
   VENDEDOR = 'VENDEDOR'
 }
 
+export enum CategoriaCliente {
+  REGULAR = 'REGULAR',
+  PREMIUM = 'PREMIUM',
+  VIP = 'VIP',
+  MAYORISTA = 'MAYORISTA',
+  CORPORATIVO = 'CORPORATIVO'
+}
+
 /**
  * Interfaz para Personal del sistema
  * 

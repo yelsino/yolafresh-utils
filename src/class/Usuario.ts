@@ -38,14 +38,14 @@ export class Usuario implements IUsuario {
   public readonly email: string;
   public readonly username: string;
   public readonly passwordHash: string;
-  public readonly fechaCreacion: Date;
+  public readonly createdAt: Date;
   public readonly emailVerificado: boolean;
 
   // === PROPIEDADES MUTABLES ===
   private _roles: Rol[];
   private _entidades: Entidad[];
   private _activo: boolean;
-  private _fechaActualizacion: Date;
+  private _updatedAt: Date;
   private _fechaUltimoAcceso?: Date;
   private _intentosFallidos: number;
   private _cuentaBloqueada: boolean;
@@ -73,14 +73,14 @@ export class Usuario implements IUsuario {
     this.email = data.email;
     this.username = data.username;
     this.passwordHash = data.passwordHash;
-    this.fechaCreacion = new Date(data.fechaCreacion);
+    this.createdAt = new Date(data.createdAt);
     this.emailVerificado = data.emailVerificado;
 
     // Propiedades mutables
     this._roles = [...data.roles];
     this._entidades = [...data.entidades];
     this._activo = data.activo;
-    this._fechaActualizacion = new Date(data.fechaActualizacion);
+    this._updatedAt = new Date(data.updatedAt);
     this._fechaUltimoAcceso = data.fechaUltimoAcceso ? new Date(data.fechaUltimoAcceso) : undefined;
     this._intentosFallidos = data.intentosFallidos;
     this._cuentaBloqueada = data.cuentaBloqueada;
@@ -94,7 +94,7 @@ export class Usuario implements IUsuario {
   get roles(): Rol[] { return this._roles; }
   get entidades(): Entidad[] { return this._entidades; }
   get activo(): boolean { return this._activo; }
-  get fechaActualizacion(): Date { return this._fechaActualizacion; }
+  get updatedAt(): Date { return this._updatedAt; }
   get fechaUltimoAcceso(): Date | undefined { return this._fechaUltimoAcceso; }
   get intentosFallidos(): number { return this._intentosFallidos; }
   get cuentaBloqueada(): boolean { return this._cuentaBloqueada; }
@@ -236,13 +236,13 @@ export class Usuario implements IUsuario {
 
     // Buscar en las entidades una que tenga nombre
     for (const entidad of this._entidades) {
-      if (entidad.tipo === "Cliente") {
+      if (entidad.tipoEntidad === "Cliente") {
         const cliente = entidad as Cliente;
         return cliente.nombres + (cliente.apellidos ? ` ${cliente.apellidos}` : '');
-      } else if (entidad.tipo === "Personal") {
+      } else if (entidad.tipoEntidad === "Personal") {
         const personal = entidad as Personal;
         return personal.nombres;
-      } else if (entidad.tipo === "Proveedor") {
+      } else if (entidad.tipoEntidad === "Proveedor") {
         const proveedor = entidad as Proveedor;
         return proveedor.nombre;
       }
@@ -263,7 +263,7 @@ export class Usuario implements IUsuario {
    */
   obtenerEntidadesPorTipo<T extends Entidad>(tipo: string): T[] {
     return this._entidades.filter(entidad => 
-      entidad.activo && entidad.tipo === tipo
+        entidad.activo && entidad.tipoEntidad === tipo
     ) as T[];
   }
 
@@ -458,7 +458,7 @@ export class Usuario implements IUsuario {
    * Actualiza la fecha de modificación
    */
   private actualizarFechaModificacion(): void {
-    this._fechaActualizacion = new Date();
+    this._updatedAt = new Date();
   }
 
   /**
@@ -492,8 +492,8 @@ export class Usuario implements IUsuario {
       roles: this._roles,
       entidades: this._entidades,
       activo: this._activo,
-      fechaCreacion: this.fechaCreacion.toISOString(),
-      fechaActualizacion: this._fechaActualizacion.toISOString(),
+      createdAt: this.createdAt.toISOString(),
+      updatedAt: this._updatedAt.toISOString(),
       fechaUltimoAcceso: this._fechaUltimoAcceso?.toISOString(),
       intentosFallidos: this._intentosFallidos,
       cuentaBloqueada: this._cuentaBloqueada,
@@ -517,8 +517,8 @@ export class Usuario implements IUsuario {
       roles: this._roles,
       entidades: this._entidades,
       activo: this._activo,
-      fechaCreacion: this.fechaCreacion,
-      fechaActualizacion: this._fechaActualizacion,
+      createdAt: this.createdAt,
+      updatedAt: this._updatedAt,
       fechaUltimoAcceso: this._fechaUltimoAcceso,
       intentosFallidos: this._intentosFallidos,
       cuentaBloqueada: this._cuentaBloqueada,
@@ -544,8 +544,8 @@ export class Usuario implements IUsuario {
       roles: doc.roles,
       entidades: doc.entidades,
       activo: doc.activo,
-      fechaCreacion: new Date(doc.fechaCreacion),
-      fechaActualizacion: new Date(doc.fechaActualizacion),
+      createdAt: new Date(doc.createdAt),
+      updatedAt: new Date(doc.updatedAt),
       fechaUltimoAcceso: doc.fechaUltimoAcceso ? new Date(doc.fechaUltimoAcceso) : undefined,
       intentosFallidos: doc.intentosFallidos,
       cuentaBloqueada: doc.cuentaBloqueada,
@@ -571,8 +571,8 @@ export class Usuario implements IUsuario {
       roles: [], // Se asignan después
       entidades: [], // Se asignan después
       activo: true,
-      fechaCreacion: ahora,
-      fechaActualizacion: ahora,
+      createdAt: ahora,
+      updatedAt: ahora,
       intentosFallidos: 0,
       cuentaBloqueada: false,
       emailVerificado: false,

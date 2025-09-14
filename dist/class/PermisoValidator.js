@@ -7,7 +7,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PermisoValidator = void 0;
-const entidades_1 = require("@/interfaces/entidades");
+const entidades_1 = require("../interfaces/entidades");
 /**
  * Clase PermisoValidator - Validaciones avanzadas de permisos
  *
@@ -234,7 +234,7 @@ class PermisoValidator {
         }
         // Solo Personal puede crear ventas
         const entidadActiva = contexto.usuario.sesionActual.entidadActiva;
-        if (entidadActiva.tipo !== 'Personal') {
+        if (entidadActiva.tipoEntidad !== 'Personal') {
             return {
                 permitido: false,
                 mensaje: 'Solo el personal puede crear ventas',

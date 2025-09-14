@@ -198,8 +198,8 @@ export class UsuarioManager {
         roles,
         entidades,
         activo: true,
-        fechaCreacion: new Date(),
-        fechaActualizacion: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         intentosFallidos: 0,
         cuentaBloqueada: false,
         emailVerificado: false,
@@ -368,7 +368,7 @@ export class UsuarioManager {
         username: datos.username || usuario.username,
         passwordHash: datos.password ? await this.configuracion.hashearPassword!(datos.password) : usuario.passwordHash,
         activo: datos.activo !== undefined ? datos.activo : usuario.activo,
-        fechaActualizacion: new Date(),
+        updatedAt: new Date(),
         configuraciones: datos.configuraciones ? {
           idioma: datos.configuraciones.idioma || usuario.configuraciones?.idioma || "es",
           zonaHoraria: datos.configuraciones.zonaHoraria || usuario.configuraciones?.zonaHoraria || "America/Lima",
@@ -663,7 +663,7 @@ export class UsuarioManager {
       // Auditoría
       this.registrarAuditoria(solicitante.id, 'asociar_entidades', {
         usuarioId,
-        entidades: entidades.map(e => ({ id: e.id, tipo: e.tipo }))
+        entidades: entidades.map(e => ({ id: e.id, tipo: e.tipoEntidad }))
       });
 
       return {
@@ -721,7 +721,7 @@ export class UsuarioManager {
 
       if (filtros.tipoEntidad) {
         usuarios = usuarios.filter(u => 
-          u.entidades.some(e => e.tipo === filtros.tipoEntidad)
+          u.entidades.some(e => e.tipoEntidad === filtros.tipoEntidad)
         );
       }
 
@@ -791,8 +791,8 @@ export class UsuarioManager {
       // Distribución por entidades
       usuarios.forEach(usuario => {
         usuario.entidades.forEach(entidad => {
-          estadisticas.distribucionEntidades[entidad.tipo] = 
-            (estadisticas.distribucionEntidades[entidad.tipo] || 0) + 1;
+          estadisticas.distribucionEntidades[entidad.tipoEntidad] = 
+            (estadisticas.distribucionEntidades[entidad.tipoEntidad] || 0) + 1;
         });
       });
 

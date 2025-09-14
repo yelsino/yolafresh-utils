@@ -14,11 +14,11 @@ function obtenerNombreUsuario(usuario) {
     }
     // Buscar en las entidades una que tenga nombre
     for (const entidad of usuario.entidades) {
-        if (entidad.tipo === "Cliente") {
+        if (entidad.tipoEntidad === "Cliente") {
             const cliente = entidad;
             return cliente.nombres + (cliente.apellidos ? ` ${cliente.apellidos}` : '');
         }
-        else if (entidad.tipo === "Personal") {
+        else if (entidad.tipoEntidad === "Personal") {
             const personal = entidad;
             return personal.nombres;
         }

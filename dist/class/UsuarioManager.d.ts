@@ -7,8 +7,8 @@
 import { Usuario } from "./Usuario";
 import { SesionManager, ConfiguracionSesion } from "./SesionManager";
 import { PermisoValidator } from "./PermisoValidator";
-import { CrearUsuario, ActualizarUsuario, LoginUsuario, LoginRespuesta } from "@/interfaces/usuario";
-import { Rol, Entidad } from "@/interfaces/entidades";
+import { CrearUsuario, ActualizarUsuario, LoginUsuario, LoginRespuesta } from "../interfaces/usuario";
+import { Rol, Entidad } from "../interfaces/entidades";
 /**
  * Configuración del UsuarioManager
  */

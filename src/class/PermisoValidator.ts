@@ -360,7 +360,7 @@ export class PermisoValidator {
 
     // Solo Personal puede crear ventas
     const entidadActiva = contexto.usuario.sesionActual.entidadActiva;
-    if (entidadActiva.tipo !== 'Personal') {
+    if (entidadActiva.tipoEntidad !== 'Personal') {
       return {
         permitido: false,
         mensaje: 'Solo el personal puede crear ventas',

@@ -7,6 +7,13 @@ export declare enum CargosPersonal {
     CAJERO = "CAJERO",
     VENDEDOR = "VENDEDOR"
 }
+export declare enum CategoriaCliente {
+    REGULAR = "REGULAR",
+    PREMIUM = "PREMIUM",
+    VIP = "VIP",
+    MAYORISTA = "MAYORISTA",
+    CORPORATIVO = "CORPORATIVO"
+}
 /**
  * Interfaz para Personal del sistema
  *

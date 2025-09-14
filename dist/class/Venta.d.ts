@@ -1,4 +1,4 @@
-import { OrderState } from "@/utils";
+import { OrderState } from "../utils";
 import { CarItem, IShoppingCart, ProcedenciaVenta, TipoPagoVenta } from "./ShoppingCart";
 /**
  * Interfaz para datos inmutables de una venta

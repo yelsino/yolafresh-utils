@@ -5,8 +5,8 @@
  * incluyendo autenticación, autorización y gestión de tokens
  */
 import { Usuario } from "./Usuario";
-import { LoginUsuario, LoginRespuesta } from "@/interfaces/usuario";
-import { SesionContexto } from "@/interfaces/entidades";
+import { LoginUsuario, LoginRespuesta } from "../interfaces/usuario";
+import { SesionContexto } from "../interfaces/entidades";
 /**
  * Configuración de sesiones
  */

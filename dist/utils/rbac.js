@@ -18,7 +18,7 @@ exports.requiereRol = requiereRol;
 exports.puedeEnEntidad = puedeEnEntidad;
 exports.obtenerEntidadesAccesibles = obtenerEntidadesAccesibles;
 exports.crearRolPredefinido = crearRolPredefinido;
-const entidades_1 = require("@/interfaces/entidades");
+const entidades_1 = require("../interfaces/entidades");
 /**
  * Verifica si un usuario tiene un permiso específico
  *
@@ -181,7 +181,7 @@ function puedeEnEntidad(usuario, permiso, entidadId) {
 function obtenerEntidadesAccesibles(usuario, tipo) {
     let entidades = usuario.entidades.filter((entidad) => entidad.activo);
     if (tipo) {
-        entidades = entidades.filter((entidad) => entidad.tipo === tipo);
+        entidades = entidades.filter((entidad) => entidad.tipoEntidad === tipo);
     }
     return entidades;
 }

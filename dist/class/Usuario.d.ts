@@ -4,8 +4,8 @@
  * @description Implementa la lógica de negocio para usuarios, roles y entidades
  * Siguiendo el patrón establecido en ShoppingCart y Venta
  */
-import { IUsuario, CrearUsuario, ConfiguracionUsuario } from "@/interfaces/usuario";
-import { Entidad, Rol, SesionContexto } from "@/interfaces/entidades";
+import { IUsuario, CrearUsuario, ConfiguracionUsuario } from "../interfaces/usuario";
+import { Entidad, Rol, SesionContexto } from "../interfaces/entidades";
 /**
  * Clase Usuario - Maneja la lógica completa del usuario
  *
@@ -21,12 +21,12 @@ export declare class Usuario implements IUsuario {
     readonly email: string;
     readonly username: string;
     readonly passwordHash: string;
-    readonly fechaCreacion: Date;
+    readonly createdAt: Date;
     readonly emailVerificado: boolean;
     private _roles;
     private _entidades;
     private _activo;
-    private _fechaActualizacion;
+    private _updatedAt;
     private _fechaUltimoAcceso?;
     private _intentosFallidos;
     private _cuentaBloqueada;
@@ -40,7 +40,7 @@ export declare class Usuario implements IUsuario {
     get roles(): Rol[];
     get entidades(): Entidad[];
     get activo(): boolean;
-    get fechaActualizacion(): Date;
+    get updatedAt(): Date;
     get fechaUltimoAcceso(): Date | undefined;
     get intentosFallidos(): number;
     get cuentaBloqueada(): boolean;

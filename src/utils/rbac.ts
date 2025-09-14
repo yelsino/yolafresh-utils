@@ -200,7 +200,7 @@ export function obtenerEntidadesAccesibles(
   let entidades = usuario.entidades.filter((entidad: Entidad) => entidad.activo);
   
   if (tipo) {
-    entidades = entidades.filter((entidad: Entidad) => entidad.tipo === tipo);
+    entidades = entidades.filter((entidad: Entidad) => entidad.tipoEntidad === tipo);
   }
   
   return entidades;

@@ -22,10 +22,10 @@ function productodbToProducto(producto) {
         titulo: producto.titulo,
         descripcion: producto.descripcion,
         peso: producto.peso,
-        creacion: producto.creacion ? new Date(producto.creacion) : undefined,
+        createdAt: producto.createdAt ? new Date(producto.createdAt) : undefined,
         consideraciones: producto.consideraciones,
         caracteristicas: producto.caracteristicas,
-        actualizacion: producto.actualizacion ? new Date(producto.actualizacion) : undefined,
+        updatedAt: producto.updatedAt ? new Date(producto.updatedAt) : undefined,
         precioCompra: producto.precioCompra,
         stock: producto.stock
     };

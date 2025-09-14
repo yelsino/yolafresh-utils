@@ -4,8 +4,8 @@
  * @description Funciones para validar permisos, roles y gestionar acceso
  * Implementa un sistema robusto de control de acceso basado en roles
  */
-import { IUsuario } from "@/interfaces/usuario";
-import { Rol, Permisos, RolesPredefinidos, SesionContexto, Entidad } from "@/interfaces/entidades";
+import { IUsuario } from "../interfaces/usuario";
+import { Rol, Permisos, RolesPredefinidos, SesionContexto, Entidad } from "../interfaces/entidades";
 /**
  * Verifica si un usuario tiene un permiso específico
  *
