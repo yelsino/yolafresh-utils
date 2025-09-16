@@ -11,8 +11,8 @@ export interface IVenta {
     nombre: string;
     type: string;
     estado: OrderState;
-    fechaCreacion: Date;
-    fechaActualizacion: Date;
+    fechaCreacion?: Date;
+    fechaActualizacion?: Date;
     detalleVenta: IShoppingCart;
     costoEnvio?: number;
     subtotal: number;

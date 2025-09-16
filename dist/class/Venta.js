@@ -32,8 +32,8 @@ class Venta {
         this.nombre = data.nombre;
         this.type = data.type || 'venta';
         this.estado = data.estado;
-        this.fechaCreacion = new Date(data.fechaCreacion);
-        this.fechaActualizacion = new Date(data.fechaActualizacion);
+        this.fechaCreacion = data.fechaCreacion ? new Date(data.fechaCreacion) : new Date();
+        this.fechaActualizacion = data.fechaActualizacion ? new Date(data.fechaActualizacion) : new Date();
         // ⭐ Congelar el carrito para inmutabilidad
         // Crear instancia de ShoppingCart para usar sus métodos nativos
         const shoppingCartInstance = ShoppingCart_1.ShoppingCart.fromJSON(data.detalleVenta);
@@ -237,8 +237,8 @@ class Venta {
             nombre: doc.nombre,
             type: doc.type || 'venta',
             estado: doc.estado,
-            fechaCreacion: new Date(doc.fechaCreacion),
-            fechaActualizacion: new Date(doc.fechaActualizacion),
+            fechaCreacion: doc.fechaCreacion ? new Date(doc.fechaCreacion) : new Date(),
+            fechaActualizacion: doc.fechaActualizacion ? new Date(doc.fechaActualizacion) : new Date(),
             detalleVenta: doc.detalleVenta,
             subtotal: doc.subtotal,
             impuesto: doc.impuesto,

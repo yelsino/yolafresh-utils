@@ -15,8 +15,8 @@ export interface IVenta {
   
   // === ESTADO Y FECHAS ===
   estado: OrderState;
-  fechaCreacion: Date;
-  fechaActualizacion: Date;
+  fechaCreacion?: Date;
+  fechaActualizacion?: Date;
   
   // === CARRITO COMPLETO (ÚNICA FUENTE) ===
   detalleVenta: IShoppingCart; // ⭐ TODA la información aquí
@@ -99,8 +99,8 @@ export class Venta implements IVenta {
     this.nombre = data.nombre;
     this.type = data.type || 'venta';
     this.estado = data.estado;
-    this.fechaCreacion = new Date(data.fechaCreacion);
-    this.fechaActualizacion = new Date(data.fechaActualizacion);
+    this.fechaCreacion = data.fechaCreacion ? new Date(data.fechaCreacion) : new Date();
+    this.fechaActualizacion = data.fechaActualizacion ? new Date(data.fechaActualizacion) : new Date();
     
     // ⭐ Congelar el carrito para inmutabilidad
     // Crear instancia de ShoppingCart para usar sus métodos nativos
@@ -338,8 +338,8 @@ export class Venta implements IVenta {
       nombre: doc.nombre,
       type: doc.type || 'venta',
       estado: doc.estado,
-      fechaCreacion: new Date(doc.fechaCreacion),
-      fechaActualizacion: new Date(doc.fechaActualizacion),
+      fechaCreacion: doc.fechaCreacion ? new Date(doc.fechaCreacion) : new Date(),
+      fechaActualizacion: doc.fechaActualizacion ? new Date(doc.fechaActualizacion) : new Date(),
       detalleVenta: doc.detalleVenta,
       subtotal: doc.subtotal,
       impuesto: doc.impuesto,
