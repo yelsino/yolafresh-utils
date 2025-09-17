@@ -5,7 +5,7 @@
  * incluyendo creación, autenticación, gestión de roles y auditoría
  */
 import { Usuario } from "./Usuario";
-import { SesionManager, ConfiguracionSesion } from "./SesionManager";
+import { SesionManager } from "./SesionManager";
 import { PermisoValidator } from "./PermisoValidator";
 import { CrearUsuario, ActualizarUsuario, LoginUsuario, LoginRespuesta } from "../interfaces/usuario";
 import { Rol, Entidad } from "../interfaces/entidades";
@@ -13,8 +13,6 @@ import { Rol, Entidad } from "../interfaces/entidades";
  * Configuración del UsuarioManager
  */
 export interface ConfiguracionUsuarioManager {
-    /** Configuración de sesiones */
-    sesiones?: Partial<ConfiguracionSesion>;
     /** Habilitar auditoría detallada */
     auditoria: boolean;
     /** Habilitar cache de usuarios */
@@ -95,7 +93,7 @@ export declare class UsuarioManager {
      */
     eliminarUsuario(id: string, solicitante: Usuario): Promise<ResultadoOperacion<void>>;
     /**
-     * Autentica un usuario
+     * Autentica un usuario (delega a SesionManager)
      */
     autenticar(credenciales: LoginUsuario): Promise<ResultadoOperacion<LoginRespuesta>>;
     /**
@@ -146,11 +144,11 @@ export declare class UsuarioManager {
         limite?: number;
     } | undefined, solicitante: Usuario): Promise<ResultadoOperacion<any[]>>;
     /**
-     * Obtiene el gestor de sesiones
-     */
-    get gestorSesiones(): SesionManager;
-    /**
      * Obtiene el validador de permisos
      */
     get validadorPermisos(): PermisoValidator;
+    /**
+     * Obtiene el gestor de sesiones
+     */
+    get gestorSesiones(): SesionManager;
 }

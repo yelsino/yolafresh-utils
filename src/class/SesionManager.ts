@@ -7,15 +7,9 @@
 
 import { Usuario } from "./Usuario";
 import { 
-  LoginUsuario, 
-  LoginRespuesta, 
-  ConfiguracionUsuario 
-} from "@/interfaces/usuario";
+  LoginRespuesta} from "@/interfaces/usuario";
 
-import { 
-  SesionContexto, 
-  Entidad 
-} from "@/interfaces/entidades";
+import { SesionContexto } from "@/interfaces/entidades";
 
 /**
  * Configuración de sesiones
@@ -88,23 +82,15 @@ export class SesionManager {
   // === MÉTODOS DE AUTENTICACIÓN ===
 
   /**
-   * Autentica un usuario y crea una sesión
+   * Crea una sesión para un usuario ya autenticado
    */
-  async autenticar(
-    credenciales: LoginUsuario,
-    usuario: Usuario,
-    validarPassword: (password: string, hash: string) => Promise<boolean>
+  async crearSesion(
+    usuario: Usuario, 
+    entidadId?: string,
   ): Promise<LoginRespuesta> {
     try {
       // Validar estado del usuario
       usuario.validarEstadoOperacional();
-
-      // Validar credenciales
-      const passwordValido = await validarPassword(credenciales.password, usuario.passwordHash);
-      if (!passwordValido) {
-        usuario.registrarIntentoFallido();
-        throw new Error('Credenciales inválidas');
-      }
 
       // Verificar límite de sesiones concurrentes
       if (!this.configuracion.permitirSesionesConcurrentes) {
@@ -114,7 +100,7 @@ export class SesionManager {
       }
 
       // Iniciar sesión en el usuario
-      const sesion = usuario.iniciarSesion(credenciales.entidadId);
+      const sesion = usuario.iniciarSesion(entidadId);
       
       // Generar tokens
       const tokenInfo = this.generarTokens(usuario.id);
@@ -131,8 +117,7 @@ export class SesionManager {
       };
 
     } catch (error) {
-      // Log del intento de autenticación fallido
-      console.error(`Intento de autenticación fallido para ${credenciales.identificador}:`, error);
+      console.error(`Error al crear sesión para usuario ${usuario.id}:`, error);
       throw error;
     }
   }

@@ -5,7 +5,7 @@
  * incluyendo autenticación, autorización y gestión de tokens
  */
 import { Usuario } from "./Usuario";
-import { LoginUsuario, LoginRespuesta } from "../interfaces/usuario";
+import { LoginRespuesta } from "../interfaces/usuario";
 import { SesionContexto } from "../interfaces/entidades";
 /**
  * Configuración de sesiones
@@ -55,9 +55,9 @@ export declare class SesionManager {
     private refreshTokens;
     constructor(configuracion?: Partial<ConfiguracionSesion>);
     /**
-     * Autentica un usuario y crea una sesión
+     * Crea una sesión para un usuario ya autenticado
      */
-    autenticar(credenciales: LoginUsuario, usuario: Usuario, validarPassword: (password: string, hash: string) => Promise<boolean>): Promise<LoginRespuesta>;
+    crearSesion(usuario: Usuario, entidadId?: string): Promise<LoginRespuesta>;
     /**
      * Refresca un token expirado
      */

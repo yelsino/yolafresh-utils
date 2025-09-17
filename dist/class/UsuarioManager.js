@@ -38,7 +38,7 @@ class UsuarioManager {
             validarPassword: this.validarPasswordDefault,
             ...configuracion
         };
-        this.sesionManager = new SesionManager_1.SesionManager(this.configuracion.sesiones);
+        this.sesionManager = new SesionManager_1.SesionManager();
         this.permisoValidator = new PermisoValidator_1.PermisoValidator();
     }
     // === OPERACIONES CRUD DE USUARIOS ===
@@ -336,22 +336,26 @@ class UsuarioManager {
     }
     // === AUTENTICACIÓN ===
     /**
-     * Autentica un usuario
+     * Autentica un usuario (delega a SesionManager)
      */
     async autenticar(credenciales) {
         try {
             // Buscar usuario
             const usuario = this.buscarPorEmailOUsername(credenciales.identificador, credenciales.identificador);
             if (!usuario) {
+                this.registrarAuditoria('desconocido', 'login_fallido', {
+                    identificador: credenciales.identificador,
+                    razon: 'usuario_no_encontrado'
+                });
                 return {
                     exito: false,
                     mensaje: 'Credenciales inválidas',
                     codigoError: 'INVALID_CREDENTIALS'
                 };
             }
-            // Autenticar con SesionManager
-            const respuestaLogin = await this.sesionManager.autenticar(credenciales, usuario, this.configuracion.validarPassword);
-            // Auditoría
+            // Delegar autenticación al SesionManager
+            const respuestaLogin = await this.sesionManager.crearSesion(usuario, credenciales.entidadId);
+            // Auditoría exitosa
             this.registrarAuditoria(usuario.id, 'login_exitoso', {
                 entidadActiva: respuestaLogin.sesion.entidadActiva.id
             });
@@ -564,13 +568,12 @@ class UsuarioManager {
                 };
             }
             const usuarios = Array.from(this.usuarios.values());
-            const estadisticasSesiones = this.sesionManager.obtenerEstadisticasSesiones();
             // Calcular estadísticas
             const estadisticas = {
                 totalUsuarios: usuarios.length,
                 usuariosActivos: usuarios.filter(u => u.activo).length,
                 usuariosBloqueados: usuarios.filter(u => u.cuentaBloqueada).length,
-                sesionesActivas: estadisticasSesiones.sesionesActivas,
+                sesionesActivas: this.sesionManager.obtenerSesionesActivas().length,
                 distribucionRoles: {},
                 distribucionEntidades: {}
             };
@@ -724,16 +727,16 @@ class UsuarioManager {
     }
     // === GETTERS PÚBLICOS ===
     /**
-     * Obtiene el gestor de sesiones
-     */
-    get gestorSesiones() {
-        return this.sesionManager;
-    }
-    /**
      * Obtiene el validador de permisos
      */
     get validadorPermisos() {
         return this.permisoValidator;
+    }
+    /**
+     * Obtiene el gestor de sesiones
+     */
+    get gestorSesiones() {
+        return this.sesionManager;
     }
 }
 exports.UsuarioManager = UsuarioManager;
