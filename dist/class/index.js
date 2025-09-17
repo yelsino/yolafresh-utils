@@ -19,8 +19,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // Exportaciones de class
 __exportStar(require("./PermisoValidator"), exports);
 __exportStar(require("./Producto"), exports);
-__exportStar(require("./SesionManager"), exports);
 __exportStar(require("./ShoppingCart"), exports);
 __exportStar(require("./Usuario"), exports);
-__exportStar(require("./UsuarioManager"), exports);
 __exportStar(require("./Venta"), exports);
