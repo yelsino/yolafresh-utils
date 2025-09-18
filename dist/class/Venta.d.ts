@@ -1,5 +1,6 @@
-import { OrderState } from "@/utils";
-import { CarItem, IShoppingCart, ProcedenciaVenta, TipoPagoVenta } from "./ShoppingCart";
+import { OrderState } from "../utils";
+import { CarItem, IShoppingCart, ProcedenciaVenta } from "./ShoppingCart";
+import { MetodoPago } from "../interfaces";
 /**
  * Interfaz para datos inmutables de una venta
  *
@@ -19,7 +20,7 @@ export interface IVenta {
     impuesto: number;
     total: number;
     procedencia: ProcedenciaVenta;
-    tipoPago?: TipoPagoVenta;
+    tipoPago?: MetodoPago;
     clienteId?: string;
     vendedorId?: string;
     finanzaId?: string;
@@ -48,7 +49,7 @@ export declare class Venta implements IVenta {
     readonly impuesto: number;
     readonly total: number;
     readonly procedencia: ProcedenciaVenta;
-    readonly tipoPago?: TipoPagoVenta;
+    readonly tipoPago?: MetodoPago;
     readonly clienteId?: string;
     readonly vendedorId?: string;
     readonly finanzaId?: string;

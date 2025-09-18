@@ -3,10 +3,10 @@
  * Reutilizable para cualquier sistema POS
  * Simplificada: usa solo CarItem con congelación automática al guardar
  */
-import { IProducto, MetodoPago } from "@/interfaces";
-import { Cliente, Personal } from "@/interfaces/persons";
-import { TipoVentaEnum } from "@/utils";
-import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "@/utils/fiscales";
+import { IProducto, MetodoPago } from "../interfaces";
+import { Cliente, Personal } from "../interfaces/persons";
+import { TipoVentaEnum } from "../utils";
+import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "../utils/fiscales";
 /**
  * Representa un ítem individual en el carrito de compras
  *

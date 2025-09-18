@@ -1,5 +1,6 @@
 import { OrderState } from "@/utils";
-import { CarItem, IShoppingCart, ProcedenciaVenta, TipoPagoVenta, ShoppingCart } from "./ShoppingCart";
+import { CarItem, IShoppingCart, ProcedenciaVenta,  ShoppingCart } from "./ShoppingCart";
+import { MetodoPago } from "@/interfaces";
 
 /**
  * Interfaz para datos inmutables de una venta
@@ -29,7 +30,7 @@ export interface IVenta {
   
   // === INFORMACIÓN DE PAGO ===
   procedencia: ProcedenciaVenta;
-  tipoPago?: TipoPagoVenta;
+  tipoPago?: MetodoPago;
   // IDs de trazabilidad
   clienteId?: string;
   vendedorId?: string;
@@ -68,7 +69,7 @@ export class Venta implements IVenta {
   public readonly total: number;
   
   public readonly procedencia: ProcedenciaVenta;
-  public readonly tipoPago?: TipoPagoVenta;
+  public readonly tipoPago?: MetodoPago;
   // IDs de trazabilidad
   public readonly clienteId?: string;
   public readonly vendedorId?: string;
