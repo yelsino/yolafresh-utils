@@ -18,7 +18,7 @@ exports.requiereRol = requiereRol;
 exports.puedeEnEntidad = puedeEnEntidad;
 exports.obtenerEntidadesAccesibles = obtenerEntidadesAccesibles;
 exports.crearRolPredefinido = crearRolPredefinido;
-const entidades_1 = require("../interfaces/entidades");
+const entidades_1 = require("@/interfaces/entidades");
 /**
  * Verifica si un usuario tiene un permiso específico
  *

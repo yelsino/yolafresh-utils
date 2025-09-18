@@ -3,10 +3,10 @@
  * Reutilizable para cualquier sistema POS
  * Simplificada: usa solo CarItem con congelación automática al guardar
  */
-import { IProducto } from "../interfaces";
-import { Cliente, Personal } from "../interfaces/persons";
-import { TipoVentaEnum } from "../utils";
-import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "../utils/fiscales";
+import { IProducto, MetodoPago } from "@/interfaces";
+import { Cliente, Personal } from "@/interfaces/persons";
+import { TipoVentaEnum } from "@/utils";
+import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "@/utils/fiscales";
 /**
  * Representa un ítem individual en el carrito de compras
  *
@@ -96,10 +96,6 @@ export declare enum ProcedenciaVenta {
     Instagram = "Instagram",
     Facebook = "Facebook"
 }
-/**
- * Tipos de pago disponibles
- */
-export type TipoPagoVenta = 'Efectivo' | 'Digital' | 'Tarjeta';
 /**
  * Interfaz principal del carrito de compras
  *
@@ -213,7 +209,7 @@ export interface IShoppingCart {
      * Método de pago seleccionado (opcional)
      * @description Forma en que se realizará el pago
      */
-    metodoPago?: TipoPagoVenta;
+    metodoPago?: MetodoPago;
     /**
      * Dinero recibido del cliente (opcional)
      * @description Monto entregado por el cliente
@@ -383,8 +379,8 @@ export declare class ShoppingCart implements IShoppingCart {
         personalId?: string;
         clienteColor?: string;
     }): void;
-    get metodoPago(): TipoPagoVenta | undefined;
-    set metodoPago(value: TipoPagoVenta | undefined);
+    get metodoPago(): MetodoPago | undefined;
+    set metodoPago(value: MetodoPago | undefined);
     get dineroRecibido(): number | undefined;
     set dineroRecibido(value: number | undefined);
     get procedencia(): ProcedenciaVenta | undefined;
@@ -397,7 +393,7 @@ export declare class ShoppingCart implements IShoppingCart {
      * Configurar datos de pago
      */
     configurarPago(datos: {
-        metodoPago?: TipoPagoVenta;
+        metodoPago?: MetodoPago;
         dineroRecibido?: number;
         procedencia?: ProcedenciaVenta;
         esPedido?: boolean;

@@ -7,7 +7,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Usuario = void 0;
-const entidades_1 = require("../interfaces/entidades");
+const entidades_1 = require("@/interfaces/entidades");
 /**
  * Clase Usuario - Maneja la lógica completa del usuario
  *

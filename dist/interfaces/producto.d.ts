@@ -1,4 +1,4 @@
-import { EstadoStockEnum, TipoVentaEnum } from "../utils/enums";
+import { EstadoStockEnum, TipoVentaEnum } from "@/utils/enums";
 export interface IProducto {
     id: string;
     idPrimario: string;

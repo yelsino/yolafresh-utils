@@ -4,7 +4,7 @@
  * Simplificada: usa solo CarItem con congelación automática al guardar
  */
 
-import { IProducto } from "@/interfaces";
+import { IProducto, MetodoPago } from "@/interfaces";
 import { Cliente, Personal } from "@/interfaces/persons";
 import { TipoVentaEnum } from "@/utils";
 import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "@/utils/fiscales";
@@ -114,10 +114,7 @@ export enum ProcedenciaVenta {
   Facebook = 'Facebook'
 }
 
-/**
- * Tipos de pago disponibles
- */
-export type TipoPagoVenta = 'Efectivo' | 'Digital' | 'Tarjeta';
+
 
 /**
  * Interfaz principal del carrito de compras
@@ -251,7 +248,7 @@ export interface IShoppingCart {
    * Método de pago seleccionado (opcional)
    * @description Forma en que se realizará el pago
    */
-  metodoPago?: TipoPagoVenta;
+  metodoPago?: MetodoPago;
   
   /** 
    * Dinero recibido del cliente (opcional)
@@ -320,7 +317,7 @@ export class ShoppingCart implements IShoppingCart {
   private _clienteColor?: string;
   
   // === DATOS DE PAGO ===
-  private _metodoPago?: TipoPagoVenta;
+  private _metodoPago?: MetodoPago;
   private _dineroRecibido?: number;
   private _procedencia?: ProcedenciaVenta;
   private _esPedido?: boolean;
@@ -776,11 +773,11 @@ export class ShoppingCart implements IShoppingCart {
 
   // **GETTERS Y SETTERS DE DATOS DE PAGO**
 
-  get metodoPago(): TipoPagoVenta | undefined {
+  get metodoPago(): MetodoPago | undefined {
     return this._metodoPago;
   }
 
-  set metodoPago(value: TipoPagoVenta | undefined) {
+  set metodoPago(value: MetodoPago | undefined) {
     this._metodoPago = value;
   }
 
@@ -820,7 +817,7 @@ export class ShoppingCart implements IShoppingCart {
    * Configurar datos de pago
    */
   configurarPago(datos: {
-    metodoPago?: TipoPagoVenta;
+    metodoPago?: MetodoPago;
     dineroRecibido?: number;
     procedencia?: ProcedenciaVenta;
     esPedido?: boolean;
