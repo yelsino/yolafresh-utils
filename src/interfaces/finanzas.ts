@@ -1,7 +1,7 @@
 export type MetodoPago = 'DIGITAL' | 'EFECTIVO' | 'TARJETA' | 'OTRO'
 export type EstadoEgreso = 'ACTIVO' | 'ANULADO'
 // export type TypeFinanza = 'Egreso' | 'Ingreso' | 'Credito' | 'Cambio'
-export type TypeFinanza = 'Egreso' | 'Ingreso' | 'Credito' | 'Cambio' | 'Anulacion'
+export type TypeFinanza = 'Egreso' | 'Ingreso' | 'Cambio' | 'Anulacion'
 
 export interface Egreso {
   id?: string;
