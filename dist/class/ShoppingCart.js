@@ -21,11 +21,11 @@ var ProcedenciaVenta;
  * Simplificada: trabaja solo con CarItem, congela al guardar
  */
 class ShoppingCart {
-    constructor(id, configuracionFiscal, nombre) {
+    constructor(id, configuracionFiscal, nombre, fechaCreacion) {
         var _a, _b, _c;
         this._items = [];
         this.id = id || `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-        this.fechaCreacion = new Date();
+        this.fechaCreacion = fechaCreacion || new Date();
         this.nombre = nombre || `Carrito-${Date.now()}`;
         // Configuración fiscal por defecto (puede ser sobrescrita)
         this._configuracionFiscal = {
@@ -661,21 +661,23 @@ class ShoppingCart {
             aplicaImpuesto: data.aplicaImpuesto,
             nombreImpuesto: data.nombreImpuesto
         };
-        const venta = new ShoppingCart(data.id, configuracionFiscal, data.nombre);
+        // Restaurar fecha original si existe en los datos
+        const fechaCreacion = data.fechaCreacion ? new Date(data.fechaCreacion) : undefined;
+        const carrito = new ShoppingCart(data.id, configuracionFiscal, data.nombre, fechaCreacion);
         // Ítems ya vienen como CarItems congelados; preservar tal cual
-        venta._items = data.items || [];
-        venta._notas = data.notas;
+        carrito._items = data.items || [];
+        carrito._notas = data.notas;
         // Trazabilidad: aceptar objetos completos o fallback por ID
-        venta._cliente = data.cliente;
-        venta._personal = data.personal;
-        venta._clienteColor = data.clienteColor;
+        carrito._cliente = data.cliente;
+        carrito._personal = data.personal;
+        carrito._clienteColor = data.clienteColor;
         // Datos de pago
-        venta._metodoPago = data.metodoPago;
-        venta._dineroRecibido = data.dineroRecibido;
-        venta._procedencia = data.procedencia;
-        venta._esPedido = data.esPedido;
-        venta._finanzaId = data.finanzaId;
-        return venta;
+        carrito._metodoPago = data.metodoPago;
+        carrito._dineroRecibido = data.dineroRecibido;
+        carrito._procedencia = data.procedencia;
+        carrito._esPedido = data.esPedido;
+        carrito._finanzaId = data.finanzaId;
+        return carrito;
     }
     /**
      * Obtener todos los items como CarItems (ya son CarItems)

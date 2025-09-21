@@ -269,7 +269,7 @@ export declare class ShoppingCart implements IShoppingCart {
     private _procedencia?;
     private _esPedido?;
     private _finanzaId?;
-    constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal, nombre?: string);
+    constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal, nombre?: string, fechaCreacion?: Date);
     /**
      * Configurar impuesto (IGV, IVA, etc.)
      */
