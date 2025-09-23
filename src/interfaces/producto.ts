@@ -1,5 +1,16 @@
 import { EstadoStockEnum, TipoActualizacionEnum, TipoVentaEnum } from "@/utils/enums";
 
+
+export type ProductImage = {
+  base: string;
+  sizes: {
+    small: string;
+    medium: string;
+    large: string;
+  };
+}
+
+
 export interface IProducto {
     id: string;
     idPrimario: string;
@@ -9,7 +20,7 @@ export interface IProducto {
     nombre: string;
     precio: number;
     status: boolean;
-    url: string;
+    url: ProductImage;
     categorieId: string;
     esPrimario: boolean
     tipoVenta: TipoVentaEnum;
@@ -25,6 +36,8 @@ export interface IProducto {
     precioCompra: number;
   }
   
+
+
 
 
   export interface Categoria {

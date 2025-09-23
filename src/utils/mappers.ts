@@ -1,4 +1,4 @@
-import { IProducto } from "@/interfaces/producto";
+import { IProducto, ProductImage } from "@/interfaces/producto";
 import { OrderState, TipoVentaEnum } from "./enums";
 import { Carrito, Lista, Pedido } from "@/interfaces/pedido";
 
@@ -12,7 +12,7 @@ export function productodbToProducto(producto: any): IProducto {
     nombre: producto.nombre,
     precio: producto.precio,
     status: producto.status,
-    url: producto.url,
+    url: toProductImage(producto.url),
     categorieId: producto.categorieId,
     esPrimario: producto.esPrimario,
     tipoVenta: producto.tipoVenta as TipoVentaEnum,
@@ -29,6 +29,24 @@ export function productodbToProducto(producto: any): IProducto {
   };
 }
 
+function isValidProductImage(val: unknown): val is ProductImage {
+  if (typeof val !== 'object' || val === null) return false;
+  const obj = val as Record<string, unknown>;
+  const baseOk = typeof obj.base === 'string';
+  const sizes = obj.sizes as Record<string, unknown> | undefined;
+  const sizesOk = !!sizes && typeof sizes.small === 'string' && typeof sizes.medium === 'string' && typeof sizes.large === 'string';
+  return baseOk && sizesOk;
+}
+
+function toProductImage(val: ProductImage | string | undefined): ProductImage {
+  if (typeof val === 'string') {
+    return { base: val, sizes: { small: val, medium: val, large: val } };
+  }
+  if (isValidProductImage(val)) {
+    return val;
+  }
+  return { base: '', sizes: { small: '', medium: '', large: '' } };
+}
 
 export function pedidodbToPedido(pedido: any): Pedido {
   return {
@@ -47,7 +65,6 @@ export function pedidodbToPedido(pedido: any): Pedido {
     actualizacion: pedido.actualizacion
   };
 }
-
 
 export function carritoSchematoCarrito(carrito: any): Carrito {
   return {

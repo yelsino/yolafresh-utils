@@ -14,7 +14,7 @@ function productodbToProducto(producto) {
         nombre: producto.nombre,
         precio: producto.precio,
         status: producto.status,
-        url: producto.url,
+        url: toProductImage(producto.url),
         categorieId: producto.categorieId,
         esPrimario: producto.esPrimario,
         tipoVenta: producto.tipoVenta,
@@ -29,6 +29,24 @@ function productodbToProducto(producto) {
         precioCompra: producto.precioCompra,
         stock: producto.stock
     };
+}
+function isValidProductImage(val) {
+    if (typeof val !== 'object' || val === null)
+        return false;
+    const obj = val;
+    const baseOk = typeof obj.base === 'string';
+    const sizes = obj.sizes;
+    const sizesOk = !!sizes && typeof sizes.small === 'string' && typeof sizes.medium === 'string' && typeof sizes.large === 'string';
+    return baseOk && sizesOk;
+}
+function toProductImage(val) {
+    if (typeof val === 'string') {
+        return { base: val, sizes: { small: val, medium: val, large: val } };
+    }
+    if (isValidProductImage(val)) {
+        return val;
+    }
+    return { base: '', sizes: { small: '', medium: '', large: '' } };
 }
 function pedidodbToPedido(pedido) {
     return {

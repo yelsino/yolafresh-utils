@@ -40,6 +40,8 @@ export enum TipoActualizacionEnum {
 export enum MetodoPagoEnum {
   DIGITAL = 'DIGITAL',
   EFECTIVO = 'EFECTIVO',
+  TARJETA = 'TARJETA',
+  OTRO = 'OTRO',
 }
 
 export enum MedioPagoDigitalEnum {

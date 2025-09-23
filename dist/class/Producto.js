@@ -20,7 +20,7 @@ class Producto {
         this.nombre = data.nombre || '';
         this.precio = data.precio || 0;
         this.status = data.status !== undefined ? data.status : true;
-        this.url = data.url || '';
+        this.url = Producto.toProductImage(data.url);
         this.categorieId = data.categorieId || '';
         this.esPrimario = data.esPrimario || false;
         this.tipoVenta = data.tipoVenta || enums_1.TipoVentaEnum.Unidad;
@@ -357,7 +357,7 @@ class Producto {
             nombre: data.nombre,
             precio: data.precio,
             status: data.status,
-            url: data.url,
+            url: Producto.toProductImage(data.url),
             categorieId: data.categorie_id,
             esPrimario: data.es_primario,
             tipoVenta: data.tipo_venta,
@@ -416,6 +416,28 @@ class Producto {
             result[camelKey] = value;
         }
         return result;
+    }
+    /**
+     * Normaliza una entrada (string | ProductImage | undefined) a ProductImage
+     * Mantiene compatibilidad con datos antiguos donde url era string
+     */
+    static toProductImage(val) {
+        if (typeof val === 'string') {
+            return { base: val, sizes: { small: val, medium: val, large: val } };
+        }
+        if (Producto.isValidProductImage(val)) {
+            return val;
+        }
+        return { base: '', sizes: { small: '', medium: '', large: '' } };
+    }
+    static isValidProductImage(val) {
+        if (typeof val !== 'object' || val === null)
+            return false;
+        const obj = val;
+        const baseOk = typeof obj.base === 'string';
+        const sizes = obj.sizes;
+        const sizesOk = !!sizes && typeof sizes.small === 'string' && typeof sizes.medium === 'string' && typeof sizes.large === 'string';
+        return baseOk && sizesOk;
     }
 }
 exports.Producto = Producto;

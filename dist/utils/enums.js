@@ -43,6 +43,8 @@ var MetodoPagoEnum;
 (function (MetodoPagoEnum) {
     MetodoPagoEnum["DIGITAL"] = "DIGITAL";
     MetodoPagoEnum["EFECTIVO"] = "EFECTIVO";
+    MetodoPagoEnum["TARJETA"] = "TARJETA";
+    MetodoPagoEnum["OTRO"] = "OTRO";
 })(MetodoPagoEnum || (exports.MetodoPagoEnum = MetodoPagoEnum = {}));
 var MedioPagoDigitalEnum;
 (function (MedioPagoDigitalEnum) {

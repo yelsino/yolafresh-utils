@@ -1,5 +1,5 @@
 import { EstadoStockEnum, TipoActualizacionEnum, TipoVentaEnum } from '../utils/enums';
-import { IProducto } from '../interfaces/producto';
+import { IProducto, ProductImage } from '../interfaces/producto';
 import { MedidasConverter, FormatMedidaOptions } from '../utils/medidas-converter';
 
 /**
@@ -43,7 +43,7 @@ export class Producto implements IProducto {
   nombre: string;
   precio: number;
   status: boolean;
-  url: string;
+  url: ProductImage;
   categorieId: string;
   esPrimario: boolean;
   tipoVenta: TipoVentaEnum;
@@ -61,7 +61,7 @@ export class Producto implements IProducto {
   /**
    * Constructor de la clase Producto
    */
-  constructor(data: Partial<IProducto> = {}) {
+  constructor(data: (Partial<IProducto> & { url?: ProductImage | string }) = {}) {
     this.id = data.id || '';
     this.idPrimario = data.idPrimario || '';
     this.mayoreo = data.mayoreo || false;
@@ -70,7 +70,7 @@ export class Producto implements IProducto {
     this.nombre = data.nombre || '';
     this.precio = data.precio || 0;
     this.status = data.status !== undefined ? data.status : true;
-    this.url = data.url || '';
+    this.url = Producto.toProductImage(data.url);
     this.categorieId = data.categorieId || '';
     this.esPrimario = data.esPrimario || false;
     this.tipoVenta = data.tipoVenta || TipoVentaEnum.Unidad;
@@ -454,7 +454,7 @@ export class Producto implements IProducto {
       nombre: data.nombre,
       precio: data.precio,
       status: data.status,
-      url: data.url,
+      url: Producto.toProductImage(data.url),
       categorieId: data.categorie_id,
       esPrimario: data.es_primario,
       tipoVenta: data.tipo_venta,
@@ -520,6 +520,27 @@ export class Producto implements IProducto {
     return result;
   }
 
-  // Método crearUpdateProducto eliminado - UpdateProducto debe ser una clase separada
+  /**
+   * Normaliza una entrada (string | ProductImage | undefined) a ProductImage
+   * Mantiene compatibilidad con datos antiguos donde url era string
+   */
+  private static toProductImage(val: ProductImage | string | undefined): ProductImage {
+    if (typeof val === 'string') {
+      return { base: val, sizes: { small: val, medium: val, large: val } };
+    }
+    if (Producto.isValidProductImage(val)) {
+      return val as ProductImage;
+    }
+    return { base: '', sizes: { small: '', medium: '', large: '' } };
+  }
+
+  private static isValidProductImage(val: unknown): val is ProductImage {
+    if (typeof val !== 'object' || val === null) return false;
+    const obj = val as Record<string, unknown>;
+    const baseOk = typeof obj.base === 'string';
+    const sizes = obj.sizes as Record<string, unknown> | undefined;
+    const sizesOk = !!sizes && typeof sizes.small === 'string' && typeof sizes.medium === 'string' && typeof sizes.large === 'string';
+    return baseOk && sizesOk;
+  }
 }
 

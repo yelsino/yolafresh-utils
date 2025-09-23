@@ -1,5 +1,5 @@
 import { EstadoStockEnum, TipoVentaEnum } from '../utils/enums';
-import { IProducto } from '../interfaces/producto';
+import { IProducto, ProductImage } from '../interfaces/producto';
 /**
  * Parámetros para formatear cantidades
  */
@@ -38,7 +38,7 @@ export declare class Producto implements IProducto {
     nombre: string;
     precio: number;
     status: boolean;
-    url: string;
+    url: ProductImage;
     categorieId: string;
     esPrimario: boolean;
     tipoVenta: TipoVentaEnum;
@@ -55,7 +55,9 @@ export declare class Producto implements IProducto {
     /**
      * Constructor de la clase Producto
      */
-    constructor(data?: Partial<IProducto>);
+    constructor(data?: (Partial<IProducto> & {
+        url?: ProductImage | string;
+    }));
     /**
      * Formatea la cantidad según el tipo de venta y configuraciones
      * Refactorizado para usar MedidasConverter y seguir principios SOLID
@@ -167,4 +169,10 @@ export declare class Producto implements IProducto {
      * Convierte un objeto completo de snake_case a camelCase
      */
     static objectToCamelCase(obj: Record<string, any>): Record<string, any>;
+    /**
+     * Normaliza una entrada (string | ProductImage | undefined) a ProductImage
+     * Mantiene compatibilidad con datos antiguos donde url era string
+     */
+    private static toProductImage;
+    private static isValidProductImage;
 }
