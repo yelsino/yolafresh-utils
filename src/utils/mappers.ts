@@ -2,32 +2,7 @@ import { IProducto, ProductImage } from "@/interfaces/producto";
 import { OrderState, TipoVentaEnum } from "./enums";
 import { Carrito, Lista, Pedido } from "@/interfaces/pedido";
 
-export function productodbToProducto(producto: any): IProducto {
-  return {
-    id: producto.id,
-    idPrimario: producto.idPrimario,
-    mayoreo: producto.mayoreo,
-    cantidadParaDescuento: producto.cantidadParaDescuento,
-    descuentoXCantidad: producto.descuentoXCantidad,
-    nombre: producto.nombre,
-    precio: producto.precio,
-    status: producto.status,
-    url: toProductImage(producto.url),
-    categorieId: producto.categorieId,
-    esPrimario: producto.esPrimario,
-    tipoVenta: producto.tipoVenta as TipoVentaEnum,
-    fraccionable: producto.fraccionable,
-    titulo: producto.titulo,
-    descripcion: producto.descripcion,
-    peso: producto.peso,
-    createdAt: producto.createdAt ? new Date(producto.createdAt) : undefined,
-    consideraciones: producto.consideraciones,
-    caracteristicas: producto.caracteristicas,
-    updatedAt: producto.updatedAt ? new Date(producto.updatedAt) : undefined,
-    precioCompra: producto.precioCompra,
-    stock: producto.stock
-  };
-}
+
 
 function isValidProductImage(val: unknown): val is ProductImage {
   if (typeof val !== 'object' || val === null) return false;

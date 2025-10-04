@@ -1,35 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.productodbToProducto = productodbToProducto;
 exports.pedidodbToPedido = pedidodbToPedido;
 exports.carritoSchematoCarrito = carritoSchematoCarrito;
 exports.listaDbToLista = listaDbToLista;
-function productodbToProducto(producto) {
-    return {
-        id: producto.id,
-        idPrimario: producto.idPrimario,
-        mayoreo: producto.mayoreo,
-        cantidadParaDescuento: producto.cantidadParaDescuento,
-        descuentoXCantidad: producto.descuentoXCantidad,
-        nombre: producto.nombre,
-        precio: producto.precio,
-        status: producto.status,
-        url: toProductImage(producto.url),
-        categorieId: producto.categorieId,
-        esPrimario: producto.esPrimario,
-        tipoVenta: producto.tipoVenta,
-        fraccionable: producto.fraccionable,
-        titulo: producto.titulo,
-        descripcion: producto.descripcion,
-        peso: producto.peso,
-        createdAt: producto.createdAt ? new Date(producto.createdAt) : undefined,
-        consideraciones: producto.consideraciones,
-        caracteristicas: producto.caracteristicas,
-        updatedAt: producto.updatedAt ? new Date(producto.updatedAt) : undefined,
-        precioCompra: producto.precioCompra,
-        stock: producto.stock
-    };
-}
 function isValidProductImage(val) {
     if (typeof val !== 'object' || val === null)
         return false;

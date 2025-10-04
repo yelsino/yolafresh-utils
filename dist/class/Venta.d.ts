@@ -12,8 +12,8 @@ export interface IVenta {
     nombre: string;
     type: string;
     estado: OrderState;
-    fechaCreacion?: Date;
-    fechaActualizacion?: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
     detalleVenta: IShoppingCart;
     costoEnvio?: number;
     subtotal: number;
@@ -42,8 +42,8 @@ export declare class Venta implements IVenta {
     readonly nombre: string;
     readonly type: string;
     readonly estado: OrderState;
-    readonly fechaCreacion: Date;
-    readonly fechaActualizacion: Date;
+    readonly createdAt: Date;
+    readonly updatedAt: Date;
     readonly detalleVenta: IShoppingCart;
     readonly subtotal: number;
     readonly impuesto: number;

@@ -4,7 +4,6 @@ export type TypeFinanza = 'Egreso' | 'Ingreso' | 'Cambio' | 'Anulacion';
 export interface Egreso {
     id?: string;
     monto: number;
-    fechaRegistro: Date;
     tipoEgreso: TipoEgreso;
     quienRegistroId: string;
     quienHizoGastoId: string[] | string;
@@ -12,6 +11,8 @@ export interface Egreso {
     detalle?: string;
     estado: EstadoEgreso;
     metodoPago: MetodoPago;
+    createdAt: Date;
+    updatedAt: Date;
 }
 export type TipoIngreso = 'CREDITO' | 'AL_CONTADO';
 export type OrigenIngreso = "VENTA_DIA" | "RETORNO" | "PRESTAMO" | "APORTE" | "COBRO_CREDITO";
@@ -59,12 +60,12 @@ export interface Ingreso {
      * Fecha y hora cuando se registró el ingreso
      * @description Se establece automáticamente al crear el registro
      */
-    fechaRegistro: Date;
+    createdAt: Date;
     /**
      * Fecha y hora de la última actualización
      * @description Se actualiza automáticamente en cada modificación
      */
-    fechaActualizacion: Date;
+    updatedAt: Date;
     /**
      * Monto total del ingreso
      * @description Valor en la moneda base del sistema (generalmente soles)
@@ -154,8 +155,9 @@ export interface MovimientoCaja {
     saldoEfectivo: number;
     saldoDigital: number;
     saldoTotal: number;
-    fechaRegistro: Date;
     codigoTransaccion: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 export interface CuentaBancaria {
     id?: string;

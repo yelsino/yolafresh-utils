@@ -53,8 +53,8 @@ export class Producto implements IProducto {
   caracteristicas: string;
   descripcion: string;
   peso: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
   stock: EstadoStockEnum;
   precioCompra: number;
 
@@ -80,8 +80,8 @@ export class Producto implements IProducto {
     this.caracteristicas = data.caracteristicas || '';
     this.descripcion = data.descripcion || '';
     this.peso = data.peso || '';
-    this.createdAt = data.createdAt;
-    this.updatedAt = data.updatedAt;
+    this.createdAt = data.createdAt || new Date();
+    this.updatedAt = data.updatedAt || new Date();
     this.stock = data.stock || EstadoStockEnum.STOCK_MEDIO;
     this.precioCompra = data.precioCompra || 0;
   }

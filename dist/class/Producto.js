@@ -30,8 +30,8 @@ class Producto {
         this.caracteristicas = data.caracteristicas || '';
         this.descripcion = data.descripcion || '';
         this.peso = data.peso || '';
-        this.createdAt = data.createdAt;
-        this.updatedAt = data.updatedAt;
+        this.createdAt = data.createdAt || new Date();
+        this.updatedAt = data.updatedAt || new Date();
         this.stock = data.stock || enums_1.EstadoStockEnum.STOCK_MEDIO;
         this.precioCompra = data.precioCompra || 0;
     }

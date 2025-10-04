@@ -26,8 +26,8 @@ export interface IProducto {
     caracteristicas: string;
     descripcion: string;
     peso: string;
-    createdAt?: Date;
-    updatedAt?: Date;
+    createdAt: Date;
+    updatedAt: Date;
     stock: EstadoStockEnum;
     precioCompra: number;
 }

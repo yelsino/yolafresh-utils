@@ -32,8 +32,8 @@ class Venta {
         this.nombre = data.nombre;
         this.type = data.type || 'venta';
         this.estado = data.estado;
-        this.fechaCreacion = data.fechaCreacion ? new Date(data.fechaCreacion) : new Date();
-        this.fechaActualizacion = data.fechaActualizacion ? new Date(data.fechaActualizacion) : new Date();
+        this.createdAt = data.createdAt ? new Date(data.createdAt) : new Date();
+        this.updatedAt = data.updatedAt ? new Date(data.updatedAt) : new Date();
         // ⭐ Congelar el carrito para inmutabilidad
         // Crear instancia de ShoppingCart para usar sus métodos nativos
         const shoppingCartInstance = ShoppingCart_1.ShoppingCart.fromJSON(data.detalleVenta);
@@ -180,8 +180,8 @@ class Venta {
             type: this.type,
             nombre: this.nombre,
             estado: this.estado,
-            fechaCreacion: this.fechaCreacion.toISOString(),
-            fechaActualizacion: this.fechaActualizacion.toISOString(),
+            fechaCreacion: this.createdAt.toISOString(),
+            fechaActualizacion: this.updatedAt.toISOString(),
             detalleVenta: this.detalleVenta,
             subtotal: this.subtotal,
             impuesto: this.impuesto,
@@ -208,8 +208,8 @@ class Venta {
             nombre: this.nombre,
             type: this.type,
             estado: this.estado,
-            fechaCreacion: this.fechaCreacion,
-            fechaActualizacion: this.fechaActualizacion,
+            createdAt: this.createdAt,
+            updatedAt: this.updatedAt,
             detalleVenta: this.detalleVenta,
             subtotal: this.subtotal,
             impuesto: this.impuesto,
@@ -237,8 +237,8 @@ class Venta {
             nombre: doc.nombre,
             type: doc.type || 'venta',
             estado: doc.estado,
-            fechaCreacion: doc.fechaCreacion ? new Date(doc.fechaCreacion) : new Date(),
-            fechaActualizacion: doc.fechaActualizacion ? new Date(doc.fechaActualizacion) : new Date(),
+            createdAt: doc.fechaCreacion ? new Date(doc.fechaCreacion) : new Date(),
+            updatedAt: doc.fechaActualizacion ? new Date(doc.fechaActualizacion) : new Date(),
             detalleVenta: doc.detalleVenta,
             subtotal: doc.subtotal,
             impuesto: doc.impuesto,
@@ -282,8 +282,8 @@ class Venta {
             nombre: (_b = (_a = options === null || options === void 0 ? void 0 : options.nombre) !== null && _a !== void 0 ? _a : carritoJSON.nombre) !== null && _b !== void 0 ? _b : 'Venta',
             type: 'venta',
             estado: utils_1.OrderState.DESPACHADO,
-            fechaCreacion: ahora,
-            fechaActualizacion: ahora,
+            createdAt: ahora,
+            updatedAt: ahora,
             detalleVenta: {
                 ...carritoJSON,
                 // 🔧 FIX: Preservar objetos completos del cliente y personal
