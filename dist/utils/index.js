@@ -19,7 +19,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // Exportaciones de utils
 __exportStar(require("./dates"), exports);
 __exportStar(require("./enums"), exports);
-__exportStar(require("./filters"), exports);
 __exportStar(require("./fiscales"), exports);
 __exportStar(require("./icons"), exports);
 __exportStar(require("./listas"), exports);
