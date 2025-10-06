@@ -7,7 +7,6 @@ const path = require('path');
 const directories = [
   { path: '../src/utils', prefix: '' },
   { path: '../src/interfaces', prefix: '' },
-  { path: '../src/data', prefix: '' },
   { path: '../src/class', prefix: '' },
   // Puedes añadir más directorios aquí si es necesario
 ];
@@ -67,7 +66,6 @@ async function generateMainIndex() {
   
   exportStatements.push('// Exportaciones por categoría');
   exportStatements.push("export * from './interfaces';");
-  exportStatements.push("export * from './data';");
   exportStatements.push("export * from './utils';");
   exportStatements.push("export * from './class';");
   exportStatements.push('');

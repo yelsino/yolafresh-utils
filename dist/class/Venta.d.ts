@@ -1,6 +1,6 @@
-import { OrderState } from "@/utils";
+import { OrderState } from "../utils";
 import { CarItem, IShoppingCart, ProcedenciaVenta } from "./ShoppingCart";
-import { MetodoPago } from "@/interfaces";
+import { MetodoPago } from "../interfaces";
 /**
  * Interfaz para datos inmutables de una venta
  *

@@ -1,4 +1,4 @@
-import { EstadoStockEnum, TipoVentaEnum } from "@/utils/enums";
+import { EstadoStockEnum, TipoVentaEnum } from "../utils/enums";
 export type ProductImage = {
     base: string;
     sizes: {
