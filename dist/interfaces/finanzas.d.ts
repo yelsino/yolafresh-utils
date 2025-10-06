@@ -134,6 +134,7 @@ export interface Ingreso {
 }
 export type EstadoCaja = 'ABIERTA' | 'CERRADA' | 'DEFICIT';
 export interface Caja {
+    id: string;
     saldo: number;
     saldoEfectivo: number;
     saldoDigital: number;
