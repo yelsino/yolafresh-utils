@@ -1,4 +1,4 @@
-import { EstadoStockEnum, TipoVentaEnum } from "../utils/enums";
+import { EstadoStockEnum, TipoVentaEnum } from "@/utils/enums";
 export type ProductImage = {
     base: string;
     sizes: {
@@ -40,7 +40,8 @@ export interface Categoria {
     color: string;
     orden: number;
     activa: boolean;
-    fechaCreacion: string;
+    createdAt: Date;
+    updatedAt: Date;
     subcategorias: string[];
     imagen: string;
 }

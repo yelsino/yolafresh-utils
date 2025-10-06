@@ -126,7 +126,6 @@ export enum ProcedenciaVenta {
  * ```typescript
  * const carrito: IShoppingCart = {
  *   id: 'cart-001',
- *   fechaCreacion: new Date(),
  *   nombre: 'Venta Mostrador',
  *   items: [item1, item2],
  *   subtotal: 100.00,
@@ -150,7 +149,8 @@ export interface IShoppingCart {
    * Fecha y hora de creación del carrito
    * @description Se establece automáticamente al instanciar
    */
-  fechaCreacion: Date;
+  createdAt: Date;
+  updatedAt: Date;
   
   /** 
    * Nombre descriptivo del carrito
@@ -305,10 +305,11 @@ export interface IShoppingCart {
 
 export class ShoppingCart implements IShoppingCart {
   public readonly id: string;
-  public readonly fechaCreacion: Date;
+  public readonly createdAt: Date;
   public readonly nombre: string;
   private _items: CarItem[] = [];
   private _notas?: string;
+  public updatedAt: Date = new Date(); 
   private _configuracionFiscal: ConfiguracionFiscal;
   
   // === CAMPOS DE TRAZABILIDAD ===
@@ -323,9 +324,9 @@ export class ShoppingCart implements IShoppingCart {
   private _esPedido?: boolean;
   private _finanzaId?: string;
 
-  constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal, nombre?: string, fechaCreacion?: Date) {
+  constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal, nombre?: string, createdAt?: Date) {
     this.id = id || `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    this.fechaCreacion = fechaCreacion || new Date();
+    this.createdAt = createdAt || new Date();
     this.nombre = nombre || `Carrito-${Date.now()}`;
     // Configuración fiscal por defecto (puede ser sobrescrita)
     this._configuracionFiscal = {
@@ -1020,7 +1021,7 @@ export class ShoppingCart implements IShoppingCart {
     // Devolver la misma estructura del carrito, preservando datos tal cual
     const carrito: IShoppingCart = {
       id: this.id,
-      fechaCreacion: this.fechaCreacion, // mantener Date para estructura interna
+      createdAt: this.createdAt, // mantener Date para estructura interna
       nombre: this.nombre,
       // Items congelados tal como están (copias superficiales)
       items: this._items.map(item => {
@@ -1057,6 +1058,7 @@ export class ShoppingCart implements IShoppingCart {
       procedencia: this._procedencia,
       esPedido: this._esPedido,
       finanzaId: this._finanzaId,
+      updatedAt: this.updatedAt,
     };
 
     return carrito;
@@ -1074,9 +1076,10 @@ export class ShoppingCart implements IShoppingCart {
     };
 
     // Restaurar fecha original si existe en los datos
-    const fechaCreacion = data.fechaCreacion ? new Date(data.fechaCreacion) : undefined;
+    const createdAt = data.createdAt ? new Date(data.createdAt) : undefined;
 
-    const carrito = new ShoppingCart(data.id, configuracionFiscal, data.nombre, fechaCreacion);
+    const carrito = new ShoppingCart(data.id, configuracionFiscal, data.nombre, createdAt);
+    carrito.updatedAt = data.updatedAt ? new Date(data.updatedAt) : new Date();
 
     // Ítems ya vienen como CarItems congelados; preservar tal cual
     carrito._items = data.items || [];

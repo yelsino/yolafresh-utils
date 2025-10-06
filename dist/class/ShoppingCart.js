@@ -6,8 +6,8 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ShoppingCart = exports.ProcedenciaVenta = void 0;
-const utils_1 = require("../utils");
-const fiscales_1 = require("../utils/fiscales");
+const utils_1 = require("@/utils");
+const fiscales_1 = require("@/utils/fiscales");
 var ProcedenciaVenta;
 (function (ProcedenciaVenta) {
     ProcedenciaVenta["Tienda"] = "Tienda";
@@ -21,11 +21,12 @@ var ProcedenciaVenta;
  * Simplificada: trabaja solo con CarItem, congela al guardar
  */
 class ShoppingCart {
-    constructor(id, configuracionFiscal, nombre, fechaCreacion) {
+    constructor(id, configuracionFiscal, nombre, createdAt) {
         var _a, _b, _c;
         this._items = [];
+        this.updatedAt = new Date();
         this.id = id || `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-        this.fechaCreacion = fechaCreacion || new Date();
+        this.createdAt = createdAt || new Date();
         this.nombre = nombre || `Carrito-${Date.now()}`;
         // Configuración fiscal por defecto (puede ser sobrescrita)
         this._configuracionFiscal = {
@@ -611,7 +612,7 @@ class ShoppingCart {
         // Devolver la misma estructura del carrito, preservando datos tal cual
         const carrito = {
             id: this.id,
-            fechaCreacion: this.fechaCreacion, // mantener Date para estructura interna
+            createdAt: this.createdAt, // mantener Date para estructura interna
             nombre: this.nombre,
             // Items congelados tal como están (copias superficiales)
             items: this._items.map(item => {
@@ -647,6 +648,7 @@ class ShoppingCart {
             procedencia: this._procedencia,
             esPedido: this._esPedido,
             finanzaId: this._finanzaId,
+            updatedAt: this.updatedAt,
         };
         return carrito;
     }
@@ -662,8 +664,9 @@ class ShoppingCart {
             nombreImpuesto: data.nombreImpuesto
         };
         // Restaurar fecha original si existe en los datos
-        const fechaCreacion = data.fechaCreacion ? new Date(data.fechaCreacion) : undefined;
-        const carrito = new ShoppingCart(data.id, configuracionFiscal, data.nombre, fechaCreacion);
+        const createdAt = data.createdAt ? new Date(data.createdAt) : undefined;
+        const carrito = new ShoppingCart(data.id, configuracionFiscal, data.nombre, createdAt);
+        carrito.updatedAt = data.updatedAt ? new Date(data.updatedAt) : new Date();
         // Ítems ya vienen como CarItems congelados; preservar tal cual
         carrito._items = data.items || [];
         carrito._notas = data.notas;

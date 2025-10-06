@@ -3,10 +3,10 @@
  * Reutilizable para cualquier sistema POS
  * Simplificada: usa solo CarItem con congelación automática al guardar
  */
-import { IProducto, MetodoPago } from "../interfaces";
-import { Cliente, Personal } from "../interfaces/persons";
-import { TipoVentaEnum } from "../utils";
-import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "../utils/fiscales";
+import { IProducto, MetodoPago } from "@/interfaces";
+import { Cliente, Personal } from "@/interfaces/persons";
+import { TipoVentaEnum } from "@/utils";
+import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "@/utils/fiscales";
 /**
  * Representa un ítem individual en el carrito de compras
  *
@@ -106,7 +106,6 @@ export declare enum ProcedenciaVenta {
  * ```typescript
  * const carrito: IShoppingCart = {
  *   id: 'cart-001',
- *   fechaCreacion: new Date(),
  *   nombre: 'Venta Mostrador',
  *   items: [item1, item2],
  *   subtotal: 100.00,
@@ -129,7 +128,8 @@ export interface IShoppingCart {
      * Fecha y hora de creación del carrito
      * @description Se establece automáticamente al instanciar
      */
-    fechaCreacion: Date;
+    createdAt: Date;
+    updatedAt: Date;
     /**
      * Nombre descriptivo del carrito
      * @description Ayuda a identificar el propósito del carrito
@@ -256,10 +256,11 @@ export interface IShoppingCart {
  */
 export declare class ShoppingCart implements IShoppingCart {
     readonly id: string;
-    readonly fechaCreacion: Date;
+    readonly createdAt: Date;
     readonly nombre: string;
     private _items;
     private _notas?;
+    updatedAt: Date;
     private _configuracionFiscal;
     private _cliente?;
     private _personal?;
@@ -269,7 +270,7 @@ export declare class ShoppingCart implements IShoppingCart {
     private _procedencia?;
     private _esPedido?;
     private _finanzaId?;
-    constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal, nombre?: string, fechaCreacion?: Date);
+    constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal, nombre?: string, createdAt?: Date);
     /**
      * Configurar impuesto (IGV, IVA, etc.)
      */

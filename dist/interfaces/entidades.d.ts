@@ -47,7 +47,9 @@ export interface Rol {
     /** Indica si el rol está activo */
     activo: boolean;
     /** Fecha de creación del rol */
-    fechaCreacion: Date;
+    createdAt: Date;
+    /** Fecha de última actualización */
+    updatedAt: Date;
 }
 /**
  * Tipos de permisos predefinidos en el sistema

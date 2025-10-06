@@ -271,34 +271,6 @@ export class Venta implements IVenta {
 
   // === MÉTODOS DE SERIALIZACIÓN ===
 
-  /**
-   * Convertir a objeto plano para guardar en DB
-   */
-  toPouchDB(): any {
-    return {
-      _id: this.id,
-      type: this.type,
-      nombre: this.nombre,
-      estado: this.estado,
-      fechaCreacion: this.createdAt.toISOString(),
-      fechaActualizacion: this.updatedAt.toISOString(),
-      detalleVenta: this.detalleVenta,
-      subtotal: this.subtotal,
-      impuesto: this.impuesto,
-      total: this.total,
-      procedencia: this.procedencia,
-      tipoPago: this.tipoPago,
-      // IDs de trazabilidad
-      clienteId: this.clienteId,
-      vendedorId: this.vendedorId,
-      finanzaId: this.finanzaId,
-      // Campos de trazabilidad adicionales
-      codigoVenta: this.codigoVenta,
-      numeroVenta: this.numeroVenta,
-      costoEnvio: this.costoEnvio,
-      esPedido: this.esPedido
-    };
-  }
 
   /**
    * Convertir a JSON para APIs externas
@@ -330,35 +302,6 @@ export class Venta implements IVenta {
   }
 
   // === MÉTODOS ESTÁTICOS ===
-
-  /**
-   * Crear Venta desde datos de PouchDB
-   */
-  static fromPouchDB(doc: any): Venta {
-    return new Venta({
-      id: doc._id,
-      nombre: doc.nombre,
-      type: doc.type || 'venta',
-      estado: doc.estado,
-      createdAt: doc.fechaCreacion ? new Date(doc.fechaCreacion) : new Date(),
-      updatedAt: doc.fechaActualizacion ? new Date(doc.fechaActualizacion) : new Date(),
-      detalleVenta: doc.detalleVenta,
-      subtotal: doc.subtotal,
-      impuesto: doc.impuesto,
-      total: doc.total,
-      procedencia: doc.procedencia,
-      tipoPago: doc.tipoPago,
-      // IDs de trazabilidad
-      clienteId: doc.clienteId,
-      vendedorId: doc.vendedorId,
-      finanzaId: doc.finanzaId,
-      // Campos de trazabilidad adicionales
-      codigoVenta: doc.codigoVenta,
-      numeroVenta: doc.numeroVenta,
-      costoEnvio: doc.costoEnvio,
-      esPedido: doc.esPedido
-    });
-  }
 
   /**
    * Crear Venta desde IShoppingCart (para procesar pago)

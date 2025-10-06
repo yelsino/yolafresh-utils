@@ -184,7 +184,7 @@ export function useProductos() {
     }
   };
 
-  const crearProducto = async (datos: Omit<IProducto, 'productoId' | 'fechaCreacion' | 'fechaActualizacion'>) => {
+  const crearProducto = async (datos: Omit<IProducto, 'productoId' | 'createdAt' | 'updatedAt'>) => {
     try {
       const nuevoProducto = await ProductoService.crear(datos);
       setProductos(prev => [...prev, nuevoProducto]);

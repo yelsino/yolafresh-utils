@@ -49,7 +49,8 @@ export interface IProducto {
     color: string;
     orden: number;
     activa: boolean;
-    fechaCreacion: string;
+    createdAt: Date;
+    updatedAt: Date;
     subcategorias: string[];
     imagen: string;
   }

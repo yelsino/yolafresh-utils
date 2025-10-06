@@ -16,7 +16,6 @@ import { Entidad, Rol, SesionContexto } from "./entidades";
  *   roles: [rolCajero],
  *   entidades: [personalJuan],
  *   activo: true,
- *   fechaCreacion: new Date(),
  *   fechaUltimoAcceso: new Date()
  * };
  * ```

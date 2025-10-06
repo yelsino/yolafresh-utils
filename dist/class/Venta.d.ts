@@ -1,6 +1,6 @@
-import { OrderState } from "../utils";
+import { OrderState } from "@/utils";
 import { CarItem, IShoppingCart, ProcedenciaVenta } from "./ShoppingCart";
-import { MetodoPago } from "../interfaces";
+import { MetodoPago } from "@/interfaces";
 /**
  * Interfaz para datos inmutables de una venta
  *
@@ -130,17 +130,9 @@ export declare class Venta implements IVenta {
         montoTotal: number;
     }>;
     /**
-     * Convertir a objeto plano para guardar en DB
-     */
-    toPouchDB(): any;
-    /**
      * Convertir a JSON para APIs externas
      */
     toJSON(): IVenta;
-    /**
-     * Crear Venta desde datos de PouchDB
-     */
-    static fromPouchDB(doc: any): Venta;
     /**
      * Crear Venta desde IShoppingCart (para procesar pago)
      */

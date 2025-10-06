@@ -59,7 +59,10 @@ export interface Rol {
   activo: boolean;
   
   /** Fecha de creación del rol */
-  fechaCreacion: Date;
+  createdAt: Date;
+  
+  /** Fecha de última actualización */
+  updatedAt: Date;
 }
 
 /**

@@ -7,7 +7,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PermisoValidator = void 0;
-const entidades_1 = require("../interfaces/entidades");
+const entidades_1 = require("@/interfaces/entidades");
 /**
  * Clase PermisoValidator - Validaciones avanzadas de permisos
  *
