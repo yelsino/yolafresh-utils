@@ -160,6 +160,9 @@ export type EstadoCaja = 'ABIERTA' | 'CERRADA' | 'DEFICIT'
     saldoEfectivo: number;
     saldoDigital: number; 
     estado: EstadoCaja; 
+
+    createdAt: Date;
+    updatedAt: Date;
   }
 
   export interface Cambio {
