@@ -138,6 +138,8 @@ export interface Caja {
     saldoEfectivo: number;
     saldoDigital: number;
     estado: EstadoCaja;
+    createdAt: Date;
+    updatedAt: Date;
 }
 export interface Cambio {
     id?: string;
