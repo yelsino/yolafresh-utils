@@ -292,6 +292,7 @@ function crearRolPredefinido(tipo, id) {
         descripcion: config.descripcion,
         permisos: config.permisos,
         activo: true,
-        createdAt: new Date()
+        createdAt: new Date(),
+        updatedAt: new Date()
     };
 }

@@ -321,6 +321,7 @@ export function crearRolPredefinido(tipo: RolesPredefinidos, id: string): Rol {
     descripcion: config.descripcion,
     permisos: config.permisos,
     activo: true,
-    createdAt: new Date()
+    createdAt: new Date(),
+    updatedAt: new Date()
   };
 }
