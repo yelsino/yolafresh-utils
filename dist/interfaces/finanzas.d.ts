@@ -147,8 +147,8 @@ export interface Cambio {
     monto: number;
     deMetodoPago: MetodoPago;
     aMetodoPago: MetodoPago;
-    fechaRegistro: Date;
-    fechaActualizacion: Date;
+    createdAt: Date;
+    updatedAt: Date;
 }
 export interface MovimientoCaja {
     id?: string;

@@ -29,7 +29,7 @@ export interface IProducto {
     consideraciones: string;
     caracteristicas: string;
     descripcion: string
-    peso: string;
+    peso: number;
     createdAt: Date;
     updatedAt: Date;
     stock: EstadoStockEnum;

@@ -29,7 +29,7 @@ class Producto {
         this.consideraciones = data.consideraciones || '';
         this.caracteristicas = data.caracteristicas || '';
         this.descripcion = data.descripcion || '';
-        this.peso = data.peso || '';
+        this.peso = Producto.toPesoNumber(data.peso);
         this.createdAt = data.createdAt || new Date();
         this.updatedAt = data.updatedAt || new Date();
         this.stock = data.stock || enums_1.EstadoStockEnum.STOCK_MEDIO;
@@ -366,7 +366,7 @@ class Producto {
             consideraciones: data.consideraciones,
             caracteristicas: data.caracteristicas,
             descripcion: data.descripcion,
-            peso: data.peso,
+            peso: Producto.toPesoNumber(data.peso),
             createdAt: data.created_at,
             updatedAt: data.updated_at,
             stock: data.stock,
@@ -429,6 +429,15 @@ class Producto {
             return val;
         }
         return { base: '', sizes: { small: '', medium: '', large: '' } };
+    }
+    static toPesoNumber(val) {
+        if (typeof val === 'number')
+            return val;
+        if (typeof val === 'string') {
+            const n = parseFloat(val.replace(',', '.'));
+            return Number.isFinite(n) ? n : 0;
+        }
+        return 0;
     }
     static isValidProductImage(val) {
         if (typeof val !== 'object' || val === null)

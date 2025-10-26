@@ -47,7 +47,7 @@ export declare class Producto implements IProducto {
     consideraciones: string;
     caracteristicas: string;
     descripcion: string;
-    peso: string;
+    peso: number;
     createdAt: Date;
     updatedAt: Date;
     stock: EstadoStockEnum;
@@ -174,5 +174,6 @@ export declare class Producto implements IProducto {
      * Mantiene compatibilidad con datos antiguos donde url era string
      */
     private static toProductImage;
+    private static toPesoNumber;
     private static isValidProductImage;
 }

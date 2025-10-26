@@ -52,7 +52,7 @@ export class Producto implements IProducto {
   consideraciones: string;
   caracteristicas: string;
   descripcion: string;
-  peso: string;
+  peso: number;
   createdAt: Date;
   updatedAt: Date;
   stock: EstadoStockEnum;
@@ -79,7 +79,7 @@ export class Producto implements IProducto {
     this.consideraciones = data.consideraciones || '';
     this.caracteristicas = data.caracteristicas || '';
     this.descripcion = data.descripcion || '';
-    this.peso = data.peso || '';
+    this.peso = Producto.toPesoNumber(data.peso);
     this.createdAt = data.createdAt || new Date();
     this.updatedAt = data.updatedAt || new Date();
     this.stock = data.stock || EstadoStockEnum.STOCK_MEDIO;
@@ -463,7 +463,7 @@ export class Producto implements IProducto {
       consideraciones: data.consideraciones,
       caracteristicas: data.caracteristicas,
       descripcion: data.descripcion,
-      peso: data.peso,
+      peso: Producto.toPesoNumber(data.peso),
       createdAt: data.created_at,
       updatedAt: data.updated_at,
       stock: data.stock,
@@ -532,6 +532,15 @@ export class Producto implements IProducto {
       return val as ProductImage;
     }
     return { base: '', sizes: { small: '', medium: '', large: '' } };
+  }
+
+  private static toPesoNumber(val: unknown): number {
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') {
+      const n = parseFloat(val.replace(',', '.'));
+      return Number.isFinite(n) ? n : 0;
+    }
+    return 0;
   }
 
   private static isValidProductImage(val: unknown): val is ProductImage {
