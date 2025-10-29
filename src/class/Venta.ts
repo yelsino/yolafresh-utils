@@ -52,7 +52,7 @@ export interface IVenta {
  * - 🛒 Carrito completo congelado en detalleVenta
  * - 🔍 Métodos para acceder a datos sin romper encapsulación
  * - 📊 Cálculos automáticos y validaciones
- */
+ */ 
 export class Venta implements IVenta {
   // === PROPIEDADES INMUTABLES ===
   public readonly id: string;
