@@ -4,7 +4,8 @@
  * Simplificada: usa solo CarItem con congelación automática al guardar
  */
 import { IProducto, MetodoPago } from "../interfaces";
-import { Cliente, Personal } from "../interfaces/persons";
+import { Cliente } from "../interfaces/persons";
+import { IUsuario } from "../interfaces/usuario";
 import { TipoVentaEnum } from "../utils";
 import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "../utils/fiscales";
 /**
@@ -198,7 +199,7 @@ export interface IShoppingCart {
      * Información completa del personal (opcional)
      * @description Datos del empleado que maneja la venta
      */
-    personal?: Personal;
+    personal?: IUsuario;
     /**
      * Color identificativo del cliente (opcional)
      * @description Color hexadecimal para identificación visual
@@ -357,8 +358,8 @@ export declare class ShoppingCart implements IShoppingCart {
     set tasaImpuesto(tasa: number);
     get cliente(): Cliente | undefined;
     set cliente(value: Cliente | undefined);
-    get personal(): Personal | undefined;
-    set personal(value: Personal | undefined);
+    get personal(): IUsuario | undefined;
+    set personal(value: IUsuario | undefined);
     get clienteColor(): string | undefined;
     set clienteColor(value: string | undefined);
     get clienteId(): string | undefined;
@@ -368,7 +369,7 @@ export declare class ShoppingCart implements IShoppingCart {
      */
     configurarTrazabilidad(datos: {
         cliente?: Cliente;
-        personal?: Personal;
+        personal?: IUsuario;
         clienteColor?: string;
     }): void;
     /**

@@ -5,7 +5,8 @@
  */
 
 import { IProducto, MetodoPago } from "@/interfaces";
-import { Cliente, Personal } from "@/interfaces/persons";
+import { Cliente } from "@/interfaces/persons";
+import { IUsuario } from "@/interfaces/usuario";
 import { TipoVentaEnum } from "@/utils";
 import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "@/utils/fiscales";
 
@@ -233,7 +234,7 @@ export interface IShoppingCart {
    * Información completa del personal (opcional)
    * @description Datos del empleado que maneja la venta
    */
-  personal?: Personal;
+  personal?: IUsuario;
   
   /** 
    * Color identificativo del cliente (opcional)
@@ -314,7 +315,7 @@ export class ShoppingCart implements IShoppingCart {
   
   // === CAMPOS DE TRAZABILIDAD ===
   private _cliente?: Cliente;
-  private _personal?: Personal;
+  private _personal?: IUsuario;
   private _clienteColor?: string;
   
   // === DATOS DE PAGO ===
@@ -714,11 +715,11 @@ export class ShoppingCart implements IShoppingCart {
     this._cliente = value;
   }
 
-  get personal(): Personal | undefined {
+  get personal(): IUsuario | undefined {
     return this._personal;
   }
 
-  set personal(value: Personal | undefined) {
+  set personal(value: IUsuario | undefined) {
     this._personal = value;
   }
 
@@ -745,7 +746,7 @@ export class ShoppingCart implements IShoppingCart {
    */
   configurarTrazabilidad(datos: {
     cliente?: Cliente;
-    personal?: Personal;
+    personal?: IUsuario;
     clienteColor?: string;
   }): void {
     this._cliente = datos.cliente;

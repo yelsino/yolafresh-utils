@@ -12,7 +12,6 @@ import {
   Entidad 
 } from "@/interfaces/entidades";
 
-import { Cliente, Personal, Proveedor } from "@/interfaces/persons";
 
 /**
  * Contexto de validación de permisos
