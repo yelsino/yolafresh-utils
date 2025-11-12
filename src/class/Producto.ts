@@ -1,5 +1,5 @@
 import { EstadoStockEnum, TipoActualizacionEnum, TipoVentaEnum } from '../utils/enums';
-import { IProducto, ProductImage } from '../interfaces/producto';
+import { IProducto, ImageSizes } from '../interfaces/producto';
 import { MedidasConverter, FormatMedidaOptions } from '../utils/medidas-converter';
 
 /**
@@ -43,7 +43,7 @@ export class Producto implements IProducto {
   nombre: string;
   precio: number;
   status: boolean;
-  url: ProductImage;
+  url: ImageSizes;
   categorieId: string;
   esPrimario: boolean;
   tipoVenta: TipoVentaEnum;
@@ -61,7 +61,7 @@ export class Producto implements IProducto {
   /**
    * Constructor de la clase Producto
    */
-  constructor(data: (Partial<IProducto> & { url?: ProductImage | string }) = {}) {
+  constructor(data: (Partial<IProducto> & { url?: ImageSizes | string }) = {}) {
     this.id = data.id || '';
     this.idPrimario = data.idPrimario || '';
     this.mayoreo = data.mayoreo || false;
@@ -524,12 +524,12 @@ export class Producto implements IProducto {
    * Normaliza una entrada (string | ProductImage | undefined) a ProductImage
    * Mantiene compatibilidad con datos antiguos donde url era string
    */
-  private static toProductImage(val: ProductImage | string | undefined): ProductImage {
+  private static toProductImage(val: ImageSizes | string | undefined): ImageSizes {
     if (typeof val === 'string') {
       return { base: val, sizes: { small: val, medium: val, large: val } };
     }
     if (Producto.isValidProductImage(val)) {
-      return val as ProductImage;
+      return val as ImageSizes;
     }
     return { base: '', sizes: { small: '', medium: '', large: '' } };
   }
@@ -543,7 +543,7 @@ export class Producto implements IProducto {
     return 0;
   }
 
-  private static isValidProductImage(val: unknown): val is ProductImage {
+  private static isValidProductImage(val: unknown): val is ImageSizes {
     if (typeof val !== 'object' || val === null) return false;
     const obj = val as Record<string, unknown>;
     const baseOk = typeof obj.base === 'string';

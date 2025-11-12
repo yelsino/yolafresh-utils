@@ -1,10 +1,10 @@
-import { IProducto, ProductImage } from "@/interfaces/producto";
+import { IProducto, ImageSizes } from "@/interfaces/producto";
 import { OrderState, TipoVentaEnum } from "./enums";
 import { Carrito, Lista, Pedido } from "@/interfaces/pedido";
 
 
 
-function isValidProductImage(val: unknown): val is ProductImage {
+function isValidProductImage(val: unknown): val is ImageSizes {
   if (typeof val !== 'object' || val === null) return false;
   const obj = val as Record<string, unknown>;
   const baseOk = typeof obj.base === 'string';
@@ -13,7 +13,7 @@ function isValidProductImage(val: unknown): val is ProductImage {
   return baseOk && sizesOk;
 }
 
-function toProductImage(val: ProductImage | string | undefined): ProductImage {
+function toProductImage(val: ImageSizes | string | undefined): ImageSizes {
   if (typeof val === 'string') {
     return { base: val, sizes: { small: val, medium: val, large: val } };
   }

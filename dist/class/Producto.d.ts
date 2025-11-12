@@ -1,5 +1,5 @@
 import { EstadoStockEnum, TipoVentaEnum } from '../utils/enums';
-import { IProducto, ProductImage } from '../interfaces/producto';
+import { IProducto, ImageSizes } from '../interfaces/producto';
 /**
  * Parámetros para formatear cantidades
  */
@@ -38,7 +38,7 @@ export declare class Producto implements IProducto {
     nombre: string;
     precio: number;
     status: boolean;
-    url: ProductImage;
+    url: ImageSizes;
     categorieId: string;
     esPrimario: boolean;
     tipoVenta: TipoVentaEnum;
@@ -56,7 +56,7 @@ export declare class Producto implements IProducto {
      * Constructor de la clase Producto
      */
     constructor(data?: (Partial<IProducto> & {
-        url?: ProductImage | string;
+        url?: ImageSizes | string;
     }));
     /**
      * Formatea la cantidad según el tipo de venta y configuraciones
