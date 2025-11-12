@@ -161,7 +161,6 @@ export type EstadoCaja = 'ABIERTA' | 'CERRADA' | 'DEFICIT'
     saldoEfectivo: number;
     saldoDigital: number; 
     estado: EstadoCaja; 
-
     createdAt: Date;
     updatedAt: Date;
   }
@@ -186,6 +185,7 @@ export type EstadoCaja = 'ABIERTA' | 'CERRADA' | 'DEFICIT'
     codigoTransaccion: string; 
     createdAt: Date;
     updatedAt: Date;
+    quienGeneroId: string;
   }
 
   export interface CuentaBancaria {

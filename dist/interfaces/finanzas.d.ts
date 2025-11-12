@@ -161,6 +161,7 @@ export interface MovimientoCaja {
     codigoTransaccion: string;
     createdAt: Date;
     updatedAt: Date;
+    quienGeneroId: string;
 }
 export interface CuentaBancaria {
     id?: string;
