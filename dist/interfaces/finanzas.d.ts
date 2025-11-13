@@ -6,7 +6,7 @@ export interface Egreso {
     monto: number;
     tipoEgreso: TipoEgreso;
     quienRegistroId: string;
-    quienHizoGastoId: string[] | string;
+    quienHizoGastoId: string;
     type: TypeFinanza;
     detalle?: string;
     estado: EstadoEgreso;
@@ -21,7 +21,7 @@ export interface Abono {
     id?: string;
     monto: number;
     fechaRegistro: Date;
-    quienHizoAbonoId: string[] | string;
+    quienHizoAbonoId: string;
 }
 /**
  * Representa un registro de ingreso financiero en el sistema
