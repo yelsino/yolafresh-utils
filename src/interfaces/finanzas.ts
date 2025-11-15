@@ -166,10 +166,22 @@ export type EstadoCaja = 'ABIERTA' | 'CERRADA' | 'DEFICIT'
   }
 
   export interface Cambio {
-    id?: string;
+    id: string;
     monto: number;
     deMetodoPago: MetodoPago;
     aMetodoPago: MetodoPago;
+    quienGeneroId: string;
+    createdAt: Date
+    updatedAt: Date
+  }
+
+  export interface Anulacion {
+    id: string;
+    monto: number;
+    metodoPago: MetodoPago;
+    quienGeneroId: string;
+    codigoVenta: string;
+    finanzaAnuladaId: string;
     createdAt: Date
     updatedAt: Date
   }

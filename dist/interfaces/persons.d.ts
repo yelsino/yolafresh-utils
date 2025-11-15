@@ -21,7 +21,6 @@ export declare enum CategoriaCliente {
  * Extiende de Entidad para integrarse con el sistema de usuarios y roles
  */
 export interface Personal extends Entidad {
-    tipo: "Personal";
     nombres: string;
     cargo: CargosPersonal;
     dni: string;
