@@ -28,6 +28,7 @@ export interface IVenta {
   subtotal: number;
   impuesto: number;
   total: number;
+  montoRedondeo?: number;
   
   // === INFORMACIÓN DE PAGO ===
   procedencia: ProcedenciaVenta;
@@ -68,6 +69,7 @@ export class Venta implements IVenta {
   public readonly subtotal: number;
   public readonly impuesto: number;
   public readonly total: number;
+  public readonly montoRedondeo?: number;
   
   public readonly procedencia: ProcedenciaVenta;
   public readonly tipoPago?: MetodoPago;
@@ -112,6 +114,7 @@ export class Venta implements IVenta {
     this.subtotal = data.subtotal;
     this.impuesto = data.impuesto;
     this.total = data.total;
+    this.montoRedondeo = data.montoRedondeo ?? 0;
     
     this.procedencia = data.procedencia;
     this.tipoPago = data.tipoPago;
@@ -287,6 +290,7 @@ export class Venta implements IVenta {
       subtotal: this.subtotal,
       impuesto: this.impuesto,
       total: this.total,
+      montoRedondeo: this.montoRedondeo,
       procedencia: this.procedencia,
       tipoPago: this.tipoPago,
       // IDs de compatibilidad
@@ -309,13 +313,14 @@ export class Venta implements IVenta {
   static fromShoppingCart(
     carritoJSON: IShoppingCart,
     id: string,
-    options?: { nombre?: string }
+    options?: { nombre?: string; montoRedondeo?: number }
   ): Venta {
     const ahora = new Date();
     
     // Si se proporciona configuestra fiscal, recalcular el impuesto
     let impuestoFinal = carritoJSON.impuesto;
-    let totalFinal = carritoJSON.total;
+    let totalCalculado = carritoJSON.total;
+    const montoRedondeo = options?.montoRedondeo ?? 0;
     
     if (carritoJSON.configuracionFiscal) {
       const { tasaImpuesto, aplicaImpuesto } = carritoJSON.configuracionFiscal;
@@ -323,12 +328,13 @@ export class Venta implements IVenta {
       if (aplicaImpuesto && tasaImpuesto !== undefined) {
         const baseImponible = carritoJSON.subtotal;
         impuestoFinal = Math.round(baseImponible * tasaImpuesto * 100) / 100;
-        totalFinal = Math.round((carritoJSON.subtotal + impuestoFinal) * 100) / 100;
+        totalCalculado = Math.round((carritoJSON.subtotal + impuestoFinal) * 100) / 100;
       } else if (!aplicaImpuesto) {
         impuestoFinal = 0;
-        totalFinal = Math.round(carritoJSON.subtotal * 100) / 100;
+        totalCalculado = Math.round(carritoJSON.subtotal * 100) / 100;
       }
     }
+    const totalFinal = Math.round((totalCalculado + montoRedondeo) * 100) / 100;
     
     return new Venta({
       id: id,
@@ -351,6 +357,7 @@ export class Venta implements IVenta {
       subtotal: carritoJSON.subtotal,
       impuesto: impuestoFinal,
       total: totalFinal,
+      montoRedondeo,
       procedencia: carritoJSON.procedencia || ProcedenciaVenta.Tienda,
       tipoPago: carritoJSON.metodoPago,
       // 🔧 FIX: IDs de trazabilidad corregidos
@@ -468,4 +475,3 @@ export class VentaCalculator {
     return subtotal + impuesto;
   }
 }
-

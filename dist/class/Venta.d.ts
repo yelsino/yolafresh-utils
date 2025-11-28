@@ -19,6 +19,7 @@ export interface IVenta {
     subtotal: number;
     impuesto: number;
     total: number;
+    montoRedondeo?: number;
     procedencia: ProcedenciaVenta;
     tipoPago?: MetodoPago;
     clienteId?: string;
@@ -48,6 +49,7 @@ export declare class Venta implements IVenta {
     readonly subtotal: number;
     readonly impuesto: number;
     readonly total: number;
+    readonly montoRedondeo?: number;
     readonly procedencia: ProcedenciaVenta;
     readonly tipoPago?: MetodoPago;
     readonly clienteId?: string;
@@ -138,6 +140,7 @@ export declare class Venta implements IVenta {
      */
     static fromShoppingCart(carritoJSON: IShoppingCart, id: string, options?: {
         nombre?: string;
+        montoRedondeo?: number;
     }): Venta;
     /**
      * Validar estructura de datos de venta

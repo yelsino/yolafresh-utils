@@ -153,17 +153,8 @@ export interface Ingreso {
   tipoFinanza: TypeFinanza;
 }
 
-export type EstadoCaja = 'ABIERTA' | 'CERRADA' | 'DEFICIT'
 
-  export interface Caja {
-    id: string;
-    saldo: number;
-    saldoEfectivo: number;
-    saldoDigital: number; 
-    estado: EstadoCaja; 
-    createdAt: Date;
-    updatedAt: Date;
-  }
+
 
   export interface Cambio {
     id: string;

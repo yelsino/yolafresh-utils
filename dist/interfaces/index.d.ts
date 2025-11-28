@@ -1,3 +1,4 @@
+export * from './caja';
 export * from './compras';
 export * from './entidades';
 export * from './finanzas';

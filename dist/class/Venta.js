@@ -16,6 +16,7 @@ const ShoppingCart_1 = require("./ShoppingCart");
  */
 class Venta {
     constructor(data) {
+        var _a;
         this.type = 'venta';
         // Validaciones básicas
         if (!data.id || !data.nombre) {
@@ -41,6 +42,7 @@ class Venta {
         this.subtotal = data.subtotal;
         this.impuesto = data.impuesto;
         this.total = data.total;
+        this.montoRedondeo = (_a = data.montoRedondeo) !== null && _a !== void 0 ? _a : 0;
         this.procedencia = data.procedencia;
         this.tipoPago = data.tipoPago;
         // IDs de trazabilidad
@@ -186,6 +188,7 @@ class Venta {
             subtotal: this.subtotal,
             impuesto: this.impuesto,
             total: this.total,
+            montoRedondeo: this.montoRedondeo,
             procedencia: this.procedencia,
             tipoPago: this.tipoPago,
             // IDs de compatibilidad
@@ -204,26 +207,28 @@ class Venta {
      * Crear Venta desde IShoppingCart (para procesar pago)
      */
     static fromShoppingCart(carritoJSON, id, options) {
-        var _a, _b;
+        var _a, _b, _c;
         const ahora = new Date();
         // Si se proporciona configuestra fiscal, recalcular el impuesto
         let impuestoFinal = carritoJSON.impuesto;
-        let totalFinal = carritoJSON.total;
+        let totalCalculado = carritoJSON.total;
+        const montoRedondeo = (_a = options === null || options === void 0 ? void 0 : options.montoRedondeo) !== null && _a !== void 0 ? _a : 0;
         if (carritoJSON.configuracionFiscal) {
             const { tasaImpuesto, aplicaImpuesto } = carritoJSON.configuracionFiscal;
             if (aplicaImpuesto && tasaImpuesto !== undefined) {
                 const baseImponible = carritoJSON.subtotal;
                 impuestoFinal = Math.round(baseImponible * tasaImpuesto * 100) / 100;
-                totalFinal = Math.round((carritoJSON.subtotal + impuestoFinal) * 100) / 100;
+                totalCalculado = Math.round((carritoJSON.subtotal + impuestoFinal) * 100) / 100;
             }
             else if (!aplicaImpuesto) {
                 impuestoFinal = 0;
-                totalFinal = Math.round(carritoJSON.subtotal * 100) / 100;
+                totalCalculado = Math.round(carritoJSON.subtotal * 100) / 100;
             }
         }
+        const totalFinal = Math.round((totalCalculado + montoRedondeo) * 100) / 100;
         return new Venta({
             id: id,
-            nombre: (_b = (_a = options === null || options === void 0 ? void 0 : options.nombre) !== null && _a !== void 0 ? _a : carritoJSON.nombre) !== null && _b !== void 0 ? _b : 'Venta',
+            nombre: (_c = (_b = options === null || options === void 0 ? void 0 : options.nombre) !== null && _b !== void 0 ? _b : carritoJSON.nombre) !== null && _c !== void 0 ? _c : 'Venta',
             type: 'venta',
             estado: utils_1.OrderState.DESPACHADO,
             createdAt: ahora,
@@ -242,6 +247,7 @@ class Venta {
             subtotal: carritoJSON.subtotal,
             impuesto: impuestoFinal,
             total: totalFinal,
+            montoRedondeo,
             procedencia: carritoJSON.procedencia || ShoppingCart_1.ProcedenciaVenta.Tienda,
             tipoPago: carritoJSON.metodoPago,
             // 🔧 FIX: IDs de trazabilidad corregidos
