@@ -12,7 +12,7 @@ export interface Caja {
 
   usuarioActivoId?: string;     // Quién está operando la caja ahora
   sucursalId?: string;          // Opcional si hay varias tiendas
-
+  saldo: number;
   saldoEfectivo: number;
   saldoDigital: number;
 
