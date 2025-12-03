@@ -331,7 +331,7 @@ class VentaCalculator {
      * Calcula el subtotal de un ítem
      */
     static calcularSubtotalItem(item) {
-        const precioUnitario = item.precioUnitario || item.product.precio;
+        const precioUnitario = item.precioUnitario || item.product.precioVenta;
         return precioUnitario * item.quantity;
     }
     /**

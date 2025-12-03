@@ -1,2 +1,48 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.TipoVentaEnum = exports.UnidadMedidaEnum = exports.TipoEmpaqueEnum = void 0;
+var TipoEmpaqueEnum;
+(function (TipoEmpaqueEnum) {
+    TipoEmpaqueEnum["Lata"] = "lata";
+    TipoEmpaqueEnum["Bolsa"] = "bolsa";
+    TipoEmpaqueEnum["BolsaVacio"] = "bolsa_vacio";
+    TipoEmpaqueEnum["Caja"] = "caja";
+    TipoEmpaqueEnum["Botella"] = "botella";
+    TipoEmpaqueEnum["Paquete"] = "paquete";
+    TipoEmpaqueEnum["Bandeja"] = "bandeja";
+    TipoEmpaqueEnum["Frasco"] = "frasco";
+    TipoEmpaqueEnum["Saco"] = "saco";
+    TipoEmpaqueEnum["Malla"] = "malla";
+    TipoEmpaqueEnum["Blister"] = "blister";
+    TipoEmpaqueEnum["TetraPack"] = "tetrapack";
+    TipoEmpaqueEnum["Rollo"] = "rollo";
+    TipoEmpaqueEnum["Bidon"] = "bidon";
+    TipoEmpaqueEnum["Manojo"] = "manojo";
+    TipoEmpaqueEnum["Atado"] = "atado";
+    TipoEmpaqueEnum["SinEmpaque"] = "sin_empaque";
+})(TipoEmpaqueEnum || (exports.TipoEmpaqueEnum = TipoEmpaqueEnum = {}));
+var UnidadMedidaEnum;
+(function (UnidadMedidaEnum) {
+    UnidadMedidaEnum["Unidad"] = "und";
+    UnidadMedidaEnum["Gramo"] = "g";
+    UnidadMedidaEnum["Kilogramo"] = "kg";
+    UnidadMedidaEnum["Mililitro"] = "ml";
+    UnidadMedidaEnum["Litro"] = "l";
+    UnidadMedidaEnum["Libra"] = "lb";
+    UnidadMedidaEnum["Onza"] = "oz";
+    UnidadMedidaEnum["Arroba"] = "ar";
+    UnidadMedidaEnum["Quintal"] = "qq";
+    UnidadMedidaEnum["Tonelada"] = "t";
+    UnidadMedidaEnum["Metro"] = "m";
+    UnidadMedidaEnum["Centimetro"] = "cm";
+    UnidadMedidaEnum["Galon"] = "gal";
+    UnidadMedidaEnum["Saco"] = "saco";
+    UnidadMedidaEnum["Bolsa"] = "bolsa";
+    UnidadMedidaEnum["Porcion"] = "porcion";
+})(UnidadMedidaEnum || (exports.UnidadMedidaEnum = UnidadMedidaEnum = {}));
+var TipoVentaEnum;
+(function (TipoVentaEnum) {
+    TipoVentaEnum["Unidad"] = "unidad";
+    TipoVentaEnum["Peso"] = "peso";
+    TipoVentaEnum["Volumen"] = "volumen";
+})(TipoVentaEnum || (exports.TipoVentaEnum = TipoVentaEnum = {}));

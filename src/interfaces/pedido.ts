@@ -1,4 +1,5 @@
-import { OrderState, TipoVentaEnum } from "@/utils/enums"
+import { OrderState } from "@/utils/enums"
+import { TipoVentaEnum } from "./producto"
 import { IProducto } from "./producto"
 import { IUsuario } from "./usuario"
 

@@ -7,22 +7,6 @@ export enum OrderState {
   DESPACHADO = 'DESPACHADO',
 }
 
-export enum TipoVentaEnum {
-  Kilogramo = 'kilogramo',
-  Unidad = 'unidad',
-  Saco = 'saco',
-  Docena = 'docena',
-  Arroba = 'arroba',
-  Caja = 'caja',
-  Balde = 'balde',
-  Bolsa = 'bolsa',
-  Paquete = 'paquete',
-  Gramo = 'gramo',
-  Mililitro = 'mililitro',
-  Litro = 'litro',
-  SixPack = 'sixpack',
-  Atado = 'atado',
-}
 
 export enum EstadoStockEnum {
   STOCK_AGOTADO = 'STOCK_AGOTADO',

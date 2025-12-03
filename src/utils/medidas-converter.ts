@@ -1,7 +1,7 @@
-import { TipoVentaEnum } from './enums';
+import { UnidadMedidaEnum } from '../interfaces/producto';
 
 /**
- * Configuración de medidas para cada tipo de venta
+ * Configuración de medidas para cada unidad de medida
  */
 interface MedidaConfig {
   /** Abreviación singular */
@@ -32,112 +32,76 @@ export interface FormatMedidaOptions {
 
 /**
  * Converter centralizado para todas las conversiones de medidas
- * Sigue principios SOLID y elimina duplicación de código
+ * Adaptado para UnidadMedidaEnum
  */
 export class MedidasConverter {
   /**
    * Configuración unificada de todas las medidas
-   * Fuente única de verdad para todas las conversiones
    */
-  private static readonly MEDIDAS_CONFIG: Record<TipoVentaEnum, MedidaConfig> = {
-    [TipoVentaEnum.Kilogramo]: {
+  private static readonly MEDIDAS_CONFIG: Partial<Record<UnidadMedidaEnum, MedidaConfig>> = {
+    [UnidadMedidaEnum.Kilogramo]: {
       singular: 'kg',
       plural: 'kg',
       display: 'kilogramo',
       abarrotes: 'kg',
       alternativa: 'kg'
     },
-    [TipoVentaEnum.Unidad]: {
+    [UnidadMedidaEnum.Unidad]: {
       singular: 'und',
       plural: 'unds',
       display: 'unidad',
       abarrotes: 'und',
       alternativa: 'und'
     },
-    [TipoVentaEnum.Saco]: {
+    [UnidadMedidaEnum.Saco]: {
       singular: 'saco',
       plural: 'sacos',
       display: 'saco',
       abarrotes: 'saco',
       alternativa: 'saco'
     },
-    [TipoVentaEnum.Docena]: {
-      singular: 'docn',
-      plural: 'docns',
-      display: 'docena',
-      abarrotes: '12 und',
-      alternativa: '12 und'
-    },
-    [TipoVentaEnum.Arroba]: {
+    [UnidadMedidaEnum.Arroba]: {
       singular: 'arrb',
       plural: 'arrbs',
       display: 'arroba',
       abarrotes: '12 kg',
       alternativa: '12 kg'
     },
-    [TipoVentaEnum.Caja]: {
-      singular: 'caja',
-      plural: 'cajas',
-      display: 'caja',
-      abarrotes: 'caja',
-      alternativa: 'caja'
+    [UnidadMedidaEnum.Galon]: { // Balde equivalent or similar? Assuming Galon for now or create Balde if needed. Old enum had Balde.
+        singular: 'gal',
+        plural: 'gal',
+        display: 'galón',
+        abarrotes: 'gal',
+        alternativa: 'gal'
     },
-    [TipoVentaEnum.Balde]: {
-      singular: 'blde',
-      plural: 'bldes',
-      display: 'balde',
-      abarrotes: 'balde',
-      alternativa: 'balde'
-    },
-    [TipoVentaEnum.Bolsa]: {
+    [UnidadMedidaEnum.Bolsa]: {
       singular: 'bols',
       plural: 'bols',
       display: 'bolsa',
       abarrotes: 'bols',
       alternativa: 'bols'
     },
-    [TipoVentaEnum.Paquete]: {
-      singular: 'pqte',
-      plural: 'pqts',
-      display: 'paquete',
-      abarrotes: 'pqte',
-      alternativa: 'pqte'
-    },
-    [TipoVentaEnum.Gramo]: {
+    [UnidadMedidaEnum.Gramo]: {
       singular: 'gr',
       plural: 'grs',
       display: 'gramo',
       abarrotes: 'unidad',
       alternativa: 'gr'
     },
-    [TipoVentaEnum.Mililitro]: {
+    [UnidadMedidaEnum.Mililitro]: {
       singular: 'ml',
       plural: 'mls',
       display: 'mililitro',
       abarrotes: 'unidad',
       alternativa: 'ml'
     },
-    [TipoVentaEnum.Litro]: {
+    [UnidadMedidaEnum.Litro]: {
       singular: 'litr',
       plural: 'lts',
       display: 'litro',
       abarrotes: 'lt',
       alternativa: 'lt'
     },
-    [TipoVentaEnum.SixPack]: {
-      singular: 'sixp',
-      plural: 'sixpack',
-      display: 'sixpack',
-      abarrotes: 'sixpack',
-      alternativa: '6 und'
-    },
-    [TipoVentaEnum.Atado]: {
-      singular: 'atad',
-      plural: 'atados',
-      display: 'atado',
-      abarrotes: 'atad',
-      alternativa: 'atad'
-    }
   };
 
   /**
@@ -152,14 +116,11 @@ export class MedidasConverter {
 
   /**
    * Obtiene la abreviación de una medida según las opciones especificadas
-   * @param tipoVenta - Tipo de venta/medida
-   * @param options - Opciones de formateo
-   * @returns Abreviación formateada
    */
-  static getAbreviacion(tipoVenta: TipoVentaEnum, options: FormatMedidaOptions = {}): string {
-    const config = this.MEDIDAS_CONFIG[tipoVenta];
+  static getAbreviacion(unidad: UnidadMedidaEnum, options: FormatMedidaOptions = {}): string {
+    const config = this.MEDIDAS_CONFIG[unidad];
     if (!config) {
-      throw new Error(`Tipo de venta no soportado: ${tipoVenta}`);
+      return unidad; // Fallback
     }
 
     if (options.abarrotes) {
@@ -175,71 +136,19 @@ export class MedidasConverter {
 
   /**
    * Obtiene el nombre completo para mostrar
-   * @param tipoVenta - Tipo de venta/medida
-   * @returns Nombre completo
    */
-  static getDisplayName(tipoVenta: TipoVentaEnum): string {
-    const config = this.MEDIDAS_CONFIG[tipoVenta];
+  static getDisplayName(unidad: UnidadMedidaEnum): string {
+    const config = this.MEDIDAS_CONFIG[unidad];
     if (!config) {
-      throw new Error(`Tipo de venta no soportado: ${tipoVenta}`);
+      return unidad;
     }
     return config.display;
   }
 
   /**
    * Convierte una fracción numérica a su representación textual
-   * @param valor - Valor numérico (ej: 250, 500, 750, 1000)
-   * @returns Representación fraccionaria (ej: '1/4', '1/2', '3/4', '1')
    */
   static getFraccion(valor: number): string | null {
     return this.FRACTION_MAP[valor] || null;
   }
-
-  /**
-   * Verifica si un tipo de venta es válido
-   * @param tipoVenta - Tipo de venta a verificar
-   * @returns true si es válido
-   */
-  static esValido(tipoVenta: TipoVentaEnum): boolean {
-    return tipoVenta in this.MEDIDAS_CONFIG;
-  }
-
-  /**
-   * Obtiene todos los tipos de venta disponibles
-   * @returns Array con todos los tipos de venta
-   */
-  static getTiposDisponibles(): TipoVentaEnum[] {
-    return Object.keys(this.MEDIDAS_CONFIG) as TipoVentaEnum[];
-  }
-
-  /**
-   * Obtiene la configuración completa de una medida
-   * @param tipoVenta - Tipo de venta
-   * @returns Configuración completa o null si no existe
-   */
-  static getConfig(tipoVenta: TipoVentaEnum): MedidaConfig | null {
-    return this.MEDIDAS_CONFIG[tipoVenta] || null;
-  }
-
-  /**
-   * Formatea una cantidad con su unidad de medida
-   * @param cantidad - Cantidad numérica
-   * @param tipoVenta - Tipo de venta/medida
-   * @param options - Opciones de formateo
-   * @returns Texto formateado (ej: "2.5 kg", "3 unds")
-   */
-  static formatearCantidad(
-    cantidad: number,
-    tipoVenta: TipoVentaEnum,
-    options: FormatMedidaOptions = {}
-  ): string {
-    const abreviacion = this.getAbreviacion(tipoVenta, {
-      ...options,
-      plural: cantidad !== 1
-    });
-    
-    return `${cantidad} ${abreviacion}`;
-  }
 }
-
-// Nota: MedidaConfig y FormatMedidaOptions ya están exportados arriba

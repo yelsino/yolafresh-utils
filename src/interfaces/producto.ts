@@ -1,4 +1,3 @@
-import { EstadoStockEnum } from "@/utils/enums";
 
 export type ImageSizes = {
   base: string;
@@ -12,62 +11,106 @@ export type ImageSizes = {
 export enum TipoEmpaqueEnum {
   Lata = "lata",
   Bolsa = "bolsa",
+  BolsaVacio = "bolsa_vacio",
   Caja = "caja",
   Botella = "botella",
   Paquete = "paquete",
+  Bandeja = "bandeja",
   Frasco = "frasco",
   Saco = "saco",
+  Malla = "malla",
+  Blister = "blister",
   TetraPack = "tetrapack",
+  Rollo = "rollo",
+  Bidon = "bidon",
+  Manojo = "manojo",
+  Atado = "atado",
   SinEmpaque = "sin_empaque",
 }
 
 export enum UnidadMedidaEnum {
-  Unidad = "unidad",
+  Unidad = "und",
   Gramo = "g",
   Kilogramo = "kg",
   Mililitro = "ml",
   Litro = "l",
   Libra = "lb",
   Onza = "oz",
+  Arroba = "ar",
+  Quintal = "qq",
+  Tonelada = "t",
+  Metro = "m",
+  Centimetro = "cm",
+  Galon = "gal",
+  Saco = "saco",
+  Bolsa = "bolsa",
+  Porcion = "porcion",
 }
 
 export enum TipoVentaEnum {
-  Unidad = "unidad", // precio por 1 unidad
-  Peso = "peso", // precio por kg, g, lb (según unidadMedida)
-  Volumen = "volumen", // precio por litro o ml (según unidadMedida)
-  Paquete = "paquete", // precio por paquete
-  Docena = "docena", // precio por 12 unidades
-  SixPack = "sixpack", // precio por 6 unidades
-  Caja = "caja", // precio por caja cerrada
+  Unidad = "unidad",   // se vende como 1 unidad física
+  Peso = "peso",       // se vende por kg/g/lb/etc
+  Volumen = "volumen", // se vende por l/ml/etc
 }
 
+
+
 export interface IProducto {
+  // Identificación
   id: string;
-  idPrimario: string;
+  sku?: string;                     // Código interno
+  codigosAlternos?: string[];       // Códigos del proveedor
+  codigoBarra?: string;
+
+  // Relación con producto primario
+  idPrimario: string;               // "" si es primario
+  esPrimario: boolean;              // true = stock independiente
+  factorConversion?: number;        // Solo si es secundario
+
+  // Descuentos
   mayoreo: boolean;
   cantidadParaDescuento: number;
   descuentoXCantidad: number;
+
+  // Información general
   nombre: string;
-  precio: number;
-  status: boolean;
-  url: ImageSizes;
-  categorieId: string;
-  esPrimario: boolean;
-  fraccionable: boolean;
   titulo: string;
+  descripcion: string;
   consideraciones: string;
   caracteristicas: string;
-  descripcion: string;
-  peso: number;
-  createdAt: Date;
-  updatedAt: Date;
-  stock: EstadoStockEnum;
+  status: boolean;                  // Activo/inactivo
+  url: ImageSizes;
+  marca?: string;
+  keywords?: string[];
+  visibleEnPOS?: boolean;
+  visibleOnline?: boolean;
+
+  // Categorías
+  categorieId: string;
+  subcategorieId?: string;
+
+  // Logística
+  contenidoNeto: number;            // Ej: 200
+  unidadContenido: UnidadMedidaEnum;// Ej: g, ml, kg
+  unidadMedida: UnidadMedidaEnum;   // Unidad de venta
+  tipoVenta: TipoVentaEnum;         // unidad, peso, volumen, etc
+  tipoEmpaque: TipoEmpaqueEnum;     // lata, caja, frasco, bolsa…
+  fraccionable: boolean;
+
+  // Stock (solo primarios)
+  stock?: number;
+
+  // Precios
+  precioVenta: number;
   precioCompra: number;
 
-  tipoVenta: TipoVentaEnum;
-  // modificacion
-  unidadMedida: string;
-  tipoEmpaque: TipoEmpaqueEnum;
+  // Impuestos
+  aplicaIGV?: boolean;
+  porcentajeIGV?: number;
+
+  // Fechas
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Categoria {

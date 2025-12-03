@@ -1,112 +1,70 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Producto = void 0;
-const enums_1 = require("../utils/enums");
-const medidas_converter_1 = require("../utils/medidas-converter");
+const producto_1 = require("../interfaces/producto");
 /**
- * Clase Producto reutilizable que encapsula todas las operaciones complejas
- * relacionadas con productos de comercio electrónico
+ * Clase Producto - Implementación de la nueva estructura IProducto
  */
 class Producto {
-    /**
-     * Constructor de la clase Producto
-     */
     constructor(data = {}) {
         this.id = data.id || '';
+        this.sku = data.sku;
+        this.codigosAlternos = data.codigosAlternos;
+        this.codigoBarra = data.codigoBarra;
         this.idPrimario = data.idPrimario || '';
+        this.esPrimario = data.esPrimario || false;
+        this.factorConversion = data.factorConversion;
         this.mayoreo = data.mayoreo || false;
         this.cantidadParaDescuento = data.cantidadParaDescuento || 0;
         this.descuentoXCantidad = data.descuentoXCantidad || 0;
         this.nombre = data.nombre || '';
-        this.precio = data.precio || 0;
-        this.status = data.status !== undefined ? data.status : true;
-        this.url = Producto.toProductImage(data.url);
-        this.categorieId = data.categorieId || '';
-        this.esPrimario = data.esPrimario || false;
-        this.tipoVenta = data.tipoVenta || enums_1.TipoVentaEnum.Unidad;
-        this.fraccionable = data.fraccionable || false;
         this.titulo = data.titulo || '';
+        this.descripcion = data.descripcion || '';
         this.consideraciones = data.consideraciones || '';
         this.caracteristicas = data.caracteristicas || '';
-        this.descripcion = data.descripcion || '';
-        this.peso = Producto.toPesoNumber(data.peso);
+        this.status = data.status !== undefined ? data.status : true;
+        this.url = Producto.toProductImage(data.url);
+        this.marca = data.marca;
+        this.keywords = data.keywords;
+        this.visibleEnPOS = data.visibleEnPOS;
+        this.visibleOnline = data.visibleOnline;
+        this.categorieId = data.categorieId || '';
+        this.subcategorieId = data.subcategorieId;
+        this.contenidoNeto = data.contenidoNeto || 0;
+        this.unidadContenido = data.unidadContenido || producto_1.UnidadMedidaEnum.Unidad;
+        this.unidadMedida = data.unidadMedida || producto_1.UnidadMedidaEnum.Unidad;
+        this.tipoVenta = data.tipoVenta || producto_1.TipoVentaEnum.Unidad;
+        this.tipoEmpaque = data.tipoEmpaque || producto_1.TipoEmpaqueEnum.SinEmpaque;
+        this.fraccionable = data.fraccionable || false;
+        this.stock = data.stock;
+        this.precioVenta = data.precioVenta || 0;
+        this.precioCompra = data.precioCompra || 0;
+        this.aplicaIGV = data.aplicaIGV;
+        this.porcentajeIGV = data.porcentajeIGV;
         this.createdAt = data.createdAt || new Date();
         this.updatedAt = data.updatedAt || new Date();
-        this.stock = data.stock || enums_1.EstadoStockEnum.STOCK_MEDIO;
-        this.precioCompra = data.precioCompra || 0;
     }
     /**
-     * Formatea la cantidad según el tipo de venta y configuraciones
-     * Refactorizado para usar MedidasConverter y seguir principios SOLID
+     * Normaliza una entrada (string | ImageSizes | undefined) a ImageSizes
      */
-    formatCantidad(params) {
-        const { cantidad, tipoVenta, mayoreo = false, abreviado = false, categoriaId } = params;
-        // Si es solo para mayoreo, devolver solo el número
-        if (mayoreo) {
-            if (tipoVenta === enums_1.TipoVentaEnum.Kilogramo && cantidad >= 1000) {
-                const kilogramos = cantidad / 1000;
-                return kilogramos.toFixed(3).replace(/\.?0+$/, '');
-            }
-            const fraccion = medidas_converter_1.MedidasConverter.getFraccion(cantidad);
-            return fraccion || cantidad.toString();
+    static toProductImage(val) {
+        if (typeof val === 'string') {
+            return { base: val, sizes: { small: val, medium: val, large: val } };
         }
-        // Determinar opciones de formateo
-        const formatOptions = {
-            abreviado,
-            abarrotes: false, // Configuración genérica - sin dependencia a categorías específicas
-            plural: cantidad !== 1
-        };
-        // Manejo especial para kilogramos
-        if (tipoVenta === enums_1.TipoVentaEnum.Kilogramo) {
-            if (cantidad < 1000) {
-                // Verificar si es una fracción conocida
-                const fraccion = medidas_converter_1.MedidasConverter.getFraccion(cantidad);
-                if (fraccion) {
-                    const unidad = medidas_converter_1.MedidasConverter.getAbreviacion(enums_1.TipoVentaEnum.Kilogramo, formatOptions);
-                    return `${fraccion} ${unidad}`;
-                }
-                // Mostrar en gramos para cantidades menores a 1kg
-                const unidad = medidas_converter_1.MedidasConverter.getAbreviacion(enums_1.TipoVentaEnum.Gramo, formatOptions);
-                return `${cantidad} ${unidad}`;
-            }
-            else {
-                // Convertir a kilogramos
-                const kilogramos = cantidad / 1000;
-                const unidad = medidas_converter_1.MedidasConverter.getAbreviacion(enums_1.TipoVentaEnum.Kilogramo, {
-                    ...formatOptions,
-                    plural: kilogramos !== 1
-                });
-                return `${kilogramos.toFixed(3).replace(/\.?0+$/, '')} ${unidad}`;
-            }
+        if (val && typeof val === 'object' && 'base' in val) {
+            return val;
         }
-        // Manejo para otros tipos de venta
-        if (cantidad >= 1000) {
-            const unidades = cantidad / 1000;
-            const unidad = medidas_converter_1.MedidasConverter.getAbreviacion(tipoVenta, {
-                ...formatOptions,
-                plural: unidades >= 2
-            });
-            return `${unidades.toFixed(3).replace(/\.?0+$/, '')} ${unidad}`;
-        }
-        // Verificar si es una fracción conocida
-        const fraccion = medidas_converter_1.MedidasConverter.getFraccion(cantidad);
-        if (fraccion) {
-            const unidad = medidas_converter_1.MedidasConverter.getAbreviacion(tipoVenta, formatOptions);
-            return `${fraccion} ${unidad}`;
-        }
-        // Formato estándar
-        const unidad = medidas_converter_1.MedidasConverter.getAbreviacion(tipoVenta, formatOptions);
-        return `${cantidad} ${unidad}`;
+        return { base: '', sizes: { small: '', medium: '', large: '' } };
     }
     /**
      * Calcula el precio con descuento por cantidad si aplica
      */
     calcularPrecioConDescuento(cantidad) {
         if (this.cantidadParaDescuento > 0 && cantidad >= this.cantidadParaDescuento) {
-            const descuento = (this.precio * this.descuentoXCantidad) / 100;
-            return this.precio - descuento;
+            const descuento = (this.precioVenta * this.descuentoXCantidad) / 100;
+            return this.precioVenta - descuento;
         }
-        return this.precio;
+        return this.precioVenta;
     }
     /**
      * Calcula el margen de ganancia
@@ -114,129 +72,71 @@ class Producto {
     calcularMargenGanancia() {
         if (this.precioCompra <= 0)
             return 0;
-        return ((this.precio - this.precioCompra) / this.precioCompra) * 100;
-    }
-    /**
-     * Verifica si el producto está disponible
-     */
-    estaDisponible() {
-        return this.status && this.stock !== enums_1.EstadoStockEnum.STOCK_AGOTADO;
+        return ((this.precioVenta - this.precioCompra) / this.precioCompra) * 100;
     }
     /**
      * Verifica si el producto tiene stock bajo
      */
-    tieneStockBajo() {
-        return this.stock === enums_1.EstadoStockEnum.STOCK_BAJO;
+    tieneStockBajo(limite = 5) {
+        return (this.stock || 0) <= limite && (this.stock || 0) > 0;
     }
     /**
      * Verifica si el producto está sin stock
      */
     estaSinStock() {
-        return this.stock === enums_1.EstadoStockEnum.STOCK_AGOTADO;
+        return (this.stock || 0) <= 0;
     }
-    // Método getImagenOptimizada eliminado - dependencia específica a Cloudinary removida
     /**
-     * Convierte el producto a formato JSON
+     * Convierte a JSON
      */
     toJSON() {
         return {
             id: this.id,
+            sku: this.sku,
+            codigosAlternos: this.codigosAlternos,
+            codigoBarra: this.codigoBarra,
             idPrimario: this.idPrimario,
+            esPrimario: this.esPrimario,
+            factorConversion: this.factorConversion,
             mayoreo: this.mayoreo,
             cantidadParaDescuento: this.cantidadParaDescuento,
             descuentoXCantidad: this.descuentoXCantidad,
             nombre: this.nombre,
-            precio: this.precio,
-            status: this.status,
-            url: this.url,
-            categorieId: this.categorieId,
-            esPrimario: this.esPrimario,
-            tipoVenta: this.tipoVenta,
-            fraccionable: this.fraccionable,
             titulo: this.titulo,
+            descripcion: this.descripcion,
             consideraciones: this.consideraciones,
             caracteristicas: this.caracteristicas,
-            descripcion: this.descripcion,
-            peso: this.peso,
-            createdAt: this.createdAt,
-            updatedAt: this.updatedAt,
+            status: this.status,
+            url: this.url,
+            marca: this.marca,
+            keywords: this.keywords,
+            visibleEnPOS: this.visibleEnPOS,
+            visibleOnline: this.visibleOnline,
+            categorieId: this.categorieId,
+            subcategorieId: this.subcategorieId,
+            contenidoNeto: this.contenidoNeto,
+            unidadContenido: this.unidadContenido,
+            unidadMedida: this.unidadMedida,
+            tipoVenta: this.tipoVenta,
+            tipoEmpaque: this.tipoEmpaque,
+            fraccionable: this.fraccionable,
             stock: this.stock,
+            precioVenta: this.precioVenta,
             precioCompra: this.precioCompra,
+            aplicaIGV: this.aplicaIGV,
+            porcentajeIGV: this.porcentajeIGV,
+            createdAt: this.createdAt,
+            updatedAt: this.updatedAt
         };
     }
-    /**
-     * Actualiza las propiedades del producto
-     */
-    actualizar(data) {
-        Object.assign(this, data);
-        this.updatedAt = new Date();
-    }
-    /**
-     * Crea una instancia de Producto desde datos JSON
-     */
     static fromJSON(data) {
         return new Producto(data);
     }
-    /**
-     * Crea múltiples instancias de Producto desde un array de datos
-     */
     static fromJSONArray(dataArray) {
         return dataArray.map(data => Producto.fromJSON(data));
     }
     /**
-     * Filtra una lista de productos según los criterios especificados
-     */
-    static filtrarProductos(productos, filtros) {
-        let resultado = [...productos];
-        // Filtrar por status
-        if (filtros.status !== undefined) {
-            resultado = resultado.filter(p => p.status === filtros.status);
-        }
-        // Filtrar por categoría
-        if (filtros.categoria || filtros.categorieId) {
-            const categoriaId = filtros.categoria || filtros.categorieId;
-            resultado = resultado.filter(p => p.categorieId === categoriaId);
-        }
-        // Filtrar por nombre
-        if (filtros.nombre) {
-            const nombreLower = filtros.nombre.toLowerCase();
-            resultado = resultado.filter(p => p.nombre.toLowerCase().includes(nombreLower) ||
-                p.titulo.toLowerCase().includes(nombreLower) ||
-                p.descripcion.toLowerCase().includes(nombreLower));
-        }
-        // Filtrar por rango de precios
-        if (filtros.precioMin !== undefined) {
-            resultado = resultado.filter(p => p.precio >= filtros.precioMin);
-        }
-        if (filtros.precioMax !== undefined) {
-            resultado = resultado.filter(p => p.precio <= filtros.precioMax);
-        }
-        // Filtrar por fechas
-        if (filtros.fechaInicio) {
-            const fechaInicio = new Date(filtros.fechaInicio);
-            resultado = resultado.filter(p => p.createdAt && p.createdAt >= fechaInicio);
-        }
-        if (filtros.fechaFin) {
-            const fechaFin = new Date(filtros.fechaFin);
-            resultado = resultado.filter(p => p.createdAt && p.createdAt <= fechaFin);
-        }
-        // Ordenar resultados
-        if (filtros.sortBy) {
-            resultado.sort((a, b) => {
-                const aValue = a[filtros.sortBy];
-                const bValue = b[filtros.sortBy];
-                if (filtros.sortOrder === 'desc') {
-                    return bValue > aValue ? 1 : bValue < aValue ? -1 : 0;
-                }
-                else {
-                    return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
-                }
-            });
-        }
-        return resultado;
-    }
-    /**
-     * Busca productos por texto en múltiples campos
+     * Busca productos por texto
      */
     static buscarProductos(productos, texto) {
         if (!texto.trim())
@@ -244,9 +144,9 @@ class Producto {
         const textoLower = texto.toLowerCase();
         return productos.filter(p => p.nombre.toLowerCase().includes(textoLower) ||
             p.titulo.toLowerCase().includes(textoLower) ||
-            p.descripcion.toLowerCase().includes(textoLower) ||
-            p.caracteristicas.toLowerCase().includes(textoLower) ||
-            p.consideraciones.toLowerCase().includes(textoLower));
+            (p.descripcion && p.descripcion.toLowerCase().includes(textoLower)) ||
+            (p.sku && p.sku.toLowerCase().includes(textoLower)) ||
+            (p.codigoBarra && p.codigoBarra.includes(textoLower)));
     }
     /**
      * Agrupa productos por categoría
@@ -262,191 +162,90 @@ class Producto {
         }, {});
     }
     /**
-     * Obtiene estadísticas de una lista de productos
-     */
-    static obtenerEstadisticas(productos) {
-        const total = productos.length;
-        const activos = productos.filter(p => p.status).length;
-        const inactivos = total - activos;
-        const conStock = productos.filter(p => p.stock !== enums_1.EstadoStockEnum.STOCK_AGOTADO).length;
-        const sinStock = productos.filter(p => p.stock === enums_1.EstadoStockEnum.STOCK_AGOTADO).length;
-        const stockBajo = productos.filter(p => p.stock === enums_1.EstadoStockEnum.STOCK_BAJO).length;
-        const precios = productos.filter(p => p.precio > 0).map(p => p.precio);
-        const precioPromedio = precios.length > 0 ? precios.reduce((a, b) => a + b, 0) / precios.length : 0;
-        const precioMinimo = precios.length > 0 ? Math.min(...precios) : 0;
-        const precioMaximo = precios.length > 0 ? Math.max(...precios) : 0;
-        return {
-            total,
-            activos,
-            inactivos,
-            conStock,
-            sinStock,
-            stockBajo,
-            precioPromedio,
-            precioMinimo,
-            precioMaximo
-        };
-    }
-    /**
-     * Valida los datos del producto
-     */
-    validar() {
-        const errores = [];
-        if (!this.nombre.trim()) {
-            errores.push('El nombre es requerido');
-        }
-        if (this.precio < 0) {
-            errores.push('El precio no puede ser negativo');
-        }
-        if (this.precioCompra < 0) {
-            errores.push('El precio de compra no puede ser negativo');
-        }
-        if (this.cantidadParaDescuento < 0) {
-            errores.push('La cantidad para descuento no puede ser negativa');
-        }
-        if (this.descuentoXCantidad < 0 || this.descuentoXCantidad > 100) {
-            errores.push('El descuento por cantidad debe estar entre 0 y 100');
-        }
-        return {
-            esValido: errores.length === 0,
-            errores
-        };
-    }
-    /**
-     * Convierte las propiedades del producto a snake_case para bases de datos
-     * que requieren esta nomenclatura (ej: PostgreSQL, MySQL)
-     */
-    toSnakeCase() {
-        return {
-            id: this.id,
-            id_primario: this.idPrimario,
-            mayoreo: this.mayoreo,
-            cantidad_para_descuento: this.cantidadParaDescuento,
-            descuento_x_cantidad: this.descuentoXCantidad,
-            nombre: this.nombre,
-            precio: this.precio,
-            status: this.status,
-            url: this.url,
-            categorie_id: this.categorieId,
-            es_primario: this.esPrimario,
-            tipo_venta: this.tipoVenta,
-            fraccionable: this.fraccionable,
-            titulo: this.titulo,
-            consideraciones: this.consideraciones,
-            caracteristicas: this.caracteristicas,
-            descripcion: this.descripcion,
-            peso: this.peso,
-            fecha_creacion: this.createdAt,
-            fecha_actualizacion: this.updatedAt,
-            stock: this.stock,
-            precio_compra: this.precioCompra,
-        };
-    }
-    /**
-     * Convierte datos con nomenclatura snake_case a formato IProducto
-     * @param data Objeto con propiedades en snake_case
-     * @returns Objeto que implementa IProducto con propiedades en camelCase
+     * Convierte snake_case a camelCase (IProducto)
      */
     static fromSnakeCase(data) {
         return {
             id: data.id,
+            sku: data.sku,
+            codigosAlternos: data.codigos_alternos ? JSON.parse(data.codigos_alternos) : [],
+            codigoBarra: data.codigo_barra,
             idPrimario: data.id_primario,
+            esPrimario: data.es_primario,
+            factorConversion: data.factor_conversion,
             mayoreo: data.mayoreo,
             cantidadParaDescuento: data.cantidad_para_descuento,
             descuentoXCantidad: data.descuento_x_cantidad,
             nombre: data.nombre,
-            precio: data.precio,
-            status: data.status,
-            url: Producto.toProductImage(data.url),
-            categorieId: data.categorie_id,
-            esPrimario: data.es_primario,
-            tipoVenta: data.tipo_venta,
-            fraccionable: data.fraccionable,
             titulo: data.titulo,
+            descripcion: data.descripcion,
             consideraciones: data.consideraciones,
             caracteristicas: data.caracteristicas,
-            descripcion: data.descripcion,
-            peso: Producto.toPesoNumber(data.peso),
-            createdAt: data.created_at,
-            updatedAt: data.updated_at,
+            status: data.status,
+            url: typeof data.url === 'string' ? JSON.parse(data.url) : data.url,
+            marca: data.marca,
+            keywords: data.keywords ? JSON.parse(data.keywords) : [],
+            visibleEnPOS: data.visible_en_pos,
+            visibleOnline: data.visible_online,
+            categorieId: data.categorie_id,
+            subcategorieId: data.subcategorie_id,
+            contenidoNeto: data.contenido_neto,
+            unidadContenido: data.unidad_contenido,
+            unidadMedida: data.unidad_medida,
+            tipoVenta: data.tipo_venta,
+            tipoEmpaque: data.tipo_empaque,
+            fraccionable: data.fraccionable,
             stock: data.stock,
+            precioVenta: data.precio_venta,
             precioCompra: data.precio_compra,
+            aplicaIGV: data.aplica_igv,
+            porcentajeIGV: data.porcentaje_igv,
+            createdAt: new Date(data.created_at),
+            updatedAt: new Date(data.updated_at)
         };
     }
     /**
-     * Convierte un array de datos snake_case a objetos IProducto
-     * @param dataArray Array de objetos con propiedades en snake_case
-     * @returns Array de objetos que implementan IProducto
+     * Convierte a snake_case
      */
-    static fromSnakeCaseArray(dataArray) {
-        return dataArray.map(data => Producto.fromSnakeCase(data));
-    }
-    /**
-     * Utilidad genérica para convertir propiedades camelCase a snake_case
-     * Útil para otras clases que necesiten esta funcionalidad
-     */
-    static camelToSnakeCase(str) {
-        return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-    }
-    /**
-     * Utilidad genérica para convertir propiedades snake_case a camelCase
-     * Útil para otras clases que necesiten esta funcionalidad
-     */
-    static snakeToCamelCase(str) {
-        return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-    }
-    /**
-     * Convierte un objeto completo de camelCase a snake_case
-     */
-    static objectToSnakeCase(obj) {
-        const result = {};
-        for (const [key, value] of Object.entries(obj)) {
-            const snakeKey = Producto.camelToSnakeCase(key);
-            result[snakeKey] = value;
-        }
-        return result;
-    }
-    /**
-     * Convierte un objeto completo de snake_case a camelCase
-     */
-    static objectToCamelCase(obj) {
-        const result = {};
-        for (const [key, value] of Object.entries(obj)) {
-            const camelKey = Producto.snakeToCamelCase(key);
-            result[camelKey] = value;
-        }
-        return result;
-    }
-    /**
-     * Normaliza una entrada (string | ProductImage | undefined) a ProductImage
-     * Mantiene compatibilidad con datos antiguos donde url era string
-     */
-    static toProductImage(val) {
-        if (typeof val === 'string') {
-            return { base: val, sizes: { small: val, medium: val, large: val } };
-        }
-        if (Producto.isValidProductImage(val)) {
-            return val;
-        }
-        return { base: '', sizes: { small: '', medium: '', large: '' } };
-    }
-    static toPesoNumber(val) {
-        if (typeof val === 'number')
-            return val;
-        if (typeof val === 'string') {
-            const n = parseFloat(val.replace(',', '.'));
-            return Number.isFinite(n) ? n : 0;
-        }
-        return 0;
-    }
-    static isValidProductImage(val) {
-        if (typeof val !== 'object' || val === null)
-            return false;
-        const obj = val;
-        const baseOk = typeof obj.base === 'string';
-        const sizes = obj.sizes;
-        const sizesOk = !!sizes && typeof sizes.small === 'string' && typeof sizes.medium === 'string' && typeof sizes.large === 'string';
-        return baseOk && sizesOk;
+    toSnakeCase() {
+        return {
+            id: this.id,
+            sku: this.sku,
+            codigos_alternos: JSON.stringify(this.codigosAlternos),
+            codigo_barra: this.codigoBarra,
+            id_primario: this.idPrimario,
+            es_primario: this.esPrimario,
+            factor_conversion: this.factorConversion,
+            mayoreo: this.mayoreo,
+            cantidad_para_descuento: this.cantidadParaDescuento,
+            descuento_x_cantidad: this.descuentoXCantidad,
+            nombre: this.nombre,
+            titulo: this.titulo,
+            descripcion: this.descripcion,
+            consideraciones: this.consideraciones,
+            caracteristicas: this.caracteristicas,
+            status: this.status ? 1 : 0,
+            url: JSON.stringify(this.url),
+            marca: this.marca,
+            keywords: JSON.stringify(this.keywords),
+            visible_en_pos: this.visibleEnPOS,
+            visible_online: this.visibleOnline,
+            categorie_id: this.categorieId,
+            subcategorie_id: this.subcategorieId,
+            contenido_neto: this.contenidoNeto,
+            unidad_contenido: this.unidadContenido,
+            unidad_medida: this.unidadMedida,
+            tipo_venta: this.tipoVenta,
+            tipo_empaque: this.tipoEmpaque,
+            fraccionable: this.fraccionable,
+            stock: this.stock,
+            precio_venta: this.precioVenta,
+            precio_compra: this.precioCompra,
+            aplica_igv: this.aplicaIGV,
+            porcentaje_igv: this.porcentajeIGV,
+            created_at: this.createdAt.toISOString(),
+            updated_at: this.updatedAt.toISOString()
+        };
     }
 }
 exports.Producto = Producto;

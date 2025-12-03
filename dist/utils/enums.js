@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MedioPagoEfectivoEnum = exports.MedioPagoDigitalEnum = exports.MetodoPagoEnum = exports.TipoActualizacionEnum = exports.EstadoStockEnum = exports.TipoVentaEnum = exports.OrderState = void 0;
+exports.MedioPagoEfectivoEnum = exports.MedioPagoDigitalEnum = exports.MetodoPagoEnum = exports.TipoActualizacionEnum = exports.EstadoStockEnum = exports.OrderState = void 0;
 var OrderState;
 (function (OrderState) {
     OrderState["PENDIENTE"] = "PENDIENTE";
@@ -9,23 +9,6 @@ var OrderState;
     OrderState["CANCELADO"] = "CANCELADO";
     OrderState["DESPACHADO"] = "DESPACHADO";
 })(OrderState || (exports.OrderState = OrderState = {}));
-var TipoVentaEnum;
-(function (TipoVentaEnum) {
-    TipoVentaEnum["Kilogramo"] = "kilogramo";
-    TipoVentaEnum["Unidad"] = "unidad";
-    TipoVentaEnum["Saco"] = "saco";
-    TipoVentaEnum["Docena"] = "docena";
-    TipoVentaEnum["Arroba"] = "arroba";
-    TipoVentaEnum["Caja"] = "caja";
-    TipoVentaEnum["Balde"] = "balde";
-    TipoVentaEnum["Bolsa"] = "bolsa";
-    TipoVentaEnum["Paquete"] = "paquete";
-    TipoVentaEnum["Gramo"] = "gramo";
-    TipoVentaEnum["Mililitro"] = "mililitro";
-    TipoVentaEnum["Litro"] = "litro";
-    TipoVentaEnum["SixPack"] = "sixpack";
-    TipoVentaEnum["Atado"] = "atado";
-})(TipoVentaEnum || (exports.TipoVentaEnum = TipoVentaEnum = {}));
 var EstadoStockEnum;
 (function (EstadoStockEnum) {
     EstadoStockEnum["STOCK_AGOTADO"] = "STOCK_AGOTADO";

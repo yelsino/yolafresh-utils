@@ -1,4 +1,4 @@
-import { TipoVentaEnum } from "@/utils";
+import { TipoVentaEnum } from "./producto";
 
 type EstadoCompra = 'pendiente' | 'completado' | 'cancelado';
 export enum Procedencia { LOCAL = 'LOCAL', SATIPO = 'SATIPO', TARMA = 'TARMA', LIMA = 'LIMA' };

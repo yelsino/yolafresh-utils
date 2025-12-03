@@ -6,7 +6,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ShoppingCart = exports.ProcedenciaVenta = void 0;
-const utils_1 = require("../utils");
+const interfaces_1 = require("../interfaces");
 const fiscales_1 = require("../utils/fiscales");
 var ProcedenciaVenta;
 (function (ProcedenciaVenta) {
@@ -96,7 +96,7 @@ class ShoppingCart {
      */
     actualizarItemExistente(itemExistente, carItem, esPesable) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
-        const unit = Number((_a = carItem.precioUnitario) !== null && _a !== void 0 ? _a : carItem.product.precio) || 0;
+        const unit = Number((_a = carItem.precioUnitario) !== null && _a !== void 0 ? _a : carItem.product.precioVenta) || 0;
         // Compatibilidad legacy: si es pesable y no hay peso, pero quantity es decimal, interpretarlo como peso
         const legacyPeso = esPesable && (carItem.peso == null) && typeof carItem.quantity === 'number' && !Number.isInteger(carItem.quantity)
             ? Number(carItem.quantity)
@@ -131,7 +131,7 @@ class ShoppingCart {
      */
     agregarNuevoItem(carItem, itemId, esPesable) {
         var _a, _b, _c, _d, _e, _f;
-        const unit = Number((_a = carItem.precioUnitario) !== null && _a !== void 0 ? _a : carItem.product.precio) || 0;
+        const unit = Number((_a = carItem.precioUnitario) !== null && _a !== void 0 ? _a : carItem.product.precioVenta) || 0;
         // Compatibilidad legacy: si es pesable y no hay peso, pero quantity es decimal, interpretarlo como peso
         const legacyPeso = esPesable && (carItem.peso == null) && typeof carItem.quantity === 'number' && !Number.isInteger(carItem.quantity)
             ? Number(carItem.quantity)
@@ -162,7 +162,7 @@ class ShoppingCart {
         if (carItem.montoModificado && carItem.montoTotal != null) {
             return Number(carItem.montoTotal);
         }
-        const unit = Number((_a = carItem.precioUnitario) !== null && _a !== void 0 ? _a : ((_c = (_b = carItem.product) === null || _b === void 0 ? void 0 : _b.precio) !== null && _c !== void 0 ? _c : 0)) || 0;
+        const unit = Number((_a = carItem.precioUnitario) !== null && _a !== void 0 ? _a : ((_c = (_b = carItem.product) === null || _b === void 0 ? void 0 : _b.precioVenta) !== null && _c !== void 0 ? _c : 0)) || 0;
         const esPesable = this.esProductoPesable(((_d = carItem.tipoVenta) !== null && _d !== void 0 ? _d : (_e = carItem.product) === null || _e === void 0 ? void 0 : _e.tipoVenta));
         const peso = esPesable ? Number((_g = (_f = carItem.peso) !== null && _f !== void 0 ? _f : carItem.quantity) !== null && _g !== void 0 ? _g : 0) : undefined;
         const qty = esPesable ? 0 : Math.max(0, Number((_h = carItem.quantity) !== null && _h !== void 0 ? _h : 0));
@@ -174,8 +174,8 @@ class ShoppingCart {
      */
     esProductoPesable(tipoVenta) {
         const tiposPesables = [
-            utils_1.TipoVentaEnum.Kilogramo,
-            utils_1.TipoVentaEnum.Litro,
+            interfaces_1.TipoVentaEnum.Peso,
+            interfaces_1.TipoVentaEnum.Volumen,
         ];
         return tiposPesables.includes(tipoVenta);
     }
@@ -279,7 +279,7 @@ class ShoppingCart {
         if (item.montoModificado) {
             return item.montoTotal || 0; // No recalcular si fue modificado manualmente
         }
-        const precioUnitario = item.precioUnitario || item.product.precio;
+        const precioUnitario = item.precioUnitario || item.product.precioVenta;
         const esPesable = this.esProductoPesable(item.tipoVenta || item.product.tipoVenta);
         let montoSinRedondear;
         if (esPesable) {

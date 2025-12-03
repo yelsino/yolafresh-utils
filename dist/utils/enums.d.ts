@@ -5,22 +5,6 @@ export declare enum OrderState {
     CANCELADO = "CANCELADO",
     DESPACHADO = "DESPACHADO"
 }
-export declare enum TipoVentaEnum {
-    Kilogramo = "kilogramo",
-    Unidad = "unidad",
-    Saco = "saco",
-    Docena = "docena",
-    Arroba = "arroba",
-    Caja = "caja",
-    Balde = "balde",
-    Bolsa = "bolsa",
-    Paquete = "paquete",
-    Gramo = "gramo",
-    Mililitro = "mililitro",
-    Litro = "litro",
-    SixPack = "sixpack",
-    Atado = "atado"
-}
 export declare enum EstadoStockEnum {
     STOCK_AGOTADO = "STOCK_AGOTADO",
     STOCK_BAJO = "STOCK_BAJO",

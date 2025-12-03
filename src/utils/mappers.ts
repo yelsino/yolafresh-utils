@@ -1,5 +1,6 @@
 import { IProducto, ImageSizes } from "@/interfaces/producto";
-import { OrderState, TipoVentaEnum } from "./enums";
+import { OrderState } from "./enums";
+import { TipoVentaEnum } from "../interfaces/producto";
 import { Carrito, Lista, Pedido } from "@/interfaces/pedido";
 
 

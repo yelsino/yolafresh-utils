@@ -1,4 +1,3 @@
-import { EstadoStockEnum, TipoVentaEnum } from "../utils/enums";
 export type ImageSizes = {
     base: string;
     sizes: {
@@ -7,29 +6,85 @@ export type ImageSizes = {
         large: string;
     };
 };
+export declare enum TipoEmpaqueEnum {
+    Lata = "lata",
+    Bolsa = "bolsa",
+    BolsaVacio = "bolsa_vacio",
+    Caja = "caja",
+    Botella = "botella",
+    Paquete = "paquete",
+    Bandeja = "bandeja",
+    Frasco = "frasco",
+    Saco = "saco",
+    Malla = "malla",
+    Blister = "blister",
+    TetraPack = "tetrapack",
+    Rollo = "rollo",
+    Bidon = "bidon",
+    Manojo = "manojo",
+    Atado = "atado",
+    SinEmpaque = "sin_empaque"
+}
+export declare enum UnidadMedidaEnum {
+    Unidad = "und",
+    Gramo = "g",
+    Kilogramo = "kg",
+    Mililitro = "ml",
+    Litro = "l",
+    Libra = "lb",
+    Onza = "oz",
+    Arroba = "ar",
+    Quintal = "qq",
+    Tonelada = "t",
+    Metro = "m",
+    Centimetro = "cm",
+    Galon = "gal",
+    Saco = "saco",
+    Bolsa = "bolsa",
+    Porcion = "porcion"
+}
+export declare enum TipoVentaEnum {
+    Unidad = "unidad",// se vende como 1 unidad física
+    Peso = "peso",// se vende por kg/g/lb/etc
+    Volumen = "volumen"
+}
 export interface IProducto {
     id: string;
+    sku?: string;
+    codigosAlternos?: string[];
+    codigoBarra?: string;
     idPrimario: string;
+    esPrimario: boolean;
+    factorConversion?: number;
     mayoreo: boolean;
     cantidadParaDescuento: number;
     descuentoXCantidad: number;
     nombre: string;
-    precio: number;
-    status: boolean;
-    url: ImageSizes;
-    categorieId: string;
-    esPrimario: boolean;
-    tipoVenta: TipoVentaEnum;
-    fraccionable: boolean;
     titulo: string;
+    descripcion: string;
     consideraciones: string;
     caracteristicas: string;
-    descripcion: string;
-    peso: number;
+    status: boolean;
+    url: ImageSizes;
+    marca?: string;
+    keywords?: string[];
+    visibleEnPOS?: boolean;
+    visibleOnline?: boolean;
+    categorieId: string;
+    subcategorieId?: string;
+    contenidoNeto: number;
+    unidadContenido: UnidadMedidaEnum;
+    unidadMedida: UnidadMedidaEnum;
+    tipoVenta: TipoVentaEnum;
+    tipoEmpaque: TipoEmpaqueEnum;
+    fraccionable: boolean;
+    stock?: number;
+    precioVenta: number;
+    precioCompra: number;
+    aplicaIGV?: boolean;
+    porcentajeIGV?: number;
     createdAt: Date;
     updatedAt: Date;
-    stock: EstadoStockEnum;
-    precioCompra: number;
 }
 export interface Categoria {
     id: string;
