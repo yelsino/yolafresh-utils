@@ -25,10 +25,29 @@ export enum TipoEmpaqueEnum {
   Bidon = "bidon",
   Manojo = "manojo",
   Atado = "atado",
-  SinEmpaque = "sin_empaque",
+  SinEmpaque = "",
 }
 
 export enum UnidadMedidaEnum {
+  Unidad = "unidad",
+  Gramo = "gramo",
+  Kilogramo = "kilogramo",
+  Mililitro = "mililitro",
+  Litro = "litro",
+  Libra = "libra",
+  Onza = "onza",
+  Arroba = "arroba",
+  Quintal = "quintal",
+  Tonelada = "tonelada",
+  Metro = "metro",
+  Centimetro = "centimetro",
+  Galon = "galon",
+  Saco = "saco",
+  Bolsa = "bolsa",
+  Porcion = "porcion",
+}
+
+export enum UnidadMedidaAbreviadoEnum {
   Unidad = "und",
   Gramo = "g",
   Kilogramo = "kg",

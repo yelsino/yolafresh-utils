@@ -99,4 +99,13 @@ export declare class Producto implements IProducto {
      * Convierte a snake_case
      */
     toSnakeCase(): any;
+    /**
+     * Obtiene la abreviación de una unidad de medida
+     * @param unidad Unidad de medida a abreviar (si no se provee, usa la del producto)
+     */
+    static getUnidadMedidaAbreviada(unidad: UnidadMedidaEnum): string;
+    /**
+     * Obtiene la abreviación de la unidad de medida de esta instancia
+     */
+    get unidadMedidaAbreviada(): string;
 }

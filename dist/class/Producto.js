@@ -247,5 +247,21 @@ class Producto {
             updated_at: this.updatedAt.toISOString()
         };
     }
+    /**
+     * Obtiene la abreviación de una unidad de medida
+     * @param unidad Unidad de medida a abreviar (si no se provee, usa la del producto)
+     */
+    static getUnidadMedidaAbreviada(unidad) {
+        // Como el enum ya tiene los valores abreviados ("kg", "g", "und"), 
+        // simplemente devolvemos el valor del enum.
+        // Esto mantiene la consistencia y evita mapas duplicados.
+        return unidad;
+    }
+    /**
+     * Obtiene la abreviación de la unidad de medida de esta instancia
+     */
+    get unidadMedidaAbreviada() {
+        return Producto.getUnidadMedidaAbreviada(this.unidadMedida);
+    }
 }
 exports.Producto = Producto;
