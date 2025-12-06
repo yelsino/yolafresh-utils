@@ -291,6 +291,11 @@ export declare class ShoppingCart implements IShoppingCart {
      */
     agregarProducto(carItem: CarItem, opciones?: OpcionesAgregarProducto): void;
     /**
+     * Redondear monto monetario a 2 decimales con regla de 0.10 (Perú)
+     * @example 18.45 -> 18.50, 18.42 -> 18.40
+     */
+    private redondearMoneda;
+    /**
      * Actualizar un ítem existente
      */
     private actualizarItemExistente;

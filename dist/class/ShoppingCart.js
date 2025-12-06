@@ -102,6 +102,30 @@ class ShoppingCart {
         }
     }
     /**
+     * Redondear monto monetario a 2 decimales con regla de 0.10 (Perú)
+     * @example 18.45 -> 18.50, 18.42 -> 18.40
+     */
+    redondearMoneda(monto) {
+        // Primero redondear a 2 decimales estándar para evitar errores de punto flotante
+        const base = Math.round(monto * 100) / 100;
+        // Obtener la parte decimal
+        const decimales = Math.round((base % 1) * 100);
+        const ultimoDigito = decimales % 10;
+        // Si termina en 0 o 5, ya está redondeado
+        if (ultimoDigito === 0)
+            return base;
+        // Lógica de redondeo al 0.10 más cercano (o 0.05 si prefieres esa granularidad)
+        // Aquí implementamos al 0.10 más cercano que es común en POS físicos
+        // Ojo: Si quieres mantener el 0.05 (18.45 -> 18.50 es implícito si redondeas al 0.10 superior o 0.05)
+        // Para el caso específico que pides: 18.45 -> 18.50
+        // Esto sugiere redondeo al 0.10 superior si termina en 5?
+        // O simplemente redondeo estándar matemático al 0.10?
+        // 18.44 -> 18.40
+        // 18.46 -> 18.50
+        // 18.45 -> 18.50 (Round half up)
+        return Math.round(base * 10) / 10;
+    }
+    /**
      * Actualizar un ítem existente
      */
     actualizarItemExistente(itemExistente, carItem, esPesable) {
@@ -127,7 +151,12 @@ class ShoppingCart {
         const montoCalculado = (prepared.montoModificado && carItem.montoTotal != null)
             ? carItem.montoTotal
             : this.calcularTotalLinea(prepared);
-        prepared.montoTotal = Math.round(montoCalculado * 100) / 100;
+        prepared.montoTotal = this.redondearMoneda(montoCalculado);
+        // Actualizar el ítem pasado por referencia para que el llamador tenga los datos actualizados
+        if (carItem !== prepared) {
+            carItem.montoTotal = prepared.montoTotal;
+            // Opcional: actualizar otros campos calculados si es necesario para el frontend
+        }
         const index = this._items.findIndex(item => item.id === itemExistente.id);
         if (index !== -1) {
             this._items[index] = prepared;
@@ -154,7 +183,11 @@ class ShoppingCart {
         const montoCalculado = (prepared.montoModificado && carItem.montoTotal != null)
             ? carItem.montoTotal
             : this.calcularTotalLinea(prepared);
-        prepared.montoTotal = Math.round(montoCalculado * 100) / 100;
+        prepared.montoTotal = this.redondearMoneda(montoCalculado);
+        // Actualizar el ítem pasado por referencia para que el llamador tenga los datos actualizados
+        if (carItem !== prepared) {
+            carItem.montoTotal = prepared.montoTotal;
+        }
         this._items.push(prepared);
     }
     /**
@@ -164,7 +197,7 @@ class ShoppingCart {
         var _a, _b, _c, _d, _e, _f, _g, _h;
         // Respetar overrides manuales
         if (carItem.montoModificado && carItem.montoTotal != null) {
-            return Math.round(Number(carItem.montoTotal) * 100) / 100;
+            return this.redondearMoneda(Number(carItem.montoTotal));
         }
         const unit = Number((_a = carItem.precioUnitario) !== null && _a !== void 0 ? _a : ((_c = (_b = carItem.product) === null || _b === void 0 ? void 0 : _b.precioVenta) !== null && _c !== void 0 ? _c : 0)) || 0;
         const tipoVenta = ((_d = carItem.tipoVenta) !== null && _d !== void 0 ? _d : (_e = carItem.product) === null || _e === void 0 ? void 0 : _e.tipoVenta);
@@ -172,7 +205,8 @@ class ShoppingCart {
         const peso = esPesable ? Number((_g = (_f = carItem.peso) !== null && _f !== void 0 ? _f : carItem.quantity) !== null && _g !== void 0 ? _g : 0) : undefined;
         const qty = esPesable ? 0 : Math.max(0, Number((_h = carItem.quantity) !== null && _h !== void 0 ? _h : 0));
         const base = esPesable ? unit * (peso || 0) : unit * qty;
-        return Math.round(base * 100) / 100;
+        // Redondear también el cálculo base
+        return this.redondearMoneda(base);
     }
     // **MÉTODOS DE MANIPULACIÓN DE ITEMS**
     /**
@@ -287,7 +321,7 @@ class ShoppingCart {
         else {
             montoSinRedondear = precioUnitario * nuevaCantidad;
         }
-        return Math.round(montoSinRedondear * 100) / 100;
+        return this.redondearMoneda(montoSinRedondear);
     }
     /**
      * Limpiar toda la venta
@@ -320,19 +354,19 @@ class ShoppingCart {
             return 0;
         }
         const baseImponible = this.subtotal - this.descuentoTotal;
-        return Math.round(baseImponible * (this._configuracionFiscal.tasaImpuesto || 0) * 100) / 100;
+        return this.redondearMoneda(baseImponible * (this._configuracionFiscal.tasaImpuesto || 0));
     }
     /**
      * Calcular total final
      */
     get total() {
-        return Math.round((this.subtotal - this.descuentoTotal + this.impuesto) * 100) / 100;
+        return this.redondearMoneda(this.subtotal - this.descuentoTotal + this.impuesto);
     }
     /**
      * Calcular cambio a devolver
      */
     calcularCambio(dineroRecibido) {
-        return Math.max(0, Math.round((dineroRecibido - this.total) * 100) / 100);
+        return Math.max(0, this.redondearMoneda(dineroRecibido - this.total));
     }
     // **GETTERS Y SETTERS**
     get items() {
@@ -542,10 +576,10 @@ class ShoppingCart {
         const subtotalPedidos = itemsPedido.reduce((sum, item) => sum + (item.montoTotal || 0), 0);
         const subtotalVentaNormal = itemsVentaNormal.reduce((sum, item) => sum + (item.montoTotal || 0), 0);
         const impuestoPedidos = this._configuracionFiscal.aplicaImpuesto
-            ? Math.round(subtotalPedidos * (this._configuracionFiscal.tasaImpuesto || 0) * 100) / 100
+            ? this.redondearMoneda(subtotalPedidos * (this._configuracionFiscal.tasaImpuesto || 0))
             : 0;
         const impuestoVentaNormal = this._configuracionFiscal.aplicaImpuesto
-            ? Math.round(subtotalVentaNormal * (this._configuracionFiscal.tasaImpuesto || 0) * 100) / 100
+            ? this.redondearMoneda(subtotalVentaNormal * (this._configuracionFiscal.tasaImpuesto || 0))
             : 0;
         return {
             pedidos: {

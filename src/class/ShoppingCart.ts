@@ -410,6 +410,35 @@ export class ShoppingCart implements IShoppingCart {
   }
 
   /**
+   * Redondear monto monetario a 2 decimales con regla de 0.10 (Perú)
+   * @example 18.45 -> 18.50, 18.42 -> 18.40
+   */
+  private redondearMoneda(monto: number): number {
+    // Primero redondear a 2 decimales estándar para evitar errores de punto flotante
+    const base = Math.round(monto * 100) / 100;
+    
+    // Obtener la parte decimal
+    const decimales = Math.round((base % 1) * 100);
+    const ultimoDigito = decimales % 10;
+    
+    // Si termina en 0 o 5, ya está redondeado
+    if (ultimoDigito === 0) return base;
+    
+    // Lógica de redondeo al 0.10 más cercano (o 0.05 si prefieres esa granularidad)
+    // Aquí implementamos al 0.10 más cercano que es común en POS físicos
+    // Ojo: Si quieres mantener el 0.05 (18.45 -> 18.50 es implícito si redondeas al 0.10 superior o 0.05)
+    
+    // Para el caso específico que pides: 18.45 -> 18.50
+    // Esto sugiere redondeo al 0.10 superior si termina en 5?
+    // O simplemente redondeo estándar matemático al 0.10?
+    // 18.44 -> 18.40
+    // 18.46 -> 18.50
+    // 18.45 -> 18.50 (Round half up)
+    
+    return Math.round(base * 10) / 10;
+  }
+
+  /**
    * Actualizar un ítem existente
    */
   private actualizarItemExistente(itemExistente: CarItem, carItem: CarItem, esPesable: boolean): void {
@@ -442,7 +471,13 @@ export class ShoppingCart implements IShoppingCart {
       ? carItem.montoTotal as number
       : this.calcularTotalLinea(prepared);
     
-    prepared.montoTotal = Math.round(montoCalculado * 100) / 100;
+    prepared.montoTotal = this.redondearMoneda(montoCalculado);
+
+    // Actualizar el ítem pasado por referencia para que el llamador tenga los datos actualizados
+    if (carItem !== prepared) {
+        carItem.montoTotal = prepared.montoTotal;
+        // Opcional: actualizar otros campos calculados si es necesario para el frontend
+    }
 
     const index = this._items.findIndex(item => item.id === itemExistente.id);
     if (index !== -1) {
@@ -473,7 +508,12 @@ export class ShoppingCart implements IShoppingCart {
       ? carItem.montoTotal as number
       : this.calcularTotalLinea(prepared);
       
-    prepared.montoTotal = Math.round(montoCalculado * 100) / 100;
+    prepared.montoTotal = this.redondearMoneda(montoCalculado);
+
+    // Actualizar el ítem pasado por referencia para que el llamador tenga los datos actualizados
+    if (carItem !== prepared) {
+        carItem.montoTotal = prepared.montoTotal;
+    }
 
     this._items.push(prepared);
   }
@@ -484,7 +524,7 @@ export class ShoppingCart implements IShoppingCart {
   private calcularTotalLinea(carItem: CarItem): number {
     // Respetar overrides manuales
     if (carItem.montoModificado && carItem.montoTotal != null) {
-      return Math.round(Number(carItem.montoTotal) * 100) / 100;
+      return this.redondearMoneda(Number(carItem.montoTotal));
     }
 
     const unit = Number(carItem.precioUnitario ?? (carItem.product?.precioVenta ?? 0)) || 0;
@@ -493,7 +533,9 @@ export class ShoppingCart implements IShoppingCart {
     const peso = esPesable ? Number(carItem.peso ?? carItem.quantity ?? 0) : undefined;
     const qty = esPesable ? 0 : Math.max(0, Number(carItem.quantity ?? 0));
     const base = esPesable ? unit * (peso || 0) : unit * qty;
-    return Math.round(base * 100) / 100;
+    
+    // Redondear también el cálculo base
+    return this.redondearMoneda(base);
   }
 
 
@@ -617,7 +659,7 @@ export class ShoppingCart implements IShoppingCart {
       montoSinRedondear = precioUnitario * nuevaCantidad;
     }
 
-    return Math.round(montoSinRedondear * 100) / 100;
+    return this.redondearMoneda(montoSinRedondear);
   }
 
   /**
@@ -655,21 +697,21 @@ export class ShoppingCart implements IShoppingCart {
       return 0;
     }
     const baseImponible = this.subtotal - this.descuentoTotal;
-    return Math.round(baseImponible * (this._configuracionFiscal.tasaImpuesto || 0) * 100) / 100;
+    return this.redondearMoneda(baseImponible * (this._configuracionFiscal.tasaImpuesto || 0));
   }
 
   /**
    * Calcular total final
    */
   get total(): number {
-    return Math.round((this.subtotal - this.descuentoTotal + this.impuesto) * 100) / 100;
+    return this.redondearMoneda(this.subtotal - this.descuentoTotal + this.impuesto);
   }
 
   /**
    * Calcular cambio a devolver
    */
   calcularCambio(dineroRecibido: number): number {
-    return Math.max(0, Math.round((dineroRecibido - this.total) * 100) / 100);
+    return Math.max(0, this.redondearMoneda(dineroRecibido - this.total));
   }
 
   // **GETTERS Y SETTERS**
@@ -946,11 +988,11 @@ export class ShoppingCart implements IShoppingCart {
     const subtotalVentaNormal = itemsVentaNormal.reduce((sum, item) => sum + (item.montoTotal || 0), 0);
     
     const impuestoPedidos = this._configuracionFiscal.aplicaImpuesto 
-      ? Math.round(subtotalPedidos * (this._configuracionFiscal.tasaImpuesto || 0) * 100) / 100
+      ? this.redondearMoneda(subtotalPedidos * (this._configuracionFiscal.tasaImpuesto || 0))
       : 0;
     
     const impuestoVentaNormal = this._configuracionFiscal.aplicaImpuesto 
-      ? Math.round(subtotalVentaNormal * (this._configuracionFiscal.tasaImpuesto || 0) * 100) / 100
+      ? this.redondearMoneda(subtotalVentaNormal * (this._configuracionFiscal.tasaImpuesto || 0))
       : 0;
 
     return {
