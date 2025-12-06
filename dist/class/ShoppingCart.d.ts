@@ -286,6 +286,9 @@ export declare class ShoppingCart implements IShoppingCart {
     /**
      * Agregar o actualizar un CarItem en la venta
      */
+    /**
+     * Agregar o actualizar un CarItem en la venta
+     */
     agregarProducto(carItem: CarItem, opciones?: OpcionesAgregarProducto): void;
     /**
      * Actualizar un ítem existente
@@ -299,10 +302,6 @@ export declare class ShoppingCart implements IShoppingCart {
      * Calcular monto total de un ítem
      */
     private calcularTotalLinea;
-    /**
-     * Verificar si un producto es pesable
-     */
-    private esProductoPesable;
     /**
      * Incrementar cantidad de un producto
      */
