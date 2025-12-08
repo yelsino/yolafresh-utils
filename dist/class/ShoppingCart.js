@@ -134,7 +134,8 @@ class ShoppingCart {
         const prepared = {
             ...itemExistente,
             id: itemExistente.id,
-            product: carItem.product || itemExistente.product, // Actualizar info del producto si viene nueva
+            // Actualizar info del producto si viene nueva, pero limpia
+            product: this.cleanProduct(carItem.product || itemExistente.product),
             // Cálculo de cantidad
             quantity: esPesable
                 ? (typeof carItem.quantity === 'number' ? carItem.quantity + (itemExistente.quantity || 0) : ((_b = itemExistente.quantity) !== null && _b !== void 0 ? _b : 1))
@@ -170,7 +171,7 @@ class ShoppingCart {
         const unit = Number((_a = carItem.precioUnitario) !== null && _a !== void 0 ? _a : carItem.product.precioVenta) || 0;
         const prepared = {
             id: itemId,
-            product: carItem.product,
+            product: this.cleanProduct(carItem.product), // Limpiar producto al agregar
             quantity: esPesable
                 ? (typeof carItem.quantity === 'number' ? carItem.quantity : 1)
                 : Number((_b = carItem.quantity) !== null && _b !== void 0 ? _b : 1),
@@ -719,6 +720,28 @@ class ShoppingCart {
      */
     getItemsAsCarItems() {
         return [...this._items];
+    }
+    // **MÉTODOS PRIVADOS DE UTILIDAD**
+    /**
+     * Limpia el objeto producto para guardar solo lo necesario
+     * @description Elimina propiedades no serializables o innecesarias para reducir tamaño
+     */
+    cleanProduct(producto) {
+        // Crear una copia limpia del producto
+        const { 
+        // Propiedades a excluir explícitamente si existen y son pesadas/innecesarias
+        descripcion, caracteristicas, consideraciones, keywords, createdAt, updatedAt, 
+        // Mantener el resto
+        ...productData } = producto;
+        // Asegurar que las URLs sean strings o el objeto ImageSizes mínimo
+        let urlLimpia = productData.url;
+        return {
+            ...productData,
+            url: urlLimpia,
+            // Asegurar campos mínimos requeridos si se perdieron
+            id: producto.id,
+            nombre: producto.nombre
+        };
     }
     // **MÉTODOS FACTORY ESTÁTICOS**
     /**

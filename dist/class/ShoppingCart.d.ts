@@ -499,6 +499,11 @@ export declare class ShoppingCart implements IShoppingCart {
      */
     getItemsAsCarItems(): CarItem[];
     /**
+     * Limpia el objeto producto para guardar solo lo necesario
+     * @description Elimina propiedades no serializables o innecesarias para reducir tamaño
+     */
+    private cleanProduct;
+    /**
      * Crear ShoppingCart para Perú (IGV 18%)
      */
     static paraPeru(id?: string, nombre?: string): ShoppingCart;

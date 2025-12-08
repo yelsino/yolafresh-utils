@@ -447,7 +447,8 @@ export class ShoppingCart implements IShoppingCart {
     const prepared: CarItem = {
       ...itemExistente,
       id: itemExistente.id,
-      product: carItem.product || itemExistente.product, // Actualizar info del producto si viene nueva
+      // Actualizar info del producto si viene nueva, pero limpia
+      product: this.cleanProduct(carItem.product || itemExistente.product), 
       
       // Cálculo de cantidad
       quantity: esPesable
@@ -493,7 +494,7 @@ export class ShoppingCart implements IShoppingCart {
 
     const prepared: CarItem = {
       id: itemId,
-      product: carItem.product,
+      product: this.cleanProduct(carItem.product), // Limpiar producto al agregar
       quantity: esPesable
         ? (typeof carItem.quantity === 'number' ? carItem.quantity : 1)
         : Number(carItem.quantity ?? 1),
@@ -1149,6 +1150,38 @@ export class ShoppingCart implements IShoppingCart {
    */
   getItemsAsCarItems(): CarItem[] {
     return [...this._items];
+  }
+
+  // **MÉTODOS PRIVADOS DE UTILIDAD**
+
+  /**
+   * Limpia el objeto producto para guardar solo lo necesario
+   * @description Elimina propiedades no serializables o innecesarias para reducir tamaño
+   */
+  private cleanProduct(producto: IProducto): IProducto {
+    // Crear una copia limpia del producto
+    const {
+      // Propiedades a excluir explícitamente si existen y son pesadas/innecesarias
+      descripcion,
+      caracteristicas,
+      consideraciones,
+      keywords,
+      createdAt,
+      updatedAt,
+      // Mantener el resto
+      ...productData
+    } = producto as any;
+
+    // Asegurar que las URLs sean strings o el objeto ImageSizes mínimo
+    let urlLimpia = productData.url;
+    
+    return {
+      ...productData,
+      url: urlLimpia,
+      // Asegurar campos mínimos requeridos si se perdieron
+      id: producto.id,
+      nombre: producto.nombre
+    } as IProducto;
   }
 
   // **MÉTODOS FACTORY ESTÁTICOS**
