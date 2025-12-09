@@ -42,6 +42,9 @@ export interface IVenta {
   codigoVenta?: string;
   numeroVenta?: string;
   esPedido?: boolean;
+
+
+  // "movimientoInventarioId": "string",
   
 }
 

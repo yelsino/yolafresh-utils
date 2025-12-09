@@ -64,6 +64,9 @@ export class Producto implements IProducto {
   // Stock (solo primarios)
   stock?: number;
 
+  //  "stockMinimo": 0,
+  // "stockMaximo": 0,
+
   // Precios
   precioVenta: number;
   precioCompra: number;

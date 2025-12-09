@@ -1,4 +1,4 @@
-import { OrderState } from "../utils/enums";
+import { OrderState } from "@/utils/enums";
 import { IProducto } from "./producto";
 import { IUsuario } from "./usuario";
 export type Hora = {
