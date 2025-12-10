@@ -45,15 +45,15 @@ export class PurchaseOrder {
   
   private _estado: EstadoCompraEnum = EstadoCompraEnum.BORRADOR;
   
-  private _createdAt: string;
-  private _updatedAt: string;
+  private _createdAt: Date;
+  private _updatedAt: Date;
 
   constructor(initialData?: Partial<Compra>) {
     this._id = initialData?._id || this.generarIdTemporal();
     this._fechaDocumento = initialData?.fechaDocumento || new Date().toISOString();
     this._fechaRegistro = initialData?.fechaRegistro || new Date().toISOString();
-    this._createdAt = initialData?.createdAt || new Date().toISOString();
-    this._updatedAt = initialData?.updatedAt || new Date().toISOString();
+    this._createdAt = initialData?.createdAt || new Date();
+    this._updatedAt = initialData?.updatedAt || new Date();
     
     if (initialData) {
       this._proveedorId = initialData.proveedorId || "";
@@ -132,7 +132,7 @@ export class PurchaseOrder {
       
       this._items.push(newItem);
     }
-    this._updatedAt = new Date().toISOString();
+    this._updatedAt = new Date();
     this.recalcularGlobales(); // Si hubiera lógica global automática
   }
 
@@ -142,7 +142,7 @@ export class PurchaseOrder {
   public removerItem(index: number): void {
     if (index >= 0 && index < this._items.length) {
       this._items.splice(index, 1);
-      this._updatedAt = new Date().toISOString();
+      this._updatedAt = new Date();
       this.recalcularGlobales();
     }
   }
@@ -154,7 +154,7 @@ export class PurchaseOrder {
     if (index >= 0 && index < this._items.length) {
       this._items[index] = { ...this._items[index], ...updates };
       this.recalcularItem(index);
-      this._updatedAt = new Date().toISOString();
+      this._updatedAt = new Date();
       this.recalcularGlobales();
     }
   }
@@ -311,7 +311,7 @@ export class PurchaseOrder {
       estado: this._estado,
       
       createdAt: this._createdAt,
-      updatedAt: new Date().toISOString()
+      updatedAt: this._updatedAt,
     };
   }
 

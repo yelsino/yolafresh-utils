@@ -27,8 +27,8 @@ export interface Almacen {
   permitirLotes: boolean;
   permitirNegativos: boolean;
 
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export enum TipoMovimientoInventarioEnum {
@@ -85,8 +85,8 @@ export interface MovimientoInventario {
 
   fechaMovimiento: string; // Fecha en que ocurre el movimiento
 
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface MovimientoInventarioItem {
@@ -163,8 +163,8 @@ export interface Compra {
 
   estado: EstadoCompraEnum;
 
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface CompraItem {
@@ -258,8 +258,8 @@ export interface Transferencia {
   fechaSolicitud: string; // Fecha en que se creó la solicitud
   fechaRecepcion?: string;
 
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface TransferenciaItem {
