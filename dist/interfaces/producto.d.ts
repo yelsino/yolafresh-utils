@@ -34,6 +34,7 @@ export declare enum UnidadMedidaEnum {
     Libra = "libra",
     Onza = "onza",
     Arroba = "arroba",
+    Docena = "docena",
     Quintal = "quintal",
     Tonelada = "tonelada",
     Metro = "metro",
@@ -57,6 +58,7 @@ export declare enum UnidadMedidaAbreviadoEnum {
     Metro = "m",
     Centimetro = "cm",
     Galon = "gal",
+    Docena = "docena",
     Saco = "saco",
     Bolsa = "bolsa",
     Porcion = "porcion"

@@ -1,3 +1,5 @@
+import { UnidadMedidaEnum } from "@/interfaces";
+
 export enum TipoAlmacenEnum {
   CENTRAL = "CENTRAL",
   TIENDA = "TIENDA",
@@ -171,7 +173,7 @@ export interface CompraItem {
   productoId: string;
 
   cantidad: number;
-  unidadMedida?: string;
+  unidadMedida?: UnidadMedidaEnum;
   factorConversion?: number; // 1 si es la unidad base
 
   costoUnitario: number; // Costo del proveedor
