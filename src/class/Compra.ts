@@ -1,270 +1,172 @@
-import { UnidadMedidaEnum } from "@/interfaces";
+import { 
+  ICompra, 
+  EstadoCompraEnum, 
+  TipoDocumentoCompraEnum, 
+  EstadoPagoEnum, 
+  CompraItem, 
+  CompraEgresoRef
+} from "@/interfaces";
 
-export enum TipoAlmacenEnum {
-  CENTRAL = "CENTRAL",
-  TIENDA = "TIENDA",
-  TRANSITO = "TRANSITO",
-  MOSTRADOR = "MOSTRADOR",
-}
-export interface Almacen {
-  _id: string;
-  type: "almacen";
+/**
+ * Clase Compra - Entidad de Dominio
+ * 
+ * Representa una compra finalizada e inmutable.
+ * A diferencia de PurchaseOrder (que es un borrador/carrito),
+ * esta clase representa el documento persistido en la base de datos.
+ */
 
-  nombre: string;
-  codigo?: string;
-  descripcion?: string;
 
-  tipo: TipoAlmacenEnum;
+export class Compra implements ICompra {
+  public readonly id: string;
+  public readonly type: "compra" = "compra";
 
-  ubicacionFisica?: string;
-  geoLat?: number;
-  geoLon?: number;
+  public readonly proveedorId: string;
   
-  capacidad?: number;
-  unidadCapacidad?: string; // m3, kg, pallets
+  public readonly tipoDocumento: TipoDocumentoCompraEnum;
+  public readonly serieDocumento?: string;
+  public readonly numeroDocumento?: string;
+  public readonly numeroDocumentoInterno?: string;
 
-  responsableId?: string;
+  public readonly almacenDestinoId: string;
 
-  activo: boolean;
-  permitirLotes: boolean;
-  permitirNegativos: boolean;
+  public readonly fechaDocumento: string;
+  public readonly fechaRegistro: string;
 
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export enum TipoMovimientoInventarioEnum {
-  ENTRADA = "ENTRADA",
-  SALIDA = "SALIDA",
-  AJUSTE = "AJUSTE",
-  TRANSFERENCIA = "TRANSFERENCIA",
-}
-
-export enum EstadoMovimientoEnum {
-  PENDIENTE = "PENDIENTE",
-  APLICADO = "APLICADO",
-  ANULADO = "ANULADO"
-}
-
-export enum OrigenDocumentoEnum {
-  COMPRA = "COMPRA",
-  VENTA = "VENTA",
-  AJUSTE = "AJUSTE",
-  TRANSFERENCIA = "TRANSFERENCIA",
-  PRODUCCION = "PRODUCCION",
-  MERMA = "MERMA",
-  DEVOLUCION = "DEVOLUCION",
-  INVENTARIO_FISICO = "INVENTARIO_FISICO",
-}
-
-export interface MovimientoInventario {
-  _id: string;
-  type: "movimiento_inventario";
+  public readonly items: CompraItem[];
   
-  numeroMovimiento?: string; // Correlativo interno
+  public readonly subtotal: number;
+  public readonly impuestos?: number;
+  public readonly descuentos?: number;
+  public readonly gastosAdicionales?: CompraEgresoRef[];
 
-  tipo: TipoMovimientoInventarioEnum;
-  estado: EstadoMovimientoEnum;
+  public readonly moneda: "PEN" | "USD";
+  public readonly tipoCambio?: number;
 
-  origenDocumento: OrigenDocumentoEnum;
+  public readonly total: number;
   
-  documentoReferenciaId?: string;
-  serieDocumentoReferencia?: string;
+  public readonly condicionPago?: "CONTADO" | "CREDITO";
+  public readonly estadoPago: EstadoPagoEnum;
+  public readonly fechaVencimientoPago?: string;
 
-  motivo?: string; // "Rotura", "Donación", "Ajuste manual", etc.
+  public readonly estado: EstadoCompraEnum;
 
-  almacenOrigenId?: string;
-  almacenDestinoId?: string;
+  public readonly createdAt: Date;
+  public readonly updatedAt: Date;
 
-  items: MovimientoInventarioItem[];
-  
-  esAutomatico?: boolean;
+  constructor(data: ICompra) {
+    // Validaciones de integridad
+    if (!data.id) throw new Error("El ID de la compra es requerido");
+    if (!data.proveedorId) throw new Error("El proveedor es requerido");
+    if (!data.items || data.items.length === 0) throw new Error("La compra debe tener items");
+    
+    // Asignación de propiedades
+    this.id = data.id;
+    
+    this.proveedorId = data.proveedorId;
+    
+    this.tipoDocumento = data.tipoDocumento;
+    this.serieDocumento = data.serieDocumento;
+    this.numeroDocumento = data.numeroDocumento;
+    this.numeroDocumentoInterno = data.numeroDocumentoInterno;
+    
+    this.almacenDestinoId = data.almacenDestinoId;
+    
+    this.fechaDocumento = data.fechaDocumento;
+    this.fechaRegistro = data.fechaRegistro;
+    
+    // Copia defensiva de items para garantizar inmutabilidad
+    this.items = data.items.map(item => ({...item}));
+    
+    this.subtotal = data.subtotal;
+    this.impuestos = data.impuestos;
+    this.descuentos = data.descuentos;
+    this.gastosAdicionales = data.gastosAdicionales;
+    
+    this.moneda = data.moneda;
+    this.tipoCambio = data.tipoCambio;
+    
+    this.total = data.total;
+    
+    this.condicionPago = data.condicionPago;
+    this.estadoPago = data.estadoPago;
+    this.fechaVencimientoPago = data.fechaVencimientoPago;
+    
+    this.estado = data.estado;
+    
+    this.createdAt = data.createdAt;
+    this.updatedAt = data.updatedAt;
+  }
 
-  notas?: string;
+  /**
+   * Verifica si la compra está pagada totalmente
+   */
+  public get estaPagada(): boolean {
+    return this.estadoPago === EstadoPagoEnum.PAGADO;
+  }
 
-  usuarioId: string;
-  usuarioNombre?: string;
+  /**
+   * Verifica si la compra está pendiente de pago
+   */
+  public get estaPendientePago(): boolean {
+    return this.estadoPago === EstadoPagoEnum.PENDIENTE || this.estadoPago === EstadoPagoEnum.PAGADO_PARCIAL;
+  }
 
-  fechaMovimiento: string; // Fecha en que ocurre el movimiento
+  /**
+   * Verifica si la compra ha sido anulada
+   */
+  public get estaAnulada(): boolean {
+    return this.estado === EstadoCompraEnum.ANULADO;
+  }
 
-  createdAt: Date;
-  updatedAt: Date;
-}
+  /**
+   * Verifica si la compra ha sido confirmada/procesada
+   */
+  public get estaConfirmada(): boolean {
+    return this.estado === EstadoCompraEnum.CONFIRMADO || this.estado === EstadoCompraEnum.CONTABILIZADO;
+  }
 
-export interface MovimientoInventarioItem {
-  productoId: string;
+  /**
+   * Retorna una representación plana del objeto (para JSON/DB)
+   */
+  public toJSON(): ICompra {
+    return {
+      id: this.id,
+      type: this.type,
+      proveedorId: this.proveedorId,
+      tipoDocumento: this.tipoDocumento,
+      serieDocumento: this.serieDocumento,
+      numeroDocumento: this.numeroDocumento,
+      numeroDocumentoInterno: this.numeroDocumentoInterno,
+      almacenDestinoId: this.almacenDestinoId,
+      fechaDocumento: this.fechaDocumento,
+      fechaRegistro: this.fechaRegistro,
+      items: this.items,
+      subtotal: this.subtotal,
+      impuestos: this.impuestos,
+      descuentos: this.descuentos,
+      gastosAdicionales: this.gastosAdicionales,
+      moneda: this.moneda,
+      tipoCambio: this.tipoCambio,
+      total: this.total,
+      condicionPago: this.condicionPago,
+      estadoPago: this.estadoPago,
+      fechaVencimientoPago: this.fechaVencimientoPago,
+      estado: this.estado,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt
+    };
+  }
 
-  cantidad: number;
-
-  costoUnitario?: number;
-  costoPromedioCalculado?: number;
-  
-  costoPromedioAnterior?: number;
-  costoPromedioNuevo?: number;
-
-  lote?: string;
-  fechaVencimiento?: string;
-
-  ubicacionInterna?: string; // pasillo, rack, estante
-}
-
-export enum EstadoCompraEnum {
-  BORRADOR = "BORRADOR",
-  CONFIRMADO = "CONFIRMADO",
-  ANULADO = "ANULADO",
-  CONTABILIZADO = "CONTABILIZADO",
-}
-
-export enum TipoDocumentoCompraEnum {
-  FACTURA = "FACTURA",
-  BOLETA = "BOLETA",
-  NOTA_CREDITO = "NOTA_CREDITO",
-  GUIA_REMISION = "GUIA_REMISION",
-  OTRO = "OTRO"
-}
-
-export enum EstadoPagoEnum {
-  PENDIENTE = "PENDIENTE",
-  PAGADO_PARCIAL = "PAGADO_PARCIAL",
-  PAGADO = "PAGADO"
-}
-
-export interface Compra {
-  _id: string;
-  type: "compra";
-
-  proveedorId: string;
-  proveedorNombre?: string;
-  proveedorRuc?: string;
-  
-  tipoDocumento: TipoDocumentoCompraEnum;
-  serieDocumento?: string;
-  numeroDocumento?: string;
-  numeroDocumentoInterno?: string; // Correlativo interno
-
-  almacenDestinoId: string;
-
-  fechaDocumento: string; // Fecha de emisión del documento (factura/boleta)
-  fechaRegistro: string; // Fecha de registro en el sistema
-
-  items: CompraItem[];
-  
-  subtotal: number;
-  impuestos?: number;
-  descuentos?: number;
-  gastosAdicionales?: number; // flete, transporte, etc.
-
-  moneda: "PEN" | "USD";
-  tipoCambio?: number;
-
-  total: number;
-  
-  condicionPago?: "CONTADO" | "CREDITO";
-  estadoPago: EstadoPagoEnum;
-  fechaVencimientoPago?: string;
-
-  estado: EstadoCompraEnum;
-
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface CompraItem {
-  productoId: string;
-
-  cantidad: number;
-  unidadMedida?: UnidadMedidaEnum;
-  factorConversion?: number; // 1 si es la unidad base
-
-  costoUnitario: number; // Costo del proveedor
-  costoTotal?: number;
-  
-  impuestoUnitario?: number;
-  impuestoTotal?: number;
-  
-  afectaInventario?: boolean;
-
-  lote?: string;
-  fechaVencimiento?: string;
-}
-
-// no es un documento, es una linea del kardex
-export interface KardexLinea {
-  fechaMovimiento: string; // Fecha en que ocurrió el movimiento
-  documento: string;
-  tipo: "ENTRADA" | "SALIDA";
-
-  cantidadEntrada: number;
-  cantidadSalida: number;
-
-  costoUnitario: number;
-  costoTotal: number;
-
-  stockFinal: number;
-  costoPromedioFinal: number; // Costo promedio después del movimiento
-  saldoCostoTotal: number; // Valorización total del inventario
-}
-
-export interface StockProductoAlmacen {
-  productoId: string;
-  almacenId: string;
-
-  stockActual: number;
-  stockReservado?: number;
-  stockDisponible: number;
-  
-  costoPromedioActual: number; // Costo promedio ponderado actual
-
-  minimo?: number;
-  maximo?: number;
-  puntoReorden?: number;
-  ultimoMovimiento?: string;
-
-  lotes?: StockLote[];
-}
-
-export interface StockLote {
-  lote: string;
-  fechaVencimiento?: string;
-  cantidad: number;
-}
-
-export enum EstadoTransferenciaEnum {
-  PENDIENTE = "PENDIENTE",
-  EN_TRANSITO = "EN_TRANSITO",
-  RECIBIDO = "RECIBIDO",
-  ANULADO = "ANULADO",
-}
-export interface Transferencia {
-  _id: string;
-  type: "transferencia";
-  
-  numeroTransferencia?: string;
-
-  almacenOrigenId: string;
-  almacenDestinoId: string;
-
-  motivo?: string;
-  observaciones?: string;
-  adjuntos?: string[];
-
-  items: TransferenciaItem[];
-
-  estado: EstadoTransferenciaEnum;
-
-  usuarioId: string;
-  usuarioSolicitaNombre?: string;
-  usuarioRecepcionId?: string;
-  usuarioRecibeNombre?: string;
-
-  fechaSolicitud: string; // Fecha en que se creó la solicitud
-  fechaRecepcion?: string;
-
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface TransferenciaItem {
-  productoId: string;
-  cantidad: number;
+  /**
+   * Crea una instancia de Compra desde un objeto plano
+   */
+  public static fromJSON(data: any): Compra {
+    // Asegurar que las fechas sean objetos Date si vienen como string
+    const compraData: ICompra = {
+      ...data,
+      createdAt: typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt,
+      updatedAt: typeof data.updatedAt === 'string' ? new Date(data.updatedAt) : data.updatedAt
+    };
+    return new Compra(compraData);
+  }
 }

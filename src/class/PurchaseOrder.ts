@@ -1,10 +1,5 @@
-import { 
-  Compra, 
-  CompraItem, 
-  EstadoCompraEnum,
-  EstadoPagoEnum,
-  TipoDocumentoCompraEnum
-} from "./Compra";
+import { CompraEgresoRef, CompraItem, EstadoCompraEnum, EstadoPagoEnum, ICompra, TipoDocumentoCompraEnum } from "@/interfaces";
+
 
 /**
  * Clase PurchaseOrder (Gestor de creación de Compra)
@@ -34,7 +29,7 @@ export class PurchaseOrder {
   
   private _impuestos: number = 0;
   private _descuentos: number = 0;
-  private _gastosAdicionales: number = 0;
+  private _gastosAdicionales: CompraEgresoRef[] = [];
   
   private _moneda: "PEN" | "USD" = "PEN";
   private _tipoCambio?: number;
@@ -48,8 +43,8 @@ export class PurchaseOrder {
   private _createdAt: Date;
   private _updatedAt: Date;
 
-  constructor(initialData?: Partial<Compra>) {
-    this._id = initialData?._id || this.generarIdTemporal();
+  constructor(initialData?: Partial<ICompra>) {
+    this._id = initialData?.id || this.generarIdTemporal();
     this._fechaDocumento = initialData?.fechaDocumento || new Date().toISOString();
     this._fechaRegistro = initialData?.fechaRegistro || new Date().toISOString();
     this._createdAt = initialData?.createdAt || new Date();
@@ -70,7 +65,7 @@ export class PurchaseOrder {
       this._items = initialData.items ? initialData.items.map(i => ({...i})) : [];
       this._impuestos = initialData.impuestos || 0;
       this._descuentos = initialData.descuentos || 0;
-      this._gastosAdicionales = initialData.gastosAdicionales || 0;
+      this._gastosAdicionales = initialData.gastosAdicionales ? initialData.gastosAdicionales.map(g => ({...g})) : [];
       
       this._moneda = initialData.moneda || "PEN";
       this._tipoCambio = initialData.tipoCambio;
@@ -201,8 +196,12 @@ export class PurchaseOrder {
     return this._items.reduce((sum, item) => sum + (item.costoTotal || 0), 0);
   }
 
+  get totalGastosAdicionales(): number {
+    return this._gastosAdicionales.reduce((sum, gasto) => sum + gasto.montoAplicado, 0);
+  }
+
   get total(): number {
-    return this.redondear(this.subtotal + this._impuestos + this._gastosAdicionales - this._descuentos);
+    return this.redondear(this.subtotal + this._impuestos + this.totalGastosAdicionales - this._descuentos);
   }
 
   // Setters para cabecera
@@ -242,8 +241,21 @@ export class PurchaseOrder {
   set descuentos(val: number) { this._descuentos = this.redondear(val); }
   get descuentos(): number { return this._descuentos; }
 
-  set gastosAdicionales(val: number) { this._gastosAdicionales = this.redondear(val); }
-  get gastosAdicionales(): number { return this._gastosAdicionales; }
+  set gastosAdicionales(val: CompraEgresoRef[]) { this._gastosAdicionales = val; }
+  get gastosAdicionales(): CompraEgresoRef[] { return [...this._gastosAdicionales]; }
+
+  // Métodos helper para manipular gastos adicionales
+  public agregarGastoAdicional(gasto: CompraEgresoRef): void {
+    this._gastosAdicionales.push(gasto);
+  }
+
+  public removerGastoAdicional(egresoId: string): void {
+    this._gastosAdicionales = this._gastosAdicionales.filter(g => g.egresoId !== egresoId);
+  }
+
+  public limpiarGastosAdicionales(): void {
+    this._gastosAdicionales = [];
+  }
 
   set moneda(val: "PEN" | "USD") { this._moneda = val; }
   get moneda(): "PEN" | "USD" { return this._moneda; }
@@ -266,7 +278,7 @@ export class PurchaseOrder {
    * Genera el objeto Compra final para ser guardado
    * Valida que los datos mínimos estén presentes
    */
-  public generarCompra(): Compra {
+  public generarCompra(): ICompra {
     if (!this._proveedorId) throw new Error("Debe seleccionar un proveedor");
     if (!this._almacenDestinoId) throw new Error("Debe seleccionar un almacén de destino");
     if (this._items.length === 0) throw new Error("La orden debe tener al menos un item");
@@ -275,7 +287,7 @@ export class PurchaseOrder {
     if (this.total < 0) throw new Error("El total de la compra no puede ser negativo");
 
     return {
-      _id: this._id.startsWith('tmp_') ? this._id : this._id,
+      id: this._id.startsWith('tmp_') ? this._id : this._id,
       type: "compra",
       
       proveedorId: this._proveedorId,
@@ -318,7 +330,7 @@ export class PurchaseOrder {
   /**
    * Carga una compra existente para edición (si es borrador)
    */
-  public static desdeCompra(compra: Compra): PurchaseOrder {
+  public static desdeCompra(compra: ICompra): PurchaseOrder {
     return new PurchaseOrder(compra);
   }
 }
