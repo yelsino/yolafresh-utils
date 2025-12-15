@@ -1,4 +1,4 @@
-import { UnidadMedidaEnum } from "@/interfaces";
+import { Personal, UnidadMedidaEnum } from "@/interfaces";
 
 export enum TipoAlmacenEnum {
   CENTRAL = "CENTRAL",
@@ -270,4 +270,41 @@ export interface Transferencia {
 export interface TransferenciaItem {
   productoId: string;
   cantidad: number;
+}
+
+
+export interface EventoCompra {
+  id: string;
+  type: "evento_compra";
+
+  responsableId: string;
+  responsableNombre?: string;
+
+  origen: string;   // lima
+  destino?: string; // satipo
+
+  estado: "ABIERTO" | "CERRADO";
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface EventoCompraProveedor {
+  id: string;
+  type: "evento_compra_proveedor";
+
+  eventoCompraId: string;
+  proveedorId: string;
+
+}
+
+export interface EventoCompraItem {
+  id: string;
+  type: "evento_compra_item";
+
+  eventoCompraId: string;
+  proveedorId: string;
+
+  productoCompra: CompraItem;
+  
 }
