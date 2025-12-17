@@ -134,7 +134,6 @@ export interface CompraEgresoRef {
 }
 export interface ICompra {
   id: string;
-  type: "compra";
 
   proveedorId: string;
   proveedorNombre?: string;
@@ -273,7 +272,6 @@ export interface TransferenciaItem {
 
 export interface EventoCompra {
   id: string;
-  type: "evento_compra";
 
   responsableId: string;
   responsableNombre?: string;
@@ -290,8 +288,6 @@ export interface EventoCompra {
 
 export interface EventoCompraProveedor {
   id: string;
-  type: "evento_compra_proveedor";
-
   eventoCompraId: string;
   proveedorId: string;
 
@@ -299,7 +295,6 @@ export interface EventoCompraProveedor {
 
 export interface EventoCompraItem {
   id: string;
-  type: "evento_compra_item";
 
   eventoCompraId: string;
   proveedorId: string;
