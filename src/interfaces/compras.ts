@@ -266,12 +266,10 @@ export interface Transferencia {
   createdAt: Date;
   updatedAt: Date;
 }
-
 export interface TransferenciaItem {
   productoId: string;
   cantidad: number;
 }
-
 
 export interface EventoCompra {
   id: string;
@@ -282,6 +280,7 @@ export interface EventoCompra {
 
   origen: string;   // lima
   destino?: string; // satipo
+  montoAsignado?: number;
 
   estado: "ABIERTO" | "CERRADO";
 
