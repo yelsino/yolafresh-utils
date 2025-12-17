@@ -288,7 +288,6 @@ export class PurchaseOrder {
 
     return {
       id: this._id.startsWith('tmp_') ? this._id : this._id,
-      type: "compra",
       
       proveedorId: this._proveedorId,
       proveedorNombre: this._proveedorNombre,

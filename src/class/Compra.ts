@@ -131,7 +131,6 @@ export class Compra implements ICompra {
   public toJSON(): ICompra {
     return {
       id: this.id,
-      type: this.type,
       proveedorId: this.proveedorId,
       tipoDocumento: this.tipoDocumento,
       serieDocumento: this.serieDocumento,
