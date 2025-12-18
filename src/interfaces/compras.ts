@@ -165,6 +165,7 @@ export interface ICompra {
   condicionPago?: "CONTADO" | "CREDITO";
   estadoPago: EstadoPagoEnum;
   fechaVencimientoPago?: string;
+  numeroCompra?: string; // Correlativo interno
 
   estado: EstadoCompraEnum;
 

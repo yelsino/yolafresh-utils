@@ -123,6 +123,7 @@ export interface ICompra {
     condicionPago?: "CONTADO" | "CREDITO";
     estadoPago: EstadoPagoEnum;
     fechaVencimientoPago?: string;
+    numeroCompra?: string;
     estado: EstadoCompraEnum;
     createdAt: Date;
     updatedAt: Date;
