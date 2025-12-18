@@ -120,7 +120,8 @@ export enum TipoDocumentoCompraEnum {
   BOLETA = "BOLETA",
   NOTA_CREDITO = "NOTA_CREDITO",
   GUIA_REMISION = "GUIA_REMISION",
-  OTRO = "OTRO"
+  OTRO = "OTRO",
+  SIN_ASIGNAR = "SIN_ASIGNAR",
 }
 
 export enum EstadoPagoEnum {

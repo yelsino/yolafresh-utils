@@ -46,6 +46,7 @@ var TipoDocumentoCompraEnum;
     TipoDocumentoCompraEnum["NOTA_CREDITO"] = "NOTA_CREDITO";
     TipoDocumentoCompraEnum["GUIA_REMISION"] = "GUIA_REMISION";
     TipoDocumentoCompraEnum["OTRO"] = "OTRO";
+    TipoDocumentoCompraEnum["SIN_ASIGNAR"] = "SIN_ASIGNAR";
 })(TipoDocumentoCompraEnum || (exports.TipoDocumentoCompraEnum = TipoDocumentoCompraEnum = {}));
 var EstadoPagoEnum;
 (function (EstadoPagoEnum) {
