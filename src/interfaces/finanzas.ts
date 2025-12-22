@@ -194,20 +194,6 @@ export interface Anulacion {
 //   quienGeneroId: string;
 // }
 
-export interface MovimientoCaja {
-  id: string;
-
-  turnoId: string;
-  tipo: TipoMovimientoCaja;
-  origen: OrigenMovimiento;
-
-  monto: number;
-  metodoPago: MetodoPago;
-
-  referenciaId?: string;
-
-  createdAt: Date;
-}
 
 export interface CuentaBancaria {
   id?: string;

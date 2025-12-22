@@ -1,4 +1,3 @@
-import { OrigenMovimiento, TipoMovimientoCaja } from "./caja";
 export type MetodoPago = "DIGITAL" | "EFECTIVO" | "TARJETA" | "OTRO";
 export type EstadoEgreso = "ACTIVO" | "ANULADO";
 export type TypeFinanza = "Egreso" | "Ingreso" | "Cambio" | "Anulacion";
@@ -151,16 +150,6 @@ export interface Anulacion {
     finanzaAnuladaId: string;
     createdAt: Date;
     updatedAt: Date;
-}
-export interface MovimientoCaja {
-    id: string;
-    turnoId: string;
-    tipo: TipoMovimientoCaja;
-    origen: OrigenMovimiento;
-    monto: number;
-    metodoPago: MetodoPago;
-    referenciaId?: string;
-    createdAt: Date;
 }
 export interface CuentaBancaria {
     id?: string;

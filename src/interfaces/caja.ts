@@ -1,3 +1,5 @@
+import { MetodoPago } from "./finanzas";
+
 export type EstadoCaja =
   | 'PENDIENTE_APERTURA'
   | 'ABIERTA'
@@ -56,6 +58,12 @@ export interface TurnoCaja {
 export type TipoMovimientoCaja =
   | 'INGRESO'
   | 'EGRESO';
+export type SubtipoMovimientoCaja =
+  | 'VENTA'
+  | 'GASTO'
+  | 'CAMBIO'
+  | 'ANULACION'
+  | 'AJUSTE';
 
 export type OrigenMovimiento =
   | 'VENTA'
@@ -64,4 +72,21 @@ export type OrigenMovimiento =
   | 'GASTO'
   | 'AJUSTE';
 
-  
+export interface MovimientoCaja {
+  id: string;
+
+  turnoId: string;          // Turno activo
+  cajaDestinoId: string;   // Caja física o digital
+
+  tipo: TipoMovimientoCaja;       // INGRESO | EGRESO
+  subtipo: SubtipoMovimientoCaja; // VENTA | GASTO | CAMBIO | ANULACION
+
+  monto: number;           // Siempre positivo
+  metodoPago: MetodoPago;
+
+  referenciaId?: string;   // ventaId | egresoId | ingresoId
+  generadoPorId: string;
+
+  createdAt: Date;
+}
+
