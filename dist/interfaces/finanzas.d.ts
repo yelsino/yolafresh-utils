@@ -1,6 +1,7 @@
-export type MetodoPago = 'DIGITAL' | 'EFECTIVO' | 'TARJETA' | 'OTRO';
-export type EstadoEgreso = 'ACTIVO' | 'ANULADO';
-export type TypeFinanza = 'Egreso' | 'Ingreso' | 'Cambio' | 'Anulacion';
+import { OrigenMovimiento, TipoMovimientoCaja } from "./caja";
+export type MetodoPago = "DIGITAL" | "EFECTIVO" | "TARJETA" | "OTRO";
+export type EstadoEgreso = "ACTIVO" | "ANULADO";
+export type TypeFinanza = "Egreso" | "Ingreso" | "Cambio" | "Anulacion";
 export interface Egreso {
     id?: string;
     monto: number;
@@ -14,9 +15,9 @@ export interface Egreso {
     createdAt: Date;
     updatedAt: Date;
 }
-export type TipoIngreso = 'CREDITO' | 'AL_CONTADO';
+export type TipoIngreso = "CREDITO" | "AL_CONTADO";
 export type OrigenIngreso = "VENTA_DIA" | "RETORNO" | "PRESTAMO" | "APORTE" | "COBRO_CREDITO";
-export type EstadoIngreso = 'PAGADO' | 'ANULADO' | 'PENDIENTE';
+export type EstadoIngreso = "PAGADO" | "ANULADO" | "PENDIENTE";
 export interface Abono {
     id?: string;
     monto: number;
@@ -152,17 +153,14 @@ export interface Anulacion {
     updatedAt: Date;
 }
 export interface MovimientoCaja {
-    id?: string;
-    tipoMovimiento: TypeFinanza;
+    id: string;
+    turnoId: string;
+    tipo: TipoMovimientoCaja;
+    origen: OrigenMovimiento;
     monto: number;
     metodoPago: MetodoPago;
-    saldoEfectivo: number;
-    saldoDigital: number;
-    saldoTotal: number;
-    codigoTransaccion: string;
+    referenciaId?: string;
     createdAt: Date;
-    updatedAt: Date;
-    quienGeneroId: string;
 }
 export interface CuentaBancaria {
     id?: string;
@@ -170,5 +168,5 @@ export interface CuentaBancaria {
     numeroCuenta: string;
     tipoCuenta?: string;
 }
-export type MedioPagoDigital = 'YAPE' | 'PLIN' | 'TUNKI' | 'OTRO';
+export type MedioPagoDigital = "YAPE" | "PLIN" | "TUNKI" | "OTRO";
 export type TipoEgreso = "MERCADERIA" | "FLETE" | "PASAJES" | "COMIDAS" | "SUELDOS" | "VIÁTICOS" | "SERVICIOS_BÁSICOS" | "ALQUILER" | "INSUMOS_OFICINA" | "HERRAMIENTAS" | "MANTENIMIENTO" | "PUBLICIDAD" | "GASTOS_PERSONALES" | "PAGO_DEUDAS" | "IMPUESTOS" | "PERDIDAS_INVENTARIO" | "PERDIDAS_ROBO" | "GASTOS_ADMINISTRATIVOS" | "CAPACITACIÓN" | "TECNOLOGÍA" | "HONORARIOS" | "MULTAS_Y_SANCIONES" | "DONACIONES" | "INTERESES_FINANCIEROS" | "REMODELACIÓN" | "OTROS";

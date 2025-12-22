@@ -6,60 +6,62 @@ export type EstadoCaja =
   | 'CERRADA'
   | 'DEFICIT';
 
+
+  export type TipoCaja = 'FIJA' | 'MOVIL' | 'DIGITAL';
 export interface Caja {
   id: string;
-  nombre?: string;
-
-  usuarioActivoId?: string;     // Quién está operando la caja ahora
-  sucursalId?: string;          // Opcional si hay varias tiendas
-  saldo: number;
-  saldoEfectivo: number;
-  saldoDigital: number;
-
-  estado: EstadoCaja;
-
+  nombre: string;
+  tipo: TipoCaja;
+  sucursalId?: string;
+  activa: boolean;
   createdAt: Date;
-  updatedAt: Date;
 }
 
+export type EstadoTurno =
+  | 'ABIERTO'
+  | 'ARQUEO'
+  | 'CERRADO'
+  | 'DEFICIT';
 
-export interface AperturaCaja {
-  id: string;
-
-  cajaId: string;             // Caja que se abre
-  usuarioId: string;          // Quién abre
-  montoEfectivoInicial: number;
-  montoDigitalInicial: number;
-
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface CierreCaja {
-  id: string;
-
-  cajaId: string;              // Caja que se cierra
-  usuarioId: string;           // Quién cierra
-
-  montoEfectivoFinal: number;
-  montoDigitalFinal: number;
-  montoTotalFinal: number;
-
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-
-export interface ArqueoCaja {
+export interface TurnoCaja {
   id: string;
 
   cajaId: string;
   usuarioId: string;
+  deviceId: string;            // clave offline
 
-  conteoEfectivo: number;      // Cuánto dinero contó físicamente
-  conteoDigital: number;       // Cuánto dinero verificó digitalmente
-  diferencia: number;          // sistema - conteo
+  estado: EstadoTurno;
+
+  // Apertura
+  montoEfectivoInicial: number;
+  montoDigitalInicial: number;
+
+  // Sistema (calculado)
+  montoEfectivoEsperado: number;
+  montoDigitalEsperado: number;
+
+  // Arqueo / Cierre
+  montoEfectivoContado?: number;
+  montoDigitalContado?: number;
+  diferencia?: number;
+  motivoDiferencia?: string;
+
+  inicioAt: Date;
+  finAt?: Date;
 
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type TipoMovimientoCaja =
+  | 'INGRESO'
+  | 'EGRESO';
+
+export type OrigenMovimiento =
+  | 'VENTA'
+  | 'PAGO'
+  | 'RETIRO'
+  | 'GASTO'
+  | 'AJUSTE';
+
+  
