@@ -79,7 +79,7 @@ export interface MovimientoCaja {
   cajaDestinoId: string;   // Caja física o digital
 
   tipo: TipoMovimientoCaja;       // INGRESO | EGRESO
-  subtipo: SubtipoMovimientoCaja; // VENTA | GASTO | CAMBIO | ANULACION
+  subtipo?: SubtipoMovimientoCaja; // VENTA | GASTO | CAMBIO | ANULACION
 
   monto: number;           // Siempre positivo
   metodoPago: MetodoPago;
