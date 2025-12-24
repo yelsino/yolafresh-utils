@@ -71,7 +71,7 @@ export function getCantidadNumerica({ cantidad }: { cantidad: number }): number 
   return cantidad;
 }
 
-type Versions = 'version1' | 'version2' | 'version3';
+type Versions = 'version1' | 'version2' | 'version3' | 'sinSimbolo';
 
 // Mapa para convertir valores decimales a fracciones simbólicas para version3
 const decimalToSymbolicFraction: { [key: number]: string } = {
@@ -81,7 +81,15 @@ const decimalToSymbolicFraction: { [key: number]: string } = {
 };
 
 export function formatSolesPeruanos(monto: number | null | undefined, version: Versions = 'version1'): string {
-  if (monto === null || monto === undefined) return 'S/ 0.00';
+  if (monto === null || monto === undefined) {
+    if (version === 'sinSimbolo') {
+      return '0.00';
+    }
+    if (version === 'version2') {
+      return 'S/. 0.00';
+    }
+    return 'S/ 0.00';
+  }
   
   // Redondear a 2 decimales
   const montoRedondeado = Math.round(monto * 100) / 100;
@@ -90,6 +98,12 @@ export function formatSolesPeruanos(monto: number | null | undefined, version: V
     return `S/ ${montoRedondeado.toFixed(2)}`;
   } else if (version === 'version2') {
     return `S/. ${montoRedondeado.toFixed(2)}`;
+  } else if (version === 'sinSimbolo') {
+    return new Intl.NumberFormat('es-PE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: true
+    }).format(montoRedondeado);
   } else {
     // version3: lógica de fracciones si aplica (ej: 0.50 -> 1/2)
     // Aquí simplificado
@@ -110,4 +124,66 @@ export function formatearFecha(fecha: Date | string): string {
         month: '2-digit',
         year: 'numeric'
     });
+}
+
+export function formatMontoProfesional(
+  monto: number | null | undefined,
+  opciones: {
+    mostrarSimbolo?: boolean;
+    simbolo?: 'S/' | 'S/.';
+    decimales?: number;
+    locale?: string;
+    currency?: string;
+    compact?: boolean;
+    usarParentesisNegativo?: boolean;
+    useGrouping?: boolean;
+  } = {}
+): string {
+  const valor = monto ?? 0;
+  const decimales = opciones.decimales ?? 2;
+  const mostrarSimbolo = opciones.mostrarSimbolo ?? false;
+  const simbolo = opciones.simbolo ?? 'S/';
+  const locale = opciones.locale ?? 'es-PE';
+  const currency = opciones.currency ?? 'PEN';
+  const compact = opciones.compact ?? false;
+  const usarParentesisNegativo = opciones.usarParentesisNegativo ?? false;
+  const useGrouping = opciones.useGrouping ?? true;
+
+  const factor = Math.pow(10, decimales);
+  const redondeado = Math.round(valor * factor) / factor;
+  const negativo = redondeado < 0;
+  const absoluto = Math.abs(redondeado);
+
+  const nf = new Intl.NumberFormat(locale, mostrarSimbolo
+    ? {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: decimales,
+        maximumFractionDigits: decimales,
+        useGrouping,
+        notation: compact ? 'compact' : 'standard',
+      }
+    : {
+        style: 'decimal',
+        minimumFractionDigits: decimales,
+        maximumFractionDigits: decimales,
+        useGrouping,
+        notation: compact ? 'compact' : 'standard',
+      });
+
+  let texto = nf.format(absoluto);
+
+  if (mostrarSimbolo && currency === 'PEN') {
+    texto = texto.replace('S/.', simbolo).replace('S/', simbolo);
+  }
+
+  if (negativo) {
+    if (usarParentesisNegativo) {
+      texto = `(${texto.replace('-', '').trim()})`;
+    } else {
+      texto = `-${texto.replace('-', '').trim()}`;
+    }
+  }
+
+  return texto;
 }
