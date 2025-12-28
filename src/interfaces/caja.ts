@@ -1,13 +1,5 @@
 import { MetodoPago } from "./finanzas";
 
-export type EstadoCaja =
-  | 'PENDIENTE_APERTURA'
-  | 'ABIERTA'
-  | 'ARQUEO'
-  | 'PENDIENTE_CIERRE'
-  | 'CERRADA'
-  | 'DEFICIT';
-
 
   export type TipoCaja = 'FIJA' | 'MOVIL' | 'DIGITAL';
 export interface Caja {
@@ -29,8 +21,8 @@ export interface TurnoCaja {
   id: string;
 
   cajaId: string;
-  usuarioId: string;
-  deviceId: string;            // clave offline
+  usuarioId: string;       // Cajero
+  deviceId: string;
 
   estado: EstadoTurno;
 
@@ -38,15 +30,20 @@ export interface TurnoCaja {
   montoEfectivoInicial: number;
   montoDigitalInicial: number;
 
-  // Sistema (calculado)
+  // Sistema
   montoEfectivoEsperado: number;
   montoDigitalEsperado: number;
 
-  // Arqueo / Cierre
+  // Conteo
   montoEfectivoContado?: number;
   montoDigitalContado?: number;
   diferencia?: number;
   motivoDiferencia?: string;
+
+  // 🔑 VALIDACIÓN
+  validadoPorId?: string;        // 👈 SUPERVISOR
+  validadoAt?: Date;
+  observacionSupervisor?: string;
 
   inicioAt: Date;
   finAt?: Date;
