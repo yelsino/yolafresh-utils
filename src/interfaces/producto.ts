@@ -9,23 +9,25 @@ export type ImageSizes = {
 };
 
 export enum TipoEmpaqueEnum {
-  Lata = "lata",
+  Saco = "saco",
   Bolsa = "bolsa",
-  BolsaVacio = "bolsa_vacio",
   Caja = "caja",
+  Balde = "balde",
+  Lata = "lata",
+  BolsaVacio = "bolsa_vacio",
   Botella = "botella",
   Paquete = "paquete",
   Bandeja = "bandeja",
   Frasco = "frasco",
-  Saco = "saco",
   Malla = "malla",
   Blister = "blister",
   TetraPack = "tetrapack",
+  SixPack = "sixpack",
   Rollo = "rollo",
   Bidon = "bidon",
   Manojo = "manojo",
   Atado = "atado",
-  SinEmpaque = "",
+  SinEmpaque = "sin_empaque",
 }
 
 export enum UnidadMedidaEnum {
