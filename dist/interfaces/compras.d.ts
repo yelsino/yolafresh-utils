@@ -1,4 +1,4 @@
-import { UnidadMedidaEnum } from "../interfaces";
+import { TipoEmpaqueEnum, UnidadMedidaEnum } from "../interfaces";
 export declare enum TipoAlmacenEnum {
     CENTRAL = "CENTRAL",
     TIENDA = "TIENDA",
@@ -132,6 +132,7 @@ export interface CompraItem {
     productoId: string;
     cantidad: number;
     unidadMedida?: UnidadMedidaEnum;
+    envoltorio?: TipoEmpaqueEnum;
     factorConversion?: number;
     costoUnitario: number;
     costoTotal?: number;
