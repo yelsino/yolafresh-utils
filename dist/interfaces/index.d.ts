@@ -1,6 +1,7 @@
 export * from './caja';
 export * from './compras';
 export * from './entidades';
+export * from './evidencias';
 export * from './finanzas';
 export * from './pedido';
 export * from './persons';

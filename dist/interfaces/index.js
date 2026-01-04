@@ -20,6 +20,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./caja"), exports);
 __exportStar(require("./compras"), exports);
 __exportStar(require("./entidades"), exports);
+__exportStar(require("./evidencias"), exports);
 __exportStar(require("./finanzas"), exports);
 __exportStar(require("./pedido"), exports);
 __exportStar(require("./persons"), exports);
