@@ -4,6 +4,13 @@ export type EstadoEgreso = "ACTIVO" | "ANULADO";
 // export type TypeFinanza = 'Egreso' | 'Ingreso' | 'Credito' | 'Cambio'
 export type TypeFinanza = "Egreso" | "Ingreso" | "Cambio" | "Anulacion";
 
+export enum EntidadReferenciaEnum {
+  EVENTO_COMPRA = "EVENTO_COMPRA",
+  COMPRA = "COMPRA",
+  TRANSFERENCIA = "TRANSFERENCIA",
+  OTRO = "OTRO",
+}
+
 export interface Egreso {
   id?: string;
   monto: number;
@@ -14,6 +21,11 @@ export interface Egreso {
   detalle?: string;
   estado: EstadoEgreso;
   metodoPago: MetodoPago;
+
+  entidadReferencia: EntidadReferenciaEnum;
+  referenciaId?: string;
+  prorrateable?: boolean;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -193,7 +205,6 @@ export interface Anulacion {
 //   updatedAt: Date;
 //   quienGeneroId: string;
 // }
-
 
 export interface CuentaBancaria {
   id?: string;

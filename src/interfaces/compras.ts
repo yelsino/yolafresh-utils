@@ -19,7 +19,7 @@ export interface Almacen {
   ubicacionFisica?: string;
   geoLat?: number;
   geoLon?: number;
-  
+
   capacidad?: number;
   unidadCapacidad?: string; // m3, kg, pallets
 
@@ -43,7 +43,7 @@ export enum TipoMovimientoInventarioEnum {
 export enum EstadoMovimientoEnum {
   PENDIENTE = "PENDIENTE",
   APLICADO = "APLICADO",
-  ANULADO = "ANULADO"
+  ANULADO = "ANULADO",
 }
 
 export enum OrigenDocumentoEnum {
@@ -60,14 +60,14 @@ export enum OrigenDocumentoEnum {
 export interface MovimientoInventario {
   _id: string;
   type: "movimiento_inventario";
-  
+
   numeroMovimiento?: string; // Correlativo interno
 
   tipo: TipoMovimientoInventarioEnum;
   estado: EstadoMovimientoEnum;
 
   origenDocumento: OrigenDocumentoEnum;
-  
+
   documentoReferenciaId?: string;
   serieDocumentoReferencia?: string;
 
@@ -77,7 +77,7 @@ export interface MovimientoInventario {
   almacenDestinoId?: string;
 
   items: MovimientoInventarioItem[];
-  
+
   esAutomatico?: boolean;
 
   notas?: string;
@@ -98,7 +98,7 @@ export interface MovimientoInventarioItem {
 
   costoUnitario?: number;
   costoPromedioCalculado?: number;
-  
+
   costoPromedioAnterior?: number;
   costoPromedioNuevo?: number;
 
@@ -127,7 +127,7 @@ export enum TipoDocumentoCompraEnum {
 export enum EstadoPagoEnum {
   PENDIENTE = "PENDIENTE",
   PAGADO_PARCIAL = "PAGADO_PARCIAL",
-  PAGADO = "PAGADO"
+  PAGADO = "PAGADO",
 }
 export interface CompraEgresoRef {
   egresoId: string;
@@ -139,7 +139,7 @@ export interface ICompra {
   proveedorId: string;
   proveedorNombre?: string;
   proveedorRuc?: string;
-  
+
   tipoDocumento: TipoDocumentoCompraEnum;
   serieDocumento?: string;
   numeroDocumento?: string;
@@ -151,7 +151,7 @@ export interface ICompra {
   fechaRegistro: string; // Fecha de registro en el sistema
 
   items: CompraItem[];
-  
+
   subtotal: number;
   impuestos?: number;
   descuentos?: number;
@@ -161,7 +161,7 @@ export interface ICompra {
   tipoCambio?: number;
 
   total: number;
-  
+
   condicionPago?: "CONTADO" | "CREDITO";
   estadoPago: EstadoPagoEnum;
   fechaVencimientoPago?: string;
@@ -183,10 +183,10 @@ export interface CompraItem {
 
   costoUnitario: number; // Costo del proveedor
   costoTotal?: number;
-  
+
   impuestoUnitario?: number;
   impuestoTotal?: number;
-  
+
   afectaInventario?: boolean;
 
   lote?: string;
@@ -217,7 +217,7 @@ export interface StockProductoAlmacen {
   stockActual: number;
   stockReservado?: number;
   stockDisponible: number;
-  
+
   costoPromedioActual: number; // Costo promedio ponderado actual
 
   minimo?: number;
@@ -243,7 +243,7 @@ export enum EstadoTransferenciaEnum {
 export interface Transferencia {
   _id: string;
   type: "transferencia";
-  
+
   numeroTransferencia?: string;
 
   almacenOrigenId: string;
@@ -279,10 +279,10 @@ export interface EventoCompra {
   responsableId: string;
   responsableNombre?: string;
 
-  origen: string;   // lima
+  origen: string; // lima
   destino?: string; // satipo
   montoAsignado?: number;
-
+  comprasGeneradas?: string[];
   estado: "ABIERTO" | "CERRADO";
 
   createdAt: Date;
@@ -293,7 +293,6 @@ export interface EventoCompraProveedor {
   id: string;
   eventoCompraId: string;
   proveedorId: string;
-
 }
 
 export interface EventoCompraItem {
@@ -303,5 +302,4 @@ export interface EventoCompraItem {
   proveedorId: string;
 
   productoCompra: CompraItem;
-  
 }

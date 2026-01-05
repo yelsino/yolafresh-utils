@@ -209,6 +209,7 @@ export interface EventoCompra {
     origen: string;
     destino?: string;
     montoAsignado?: number;
+    comprasGeneradas?: string[];
     estado: "ABIERTO" | "CERRADO";
     createdAt: Date;
     updatedAt: Date;
