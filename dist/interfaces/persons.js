@@ -35,9 +35,8 @@ var DiaSemana;
  */
 var EstadoRelacionProveedor;
 (function (EstadoRelacionProveedor) {
-    EstadoRelacionProveedor["ACTIVO"] = "activo";
-    EstadoRelacionProveedor["INACTIVO"] = "inactivo";
-    EstadoRelacionProveedor["SUSPENDIDO"] = "suspendido";
-    EstadoRelacionProveedor["EN_EVALUACION"] = "en_evaluacion";
-    EstadoRelacionProveedor["BLOQUEADO"] = "bloqueado";
+    EstadoRelacionProveedor["ACTIVO"] = "ACTIVO";
+    EstadoRelacionProveedor["BLOQUEADO"] = "BLOQUEADO";
+    EstadoRelacionProveedor["SUSPENDIDO"] = "SUSPENDIDO";
+    EstadoRelacionProveedor["INACTIVO"] = "INACTIVO";
 })(EstadoRelacionProveedor || (exports.EstadoRelacionProveedor = EstadoRelacionProveedor = {}));

@@ -166,6 +166,7 @@ class Usuario {
      * Obtiene el nombre para mostrar del usuario
      */
     obtenerNombreCompleto() {
+        var _a;
         if (!this._entidades || this._entidades.length === 0) {
             return this.username;
         }
@@ -181,7 +182,7 @@ class Usuario {
             }
             else if (entidad.tipoEntidad === "Proveedor") {
                 const proveedor = entidad;
-                return proveedor.nombre;
+                return (_a = proveedor.nombreComercial) !== null && _a !== void 0 ? _a : proveedor.razonSocial;
             }
         }
         return this.username;

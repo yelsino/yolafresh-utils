@@ -243,7 +243,7 @@ export class Usuario implements IUsuario {
         return personal.nombres;
       } else if (entidad.tipoEntidad === "Proveedor") {
         const proveedor = entidad as Proveedor;
-        return proveedor.nombre;
+        return proveedor.nombreComercial ?? proveedor.razonSocial;
       }
     }
 

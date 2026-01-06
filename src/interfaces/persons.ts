@@ -1,5 +1,6 @@
-import { CuentaBancaria, MedioPagoDigital, MetodoPago } from "./finanzas";
+import { MedioPagoDigital, MetodoPago } from "./finanzas";
 import { Entidad } from "./entidades";
+import { UnidadMedidaEnum } from "./producto";
 
 export enum CargosPersonal {
   SECRETARIO = 'SECRETARIO',
@@ -206,46 +207,19 @@ export interface InformacionFacturacion {
  * Extiende de Entidad para integrarse con el sistema de usuarios y roles
  */
 export interface Proveedor extends Entidad {
-    tipo: "Proveedor";
-    nombre: string;
-    razonSocial: string;
-    ruc: string;
-    telefonos: string[];
-    email: string;
-    direccion: string;
-    ubicacion?: string;
-    categoriaProveedor?: string;
-    
-    /** Cuentas bancarias del proveedor */
-    cuentasBancarias: CuentaBancaria[];
-    
-    /** Medios de pago digital aceptados */
-    mediosPagoDigital?: MedioPagoDigital[];
-    
-    /** Productos que suministra (IDs de productos) */
-    productosSuministrados: string[];
-    
-    /** Condiciones de pago */
-    condicionesPago: CondicionesPago;
-    
-    /** Tiempo de entrega promedio (en días) */
-    tiempoEntregaDias: number;
-    
-    /** Calificación del proveedor (1-5) */
-    calificacion?: number;
-    
-    /** Notas sobre el proveedor */
-    notas?: string;
-    
-    /** Contacto principal */
-    contactoPrincipal: ContactoProveedor;
-    
-    /** Contactos adicionales */
-    contactosAdicionales?: ContactoProveedor[];
-    
-    /** Estado de la relación comercial */
-    estadoRelacion: EstadoRelacionProveedor;
-  }
+  tipoEntidad: "Proveedor";
+  razonSocial: string;
+  nombreComercial?: string;
+  ruc: string;
+  direccionFiscal?: string;
+  telefonos?: string[];
+  email?: string;
+  estadoRelacion: EstadoRelacionProveedor;
+  calificacion?: number;
+  notas?: string;
+  condicionesPagoDefault?: CondicionesPago;
+  tiempoEntregaPromedioDias?: number;
+}
 
 /**
  * Condiciones de pago del proveedor
@@ -270,30 +244,47 @@ export interface CondicionesPago {
 /**
  * Contacto del proveedor
  */
-export interface ContactoProveedor {
-  /** Nombre del contacto */
+export interface ProveedorContacto {
+  id: string;
+  proveedorId: string;
   nombre: string;
-  
-  /** Cargo del contacto */
-  cargo: string;
-  
-  /** Teléfono del contacto */
-  telefono: string;
-  
-  /** Email del contacto */
-  email: string;
-  
-  /** Indica si es el contacto principal */
-  esPrincipal: boolean;
+  cargo?: string;
+  telefono?: string;
+  email?: string;
+  principal: boolean;
+}
+
+export interface ProveedorCuentaBancaria {
+  id: string;
+  proveedorId: string;
+  banco: string;
+  numeroCuenta: string;
+  cci?: string;
+  moneda: "PEN" | "USD";
+  activa: boolean;
+  esPrincipal?: boolean;
+}
+
+export interface ProveedorProducto {
+  id: string;
+  proveedorId: string;
+  productoId: string;
+  precioReferencia?: number;
+  moneda?: "PEN" | "USD";
+  unidadMedida?: UnidadMedidaEnum;
+  factorConversion?: number;
+  tiempoEntregaDias?: number;
+  activo: boolean;
+  ultimoCosto?: number;
+  ultimaCompraFecha?: string;
 }
 
 /**
  * Estado de la relación comercial con el proveedor
  */
 export enum EstadoRelacionProveedor {
-  ACTIVO = "activo",
-  INACTIVO = "inactivo",
-  SUSPENDIDO = "suspendido",
-  EN_EVALUACION = "en_evaluacion",
-  BLOQUEADO = "bloqueado"
+  ACTIVO = "ACTIVO",
+  BLOQUEADO = "BLOQUEADO",
+  SUSPENDIDO = "SUSPENDIDO",
+  INACTIVO = "INACTIVO"
 }
