@@ -108,6 +108,19 @@ export interface IProducto {
     createdAt: Date;
     updatedAt: Date;
 }
+export interface ProductoPrecio {
+    id: string;
+    productoId: string;
+    unidadVenta: UnidadMedidaEnum;
+    precioVenta: number;
+    precioMinimo?: number;
+    precioMaximo?: number;
+    vigenteDesde: string;
+    vigenteHasta?: string;
+    origen: "COMPRA" | "MANUAL" | "PROMOCION";
+    activo: boolean;
+    createdAt: Date;
+}
 export interface Categoria {
     id: string;
     nombre: string;

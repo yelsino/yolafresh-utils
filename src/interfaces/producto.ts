@@ -136,6 +136,27 @@ export interface IProducto {
   updatedAt: Date;
 }
 
+export interface ProductoPrecio {
+  id: string;
+
+  productoId: string;
+
+  unidadVenta: UnidadMedidaEnum;   // kg, unidad, litro
+  precioVenta: number;
+
+  precioMinimo?: number;
+  precioMaximo?: number;
+
+  vigenteDesde: string;
+  vigenteHasta?: string;
+
+  origen: "COMPRA" | "MANUAL" | "PROMOCION";
+
+  activo: boolean;
+
+  createdAt: Date;
+}
+
 export interface Categoria {
   id: string;
   nombre: string;
