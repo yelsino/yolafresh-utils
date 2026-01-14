@@ -1,6 +1,6 @@
 import { OrigenMovimiento, TipoMovimientoCaja } from "./caja";
 export type MetodoPago = "DIGITAL" | "EFECTIVO" | "TARJETA" | "OTRO";
-export type EstadoEgreso = "ACTIVO" | "ANULADO";
+export type EstadoEgreso = "ACTIVO" | "ANULADO" | "PENDIENTE";
 // export type TypeFinanza = 'Egreso' | 'Ingreso' | 'Credito' | 'Cambio'
 export type TypeFinanza = "Egreso" | "Ingreso" | "Cambio" | "Anulacion";
 
