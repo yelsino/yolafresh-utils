@@ -1,4 +1,4 @@
-import { TipoEmpaqueEnum, UnidadMedidaEnum } from "../interfaces";
+import { TipoEmpaqueEnum, UnidadMedidaEnum } from "@/interfaces";
 export declare enum TipoAlmacenEnum {
     CENTRAL = "CENTRAL",
     TIENDA = "TIENDA",
@@ -108,7 +108,7 @@ export interface ICompra {
     tipoDocumento: TipoDocumentoCompraEnum;
     serieDocumento?: string;
     numeroDocumento?: string;
-    numeroDocumentoInterno?: string;
+    correlativo?: string;
     almacenDestinoId: string;
     fechaDocumento: string;
     fechaRegistro: string;
@@ -123,7 +123,6 @@ export interface ICompra {
     condicionPago?: "CONTADO" | "CREDITO";
     estadoPago: EstadoPagoEnum;
     fechaVencimientoPago?: string;
-    numeroCompra?: string;
     estado: EstadoCompraEnum;
     createdAt: Date;
     updatedAt: Date;

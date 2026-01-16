@@ -141,9 +141,12 @@ export interface ICompra {
   proveedorRuc?: string;
 
   tipoDocumento: TipoDocumentoCompraEnum;
+  // Documento externo (proveedor)
   serieDocumento?: string;
   numeroDocumento?: string;
-  numeroDocumentoInterno?: string; // Correlativo interno
+
+  // Correlativo del sistema (se asigna al cerrar)
+  correlativo?: string;
 
   almacenDestinoId: string;
 
@@ -165,7 +168,6 @@ export interface ICompra {
   condicionPago?: "CONTADO" | "CREDITO";
   estadoPago: EstadoPagoEnum;
   fechaVencimientoPago?: string;
-  numeroCompra?: string; // Correlativo interno
 
   estado: EstadoCompraEnum;
 
