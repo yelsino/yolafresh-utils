@@ -202,6 +202,12 @@ export interface TransferenciaItem {
     productoId: string;
     cantidad: number;
 }
+export declare enum EstadoEventoCompraEnum {
+    EN_REGISTRO = "EN_REGISTRO",// Pedido editable
+    COMPRAS_GENERADAS = "COMPRAS_GENERADAS",// Compras BORRADOR creadas
+    FINALIZADO = "FINALIZADO",// Pedido bloqueado (solo lectura)
+    CANCELADO = "CANCELADO"
+}
 export interface EventoCompra {
     id: string;
     responsableId: string;
@@ -210,7 +216,7 @@ export interface EventoCompra {
     destino?: string;
     montoAsignado?: number;
     comprasGeneradas?: string[];
-    estado: "ABIERTO" | "CERRADO";
+    estado: EstadoEventoCompraEnum;
     createdAt: Date;
     updatedAt: Date;
 }

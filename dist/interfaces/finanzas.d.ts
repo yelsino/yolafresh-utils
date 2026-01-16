@@ -1,5 +1,5 @@
 export type MetodoPago = "DIGITAL" | "EFECTIVO" | "TARJETA" | "OTRO";
-export type EstadoEgreso = "ACTIVO" | "ANULADO";
+export type EstadoEgreso = "ACTIVO" | "ANULADO" | "PENDIENTE";
 export type TypeFinanza = "Egreso" | "Ingreso" | "Cambio" | "Anulacion";
 export declare enum EntidadReferenciaEnum {
     EVENTO_COMPRA = "EVENTO_COMPRA",

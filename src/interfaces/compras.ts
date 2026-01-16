@@ -273,6 +273,12 @@ export interface TransferenciaItem {
   cantidad: number;
 }
 
+export enum EstadoEventoCompraEnum {
+EN_REGISTRO = "EN_REGISTRO", // Pedido editable
+COMPRAS_GENERADAS = "COMPRAS_GENERADAS", // Compras BORRADOR creadas
+FINALIZADO = "FINALIZADO", // Pedido bloqueado (solo lectura)
+CANCELADO = "CANCELADO", // Pedido cancelado, sin efecto
+}
 export interface EventoCompra {
   id: string;
 
@@ -283,11 +289,28 @@ export interface EventoCompra {
   destino?: string; // satipo
   montoAsignado?: number;
   comprasGeneradas?: string[];
-  estado: "ABIERTO" | "CERRADO";
+  estado: EstadoEventoCompraEnum;
 
   createdAt: Date;
   updatedAt: Date;
 }
+
+// antes
+// export interface EventoCompra {
+//   id: string;
+
+//   responsableId: string;
+//   responsableNombre?: string;
+
+//   origen: string; // lima
+//   destino?: string; // satipo
+//   montoAsignado?: number;
+//   comprasGeneradas?: string[];
+//   estado: "ABIERTO" | "CERRADO";
+
+//   createdAt: Date;
+//   updatedAt: Date;
+// }
 
 export interface EventoCompraProveedor {
   id: string;
