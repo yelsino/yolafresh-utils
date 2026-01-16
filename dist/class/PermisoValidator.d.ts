@@ -5,7 +5,7 @@
  * para operaciones específicas del sistema de retail
  */
 import { Usuario } from "./Usuario";
-import { Entidad } from "@/interfaces/entidades";
+import { Entidad } from "../interfaces/entidades";
 /**
  * Contexto de validación de permisos
  */

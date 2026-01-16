@@ -67,7 +67,6 @@ export class Compra implements ICompra {
     this.tipoDocumento = data.tipoDocumento;
     this.serieDocumento = data.serieDocumento;
     this.numeroDocumento = data.numeroDocumento;
-    this.numeroDocumentoInterno = data.numeroDocumentoInterno;
     
     this.almacenDestinoId = data.almacenDestinoId;
     
@@ -135,7 +134,6 @@ export class Compra implements ICompra {
       tipoDocumento: this.tipoDocumento,
       serieDocumento: this.serieDocumento,
       numeroDocumento: this.numeroDocumento,
-      numeroDocumentoInterno: this.numeroDocumentoInterno,
       almacenDestinoId: this.almacenDestinoId,
       fechaDocumento: this.fechaDocumento,
       fechaRegistro: this.fechaRegistro,
