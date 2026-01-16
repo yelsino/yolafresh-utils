@@ -58,7 +58,6 @@ export class PurchaseOrder {
       this._tipoDocumento = initialData.tipoDocumento || TipoDocumentoCompraEnum.FACTURA;
       this._serieDocumento = initialData.serieDocumento;
       this._numeroDocumento = initialData.numeroDocumento;
-      this._numeroDocumentoInterno = initialData.numeroDocumentoInterno;
       
       this._almacenDestinoId = initialData.almacenDestinoId || "";
       
@@ -296,7 +295,6 @@ export class PurchaseOrder {
       tipoDocumento: this._tipoDocumento,
       serieDocumento: this._serieDocumento,
       numeroDocumento: this._numeroDocumento,
-      numeroDocumentoInterno: this._numeroDocumentoInterno,
       
       almacenDestinoId: this._almacenDestinoId,
       
