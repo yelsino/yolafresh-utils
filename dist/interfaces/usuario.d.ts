@@ -23,8 +23,8 @@ export interface IUsuario {
     /** Identificador único del usuario */
     id: string;
     /** Email del usuario (único en el sistema) */
-    email: string;
-    username?: string;
+    email?: string;
+    username: string;
     /** Hash de la contraseña (nunca guardar en texto plano) */
     passwordHash: string;
     /** Roles asignados al usuario */

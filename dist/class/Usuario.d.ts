@@ -18,7 +18,7 @@ import { Entidad, Rol, SesionContexto } from "../interfaces/entidades";
  */
 export declare class Usuario implements IUsuario {
     readonly id: string;
-    readonly email: string;
+    readonly email?: string;
     readonly username: string;
     readonly passwordHash: string;
     readonly createdAt: Date;
@@ -34,6 +34,7 @@ export declare class Usuario implements IUsuario {
     private _tokenVerificacion?;
     private _configuraciones?;
     private _sesionActual?;
+    private _debeCambiarPassword?;
     private _permisosCache?;
     private _cacheExpiracion?;
     constructor(data: IUsuario);

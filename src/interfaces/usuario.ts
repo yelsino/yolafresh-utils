@@ -25,10 +25,10 @@ export interface IUsuario {
   id: string;
 
   /** Email del usuario (único en el sistema) */
-  email: string;
+  email?: string;
 
 
-  username?: string;
+  username: string;
 
   /** Hash de la contraseña (nunca guardar en texto plano) */
   passwordHash: string;

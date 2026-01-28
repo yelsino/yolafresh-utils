@@ -34,7 +34,7 @@ import { Cliente, Personal, Proveedor } from "@/interfaces/persons";
 export class Usuario implements IUsuario {
   // === PROPIEDADES INMUTABLES ===
   public readonly id: string;
-  public readonly email: string;
+  public readonly email?: string;
   public readonly username: string;
   public readonly passwordHash: string;
   public readonly createdAt: Date;
@@ -52,6 +52,7 @@ export class Usuario implements IUsuario {
   private _tokenVerificacion?: string;
   private _configuraciones?: ConfiguracionUsuario;
   private _sesionActual?: SesionContexto;
+  private _debeCambiarPassword?: boolean;
 
   // === CACHE DE PERMISOS (para optimización) ===
   private _permisosCache?: string[];
@@ -59,8 +60,8 @@ export class Usuario implements IUsuario {
 
   constructor(data: IUsuario) {
     // Validaciones básicas
-    if (!data.id || !data.email || !data.username) {
-      throw new Error('ID, email y username son requeridos para crear un usuario');
+    if (!data.id || !data.username) {
+      throw new Error('ID y username son requeridos para crear un usuario');
     }
 
     if (!data.roles || data.roles.length === 0) {
@@ -87,6 +88,7 @@ export class Usuario implements IUsuario {
     this._tokenVerificacion = data.tokenVerificacion;
     this._configuraciones = data.configuraciones;
     this._sesionActual = data.sesionActual;
+    this._debeCambiarPassword = data.debeCambiarPassword;
   }
 
   // === GETTERS ===
@@ -491,6 +493,7 @@ export class Usuario implements IUsuario {
       roles: this._roles,
       entidades: this._entidades,
       activo: this._activo,
+      debeCambiarPassword: this._debeCambiarPassword,
       createdAt: this.createdAt.toISOString(),
       updatedAt: this._updatedAt.toISOString(),
       fechaUltimoAcceso: this._fechaUltimoAcceso?.toISOString(),
@@ -516,6 +519,7 @@ export class Usuario implements IUsuario {
       roles: this._roles,
       entidades: this._entidades,
       activo: this._activo,
+      debeCambiarPassword: this._debeCambiarPassword,
       createdAt: this.createdAt,
       updatedAt: this._updatedAt,
       fechaUltimoAcceso: this._fechaUltimoAcceso,
@@ -543,6 +547,7 @@ export class Usuario implements IUsuario {
       roles: doc.roles,
       entidades: doc.entidades,
       activo: doc.activo,
+      debeCambiarPassword: doc.debeCambiarPassword,
       createdAt: new Date(doc.createdAt),
       updatedAt: new Date(doc.updatedAt),
       fechaUltimoAcceso: doc.fechaUltimoAcceso ? new Date(doc.fechaUltimoAcceso) : undefined,
@@ -570,6 +575,7 @@ export class Usuario implements IUsuario {
       roles: [], // Se asignan después
       entidades: [], // Se asignan después
       activo: true,
+      debeCambiarPassword: true,
       createdAt: ahora,
       updatedAt: ahora,
       intentosFallidos: 0,
@@ -598,7 +604,6 @@ export class Usuario implements IUsuario {
     const errores: string[] = [];
     
     if (!data.id) errores.push('ID es requerido');
-    if (!data.email) errores.push('Email es requerido');
     if (!data.username) errores.push('Username es requerido');
     if (!data.passwordHash) errores.push('Password hash es requerido');
     if (!data.roles || data.roles.length === 0) errores.push('El usuario debe tener al menos un rol');

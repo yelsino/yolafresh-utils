@@ -21,8 +21,8 @@ const entidades_1 = require("../interfaces/entidades");
 class Usuario {
     constructor(data) {
         // Validaciones básicas
-        if (!data.id || !data.email || !data.username) {
-            throw new Error('ID, email y username son requeridos para crear un usuario');
+        if (!data.id || !data.username) {
+            throw new Error('ID y username son requeridos para crear un usuario');
         }
         if (!data.roles || data.roles.length === 0) {
             throw new Error('El usuario debe tener al menos un rol asignado');
@@ -46,6 +46,7 @@ class Usuario {
         this._tokenVerificacion = data.tokenVerificacion;
         this._configuraciones = data.configuraciones;
         this._sesionActual = data.sesionActual;
+        this._debeCambiarPassword = data.debeCambiarPassword;
     }
     // === GETTERS ===
     get roles() { return this._roles; }
@@ -391,6 +392,7 @@ class Usuario {
             roles: this._roles,
             entidades: this._entidades,
             activo: this._activo,
+            debeCambiarPassword: this._debeCambiarPassword,
             createdAt: this.createdAt.toISOString(),
             updatedAt: this._updatedAt.toISOString(),
             fechaUltimoAcceso: (_a = this._fechaUltimoAcceso) === null || _a === void 0 ? void 0 : _a.toISOString(),
@@ -415,6 +417,7 @@ class Usuario {
             roles: this._roles,
             entidades: this._entidades,
             activo: this._activo,
+            debeCambiarPassword: this._debeCambiarPassword,
             createdAt: this.createdAt,
             updatedAt: this._updatedAt,
             fechaUltimoAcceso: this._fechaUltimoAcceso,
@@ -440,6 +443,7 @@ class Usuario {
             roles: doc.roles,
             entidades: doc.entidades,
             activo: doc.activo,
+            debeCambiarPassword: doc.debeCambiarPassword,
             createdAt: new Date(doc.createdAt),
             updatedAt: new Date(doc.updatedAt),
             fechaUltimoAcceso: doc.fechaUltimoAcceso ? new Date(doc.fechaUltimoAcceso) : undefined,
@@ -465,6 +469,7 @@ class Usuario {
             roles: [], // Se asignan después
             entidades: [], // Se asignan después
             activo: true,
+            debeCambiarPassword: true,
             createdAt: ahora,
             updatedAt: ahora,
             intentosFallidos: 0,
@@ -492,8 +497,6 @@ class Usuario {
         const errores = [];
         if (!data.id)
             errores.push('ID es requerido');
-        if (!data.email)
-            errores.push('Email es requerido');
         if (!data.username)
             errores.push('Username es requerido');
         if (!data.passwordHash)
