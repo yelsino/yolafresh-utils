@@ -48,6 +48,7 @@ export interface Personal extends Entidad {
     
     /** Información de emergencia */
     contactoEmergencia?: ContactoEmergencia;
+
   }
 
 /**

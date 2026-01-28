@@ -54,6 +54,7 @@ export interface IUsuario {
     configuraciones?: ConfiguracionUsuario;
     /** Contexto de sesión actual (opcional, solo cuando está logueado) */
     sesionActual?: SesionContexto;
+    debeCambiarPassword?: boolean;
 }
 /**
  * Configuraciones personales del usuario
