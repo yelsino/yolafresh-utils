@@ -133,9 +133,10 @@ export interface CompraEgresoRef {
   egresoId: string;
   montoAplicado: number; // permite prorrateo parcial
 }
+
 export interface ICompra {
   id: string;
-
+  eventoCompraId?: string; // 🔑 trazabilidad
   proveedorId: string;
   proveedorNombre?: string;
   proveedorRuc?: string;
@@ -176,8 +177,8 @@ export interface ICompra {
 }
 
 export interface CompraItem {
+  id: string;
   productoId: string;
-
   cantidad: number;
   unidadMedida?: UnidadMedidaEnum;
   envoltorio?: TipoEmpaqueEnum;
@@ -194,6 +195,46 @@ export interface CompraItem {
   lote?: string;
   fechaVencimiento?: string;
 }
+
+
+export enum EstadoEventoCompraEnum {
+EN_REGISTRO = "EN_REGISTRO", // Pedido editable //rojo
+COMPRAS_GENERADAS = "COMPRAS_GENERADAS", // Compras BORRADOR creadas // verde
+FINALIZADO = "FINALIZADO", // Pedido bloqueado (solo lectura) // blanco
+CANCELADO = "CANCELADO", // Pedido cancelado, sin efecto //gris
+}
+export interface EventoCompra {
+  id: string;
+
+  responsableId: string;
+  responsableNombre?: string;
+
+  origen: string; // lima
+  destino?: string; // satipo
+  montoAsignado?: number;
+  comprasGeneradas?: string[];
+  estado: EstadoEventoCompraEnum;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// EventoCompraProveedor es irrelevante y se puede eliminar sin perder información.
+// export interface EventoCompraProveedor {
+//   id: string;
+//   eventoCompraId: string;
+//   proveedorId: string;
+// }
+
+export interface EventoCompraItem {
+  id: string;
+  eventoCompraId: string;
+  proveedorId: string;
+  compraItemId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 
 // no es un documento, es una linea del kardex
 export interface KardexLinea {
@@ -273,58 +314,4 @@ export interface Transferencia {
 export interface TransferenciaItem {
   productoId: string;
   cantidad: number;
-}
-
-export enum EstadoEventoCompraEnum {
-EN_REGISTRO = "EN_REGISTRO", // Pedido editable
-COMPRAS_GENERADAS = "COMPRAS_GENERADAS", // Compras BORRADOR creadas
-FINALIZADO = "FINALIZADO", // Pedido bloqueado (solo lectura)
-CANCELADO = "CANCELADO", // Pedido cancelado, sin efecto
-}
-export interface EventoCompra {
-  id: string;
-
-  responsableId: string;
-  responsableNombre?: string;
-
-  origen: string; // lima
-  destino?: string; // satipo
-  montoAsignado?: number;
-  comprasGeneradas?: string[];
-  estado: EstadoEventoCompraEnum;
-
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// antes
-// export interface EventoCompra {
-//   id: string;
-
-//   responsableId: string;
-//   responsableNombre?: string;
-
-//   origen: string; // lima
-//   destino?: string; // satipo
-//   montoAsignado?: number;
-//   comprasGeneradas?: string[];
-//   estado: "ABIERTO" | "CERRADO";
-
-//   createdAt: Date;
-//   updatedAt: Date;
-// }
-
-export interface EventoCompraProveedor {
-  id: string;
-  eventoCompraId: string;
-  proveedorId: string;
-}
-
-export interface EventoCompraItem {
-  id: string;
-
-  eventoCompraId: string;
-  proveedorId: string;
-
-  productoCompra: CompraItem;
 }

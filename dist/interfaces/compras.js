@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EstadoEventoCompraEnum = exports.EstadoTransferenciaEnum = exports.EstadoPagoEnum = exports.TipoDocumentoCompraEnum = exports.EstadoCompraEnum = exports.OrigenDocumentoEnum = exports.EstadoMovimientoEnum = exports.TipoMovimientoInventarioEnum = exports.TipoAlmacenEnum = void 0;
+exports.EstadoTransferenciaEnum = exports.EstadoEventoCompraEnum = exports.EstadoPagoEnum = exports.TipoDocumentoCompraEnum = exports.EstadoCompraEnum = exports.OrigenDocumentoEnum = exports.EstadoMovimientoEnum = exports.TipoMovimientoInventarioEnum = exports.TipoAlmacenEnum = void 0;
 var TipoAlmacenEnum;
 (function (TipoAlmacenEnum) {
     TipoAlmacenEnum["CENTRAL"] = "CENTRAL";
@@ -54,13 +54,6 @@ var EstadoPagoEnum;
     EstadoPagoEnum["PAGADO_PARCIAL"] = "PAGADO_PARCIAL";
     EstadoPagoEnum["PAGADO"] = "PAGADO";
 })(EstadoPagoEnum || (exports.EstadoPagoEnum = EstadoPagoEnum = {}));
-var EstadoTransferenciaEnum;
-(function (EstadoTransferenciaEnum) {
-    EstadoTransferenciaEnum["PENDIENTE"] = "PENDIENTE";
-    EstadoTransferenciaEnum["EN_TRANSITO"] = "EN_TRANSITO";
-    EstadoTransferenciaEnum["RECIBIDO"] = "RECIBIDO";
-    EstadoTransferenciaEnum["ANULADO"] = "ANULADO";
-})(EstadoTransferenciaEnum || (exports.EstadoTransferenciaEnum = EstadoTransferenciaEnum = {}));
 var EstadoEventoCompraEnum;
 (function (EstadoEventoCompraEnum) {
     EstadoEventoCompraEnum["EN_REGISTRO"] = "EN_REGISTRO";
@@ -68,3 +61,10 @@ var EstadoEventoCompraEnum;
     EstadoEventoCompraEnum["FINALIZADO"] = "FINALIZADO";
     EstadoEventoCompraEnum["CANCELADO"] = "CANCELADO";
 })(EstadoEventoCompraEnum || (exports.EstadoEventoCompraEnum = EstadoEventoCompraEnum = {}));
+var EstadoTransferenciaEnum;
+(function (EstadoTransferenciaEnum) {
+    EstadoTransferenciaEnum["PENDIENTE"] = "PENDIENTE";
+    EstadoTransferenciaEnum["EN_TRANSITO"] = "EN_TRANSITO";
+    EstadoTransferenciaEnum["RECIBIDO"] = "RECIBIDO";
+    EstadoTransferenciaEnum["ANULADO"] = "ANULADO";
+})(EstadoTransferenciaEnum || (exports.EstadoTransferenciaEnum = EstadoTransferenciaEnum = {}));

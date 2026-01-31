@@ -102,6 +102,7 @@ export interface CompraEgresoRef {
 }
 export interface ICompra {
     id: string;
+    eventoCompraId?: string;
     proveedorId: string;
     proveedorNombre?: string;
     proveedorRuc?: string;
@@ -128,6 +129,7 @@ export interface ICompra {
     updatedAt: Date;
 }
 export interface CompraItem {
+    id: string;
     productoId: string;
     cantidad: number;
     unidadMedida?: UnidadMedidaEnum;
@@ -140,6 +142,32 @@ export interface CompraItem {
     afectaInventario?: boolean;
     lote?: string;
     fechaVencimiento?: string;
+}
+export declare enum EstadoEventoCompraEnum {
+    EN_REGISTRO = "EN_REGISTRO",// Pedido editable //rojo
+    COMPRAS_GENERADAS = "COMPRAS_GENERADAS",// Compras BORRADOR creadas // verde
+    FINALIZADO = "FINALIZADO",// Pedido bloqueado (solo lectura) // blanco
+    CANCELADO = "CANCELADO"
+}
+export interface EventoCompra {
+    id: string;
+    responsableId: string;
+    responsableNombre?: string;
+    origen: string;
+    destino?: string;
+    montoAsignado?: number;
+    comprasGeneradas?: string[];
+    estado: EstadoEventoCompraEnum;
+    createdAt: Date;
+    updatedAt: Date;
+}
+export interface EventoCompraItem {
+    id: string;
+    eventoCompraId: string;
+    proveedorId: string;
+    compraItemId: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 export interface KardexLinea {
     fechaMovimiento: string;
@@ -200,33 +228,4 @@ export interface Transferencia {
 export interface TransferenciaItem {
     productoId: string;
     cantidad: number;
-}
-export declare enum EstadoEventoCompraEnum {
-    EN_REGISTRO = "EN_REGISTRO",// Pedido editable
-    COMPRAS_GENERADAS = "COMPRAS_GENERADAS",// Compras BORRADOR creadas
-    FINALIZADO = "FINALIZADO",// Pedido bloqueado (solo lectura)
-    CANCELADO = "CANCELADO"
-}
-export interface EventoCompra {
-    id: string;
-    responsableId: string;
-    responsableNombre?: string;
-    origen: string;
-    destino?: string;
-    montoAsignado?: number;
-    comprasGeneradas?: string[];
-    estado: EstadoEventoCompraEnum;
-    createdAt: Date;
-    updatedAt: Date;
-}
-export interface EventoCompraProveedor {
-    id: string;
-    eventoCompraId: string;
-    proveedorId: string;
-}
-export interface EventoCompraItem {
-    id: string;
-    eventoCompraId: string;
-    proveedorId: string;
-    productoCompra: CompraItem;
 }
