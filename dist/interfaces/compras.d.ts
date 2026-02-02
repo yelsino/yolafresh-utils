@@ -1,4 +1,4 @@
-import { TipoEmpaqueEnum, UnidadMedidaEnum } from "@/interfaces";
+import { TipoEmpaqueEnum, UnidadMedidaEnum } from "../interfaces";
 export declare enum TipoAlmacenEnum {
     CENTRAL = "CENTRAL",
     TIENDA = "TIENDA",

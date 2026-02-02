@@ -1,6 +1,6 @@
 import { MetodoPago } from "./finanzas";
 
-export enum EstadoPagoEnum {
+export enum EstadoPagoCapturaEnum {
   CAPTURADO = "CAPTURADO",     // llegó la notificación
   CONFIRMADO = "CONFIRMADO",   // vendedor valida que es real
   APLICADO = "APLICADO",       // impactó una venta
@@ -11,7 +11,6 @@ export enum EstadoPagoEnum {
 export interface Pago {
   // === IDENTIDAD ===
   id: string;
-
   // === RELACIÓN CON VENTA ===
   ventaId?: string;                 // se asigna SOLO cuando se aplica
   montoAplicado?: number;           // cuánto de este pago se usó
@@ -20,8 +19,11 @@ export interface Pago {
   // === ORIGEN FINANCIERO ===
   proveedor: "YAPE" | "PLIN" | "EFECTIVO" | "TARJETA";
   tipoMedio: MetodoPago;
-  idTransaccionProveedor: string;
+  idTransaccionProveedor?: string;
   emisorReferencia?: string;
+  nombrePaquete?: string;
+  tituloNotificacion?: string;
+  origen?: string;
 
   // === MONTOS ===
   montoRecibido: number;             // lo que pagó el cliente
@@ -29,7 +31,7 @@ export interface Pago {
   moneda: "PEN" | "USD";
 
   // === ESTADO ===
-  estado: EstadoPagoEnum;
+  estado: EstadoPagoCapturaEnum;
 
   // === DECISIÓN HUMANA ===
   usuarioConfirmaId?: string;
