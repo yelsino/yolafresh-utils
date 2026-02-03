@@ -136,6 +136,7 @@ export interface IProducto {
   updatedAt: Date;
 }
 
+
 export interface ProductoPrecio {
   id: string;
 

@@ -11,6 +11,7 @@ export enum TipoEvidenciaEnum {
   ACTA_RECEPCION = "ACTA_RECEPCION",
   ACTA_MERMA = "ACTA_MERMA",
 
+
   OTRO = "OTRO",
 }
 
@@ -36,9 +37,11 @@ export interface Evidencia {
   entidadReferencia: 
     | "COMPRA"
     | "PAGO"
+    | "VENTA"
     | "MOVIMIENTO_INVENTARIO"
     | "TRANSFERENCIA"
     | "EVENTO_COMPRA";
+    
 
   referenciaId: string;
 
