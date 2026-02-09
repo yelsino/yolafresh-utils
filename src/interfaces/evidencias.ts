@@ -23,6 +23,8 @@ export enum FormatoArchivoEnum {
   WEBP = "WEBP",
 }
 
+
+
 export interface Evidencia {
   _id: string;
   type: "evidencia";

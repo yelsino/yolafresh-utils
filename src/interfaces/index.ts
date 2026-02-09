@@ -2,6 +2,7 @@
 // No modificar manualmente
 
 // Exportaciones de interfaces
+export * from './Device';
 export * from './caja';
 export * from './compras';
 export * from './entidades';

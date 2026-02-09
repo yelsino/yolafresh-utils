@@ -1,4 +1,4 @@
-import { TipoEmpaqueEnum, UnidadMedidaEnum } from "../interfaces";
+import { TipoEmpaqueEnum, UnidadMedidaEnum } from "@/interfaces";
 export declare enum TipoAlmacenEnum {
     CENTRAL = "CENTRAL",
     TIENDA = "TIENDA",
@@ -228,4 +228,30 @@ export interface Transferencia {
 export interface TransferenciaItem {
     productoId: string;
     cantidad: number;
+}
+export declare enum EstadoRecepcionEnum {
+    PENDIENTE = "PENDIENTE",// Aún no llega nada
+    PARCIAL = "PARCIAL",// Llegó algo
+    COMPLETA = "COMPLETA",// Llegó todo
+    ANULADA = "ANULADA"
+}
+export interface RecepcionCompra {
+    id: string;
+    compraId: string;
+    proveedorId: string;
+    almacenDestinoId: string;
+    estado: EstadoRecepcionEnum;
+    fechaRecepcion: string;
+    items: RecepcionCompraItem[];
+    usuarioId: string;
+    observaciones?: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+export interface RecepcionCompraItem {
+    compraItemId: string;
+    productoId: string;
+    cantidadRecibida: number;
+    lote?: string;
+    fechaVencimiento?: string;
 }

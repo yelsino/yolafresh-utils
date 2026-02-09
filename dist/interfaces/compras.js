@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EstadoTransferenciaEnum = exports.EstadoEventoCompraEnum = exports.EstadoPagoEnum = exports.TipoDocumentoCompraEnum = exports.EstadoCompraEnum = exports.OrigenDocumentoEnum = exports.EstadoMovimientoEnum = exports.TipoMovimientoInventarioEnum = exports.TipoAlmacenEnum = void 0;
+exports.EstadoRecepcionEnum = exports.EstadoTransferenciaEnum = exports.EstadoEventoCompraEnum = exports.EstadoPagoEnum = exports.TipoDocumentoCompraEnum = exports.EstadoCompraEnum = exports.OrigenDocumentoEnum = exports.EstadoMovimientoEnum = exports.TipoMovimientoInventarioEnum = exports.TipoAlmacenEnum = void 0;
 var TipoAlmacenEnum;
 (function (TipoAlmacenEnum) {
     TipoAlmacenEnum["CENTRAL"] = "CENTRAL";
@@ -68,3 +68,10 @@ var EstadoTransferenciaEnum;
     EstadoTransferenciaEnum["RECIBIDO"] = "RECIBIDO";
     EstadoTransferenciaEnum["ANULADO"] = "ANULADO";
 })(EstadoTransferenciaEnum || (exports.EstadoTransferenciaEnum = EstadoTransferenciaEnum = {}));
+var EstadoRecepcionEnum;
+(function (EstadoRecepcionEnum) {
+    EstadoRecepcionEnum["PENDIENTE"] = "PENDIENTE";
+    EstadoRecepcionEnum["PARCIAL"] = "PARCIAL";
+    EstadoRecepcionEnum["COMPLETA"] = "COMPLETA";
+    EstadoRecepcionEnum["ANULADA"] = "ANULADA";
+})(EstadoRecepcionEnum || (exports.EstadoRecepcionEnum = EstadoRecepcionEnum = {}));

@@ -1,4 +1,4 @@
-import { EstadoStockEnum, TipoActualizacionEnum } from "../utils";
+import { EstadoStockEnum, TipoActualizacionEnum } from "@/utils";
 export interface UpdateProducto {
     id: string;
     productoId: string;

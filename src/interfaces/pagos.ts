@@ -17,7 +17,7 @@ export interface Pago {
   fechaAplicacion?: number;
 
   // === ORIGEN FINANCIERO ===
-  proveedor: "YAPE" | "PLIN" | "EFECTIVO" | "TARJETA";
+  proveedor: "YAPE" | "PLIN" | "EFECTIVO" | "TARJETA" | "OTRO";
   tipoMedio: MetodoPago;
   idTransaccionProveedor?: string;
   emisorReferencia?: string;
