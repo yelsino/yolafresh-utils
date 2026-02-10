@@ -121,7 +121,7 @@ export class Compra implements ICompra {
    * Verifica si la compra ha sido confirmada/procesada
    */
   public get estaConfirmada(): boolean {
-    return this.estado === EstadoCompraEnum.CONFIRMADO || this.estado === EstadoCompraEnum.CONTABILIZADO;
+    return this.estado === EstadoCompraEnum.CONFIRMADO;
   }
 
   /**

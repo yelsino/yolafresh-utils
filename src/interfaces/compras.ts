@@ -112,7 +112,6 @@ export enum EstadoCompraEnum {
   BORRADOR = "BORRADOR",
   CONFIRMADO = "CONFIRMADO",
   ANULADO = "ANULADO",
-  CONTABILIZADO = "CONTABILIZADO",
 }
 
 export enum TipoDocumentoCompraEnum {
@@ -197,10 +196,10 @@ export interface CompraItem {
 }
 
 export enum EstadoEventoCompraEnum {
-  EN_REGISTRO = "EN_REGISTRO", // Pedido editable //rojo
-  COMPRAS_GENERADAS = "COMPRAS_GENERADAS", // Compras BORRADOR creadas // verde
-  FINALIZADO = "FINALIZADO", // Pedido bloqueado (solo lectura) // blanco
-  CANCELADO = "CANCELADO", // Pedido cancelado, sin efecto //gris
+  EN_REGISTRO = "EN_REGISTRO",
+  CONFIRMADO = "CONFIRMADO",
+  CERRADO = "CERRADO",
+  CANCELADO = "CANCELADO",
 }
 export interface EventoCompra {
   id: string;
@@ -211,7 +210,6 @@ export interface EventoCompra {
   origen: string; // lima
   destino?: string; // satipo
   montoAsignado?: number;
-  comprasGeneradas?: string[];
   estado: EstadoEventoCompraEnum;
 
   createdAt: Date;
@@ -314,25 +312,27 @@ export interface TransferenciaItem {
   cantidad: number;
 }
 
-export enum EstadoRecepcionEnum {
-  PENDIENTE = "PENDIENTE", // Aún no llega nada
-  PARCIAL = "PARCIAL", // Llegó algo
-  COMPLETA = "COMPLETA", // Llegó todo
+export enum EstadoRecepcionMercaderiaEnum {
+  BORRADOR = "BORRADOR",
+  CONFIRMADA = "CONFIRMADA",
   ANULADA = "ANULADA",
 }
 
-export interface RecepcionCompra {
+export interface RecepcionMercaderia {
   id: string;
+  type: "recepcion_mercaderia";
 
-  compraId: string;
-  proveedorId: string;
+  eventoCompraId?: string;
   almacenDestinoId: string;
-
-  estado: EstadoRecepcionEnum;
 
   fechaRecepcion: string;
 
-  items: RecepcionCompraItem[];
+  vehiculo?: string;
+  guiaTransportista?: string;
+
+  estado: EstadoRecepcionMercaderiaEnum;
+
+  items: RecepcionMercaderiaItem[];
 
   usuarioId: string;
   observaciones?: string;
@@ -341,12 +341,24 @@ export interface RecepcionCompra {
   updatedAt: Date;
 }
 
-export interface RecepcionCompraItem {
-  compraItemId: string; // 🔑 link exacto
+export interface RecepcionMercaderiaItem {
   productoId: string;
-
   cantidadRecibida: number;
 
   lote?: string;
   fechaVencimiento?: string;
+
+  compraItemId?: string;
+  compraId?: string;
+  proveedorId?: string;
+}
+
+export interface AsignacionRecepcionCompra {
+  id: string;
+  recepcionMercaderiaId: string;
+  compraId: string;
+  compraItemId: string;
+  productoId: string;
+  cantidadAsignada: number;
+  createdAt: Date;
 }

@@ -80,8 +80,7 @@ export interface MovimientoInventarioItem {
 export declare enum EstadoCompraEnum {
     BORRADOR = "BORRADOR",
     CONFIRMADO = "CONFIRMADO",
-    ANULADO = "ANULADO",
-    CONTABILIZADO = "CONTABILIZADO"
+    ANULADO = "ANULADO"
 }
 export declare enum TipoDocumentoCompraEnum {
     FACTURA = "FACTURA",
@@ -144,9 +143,9 @@ export interface CompraItem {
     fechaVencimiento?: string;
 }
 export declare enum EstadoEventoCompraEnum {
-    EN_REGISTRO = "EN_REGISTRO",// Pedido editable //rojo
-    COMPRAS_GENERADAS = "COMPRAS_GENERADAS",// Compras BORRADOR creadas // verde
-    FINALIZADO = "FINALIZADO",// Pedido bloqueado (solo lectura) // blanco
+    EN_REGISTRO = "EN_REGISTRO",
+    CONFIRMADO = "CONFIRMADO",
+    CERRADO = "CERRADO",
     CANCELADO = "CANCELADO"
 }
 export interface EventoCompra {
@@ -156,7 +155,6 @@ export interface EventoCompra {
     origen: string;
     destino?: string;
     montoAsignado?: number;
-    comprasGeneradas?: string[];
     estado: EstadoEventoCompraEnum;
     createdAt: Date;
     updatedAt: Date;
@@ -229,29 +227,41 @@ export interface TransferenciaItem {
     productoId: string;
     cantidad: number;
 }
-export declare enum EstadoRecepcionEnum {
-    PENDIENTE = "PENDIENTE",// Aún no llega nada
-    PARCIAL = "PARCIAL",// Llegó algo
-    COMPLETA = "COMPLETA",// Llegó todo
+export declare enum EstadoRecepcionMercaderiaEnum {
+    BORRADOR = "BORRADOR",
+    CONFIRMADA = "CONFIRMADA",
     ANULADA = "ANULADA"
 }
-export interface RecepcionCompra {
+export interface RecepcionMercaderia {
     id: string;
-    compraId: string;
-    proveedorId: string;
+    type: "recepcion_mercaderia";
+    eventoCompraId?: string;
     almacenDestinoId: string;
-    estado: EstadoRecepcionEnum;
     fechaRecepcion: string;
-    items: RecepcionCompraItem[];
+    vehiculo?: string;
+    guiaTransportista?: string;
+    estado: EstadoRecepcionMercaderiaEnum;
+    items: RecepcionMercaderiaItem[];
     usuarioId: string;
     observaciones?: string;
     createdAt: Date;
     updatedAt: Date;
 }
-export interface RecepcionCompraItem {
-    compraItemId: string;
+export interface RecepcionMercaderiaItem {
     productoId: string;
     cantidadRecibida: number;
     lote?: string;
     fechaVencimiento?: string;
+    compraItemId?: string;
+    compraId?: string;
+    proveedorId?: string;
+}
+export interface AsignacionRecepcionCompra {
+    id: string;
+    recepcionMercaderiaId: string;
+    compraId: string;
+    compraItemId: string;
+    productoId: string;
+    cantidadAsignada: number;
+    createdAt: Date;
 }

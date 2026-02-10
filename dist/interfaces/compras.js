@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EstadoRecepcionEnum = exports.EstadoTransferenciaEnum = exports.EstadoEventoCompraEnum = exports.EstadoPagoEnum = exports.TipoDocumentoCompraEnum = exports.EstadoCompraEnum = exports.OrigenDocumentoEnum = exports.EstadoMovimientoEnum = exports.TipoMovimientoInventarioEnum = exports.TipoAlmacenEnum = void 0;
+exports.EstadoRecepcionMercaderiaEnum = exports.EstadoTransferenciaEnum = exports.EstadoEventoCompraEnum = exports.EstadoPagoEnum = exports.TipoDocumentoCompraEnum = exports.EstadoCompraEnum = exports.OrigenDocumentoEnum = exports.EstadoMovimientoEnum = exports.TipoMovimientoInventarioEnum = exports.TipoAlmacenEnum = void 0;
 var TipoAlmacenEnum;
 (function (TipoAlmacenEnum) {
     TipoAlmacenEnum["CENTRAL"] = "CENTRAL";
@@ -37,7 +37,6 @@ var EstadoCompraEnum;
     EstadoCompraEnum["BORRADOR"] = "BORRADOR";
     EstadoCompraEnum["CONFIRMADO"] = "CONFIRMADO";
     EstadoCompraEnum["ANULADO"] = "ANULADO";
-    EstadoCompraEnum["CONTABILIZADO"] = "CONTABILIZADO";
 })(EstadoCompraEnum || (exports.EstadoCompraEnum = EstadoCompraEnum = {}));
 var TipoDocumentoCompraEnum;
 (function (TipoDocumentoCompraEnum) {
@@ -57,8 +56,8 @@ var EstadoPagoEnum;
 var EstadoEventoCompraEnum;
 (function (EstadoEventoCompraEnum) {
     EstadoEventoCompraEnum["EN_REGISTRO"] = "EN_REGISTRO";
-    EstadoEventoCompraEnum["COMPRAS_GENERADAS"] = "COMPRAS_GENERADAS";
-    EstadoEventoCompraEnum["FINALIZADO"] = "FINALIZADO";
+    EstadoEventoCompraEnum["CONFIRMADO"] = "CONFIRMADO";
+    EstadoEventoCompraEnum["CERRADO"] = "CERRADO";
     EstadoEventoCompraEnum["CANCELADO"] = "CANCELADO";
 })(EstadoEventoCompraEnum || (exports.EstadoEventoCompraEnum = EstadoEventoCompraEnum = {}));
 var EstadoTransferenciaEnum;
@@ -68,10 +67,9 @@ var EstadoTransferenciaEnum;
     EstadoTransferenciaEnum["RECIBIDO"] = "RECIBIDO";
     EstadoTransferenciaEnum["ANULADO"] = "ANULADO";
 })(EstadoTransferenciaEnum || (exports.EstadoTransferenciaEnum = EstadoTransferenciaEnum = {}));
-var EstadoRecepcionEnum;
-(function (EstadoRecepcionEnum) {
-    EstadoRecepcionEnum["PENDIENTE"] = "PENDIENTE";
-    EstadoRecepcionEnum["PARCIAL"] = "PARCIAL";
-    EstadoRecepcionEnum["COMPLETA"] = "COMPLETA";
-    EstadoRecepcionEnum["ANULADA"] = "ANULADA";
-})(EstadoRecepcionEnum || (exports.EstadoRecepcionEnum = EstadoRecepcionEnum = {}));
+var EstadoRecepcionMercaderiaEnum;
+(function (EstadoRecepcionMercaderiaEnum) {
+    EstadoRecepcionMercaderiaEnum["BORRADOR"] = "BORRADOR";
+    EstadoRecepcionMercaderiaEnum["CONFIRMADA"] = "CONFIRMADA";
+    EstadoRecepcionMercaderiaEnum["ANULADA"] = "ANULADA";
+})(EstadoRecepcionMercaderiaEnum || (exports.EstadoRecepcionMercaderiaEnum = EstadoRecepcionMercaderiaEnum = {}));
