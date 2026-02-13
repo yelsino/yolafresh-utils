@@ -135,7 +135,7 @@ export interface CompraEgresoRef {
 
 export interface ICompra {
   id: string;
-  eventoCompraId?: string; // 🔑 trazabilidad
+  eventoCompraId: string; // 🔑 trazabilidad (toda compra nace bajo un EventoCompra)
   proveedorId: string;
   proveedorNombre?: string;
   proveedorRuc?: string;
@@ -147,8 +147,6 @@ export interface ICompra {
 
   // Correlativo del sistema (se asigna al cerrar)
   correlativo?: string;
-
-  almacenDestinoId: string;
 
   fechaDocumento: string; // Fecha de emisión del documento (factura/boleta)
   fechaRegistro: string; // Fecha de registro en el sistema
@@ -322,7 +320,7 @@ export interface RecepcionMercaderia {
   id: string;
   type: "recepcion_mercaderia";
 
-  eventoCompraId?: string;
+  eventoCompraId: string;
   almacenDestinoId: string;
 
   fechaRecepcion: string;

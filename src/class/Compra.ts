@@ -1,39 +1,37 @@
-import { 
-  ICompra, 
-  EstadoCompraEnum, 
-  TipoDocumentoCompraEnum, 
-  EstadoPagoEnum, 
-  CompraItem, 
-  CompraEgresoRef
+import {
+  ICompra,
+  EstadoCompraEnum,
+  TipoDocumentoCompraEnum,
+  EstadoPagoEnum,
+  CompraItem,
+  CompraEgresoRef,
 } from "@/interfaces";
 
 /**
  * Clase Compra - Entidad de Dominio
- * 
+ *
  * Representa una compra finalizada e inmutable.
- * A diferencia de PurchaseOrder (que es un borrador/carrito),
- * esta clase representa el documento persistido en la base de datos.
+ * Esta clase representa el documento persistido en la base de datos.
  */
-
 
 export class Compra implements ICompra {
   public readonly id: string;
   public readonly type: "compra" = "compra";
 
+  public readonly eventoCompraId: string;
+
   public readonly proveedorId: string;
-  
+
   public readonly tipoDocumento: TipoDocumentoCompraEnum;
   public readonly serieDocumento?: string;
   public readonly numeroDocumento?: string;
   public readonly numeroDocumentoInterno?: string;
 
-  public readonly almacenDestinoId: string;
-
   public readonly fechaDocumento: string;
   public readonly fechaRegistro: string;
 
   public readonly items: CompraItem[];
-  
+
   public readonly subtotal: number;
   public readonly impuestos?: number;
   public readonly descuentos?: number;
@@ -43,7 +41,7 @@ export class Compra implements ICompra {
   public readonly tipoCambio?: number;
 
   public readonly total: number;
-  
+
   public readonly condicionPago?: "CONTADO" | "CREDITO";
   public readonly estadoPago: EstadoPagoEnum;
   public readonly fechaVencimientoPago?: string;
@@ -56,42 +54,44 @@ export class Compra implements ICompra {
   constructor(data: ICompra) {
     // Validaciones de integridad
     if (!data.id) throw new Error("El ID de la compra es requerido");
+    if (!data.eventoCompraId)
+      throw new Error("El eventoCompraId es requerido para crear una compra");
     if (!data.proveedorId) throw new Error("El proveedor es requerido");
-    if (!data.items || data.items.length === 0) throw new Error("La compra debe tener items");
-    
+    if (!data.items || data.items.length === 0)
+      throw new Error("La compra debe tener items");
+
     // Asignación de propiedades
     this.id = data.id;
-    
+    this.eventoCompraId = data.eventoCompraId;
+
     this.proveedorId = data.proveedorId;
-    
+
     this.tipoDocumento = data.tipoDocumento;
     this.serieDocumento = data.serieDocumento;
     this.numeroDocumento = data.numeroDocumento;
-    
-    this.almacenDestinoId = data.almacenDestinoId;
-    
+
     this.fechaDocumento = data.fechaDocumento;
     this.fechaRegistro = data.fechaRegistro;
-    
+
     // Copia defensiva de items para garantizar inmutabilidad
-    this.items = data.items.map(item => ({...item}));
-    
+    this.items = data.items.map((item) => ({ ...item }));
+
     this.subtotal = data.subtotal;
     this.impuestos = data.impuestos;
     this.descuentos = data.descuentos;
     this.gastosAdicionales = data.gastosAdicionales;
-    
+
     this.moneda = data.moneda;
     this.tipoCambio = data.tipoCambio;
-    
+
     this.total = data.total;
-    
+
     this.condicionPago = data.condicionPago;
     this.estadoPago = data.estadoPago;
     this.fechaVencimientoPago = data.fechaVencimientoPago;
-    
+
     this.estado = data.estado;
-    
+
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
   }
@@ -107,7 +107,10 @@ export class Compra implements ICompra {
    * Verifica si la compra está pendiente de pago
    */
   public get estaPendientePago(): boolean {
-    return this.estadoPago === EstadoPagoEnum.PENDIENTE || this.estadoPago === EstadoPagoEnum.PAGADO_PARCIAL;
+    return (
+      this.estadoPago === EstadoPagoEnum.PENDIENTE ||
+      this.estadoPago === EstadoPagoEnum.PAGADO_PARCIAL
+    );
   }
 
   /**
@@ -130,11 +133,11 @@ export class Compra implements ICompra {
   public toJSON(): ICompra {
     return {
       id: this.id,
+      eventoCompraId: this.eventoCompraId,
       proveedorId: this.proveedorId,
       tipoDocumento: this.tipoDocumento,
       serieDocumento: this.serieDocumento,
       numeroDocumento: this.numeroDocumento,
-      almacenDestinoId: this.almacenDestinoId,
       fechaDocumento: this.fechaDocumento,
       fechaRegistro: this.fechaRegistro,
       items: this.items,
@@ -150,7 +153,7 @@ export class Compra implements ICompra {
       fechaVencimientoPago: this.fechaVencimientoPago,
       estado: this.estado,
       createdAt: this.createdAt,
-      updatedAt: this.updatedAt
+      updatedAt: this.updatedAt,
     };
   }
 
@@ -161,8 +164,14 @@ export class Compra implements ICompra {
     // Asegurar que las fechas sean objetos Date si vienen como string
     const compraData: ICompra = {
       ...data,
-      createdAt: typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt,
-      updatedAt: typeof data.updatedAt === 'string' ? new Date(data.updatedAt) : data.updatedAt
+      createdAt:
+        typeof data.createdAt === "string"
+          ? new Date(data.createdAt)
+          : data.createdAt,
+      updatedAt:
+        typeof data.updatedAt === "string"
+          ? new Date(data.updatedAt)
+          : data.updatedAt,
     };
     return new Compra(compraData);
   }

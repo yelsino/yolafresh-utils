@@ -18,9 +18,11 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 // Exportaciones de class
 __exportStar(require("./Compra"), exports);
+__exportStar(require("./CompraGenerator"), exports);
+__exportStar(require("./EventoCompraBuilder"), exports);
 __exportStar(require("./PermisoValidator"), exports);
 __exportStar(require("./Producto"), exports);
-__exportStar(require("./PurchaseOrder"), exports);
+__exportStar(require("./RecepcionProcessor"), exports);
 __exportStar(require("./ShoppingCart"), exports);
 __exportStar(require("./Usuario"), exports);
 __exportStar(require("./Venta"), exports);

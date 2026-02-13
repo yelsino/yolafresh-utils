@@ -101,7 +101,7 @@ export interface CompraEgresoRef {
 }
 export interface ICompra {
     id: string;
-    eventoCompraId?: string;
+    eventoCompraId: string;
     proveedorId: string;
     proveedorNombre?: string;
     proveedorRuc?: string;
@@ -109,7 +109,6 @@ export interface ICompra {
     serieDocumento?: string;
     numeroDocumento?: string;
     correlativo?: string;
-    almacenDestinoId: string;
     fechaDocumento: string;
     fechaRegistro: string;
     items: CompraItem[];
@@ -235,7 +234,7 @@ export declare enum EstadoRecepcionMercaderiaEnum {
 export interface RecepcionMercaderia {
     id: string;
     type: "recepcion_mercaderia";
-    eventoCompraId?: string;
+    eventoCompraId: string;
     almacenDestinoId: string;
     fechaRecepcion: string;
     vehiculo?: string;
