@@ -119,6 +119,8 @@ export interface ProductoPrecio {
     vigenteHasta?: string;
     origen: "COMPRA" | "MANUAL" | "PROMOCION";
     activo: boolean;
+    compraId?: string;
+    compraItemId?: string;
     createdAt: Date;
 }
 export interface Categoria {

@@ -311,7 +311,6 @@ export interface TransferenciaItem {
 }
 
 export enum EstadoRecepcionMercaderiaEnum {
-  BORRADOR = "BORRADOR",
   CONFIRMADA = "CONFIRMADA",
   ANULADA = "ANULADA",
 }

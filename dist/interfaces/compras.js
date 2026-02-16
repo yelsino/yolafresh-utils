@@ -69,7 +69,6 @@ var EstadoTransferenciaEnum;
 })(EstadoTransferenciaEnum || (exports.EstadoTransferenciaEnum = EstadoTransferenciaEnum = {}));
 var EstadoRecepcionMercaderiaEnum;
 (function (EstadoRecepcionMercaderiaEnum) {
-    EstadoRecepcionMercaderiaEnum["BORRADOR"] = "BORRADOR";
     EstadoRecepcionMercaderiaEnum["CONFIRMADA"] = "CONFIRMADA";
     EstadoRecepcionMercaderiaEnum["ANULADA"] = "ANULADA";
 })(EstadoRecepcionMercaderiaEnum || (exports.EstadoRecepcionMercaderiaEnum = EstadoRecepcionMercaderiaEnum = {}));

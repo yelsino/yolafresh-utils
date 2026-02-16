@@ -1,4 +1,3 @@
-
 export type ImageSizes = {
   base: string;
   sizes: {
@@ -71,24 +70,22 @@ export enum UnidadMedidaAbreviadoEnum {
 }
 
 export enum TipoVentaEnum {
-  Unidad = "unidad",   // se vende como 1 unidad física
-  Peso = "peso",       // se vende por kg/g/lb/etc
+  Unidad = "unidad", // se vende como 1 unidad física
+  Peso = "peso", // se vende por kg/g/lb/etc
   Volumen = "volumen", // se vende por l/ml/etc
 }
-
-
 
 export interface IProducto {
   // Identificación
   id: string;
-  sku?: string;                     // Código interno
-  codigosAlternos?: string[];       // Códigos del proveedor
+  sku?: string; // Código interno
+  codigosAlternos?: string[]; // Códigos del proveedor
   codigoBarra?: string;
 
   // Relación con producto primario
-  idPrimario: string;               // "" si es primario
-  esPrimario: boolean;              // true = stock independiente
-  factorConversion?: number;        // Solo si es secundario
+  idPrimario: string; // "" si es primario
+  esPrimario: boolean; // true = stock independiente
+  factorConversion?: number; // Solo si es secundario
 
   // Descuentos
   mayoreo: boolean;
@@ -101,7 +98,7 @@ export interface IProducto {
   descripcion: string;
   consideraciones: string;
   caracteristicas: string;
-  status: boolean;                  // Activo/inactivo
+  status: boolean; // Activo/inactivo
   url: ImageSizes;
   marca?: string;
   keywords?: string[];
@@ -113,11 +110,11 @@ export interface IProducto {
   subcategorieId?: string;
 
   // Logística
-  contenidoNeto: number;            // Ej: 200
-  unidadContenido: UnidadMedidaEnum;// Ej: g, ml, kg
-  unidadMedida: UnidadMedidaEnum;   // Unidad de venta
-  tipoVenta: TipoVentaEnum;         // unidad, peso, volumen, etc
-  tipoEmpaque: TipoEmpaqueEnum;     // lata, caja, frasco, bolsa…
+  contenidoNeto: number; // Ej: 200
+  unidadContenido: UnidadMedidaEnum; // Ej: g, ml, kg
+  unidadMedida: UnidadMedidaEnum; // Unidad de venta
+  tipoVenta: TipoVentaEnum; // unidad, peso, volumen, etc
+  tipoEmpaque: TipoEmpaqueEnum; // lata, caja, frasco, bolsa…
   fraccionable: boolean;
 
   // Stock (solo primarios)
@@ -136,13 +133,12 @@ export interface IProducto {
   updatedAt: Date;
 }
 
-
 export interface ProductoPrecio {
   id: string;
 
   productoId: string;
 
-  unidadVenta: UnidadMedidaEnum;   // kg, unidad, litro
+  unidadVenta: UnidadMedidaEnum; // kg, unidad, litro
   precioVenta: number;
 
   precioMinimo?: number;
@@ -154,6 +150,10 @@ export interface ProductoPrecio {
   origen: "COMPRA" | "MANUAL" | "PROMOCION";
 
   activo: boolean;
+
+  // 🔥 Relación real
+  compraId?: string;
+  compraItemId?: string;
 
   createdAt: Date;
 }
