@@ -256,6 +256,7 @@ export interface StockProductoAlmacen {
   stockDisponible: number;
 
   costoPromedioActual: number; // Costo promedio ponderado actual
+  valorInventario: number; // stock_actual * costo_promedio_actual
 
   minimo?: number;
   maximo?: number;

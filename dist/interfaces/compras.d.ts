@@ -185,6 +185,7 @@ export interface StockProductoAlmacen {
     stockReservado?: number;
     stockDisponible: number;
     costoPromedioActual: number;
+    valorInventario: number;
     minimo?: number;
     maximo?: number;
     puntoReorden?: number;
