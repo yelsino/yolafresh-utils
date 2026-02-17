@@ -228,6 +228,7 @@ export interface TransferenciaItem {
     cantidad: number;
 }
 export declare enum EstadoRecepcionMercaderiaEnum {
+    BORRADOR = "BORRADOR",
     CONFIRMADA = "CONFIRMADA",
     ANULADA = "ANULADA"
 }
