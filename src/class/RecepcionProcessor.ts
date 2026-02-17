@@ -38,9 +38,9 @@ export class RecepcionProcessor {
       throw new Error("La recepción no pertenece al evento");
     }
 
-    if (data.recepcion.estado !== EstadoRecepcionMercaderiaEnum.CONFIRMADA) {
-      throw new Error("La recepción debe estar CONFIRMADA para procesar");
-    }
+    // if (data.recepcion.estado !== EstadoRecepcionMercaderiaEnum.CONFIRMADA) {
+    //   throw new Error("La recepción debe estar CONFIRMADA para procesar");
+    // }
 
     if (!data.recepcion.items.length) {
       throw new Error("La recepción debe contener al menos un item");
