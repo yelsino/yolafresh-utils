@@ -339,6 +339,7 @@ export interface RecepcionMercaderia {
   updatedAt: Date;
 }
 
+//
 export interface RecepcionMercaderiaItem {
   productoId: string;
   cantidadRecibida: number;
