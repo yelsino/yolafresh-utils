@@ -57,57 +57,6 @@ export enum OrigenDocumentoEnum {
   INVENTARIO_FISICO = "INVENTARIO_FISICO",
 }
 
-export interface MovimientoInventario {
-  _id: string;
-  type: "movimiento_inventario";
-
-  numeroMovimiento?: string; // Correlativo interno
-
-  tipo: TipoMovimientoInventarioEnum;
-  estado: EstadoMovimientoEnum;
-
-  origenDocumento: OrigenDocumentoEnum;
-
-  documentoReferenciaId?: string;
-  serieDocumentoReferencia?: string;
-
-  motivo?: string; // "Rotura", "Donación", "Ajuste manual", etc.
-
-  almacenOrigenId?: string;
-  almacenDestinoId?: string;
-
-  items: MovimientoInventarioItem[];
-
-  esAutomatico?: boolean;
-
-  notas?: string;
-
-  usuarioId: string;
-  usuarioNombre?: string;
-
-  fechaMovimiento: string; // Fecha en que ocurre el movimiento
-
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface MovimientoInventarioItem {
-  productoId: string;
-
-  cantidad: number;
-
-  costoUnitario?: number;
-  costoPromedioCalculado?: number;
-
-  costoPromedioAnterior?: number;
-  costoPromedioNuevo?: number;
-
-  lote?: string;
-  fechaVencimiento?: string;
-
-  ubicacionInterna?: string; // pasillo, rack, estante
-}
-
 export enum EstadoCompraEnum {
   BORRADOR = "BORRADOR",
   CONFIRMADO = "CONFIRMADO",
@@ -317,6 +266,7 @@ export enum EstadoRecepcionMercaderiaEnum {
   ANULADA = "ANULADA",
 }
 
+// documento de recepcion de mercaderia
 export interface RecepcionMercaderia {
   id: string;
   type: "recepcion_mercaderia";
@@ -361,4 +311,57 @@ export interface AsignacionRecepcionCompra {
   productoId: string;
   cantidadAsignada: number;
   createdAt: Date;
+}
+
+
+
+export interface MovimientoInventario {
+  _id: string;
+  type: "movimiento_inventario";
+
+  numeroMovimiento?: string; // Correlativo interno
+
+  tipo: TipoMovimientoInventarioEnum;
+  estado: EstadoMovimientoEnum;
+
+  origenDocumento: OrigenDocumentoEnum;
+
+  documentoReferenciaId?: string;
+  serieDocumentoReferencia?: string;
+
+  motivo?: string; // "Rotura", "Donación", "Ajuste manual", etc.
+
+  almacenOrigenId?: string;
+  almacenDestinoId?: string;
+
+  items: MovimientoInventarioItem[];
+
+  esAutomatico?: boolean;
+
+  notas?: string;
+
+  usuarioId: string;
+  usuarioNombre?: string;
+
+  fechaMovimiento: string; // Fecha en que ocurre el movimiento
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MovimientoInventarioItem {
+  productoId: string;
+
+  cantidad: number;
+
+  costoUnitario?: number;
+  costoPromedioCalculado?: number;
+
+  costoPromedioAnterior?: number;
+  costoPromedioNuevo?: number;
+
+  lote?: string;
+  fechaVencimiento?: string;
+
+  ubicacionInterna?: string; // pasillo, rack, estante
 }

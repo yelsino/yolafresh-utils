@@ -3,7 +3,7 @@
  * Reutilizable para cualquier sistema POS
  * Simplificada: usa solo CarItem con congelación automática al guardar
  */
-import { IProducto, MetodoPago, TipoVentaEnum } from "../interfaces";
+import { IProducto, MetodoPago } from "../interfaces";
 import { Cliente } from "../interfaces/persons";
 import { IUsuario } from "../interfaces/usuario";
 import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "../utils/fiscales";
@@ -36,8 +36,11 @@ export interface CarItem {
      */
     product: IProducto;
     /**
-     * Cantidad del producto
-     * @description Para productos pesables, representa el peso
+     * Cantidad en la unidad base del producto
+     * - Si el producto es por unidad → 3
+     * - Si es por kg → 1.75
+     * - Si es por litro → 0.5
+     * @description Representa la cantidad física real (unidades o peso)
      * @minimum 0.001
      */
     quantity: number;
@@ -49,26 +52,15 @@ export interface CarItem {
     precioUnitario?: number;
     /**
      * Indica si el monto fue modificado manualmente
-     * @description Cuando es true, el montoTotal no se recalcula automáticamente
+     * @description Cuando es true, el precio unitario se ajusta para coincidir con el total
      */
     montoModificado?: boolean;
     /**
      * Monto total a pagar por este ítem
-     * @description Se calcula automáticamente o se puede establecer manualmente
+     * @description Siempre debe ser coherente con quantity y precioUnitario
      * @minimum 0
      */
     montoTotal?: number | null;
-    /**
-     * Tipo de venta del producto (opcional)
-     * @description Determina cómo se vende: por unidad, kilogramo, litro, etc.
-     */
-    tipoVenta?: TipoVentaEnum;
-    /**
-     * Peso para productos pesables (opcional)
-     * @description Solo se usa cuando el producto se vende por peso
-     * @minimum 0
-     */
-    peso?: number;
     /**
      * Descuento aplicado al ítem (opcional)
      * @description Monto a descontar del total del ítem
@@ -88,6 +80,12 @@ export interface OpcionesAgregarProducto {
     replaceCompletely?: boolean;
     itemId?: string;
     fromSelection?: boolean;
+    /**
+     * Indica si se debe agrupar con items existentes (sumar cantidad)
+     * Default: true
+     * Si es false, crea un nuevo item separado aunque sea el mismo producto
+     */
+    agrupar?: boolean;
 }
 export declare enum ProcedenciaVenta {
     Tienda = "Tienda",
@@ -291,8 +289,12 @@ export declare class ShoppingCart implements IShoppingCart {
      */
     agregarProducto(carItem: CarItem, opciones?: OpcionesAgregarProducto): void;
     /**
+     * Helper para agregar un producto como una línea separada.
+     * Útil cuando el cliente quiere el mismo producto en bolsas distintas.
+     */
+    agregarProductoSeparado(carItem: CarItem): void;
+    /**
      * Redondear monto monetario a 2 decimales con regla de 0.10 (Perú)
-     * @example 18.45 -> 18.50, 18.42 -> 18.40
      */
     private redondearMoneda;
     /**
@@ -315,6 +317,8 @@ export declare class ShoppingCart implements IShoppingCart {
      * Decrementar cantidad de un producto
      */
     decrementarCantidad(id: string, stepKg?: number): boolean;
+    private buscarIndexPorId;
+    private actualizarCantidadItem;
     /**
      * Eliminar un ítem por ID
      */
@@ -323,10 +327,6 @@ export declare class ShoppingCart implements IShoppingCart {
      * Aplicar descuento a un ítem específico
      */
     aplicarDescuento(itemId: string, descuento: number): boolean;
-    /**
-     * Recalcular monto de un ítem con nueva cantidad
-     */
-    private recalcularMontoItem;
     /**
      * Limpiar toda la venta
      */
@@ -498,6 +498,17 @@ export declare class ShoppingCart implements IShoppingCart {
      * Obtener todos los items como CarItems (ya son CarItems)
      */
     getItemsAsCarItems(): CarItem[];
+    /**
+     * Calcula la cantidad necesaria para llegar a un monto específico
+     * @example "Dame 3 soles de papa" -> 3.00 / 1.50 = 2.00 kg
+     */
+    static calcularCantidadDesdeMonto(producto: IProducto, montoObjetivo: number): number;
+    /**
+     * Calcula el contenido total real para procesos de inventario o despacho
+     * @example quantity=0.5 (sacos), contenidoNeto=60 (kg) -> Retorna 30.00 (kg)
+     * @example quantity=2 (unidades), contenidoNeto=1 (unidad) -> Retorna 2.00 (unidades)
+     */
+    static calcularContenidoTotal(item: CarItem): number;
     /**
      * Limpia el objeto producto para guardar solo lo necesario
      * @description Elimina propiedades no serializables o innecesarias para reducir tamaño

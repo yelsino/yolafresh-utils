@@ -75,8 +75,7 @@ class ShoppingCart {
      * Agregar o actualizar un CarItem en la venta
      */
     agregarProducto(carItem, opciones = {}) {
-        var _a;
-        const { replaceCompletely = false, itemId, fromSelection = false } = opciones;
+        const { replaceCompletely = false, itemId, fromSelection = false, agrupar = true } = opciones;
         // Generar ID único para el nuevo ítem si no existe
         const nuevoItemId = carItem.id || `${carItem.product.id}-${Date.now()}`;
         // Buscar ítem existente SOLO por itemId para evitar colisiones
@@ -84,26 +83,28 @@ class ShoppingCart {
         if (replaceCompletely && itemId) {
             itemExistente = this._items.find(item => item.id === itemId);
         }
-        else if (!replaceCompletely) {
-            // Si no es reemplazo completo, buscar si ya existe el mismo producto
+        else if (!replaceCompletely && agrupar) {
+            // Si no es reemplazo completo Y se permite agrupar, buscar si ya existe el mismo producto
             // Se usa el ID del producto para agrupar
             itemExistente = this._items.find(item => item.product.id === carItem.product.id);
         }
-        // Determinar si es pesable basado directamente en el tipo de venta del producto
-        // Si carItem tiene tipoVenta definido, se usa ese, sino el del producto
-        const tipoVenta = (_a = carItem.tipoVenta) !== null && _a !== void 0 ? _a : carItem.product.tipoVenta;
-        const esPesable = tipoVenta === interfaces_1.TipoVentaEnum.Peso || tipoVenta === interfaces_1.TipoVentaEnum.Volumen;
         // Procesar según el caso
         if (itemExistente) {
-            this.actualizarItemExistente(itemExistente, carItem, esPesable);
+            this.actualizarItemExistente(itemExistente, carItem);
         }
         else {
-            this.agregarNuevoItem(carItem, nuevoItemId, esPesable);
+            this.agregarNuevoItem(carItem, nuevoItemId);
         }
     }
     /**
+     * Helper para agregar un producto como una línea separada.
+     * Útil cuando el cliente quiere el mismo producto en bolsas distintas.
+     */
+    agregarProductoSeparado(carItem) {
+        this.agregarProducto(carItem, { agrupar: false });
+    }
+    /**
      * Redondear monto monetario a 2 decimales con regla de 0.10 (Perú)
-     * @example 18.45 -> 18.50, 18.42 -> 18.40
      */
     redondearMoneda(monto) {
         // Primero redondear a 2 decimales estándar para evitar errores de punto flotante
@@ -128,35 +129,34 @@ class ShoppingCart {
     /**
      * Actualizar un ítem existente
      */
-    actualizarItemExistente(itemExistente, carItem, esPesable) {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+    actualizarItemExistente(itemExistente, carItem) {
+        var _a, _b, _c, _d;
         const unit = Number((_a = carItem.precioUnitario) !== null && _a !== void 0 ? _a : carItem.product.precioVenta) || 0;
+        // Calcular nueva cantidad base
+        const nuevaCantidad = Number((_b = carItem.quantity) !== null && _b !== void 0 ? _b : 0) + Number((_c = itemExistente.quantity) !== null && _c !== void 0 ? _c : 0);
         const prepared = {
             ...itemExistente,
             id: itemExistente.id,
             // Actualizar info del producto si viene nueva, pero limpia
             product: this.cleanProduct(carItem.product || itemExistente.product),
-            // Cálculo de cantidad
-            quantity: esPesable
-                ? (typeof carItem.quantity === 'number' ? carItem.quantity + (itemExistente.quantity || 0) : ((_b = itemExistente.quantity) !== null && _b !== void 0 ? _b : 1))
-                : Number((_c = carItem.quantity) !== null && _c !== void 0 ? _c : 0) + Number((_d = itemExistente.quantity) !== null && _d !== void 0 ? _d : 0),
+            quantity: nuevaCantidad,
             precioUnitario: unit,
             montoModificado: !!carItem.montoModificado,
-            // El tipo de venta se hereda del producto o del item nuevo
-            tipoVenta: (_e = carItem.tipoVenta) !== null && _e !== void 0 ? _e : carItem.product.tipoVenta,
-            // Peso solo para pesables: se suma si existe
-            peso: esPesable ? Number((_f = carItem.peso) !== null && _f !== void 0 ? _f : 0) + Number((_g = itemExistente.peso) !== null && _g !== void 0 ? _g : 0) : undefined,
-            descuento: (_h = carItem.descuento) !== null && _h !== void 0 ? _h : itemExistente.descuento
+            descuento: (_d = carItem.descuento) !== null && _d !== void 0 ? _d : itemExistente.descuento
         };
-        // Calcular total respetando overrides y asegurando redondeo
-        const montoCalculado = (prepared.montoModificado && carItem.montoTotal != null)
-            ? carItem.montoTotal
-            : this.calcularTotalLinea(prepared);
-        prepared.montoTotal = this.redondearMoneda(montoCalculado);
-        // Actualizar el ítem pasado por referencia para que el llamador tenga los datos actualizados
-        if (carItem !== prepared) {
-            carItem.montoTotal = prepared.montoTotal;
-            // Opcional: actualizar otros campos calculados si es necesario para el frontend
+        // Calcular total y consistencia
+        if (prepared.montoModificado && carItem.montoTotal != null) {
+            // Si el monto fue forzado manualmente
+            prepared.montoTotal = this.redondearMoneda(carItem.montoTotal);
+            // Recalcular unitario implícito: Unitario = Total / Cantidad
+            if (prepared.quantity > 0) {
+                prepared.precioUnitario = prepared.montoTotal / prepared.quantity;
+            }
+        }
+        else {
+            // Cálculo estándar: Total = Unitario * Cantidad
+            const montoCalculado = this.calcularTotalLinea(prepared);
+            prepared.montoTotal = this.redondearMoneda(montoCalculado);
         }
         const index = this._items.findIndex(item => item.id === itemExistente.id);
         if (index !== -1) {
@@ -166,28 +166,31 @@ class ShoppingCart {
     /**
      * Agregar nuevo ítem
      */
-    agregarNuevoItem(carItem, itemId, esPesable) {
-        var _a, _b, _c, _d, _e;
+    agregarNuevoItem(carItem, itemId) {
+        var _a, _b;
         const unit = Number((_a = carItem.precioUnitario) !== null && _a !== void 0 ? _a : carItem.product.precioVenta) || 0;
         const prepared = {
             id: itemId,
             product: this.cleanProduct(carItem.product), // Limpiar producto al agregar
-            quantity: esPesable
-                ? (typeof carItem.quantity === 'number' ? carItem.quantity : 1)
-                : Number((_b = carItem.quantity) !== null && _b !== void 0 ? _b : 1),
+            quantity: Number((_b = carItem.quantity) !== null && _b !== void 0 ? _b : 1),
             precioUnitario: unit,
             montoModificado: !!carItem.montoModificado,
-            tipoVenta: (_c = carItem.tipoVenta) !== null && _c !== void 0 ? _c : carItem.product.tipoVenta,
-            peso: esPesable ? Number((_e = (_d = carItem.peso) !== null && _d !== void 0 ? _d : carItem.quantity) !== null && _e !== void 0 ? _e : 0) : undefined,
             descuento: carItem.descuento
         };
-        const montoCalculado = (prepared.montoModificado && carItem.montoTotal != null)
-            ? carItem.montoTotal
-            : this.calcularTotalLinea(prepared);
-        prepared.montoTotal = this.redondearMoneda(montoCalculado);
-        // Actualizar el ítem pasado por referencia para que el llamador tenga los datos actualizados
+        if (prepared.montoModificado && carItem.montoTotal != null) {
+            prepared.montoTotal = this.redondearMoneda(carItem.montoTotal);
+            if (prepared.quantity > 0) {
+                prepared.precioUnitario = prepared.montoTotal / prepared.quantity;
+            }
+        }
+        else {
+            const montoCalculado = this.calcularTotalLinea(prepared);
+            prepared.montoTotal = this.redondearMoneda(montoCalculado);
+        }
+        // Actualizar el ítem pasado por referencia
         if (carItem !== prepared) {
             carItem.montoTotal = prepared.montoTotal;
+            carItem.precioUnitario = prepared.precioUnitario;
         }
         this._items.push(prepared);
     }
@@ -195,18 +198,15 @@ class ShoppingCart {
      * Calcular monto total de un ítem
      */
     calcularTotalLinea(carItem) {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+        var _a, _b;
         // Respetar overrides manuales
         if (carItem.montoModificado && carItem.montoTotal != null) {
             return this.redondearMoneda(Number(carItem.montoTotal));
         }
-        const unit = Number((_a = carItem.precioUnitario) !== null && _a !== void 0 ? _a : ((_c = (_b = carItem.product) === null || _b === void 0 ? void 0 : _b.precioVenta) !== null && _c !== void 0 ? _c : 0)) || 0;
-        const tipoVenta = ((_d = carItem.tipoVenta) !== null && _d !== void 0 ? _d : (_e = carItem.product) === null || _e === void 0 ? void 0 : _e.tipoVenta);
-        const esPesable = tipoVenta === interfaces_1.TipoVentaEnum.Peso || tipoVenta === interfaces_1.TipoVentaEnum.Volumen;
-        const peso = esPesable ? Number((_g = (_f = carItem.peso) !== null && _f !== void 0 ? _f : carItem.quantity) !== null && _g !== void 0 ? _g : 0) : undefined;
-        const qty = esPesable ? 0 : Math.max(0, Number((_h = carItem.quantity) !== null && _h !== void 0 ? _h : 0));
-        const base = esPesable ? unit * (peso || 0) : unit * qty;
-        // Redondear también el cálculo base
+        const unit = (_a = carItem.precioUnitario) !== null && _a !== void 0 ? _a : carItem.product.precioVenta;
+        const qty = (_b = carItem.quantity) !== null && _b !== void 0 ? _b : 0;
+        // Cálculo directo: Precio * Cantidad (cantidad ya es kg o unidad)
+        const base = unit * qty;
         return this.redondearMoneda(base);
     }
     // **MÉTODOS DE MANIPULACIÓN DE ITEMS**
@@ -214,70 +214,87 @@ class ShoppingCart {
      * Incrementar cantidad de un producto
      */
     incrementarCantidad(id, stepKg = 0.1) {
-        var _a, _b, _c, _d;
-        // Buscar primero por itemId y luego por productId para compatibilidad
-        let index = this._items.findIndex(item => item.id === id);
-        if (index === -1) {
-            index = this._items.findIndex(item => item.product.id === id);
-        }
+        var _a, _b;
+        const index = this.buscarIndexPorId(id);
         if (index === -1)
             return false;
         const item = this._items[index];
-        const tipoVenta = (_a = item.tipoVenta) !== null && _a !== void 0 ? _a : item.product.tipoVenta;
-        const esPesable = tipoVenta === interfaces_1.TipoVentaEnum.Peso || tipoVenta === interfaces_1.TipoVentaEnum.Volumen;
-        const updated = { ...item };
+        const itemTipoVenta = item.product.tipoVenta; // Usar siempre la definición del producto
+        const esPesable = itemTipoVenta === interfaces_1.TipoVentaEnum.Peso || itemTipoVenta === interfaces_1.TipoVentaEnum.Volumen;
+        let nuevaCantidad = item.quantity;
         if (esPesable) {
-            const currentPeso = Number((_c = (_b = item.peso) !== null && _b !== void 0 ? _b : item.quantity) !== null && _c !== void 0 ? _c : 0);
-            const newPeso = currentPeso + stepKg;
-            updated.peso = newPeso;
+            // Si es pesable, sumar 0.1 (o stepKg)
+            nuevaCantidad = ((_a = item.quantity) !== null && _a !== void 0 ? _a : 0) + stepKg;
+            // Redondear a 3 decimales para evitar floating point issues (ej. 1.200000001)
+            nuevaCantidad = Math.round(nuevaCantidad * 1000) / 1000;
         }
         else {
-            const currentQty = Number((_d = item.quantity) !== null && _d !== void 0 ? _d : 0);
-            updated.quantity = currentQty + 1;
+            // Si es unidad, sumar 1
+            nuevaCantidad = ((_b = item.quantity) !== null && _b !== void 0 ? _b : 0) + 1;
         }
-        updated.montoTotal = item.montoModificado ? (item.montoTotal || 0) : this.calcularTotalLinea(updated);
-        this._items[index] = updated;
+        this.actualizarCantidadItem(index, nuevaCantidad);
         return true;
     }
     /**
      * Decrementar cantidad de un producto
      */
     decrementarCantidad(id, stepKg = 0.1) {
-        var _a, _b, _c, _d;
-        // Buscar primero por itemId y luego por productId para compatibilidad
+        var _a, _b;
+        const index = this.buscarIndexPorId(id);
+        if (index === -1)
+            return false;
+        const item = this._items[index];
+        const itemTipoVenta = item.product.tipoVenta;
+        const esPesable = itemTipoVenta === interfaces_1.TipoVentaEnum.Peso || itemTipoVenta === interfaces_1.TipoVentaEnum.Volumen;
+        let nuevaCantidad = item.quantity;
+        let debeEliminar = false;
+        if (esPesable) {
+            nuevaCantidad = ((_a = item.quantity) !== null && _a !== void 0 ? _a : 0) - stepKg;
+            nuevaCantidad = Math.round(nuevaCantidad * 1000) / 1000;
+            if (nuevaCantidad <= 0.001)
+                debeEliminar = true;
+        }
+        else {
+            nuevaCantidad = ((_b = item.quantity) !== null && _b !== void 0 ? _b : 0) - 1;
+            if (nuevaCantidad < 1)
+                debeEliminar = true;
+        }
+        if (debeEliminar) {
+            this._items.splice(index, 1);
+            return true;
+        }
+        this.actualizarCantidadItem(index, nuevaCantidad);
+        return true;
+    }
+    // Helper privado para buscar index (dry)
+    buscarIndexPorId(id) {
         let index = this._items.findIndex(item => item.id === id);
         if (index === -1) {
             index = this._items.findIndex(item => item.product.id === id);
         }
-        if (index === -1)
-            return false;
+        return index;
+    }
+    // Helper privado para actualizar cantidad y recalcular
+    actualizarCantidadItem(index, nuevaCantidad) {
         const item = this._items[index];
-        const tipoVenta = (_a = item.tipoVenta) !== null && _a !== void 0 ? _a : item.product.tipoVenta;
-        const esPesable = tipoVenta === interfaces_1.TipoVentaEnum.Peso || tipoVenta === interfaces_1.TipoVentaEnum.Volumen;
-        if (esPesable) {
-            const currentPeso = Number((_c = (_b = item.peso) !== null && _b !== void 0 ? _b : item.quantity) !== null && _c !== void 0 ? _c : 0);
-            const newPeso = currentPeso - stepKg;
-            if (newPeso <= 0) {
-                this._items.splice(index, 1);
-                return true;
-            }
-            const updated = { ...item, peso: newPeso };
-            updated.montoTotal = item.montoModificado ? (item.montoTotal || 0) : this.calcularTotalLinea(updated);
-            this._items[index] = updated;
-            return true;
+        const updated = { ...item, quantity: nuevaCantidad };
+        // Si tiene monto modificado, NO recalculamos el total, pero ajustamos el unitario para mantener coherencia
+        // OJO: Decisión de diseño: ¿Si cambio cantidad manualmente, debo mantener el TOTAL fijo o el UNITARIO fijo?
+        // Regla estándar: El Unitario es la verdad si no está modificado. 
+        // Pero si montoModificado es true...
+        if (updated.montoModificado) {
+            // Opción A: Mantener TOTAL fijo => unitario cambia (Raro si aumento cantidad)
+            // Opción B: Mantener UNITARIO (que fue derivado) fijo => total cambia.
+            // En lógica de POS, si subo cantidad de 1 coca a 2 cocas, espero pagar el doble.
+            // Así que usamos el precioUnitario actual (que puede ser custom) para recalcular el total.
+            updated.montoTotal = this.redondearMoneda((updated.precioUnitario || 0) * nuevaCantidad);
+            // Pero si quisiéramos mantener el total fijo y solo cambiar cantidad (ej: "te doy 2kg por el precio de 1kg")
+            // eso sería otra operación. Asumiremos consistencia unitaria por defecto al cambiar cantidades con +/-.
         }
         else {
-            const currentQty = Number((_d = item.quantity) !== null && _d !== void 0 ? _d : 0);
-            const newQty = currentQty - 1;
-            if (newQty <= 0) {
-                this._items.splice(index, 1);
-                return true;
-            }
-            const updated = { ...item, quantity: newQty };
-            updated.montoTotal = item.montoModificado ? (item.montoTotal || 0) : this.calcularTotalLinea(updated);
-            this._items[index] = updated;
-            return true;
+            updated.montoTotal = this.calcularTotalLinea(updated);
         }
+        this._items[index] = updated;
     }
     /**
      * Eliminar un ítem por ID
@@ -303,26 +320,6 @@ class ShoppingCart {
             descuento: Math.max(0, descuento)
         };
         return true;
-    }
-    /**
-     * Recalcular monto de un ítem con nueva cantidad
-     */
-    recalcularMontoItem(item, nuevaCantidad) {
-        if (item.montoModificado) {
-            return item.montoTotal || 0; // No recalcular si fue modificado manualmente
-        }
-        const precioUnitario = item.precioUnitario || item.product.precioVenta;
-        const tipoVenta = item.tipoVenta || item.product.tipoVenta;
-        const esPesable = tipoVenta === interfaces_1.TipoVentaEnum.Peso || tipoVenta === interfaces_1.TipoVentaEnum.Volumen;
-        let montoSinRedondear;
-        if (esPesable) {
-            const nuevoPeso = item.peso ? (item.peso / item.quantity) * nuevaCantidad : nuevaCantidad;
-            montoSinRedondear = precioUnitario * nuevoPeso;
-        }
-        else {
-            montoSinRedondear = precioUnitario * nuevaCantidad;
-        }
-        return this.redondearMoneda(montoSinRedondear);
     }
     /**
      * Limpiar toda la venta
@@ -700,10 +697,27 @@ class ShoppingCart {
         const createdAt = data.createdAt ? new Date(data.createdAt) : undefined;
         const carrito = new ShoppingCart(data.id, configuracionFiscal, data.nombre, createdAt);
         carrito.updatedAt = data.updatedAt ? new Date(data.updatedAt) : new Date();
-        // Ítems ya vienen como CarItems congelados; preservar tal cual
-        carrito._items = data.items || [];
+        // MIGRACIÓN ON-THE-FLY y Limpieza de Items
+        const itemsRaw = data.items || [];
+        carrito._items = itemsRaw.map((item) => {
+            // REGLA DE MIGRACIÓN: Si existe 'peso', pasarlo a 'quantity'
+            if (item.peso !== undefined && item.peso !== null && typeof item.peso === 'number' && item.peso > 0) {
+                // Solo si es un producto tipo peso según su definición original o inferida
+                // Pero ante la duda, si tiene peso explícito, es la cantidad real
+                item.quantity = item.peso;
+            }
+            // LIMPIEZA: Eliminar campos obsoletos del objeto en memoria
+            delete item.peso;
+            delete item.tipoVenta; // carItem ya no tiene tipoVenta
+            // Asegurar consistencia numérica básica
+            item.montoModificado = !!item.montoModificado;
+            item.precioUnitario = Number(item.precioUnitario) || 0;
+            item.quantity = Number(item.quantity) || 0;
+            item.montoTotal = Number(item.montoTotal) || 0;
+            return item; // Ya cumple la interfaz nueva
+        });
         carrito._notas = data.notas;
-        // Trazabilidad: aceptar objetos completos o fallback por ID
+        // Trazabilidad
         carrito._cliente = data.cliente;
         carrito._personal = data.personal;
         carrito._clienteColor = data.clienteColor;
@@ -720,6 +734,32 @@ class ShoppingCart {
      */
     getItemsAsCarItems() {
         return [...this._items];
+    }
+    // **MÉTODOS ESTÁTICOS DE CÁLCULO Y VISUADIZACIÓN**
+    /**
+     * Calcula la cantidad necesaria para llegar a un monto específico
+     * @example "Dame 3 soles de papa" -> 3.00 / 1.50 = 2.00 kg
+     */
+    static calcularCantidadDesdeMonto(producto, montoObjetivo) {
+        const precio = producto.precioVenta;
+        if (!precio || precio <= 0)
+            return 0;
+        // Cantidad = Monto / Precio
+        const cantidad = montoObjetivo / precio;
+        // Redondear a 3 decimales para evitar floating point issues
+        return Math.round(cantidad * 1000) / 1000;
+    }
+    /**
+     * Calcula el contenido total real para procesos de inventario o despacho
+     * @example quantity=0.5 (sacos), contenidoNeto=60 (kg) -> Retorna 30.00 (kg)
+     * @example quantity=2 (unidades), contenidoNeto=1 (unidad) -> Retorna 2.00 (unidades)
+     */
+    static calcularContenidoTotal(item) {
+        const cantidad = item.quantity;
+        const contenidoNeto = item.product.contenidoNeto || 1;
+        const totalContenido = cantidad * contenidoNeto;
+        // Redondear a 3 decimales para consistencia numérica
+        return Math.round(totalContenido * 1000) / 1000;
     }
     // **MÉTODOS PRIVADOS DE UTILIDAD**
     /**

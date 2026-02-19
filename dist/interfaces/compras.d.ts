@@ -45,38 +45,6 @@ export declare enum OrigenDocumentoEnum {
     DEVOLUCION = "DEVOLUCION",
     INVENTARIO_FISICO = "INVENTARIO_FISICO"
 }
-export interface MovimientoInventario {
-    _id: string;
-    type: "movimiento_inventario";
-    numeroMovimiento?: string;
-    tipo: TipoMovimientoInventarioEnum;
-    estado: EstadoMovimientoEnum;
-    origenDocumento: OrigenDocumentoEnum;
-    documentoReferenciaId?: string;
-    serieDocumentoReferencia?: string;
-    motivo?: string;
-    almacenOrigenId?: string;
-    almacenDestinoId?: string;
-    items: MovimientoInventarioItem[];
-    esAutomatico?: boolean;
-    notas?: string;
-    usuarioId: string;
-    usuarioNombre?: string;
-    fechaMovimiento: string;
-    createdAt: Date;
-    updatedAt: Date;
-}
-export interface MovimientoInventarioItem {
-    productoId: string;
-    cantidad: number;
-    costoUnitario?: number;
-    costoPromedioCalculado?: number;
-    costoPromedioAnterior?: number;
-    costoPromedioNuevo?: number;
-    lote?: string;
-    fechaVencimiento?: string;
-    ubicacionInterna?: string;
-}
 export declare enum EstadoCompraEnum {
     BORRADOR = "BORRADOR",
     CONFIRMADO = "CONFIRMADO",
@@ -264,4 +232,36 @@ export interface AsignacionRecepcionCompra {
     productoId: string;
     cantidadAsignada: number;
     createdAt: Date;
+}
+export interface MovimientoInventario {
+    _id: string;
+    type: "movimiento_inventario";
+    numeroMovimiento?: string;
+    tipo: TipoMovimientoInventarioEnum;
+    estado: EstadoMovimientoEnum;
+    origenDocumento: OrigenDocumentoEnum;
+    documentoReferenciaId?: string;
+    serieDocumentoReferencia?: string;
+    motivo?: string;
+    almacenOrigenId?: string;
+    almacenDestinoId?: string;
+    items: MovimientoInventarioItem[];
+    esAutomatico?: boolean;
+    notas?: string;
+    usuarioId: string;
+    usuarioNombre?: string;
+    fechaMovimiento: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+export interface MovimientoInventarioItem {
+    productoId: string;
+    cantidad: number;
+    costoUnitario?: number;
+    costoPromedioCalculado?: number;
+    costoPromedioAnterior?: number;
+    costoPromedioNuevo?: number;
+    lote?: string;
+    fechaVencimiento?: string;
+    ubicacionInterna?: string;
 }
