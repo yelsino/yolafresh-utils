@@ -1,3 +1,5 @@
+import { ImageSizes } from "./producto";
+
 export interface ConfigEmpresa {
   id: string; // "config_empresa"
   type: "config_empresa";
@@ -8,7 +10,7 @@ export interface ConfigEmpresa {
     direccion?: string;
     telefono?: string;
     email?: string;
-    logoUrl?: string;
+    logoUrl?: ImageSizes;
   };
 
   fiscal: {
