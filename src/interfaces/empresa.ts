@@ -6,6 +6,8 @@ export interface ConfigEmpresa {
   empresa: {
     razonSocial: string;
     nombreComercial?: string;
+    slogan?: string;
+    descripcion?: string;
     ruc?: string;
     direccion?: string;
     telefono?: string;
