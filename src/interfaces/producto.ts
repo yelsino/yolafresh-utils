@@ -158,6 +158,66 @@ export interface ProductoPrecio {
   createdAt: Date;
 }
 
+export interface ProductoBase {
+  id: string;
+  type: "producto_base";
+  nombre: string;
+  descripcion: string;
+  caracteristicas?: string;
+  consideraciones?: string;
+
+  categoriaId: string;
+
+  url: ImageSizes;
+
+  keywords: string[];
+
+  aplicaIGV: boolean;
+  porcentajeIGV: number;
+
+  activo: boolean;
+
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Presentacion {
+  id: string;
+  type: "presentacion";
+  productoBaseId: string;
+  precioCompra: number;
+  precioVenta: number;
+
+  tipoVenta: TipoVentaEnum;
+
+  contenidoNeto: number;
+  unidadContenido: UnidadMedidaEnum;
+
+  unidadMedida: UnidadMedidaEnum;
+
+  fraccionable: boolean;
+  mayoreo: boolean;
+
+  cantidadParaDescuento: number;
+  descuentoXCantidad: number;
+
+  visibleEnPOS: boolean;
+  visibleOnline: boolean;
+
+  codigosAlternos: string[];
+
+  tipoEmpaque: TipoEmpaqueEnum;
+
+  url?: ImageSizes; 
+
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface PresentacionesProducto extends ProductoBase {
+  presentaciones: Presentacion[];
+}
+
 export interface Categoria {
   id: string;
   nombre: string;
