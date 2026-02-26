@@ -3,9 +3,10 @@
 
 // Exportaciones de interfaces
 export * from './Device';
+export * from './Inventario';
 export * from './caja';
 export * from './compras';
-export * from './Inventario';
+export * from './documentos';
 export * from './empresa';
 export * from './entidades';
 export * from './evidencias';

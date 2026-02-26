@@ -5,11 +5,11 @@ import {
   EstadoPagoEnum,
   EventoCompra,
   TipoDocumentoCompraEnum
-} from "@/interfaces";
-import { generarUlid } from "@/utils";
+} from "./compras";
+import { generarUlid } from "@/domain/shared/utils/dates";
 import { Compra } from "./Compra";
 
-export class CompraGenerator {
+export class GeneradorCompra {
   private static generarId(prefijo: string): string {
     return generarUlid(prefijo);
   }

@@ -40,20 +40,21 @@
       "types": "./dist/index.d.ts"
     },
     "./interfaces": {
-      "import": "./dist/interfaces/index.js",
-      "require": "./dist/interfaces/index.js",
-      "types": "./dist/interfaces/index.d.ts"
+      "import": "./dist/domain/shared/interfaces/index.js",
+      "require": "./dist/domain/shared/interfaces/index.js",
+      "types": "./dist/domain/shared/interfaces/index.d.ts"
     },
     "./utils": {
-      "import": "./dist/utils/index.js",
-      "require": "./dist/utils/index.js",
-      "types": "./dist/utils/index.d.ts"
+      "import": "./dist/domain/shared/utils/index.js",
+      "require": "./dist/domain/shared/utils/index.js",
+      "types": "./dist/domain/shared/utils/index.d.ts"
     },
     "./class": {
-      "import": "./dist/class/index.js",
-      "require": "./dist/class/index.js",
-      "types": "./dist/class/index.d.ts"
+      "import": "./dist/domain/shared/base/index.js",
+      "require": "./dist/domain/shared/base/index.js",
+      "types": "./dist/domain/shared/base/index.d.ts"
     }
+
   },
   "files": [
     "dist"

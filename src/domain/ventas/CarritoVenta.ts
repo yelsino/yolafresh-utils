@@ -1,14 +1,17 @@
 /**
- * Entidad ShoppingCart - Encapsula toda la lógica de una venta en curso
+ * Entidad CarritoVenta - Encapsula toda la lógica de una venta en curso
  * Reutilizable para cualquier sistema POS
  * Simplificada: usa solo CarItem con congelación automática al guardar
  */
 
-import { MetodoPago, Presentacion, TipoVentaEnum } from "@/interfaces";
-import { Cliente } from "@/interfaces/persons";
-import { IUsuario } from "@/interfaces/usuario";
-import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "@/utils/fiscales";
-import { generarUlid } from "@/utils";
+import { MetodoPago } from "@/domain/shared/interfaces/finanzas";
+import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES, ConfiguracionFiscalFactory } from "@/domain/shared/utils/fiscales";
+import { generarUlid } from "@/domain/shared/utils/dates";
+import { Cliente } from "@/domain/shared/interfaces/persons";
+import { IUsuario } from "@/domain/shared/interfaces/usuario";
+import { Presentacion, TipoVentaEnum } from "@/domain/shared/interfaces/producto";
+
+
 
 /**
  * Representa un ítem individual en el carrito de compras
@@ -117,7 +120,7 @@ export enum ProcedenciaVenta {
  * 
  * @example
  * ```typescript
- * const carrito: IShoppingCart = {
+ * const carrito: ICarritoVenta = {
  *   id: 'cart-001',
  *   nombre: 'Venta Mostrador',
  *   items: [item1, item2],
@@ -131,7 +134,7 @@ export enum ProcedenciaVenta {
  * };
  * ```
  */
-export interface IShoppingCart {
+export interface ICarritoVenta {
   /** 
    * Identificador único del carrito
    * @description Se genera automáticamente al crear el carrito
@@ -292,11 +295,11 @@ export interface IShoppingCart {
   readonly personalId?: string;
 }
 /**
- * Clase ShoppingCart - Maneja toda la lógica de una venta en curso
+ * Clase CarritoVenta - Maneja toda la lógica de una venta en curso
  * Simplificada: trabaja solo con CarItem, congela al guardar
  */
 
-export class ShoppingCart implements IShoppingCart {
+export class CarritoVenta implements ICarritoVenta {
   public readonly id: string;
   public readonly createdAt: Date;
   public readonly nombre: string;
@@ -1057,7 +1060,7 @@ export class ShoppingCart implements IShoppingCart {
    */
   toJSON() {
     // Devolver la misma estructura del carrito, preservando datos tal cual
-    const carrito: IShoppingCart = {
+    const carrito: ICarritoVenta = {
       id: this.id,
       createdAt: this.createdAt, // mantener Date para estructura interna
       nombre: this.nombre,
@@ -1105,7 +1108,7 @@ export class ShoppingCart implements IShoppingCart {
   /**
    * Crear instancia desde JSON (para cargar desde base de datos)
    */
-  static fromJSON(data: any): ShoppingCart {
+  static fromJSON(data: any): CarritoVenta {
     // Preferir objeto de configuración fiscal completo; fallback a campos legacy
     const configuracionFiscal = data.configuracionFiscal ?? {
       tasaImpuesto: data.tasaImpuesto,
@@ -1116,7 +1119,7 @@ export class ShoppingCart implements IShoppingCart {
     // Restaurar fecha original si existe en los datos
     const createdAt = data.createdAt ? new Date(data.createdAt) : undefined;
 
-    const carrito = new ShoppingCart(data.id, configuracionFiscal, data.nombre, createdAt);
+    const carrito = new CarritoVenta(data.id, configuracionFiscal, data.nombre, createdAt);
     carrito.updatedAt = data.updatedAt ? new Date(data.updatedAt) : new Date();
 
     // MIGRACIÓN ON-THE-FLY y Limpieza de Items
@@ -1240,70 +1243,70 @@ export class ShoppingCart implements IShoppingCart {
   // **MÉTODOS FACTORY ESTÁTICOS**
 
   /**
-   * Crear ShoppingCart para Perú (IGV 18%)
+   * Crear CarritoVenta para Perú (IGV 18%)
    */
-  static paraPeru(id?: string, nombre?: string): ShoppingCart {
-    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.PERU, nombre);
+  static paraPeru(id?: string, nombre?: string): CarritoVenta {
+    return new CarritoVenta(id, CONFIGURACIONES_FISCALES.PERU, nombre);
   }
 
   /**
-   * Crear ShoppingCart para México (IVA 16%)
+   * Crear CarritoVenta para México (IVA 16%)
    */
-  static paraMexico(id?: string, nombre?: string): ShoppingCart {
-    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.MEXICO, nombre);
+  static paraMexico(id?: string, nombre?: string): CarritoVenta {
+    return new CarritoVenta(id, CONFIGURACIONES_FISCALES.MEXICO, nombre);
   }
 
   /**
-   * Crear ShoppingCart para Colombia (IVA 19%)
+   * Crear CarritoVenta para Colombia (IVA 19%)
    */
-  static paraColombia(id?: string, nombre?: string): ShoppingCart {
-    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.COLOMBIA, nombre);
+  static paraColombia(id?: string, nombre?: string): CarritoVenta {
+    return new CarritoVenta(id, CONFIGURACIONES_FISCALES.COLOMBIA, nombre);
   }
 
   /**
-   * Crear ShoppingCart para Argentina (IVA 21%)
+   * Crear CarritoVenta para Argentina (IVA 21%)
    */
-  static paraArgentina(id?: string, nombre?: string): ShoppingCart {
-    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.ARGENTINA, nombre);
+  static paraArgentina(id?: string, nombre?: string): CarritoVenta {
+    return new CarritoVenta(id, CONFIGURACIONES_FISCALES.ARGENTINA, nombre);
   }
 
   /**
-   * Crear ShoppingCart para España (IVA 21%)
+   * Crear CarritoVenta para España (IVA 21%)
    */
-  static paraEspana(id?: string, nombre?: string): ShoppingCart {
-    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.ESPANA, nombre);
+  static paraEspana(id?: string, nombre?: string): CarritoVenta {
+    return new CarritoVenta(id, CONFIGURACIONES_FISCALES.ESPANA, nombre);
   }
 
   /**
-   * Crear ShoppingCart sin impuestos
+   * Crear CarritoVenta sin impuestos
    */
-  static sinImpuestos(id?: string, nombre?: string): ShoppingCart {
-    return new ShoppingCart(id, CONFIGURACIONES_FISCALES.SIN_IMPUESTOS, nombre);
+  static sinImpuestos(id?: string, nombre?: string): CarritoVenta {
+    return new CarritoVenta(id, CONFIGURACIONES_FISCALES.SIN_IMPUESTOS, nombre);
   }
 
   /**
-   * Crear ShoppingCart con configuración personalizada
+   * Crear CarritoVenta con configuración personalizada
    */
-  static conConfiguracion(configuracion: ConfiguracionFiscal, id?: string, nombre?: string): ShoppingCart {
-    return new ShoppingCart(id, configuracion, nombre);
+  static conConfiguracion(configuracion: ConfiguracionFiscal, id?: string, nombre?: string): CarritoVenta {
+    return new CarritoVenta(id, configuracion, nombre);
   }
 
   /**
-   * Crear ShoppingCart para cualquier país disponible
+   * Crear CarritoVenta para cualquier país disponible
    */
-  static paraPais(pais: keyof typeof CONFIGURACIONES_FISCALES, id?: string, nombre?: string): ShoppingCart {
+  static paraPais(pais: keyof typeof CONFIGURACIONES_FISCALES, id?: string, nombre?: string): CarritoVenta {
     const config = CONFIGURACIONES_FISCALES[pais];
     if (typeof config === 'function') {
-      throw new Error(`Use ShoppingCart.personalizado() para configuraciones personalizadas`);
+      throw new Error(`Use CarritoVenta.personalizado() para configuraciones personalizadas`);
     }
-    return new ShoppingCart(id, config, nombre);
+    return new CarritoVenta(id, config, nombre);
   }
 
   /**
-   * Crear ShoppingCart con tasa personalizada
+   * Crear CarritoVenta con tasa personalizada
    */
-  static personalizado(tasaImpuesto: number, nombreImpuesto: string = 'Impuesto', id?: string, nombre?: string): ShoppingCart {
+  static personalizado(tasaImpuesto: number, nombreImpuesto: string = 'Impuesto', id?: string, nombre?: string): CarritoVenta {
     const config = CONFIGURACIONES_FISCALES.PERSONALIZADO(tasaImpuesto, nombreImpuesto);
-    return new ShoppingCart(id, config, nombre);
+    return new CarritoVenta(id, config, nombre);
   }
 }

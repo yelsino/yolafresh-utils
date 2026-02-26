@@ -5,12 +5,13 @@
  * para operaciones específicas del sistema de retail
  */
 
-import { Usuario } from "./Usuario";
+import { Usuario } from "./usuario";
+import { IUsuario } from "@/domain/shared/interfaces/usuario";
 import { 
   Permisos, 
   RolesPredefinidos, 
   Entidad 
-} from "@/interfaces/entidades";
+} from "@/domain/shared/interfaces/entidades";
 
 
 /**
@@ -52,6 +53,7 @@ export interface ResultadoValidacion {
   /** Sugerencias para obtener acceso */
   sugerencias?: string[];
 }
+
 
 /**
  * Regla de validación personalizada

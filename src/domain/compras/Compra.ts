@@ -1,6 +1,3 @@
-import { EstadoCompraEnum, EstadoPagoEnum, TipoDocumentoCompraEnum } from "@/interfaces";
-import { DateUtils } from "@/utils";
-import type { CompraEgresoRef, CompraItem, ICompra } from "@/interfaces";
 
 /**
  * Clase Compra - Entidad de Dominio
@@ -8,6 +5,10 @@ import type { CompraEgresoRef, CompraItem, ICompra } from "@/interfaces";
  * Representa una compra finalizada e inmutable.
  * Esta clase representa el documento persistido en la base de datos.
  */
+
+import { EstadoPagoEnum } from "../shared/utils";
+import { DateUtils } from "../shared/utils/dates";
+import { CompraEgresoRef, CompraItem, EstadoCompraEnum, ICompra, TipoDocumentoCompraEnum } from "./compras";
 
 export class Compra implements ICompra {
   public readonly id: string;

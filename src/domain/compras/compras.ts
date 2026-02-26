@@ -1,4 +1,6 @@
-import { UnixMillis } from "@/utils";
+import { UnixMillis } from "@/domain/shared/utils/dates";
+import { EstadoPagoEnum } from "@/domain/shared/utils/enums";
+export { EstadoPagoEnum };
 
 export enum EstadoCompraEnum {
   BORRADOR = "BORRADOR",
@@ -16,11 +18,7 @@ export enum TipoDocumentoCompraEnum {
   SIN_ASIGNAR = "SIN_ASIGNAR",
 }
 
-export enum EstadoPagoEnum {
-  PENDIENTE = "PENDIENTE",
-  PAGADO_PARCIAL = "PAGADO_PARCIAL",
-  PAGADO = "PAGADO",
-}
+
 
 export enum EstadoEventoCompraEnum {
   EN_REGISTRO = "EN_REGISTRO",

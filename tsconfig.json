@@ -13,8 +13,14 @@
     "baseUrl": "./src",
     "paths": {
       "@/*": ["./*"],
-      "@utils/*": ["./utils/*"],
-      "@interfaces/*": ["./interfaces/*"],
+      "@utils": ["./domain/shared/utils/index.ts"],
+      "@utils/*": ["./domain/shared/utils/*"],
+      "@interfaces": ["./domain/shared/interfaces/index.ts"],
+      "@interfaces/*": ["./domain/shared/interfaces/*"],
+      "@/utils": ["./domain/shared/utils/index.ts"],
+      "@/utils/*": ["./domain/shared/utils/*"],
+      "@/interfaces": ["./domain/shared/interfaces/index.ts"],
+      "@/interfaces/*": ["./domain/shared/interfaces/*"],
       "@store/*": ["./store/*"],
       "@data/*": ["./data/*"]
     }

@@ -1,12 +1,8 @@
-import {
-  CompraItem,
-  EventoCompra,
-  EventoCompraItem,
-  EstadoEventoCompraEnum,
-} from "@/interfaces";
-import { generarUlid } from "@/utils";
+import { generarUlid } from "@/domain/shared/utils/dates";
+import { EstadoEventoCompraEnum, EventoCompra, CompraItem, EventoCompraItem } from "./compras";
 
-export class EventoCompraBuilder {
+
+export class EventoCompraFactory {
   private static generarId(prefijo: string): string {
     return generarUlid(prefijo);
   }

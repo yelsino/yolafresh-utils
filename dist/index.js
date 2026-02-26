@@ -17,9 +17,10 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 // Exportaciones por categoría
-__exportStar(require("./interfaces"), exports);
-__exportStar(require("./utils"), exports);
-__exportStar(require("./class"), exports);
+__exportStar(require("./domain/shared/interfaces"), exports);
+__exportStar(require("./domain/shared/utils"), exports);
+__exportStar(require("./domain/shared/base"), exports);
+__exportStar(require("./domain/shared/value-objects"), exports);
 // También puedes exportar directamente los módulos más utilizados aquí si lo deseas
 // Por ejemplo:
 // export { Producto, UpdateProducto } from './interfaces/producto';

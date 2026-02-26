@@ -5,11 +5,13 @@ const path = require('path');
 
 // Directorios a escanear
 const directories = [
-  { path: '../src/utils', prefix: '' },
-  { path: '../src/interfaces', prefix: '' },
-  { path: '../src/class', prefix: '' },
-  // Puedes añadir más directorios aquí si es necesario
+  { path: '../src/domain/shared/utils', prefix: '' },
+  { path: '../src/domain/shared/interfaces', prefix: '' },
+  { path: '../src/domain/shared/base', prefix: '' },
+  { path: '../src/domain/shared/value-objects', prefix: '' },
 ];
+
+
 
 // Función para generar las exportaciones para una carpeta específica
 async function generateExportsForDirectory(dir: { path: string, prefix: string }) {
@@ -65,9 +67,12 @@ async function generateMainIndex() {
   exportStatements.push('');
   
   exportStatements.push('// Exportaciones por categoría');
-  exportStatements.push("export * from './interfaces';");
-  exportStatements.push("export * from './utils';");
-  exportStatements.push("export * from './class';");
+  exportStatements.push("export * from './domain/shared/interfaces';");
+  exportStatements.push("export * from './domain/shared/utils';");
+  exportStatements.push("export * from './domain/shared/base';");
+  exportStatements.push("export * from './domain/shared/value-objects';");
+
+
   exportStatements.push('');
   
   exportStatements.push('// También puedes exportar directamente los módulos más utilizados aquí si lo deseas');

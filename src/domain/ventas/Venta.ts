@@ -1,6 +1,8 @@
-import { OrderState } from "@/utils";
-import { CarItem, IShoppingCart, ProcedenciaVenta,  ShoppingCart } from "./ShoppingCart";
-import { MetodoPago } from "@/interfaces";
+import { CarItem, ICarritoVenta, ProcedenciaVenta, CarritoVenta } from "./CarritoVenta";
+import { AggregateRoot } from "@/domain/shared/base/AggregateRoot";
+import { VentaConfirmada } from "./events/VentaConfirmada";
+import { MetodoPago } from "@/domain/contabilidad/finanzas";
+import { OrderState } from "@/domain/shared/utils/enums";
 
 /**
  * Interfaz para datos inmutables de una venta
@@ -21,7 +23,7 @@ export interface IVenta {
   updatedAt?: Date;
   
   // === CARRITO COMPLETO (ÚNICA FUENTE) ===
-  detalleVenta: IShoppingCart; // ⭐ TODA la información aquí
+  detalleVenta: ICarritoVenta; // ⭐ TODA la información aquí
   
   // === CÁLCULOS FINANCIEROS ===
   costoEnvio?: number;
@@ -57,17 +59,16 @@ export interface IVenta {
  * - 🔍 Métodos para acceder a datos sin romper encapsulación
  * - 📊 Cálculos automáticos y validaciones
  */ 
-export class Venta implements IVenta {
+export class Venta extends AggregateRoot<string> implements IVenta {
   // === PROPIEDADES INMUTABLES ===
-  public readonly id: string;
   public readonly nombre: string;
   public readonly type: string = 'venta';
   
-  public readonly estado: OrderState;
+  public estado: OrderState;
   public readonly createdAt: Date;
   public readonly updatedAt: Date;
   
-  public readonly detalleVenta: IShoppingCart;
+  public readonly detalleVenta: ICarritoVenta;
   
   public readonly subtotal: number;
   public readonly impuesto: number;
@@ -88,6 +89,7 @@ export class Venta implements IVenta {
   public readonly esPedido?: boolean;
 
   constructor(data: IVenta) {
+    super(data.id);
     // Validaciones básicas
     if (!data.id || !data.nombre) {
       throw new Error('ID y nombre son requeridos para crear una venta');
@@ -102,7 +104,6 @@ export class Venta implements IVenta {
     }
 
     // Asignar propiedades (inmutables)
-    this.id = data.id;
     this.nombre = data.nombre;
     this.type = data.type || 'venta';
     this.estado = data.estado;
@@ -110,9 +111,9 @@ export class Venta implements IVenta {
     this.updatedAt = data.updatedAt ? new Date(data.updatedAt) : new Date();
     
     // ⭐ Congelar el carrito para inmutabilidad
-    // Crear instancia de ShoppingCart para usar sus métodos nativos
-    const shoppingCartInstance = ShoppingCart.fromJSON(data.detalleVenta);
-    this.detalleVenta = Object.freeze(shoppingCartInstance.toJSON());
+    // Crear instancia nativa para usar sus métodos
+    const carritoInstance = CarritoVenta.fromJSON(data.detalleVenta);
+    this.detalleVenta = Object.freeze(carritoInstance.toJSON());
     
     this.subtotal = data.subtotal;
     this.impuesto = data.impuesto;
@@ -275,6 +276,23 @@ export class Venta implements IVenta {
     return Array.from(productosMap.values());
   }
 
+  // === COMPORTAMIENTOS DE DOMINIO ===
+
+  /**
+   * Confirma la venta y dispara el evento de dominio correspondiente.
+   */
+  confirmar() {
+    if (this.items.length === 0) {
+      throw new Error("No se puede confirmar venta vacía");
+    }
+
+    this.estado = OrderState.DESPACHADO; // Simulando "CONFIRMADA"
+
+    this.addDomainEvent(
+      new VentaConfirmada(this.id, this.total)
+    );
+  }
+
   // === MÉTODOS DE SERIALIZACIÓN ===
 
 
@@ -311,10 +329,10 @@ export class Venta implements IVenta {
   // === MÉTODOS ESTÁTICOS ===
 
   /**
-   * Crear Venta desde IShoppingCart (para procesar pago)
+   * Crear Venta desde ICarritoVenta (para procesar pago)
    */
-  static fromShoppingCart(
-    carritoJSON: IShoppingCart,
+  static fromCarritoVenta(
+    carritoJSON: ICarritoVenta,
     id: string,
     options?: { nombre?: string; montoRedondeo?: number }
   ): Venta {
@@ -412,6 +430,35 @@ export class Venta implements IVenta {
       errores
     };
   }
+  /**
+   * Calcula el subtotal de un ítem
+   */
+  calcularSubtotalItem(item: ItemVenta): number {
+    const precioUnitario = Number(item.precioUnitario ?? item.product.precioVenta ?? 0);
+    const cantidad = item.quantity ?? 0;
+    return precioUnitario * cantidad;
+  }
+
+  /**
+   * Calcula el total de un ítem (subtotal - descuento)
+   */
+  calcularTotalItem(item: ItemVenta): number {
+    return this.calcularSubtotalItem(item) - (item.descuento || 0);
+  }
+
+  /**
+   * Calcula el subtotal de la venta dinámicamente
+   */
+  calcularSubtotal(): number {
+    return this.items.reduce((sum, item) => sum + this.calcularSubtotalItem(item as ItemVenta), 0);
+  }
+
+  /**
+   * Calcula el total de la venta dinámicamente
+   */
+  calcularTotal(): number {
+    return this.calcularSubtotal() + this.impuesto;
+  }
 }
 
 /**
@@ -441,43 +488,4 @@ export function getVentaItemsResumen(venta: IVenta): Array<{id: string, nombre: 
  */
 export interface ItemVenta extends CarItem {
   descuento?: number; // Descuento aplicado al ítem
-}
-
-/**
- * Clase utilitaria para cálculos de venta
- */
-export class VentaCalculator {
-  /**
-   * Calcula el subtotal de un ítem
-   */
-  static calcularSubtotalItem(item: ItemVenta): number {
-    const precioUnitario = Number(
-      item.precioUnitario ?? item.product.precioVenta ?? 0,
-    );
-    const cantidad = item.quantity ?? 0;
-    return precioUnitario * cantidad;
-  }
-
-  /**
-   * Calcula el total de un ítem (subtotal - descuento)
-   */
-  static calcularTotalItem(item: ItemVenta): number {
-    const subtotal = this.calcularSubtotalItem(item);
-    return subtotal - (item.descuento || 0);
-  }
-
-  /**
-   * Calcula el subtotal de una venta (suma de subtotales)
-   */
-  static calcularSubtotalVenta(items: ItemVenta[]): number {
-    return items.reduce((sum, item) => sum + this.calcularSubtotalItem(item), 0);
-  }
-
-  /**
-   * Calcula el total de una venta
-   */
-  static calcularTotalVenta(items: ItemVenta[], impuesto: number = 0): number {
-    const subtotal = this.calcularSubtotalVenta(items);
-    return subtotal + impuesto;
-  }
 }

@@ -1,20 +1,12 @@
-import {
-  Almacen,
-  EstadoMovimientoEnum,
-  KardexLinea,
-  MovimientoInventario,
-  MovimientoInventarioItem,
-  StockLote,
-  StockPresentacionAlmacen,
-  TipoMovimientoInventarioEnum,
-} from "@/interfaces";
+import { StockPresentacionAlmacen, KardexLinea, MovimientoInventario, Almacen, TipoMovimientoInventarioEnum, EstadoMovimientoEnum, MovimientoInventarioItem, StockLote } from "./Inventario";
+
 
 type ResultadoLinea = {
   stock: StockPresentacionAlmacen;
   kardex: KardexLinea;
 };
 
-export class MovimientoInventarioProcessor {
+export class MovimientoInventarioService {
   static aplicar(data: {
     movimiento: MovimientoInventario;
     stocksActuales: StockPresentacionAlmacen[];

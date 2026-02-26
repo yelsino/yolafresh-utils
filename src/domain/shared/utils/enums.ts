@@ -38,3 +38,15 @@ export enum MedioPagoDigitalEnum {
 export enum MedioPagoEfectivoEnum {
   EFECTIVO = 'EFECTIVO',
 }
+
+export enum MonedaEnum {
+  PEN = 'PEN',
+  USD = 'USD',
+}
+
+export enum EstadoPagoEnum {
+  PENDIENTE = 'PENDIENTE',
+  PAGADO_PARCIAL = 'PAGADO_PARCIAL',
+  PAGADO = 'PAGADO',
+  ANULADO = 'ANULADO',
+}
