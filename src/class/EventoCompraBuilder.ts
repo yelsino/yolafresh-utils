@@ -4,28 +4,29 @@ import {
   EventoCompraItem,
   EstadoEventoCompraEnum,
 } from "@/interfaces";
+import { generarUlid } from "@/utils";
 
 export class EventoCompraBuilder {
   private static generarId(prefijo: string): string {
-    return `${prefijo}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    return generarUlid(prefijo);
   }
 
   static crearEvento(data: {
     id?: string;
     responsableId: string;
-    responsableNombre?: string;
+    responsableNombreSnapshot?: string;
     origen: string;
     destino?: string;
     montoAsignado?: number;
     estado?: EstadoEventoCompraEnum;
-    createdAt?: Date;
-    updatedAt?: Date;
+    createdAt?: number;
+    updatedAt?: number;
   }): EventoCompra {
-    const ahora = new Date();
+    const ahora = Date.now();
     return {
       id: data.id ?? this.generarId("evt"),
       responsableId: data.responsableId,
-      responsableNombre: data.responsableNombre,
+      responsableNombreSnapshot: data.responsableNombreSnapshot,
       origen: data.origen,
       destino: data.destino,
       montoAsignado: data.montoAsignado,
@@ -38,12 +39,12 @@ export class EventoCompraBuilder {
   static actualizarEvento(data: {
     evento: EventoCompra;
     updates: Partial<Omit<EventoCompra, "id" | "createdAt">>;
-    updatedAt?: Date;
+    updatedAt?: number;
   }): EventoCompra {
     return {
       ...data.evento,
       ...data.updates,
-      updatedAt: data.updatedAt ?? new Date(),
+      updatedAt: data.updatedAt ?? Date.now(),
     };
   }
 
@@ -52,11 +53,10 @@ export class EventoCompraBuilder {
     items: CompraItem[];
     relaciones: EventoCompraItem[];
     item: CompraItem;
-    proveedorId: string;
     relacionId?: string;
-    now?: Date;
+    now?: number;
   }): { items: CompraItem[]; relaciones: EventoCompraItem[] } {
-    const ahora = data.now ?? new Date();
+    const ahora = data.now ?? Date.now();
     const itemIdRepetido = data.items.some((item) => item.id === data.item.id);
     const itemNuevo = itemIdRepetido
       ? { ...data.item, id: this.generarId("ci") }
@@ -64,8 +64,7 @@ export class EventoCompraBuilder {
     const relacion: EventoCompraItem = {
       id: data.relacionId ?? this.generarId("eci"),
       eventoCompraId: data.evento.id,
-      proveedorId: data.proveedorId,
-      compraItemId: itemNuevo.id,
+      compraId: itemNuevo.compraId,
       createdAt: ahora,
       updatedAt: ahora,
     };
@@ -92,18 +91,16 @@ export class EventoCompraBuilder {
 
   static actualizarProveedorItem(data: {
     relaciones: EventoCompraItem[];
-    compraItemId: string;
-    proveedorId: string;
-    updatedAt?: Date;
+    compraId: string;
+    updatedAt?: number;
   }): EventoCompraItem[] {
     let encontrado = false;
     const relaciones = data.relaciones.map((rel) => {
-      if (rel.compraItemId !== data.compraItemId) return rel;
+      if (rel.compraId !== data.compraId) return rel;
       encontrado = true;
       return {
         ...rel,
-        proveedorId: data.proveedorId,
-        updatedAt: data.updatedAt ?? new Date(),
+        updatedAt: data.updatedAt ?? Date.now(),
       };
     });
     if (!encontrado) throw new Error("Relación de proveedor no encontrada");
@@ -115,10 +112,11 @@ export class EventoCompraBuilder {
     relaciones: EventoCompraItem[];
     itemId: string;
   }): { items: CompraItem[]; relaciones: EventoCompraItem[] } {
-    const items = data.items.filter((item) => item.id !== data.itemId);
-    const relaciones = data.relaciones.filter(
-      (rel) => rel.compraItemId !== data.itemId,
-    );
+    const item = data.items.find((it) => it.id === data.itemId);
+    const items = data.items.filter((it) => it.id !== data.itemId);
+    const relaciones = item
+      ? data.relaciones.filter((rel) => rel.compraId !== item.compraId)
+      : data.relaciones;
     if (items.length === data.items.length)
       throw new Error("CompraItem no encontrado");
     return { items, relaciones };

@@ -451,8 +451,11 @@ export class VentaCalculator {
    * Calcula el subtotal de un ítem
    */
   static calcularSubtotalItem(item: ItemVenta): number {
-    const precioUnitario = item.precioUnitario || item.product.precioVenta;
-    return precioUnitario * item.quantity;
+    const precioUnitario = Number(
+      item.precioUnitario ?? item.product.precioVenta ?? 0,
+    );
+    const cantidad = item.quantity ?? 0;
+    return precioUnitario * cantidad;
   }
 
   /**

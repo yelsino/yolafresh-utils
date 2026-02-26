@@ -331,8 +331,10 @@ class VentaCalculator {
      * Calcula el subtotal de un ítem
      */
     static calcularSubtotalItem(item) {
-        const precioUnitario = item.precioUnitario || item.product.precioVenta;
-        return precioUnitario * item.quantity;
+        var _a, _b, _c;
+        const precioUnitario = Number((_b = (_a = item.precioUnitario) !== null && _a !== void 0 ? _a : item.product.precioVenta) !== null && _b !== void 0 ? _b : 0);
+        const cantidad = (_c = item.quantity) !== null && _c !== void 0 ? _c : 0;
+        return precioUnitario * cantidad;
     }
     /**
      * Calcula el total de un ítem (subtotal - descuento)

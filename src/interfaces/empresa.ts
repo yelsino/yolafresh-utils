@@ -1,4 +1,7 @@
+import type { ISODateString } from "@/utils";
 import { ImageSizes } from "./producto";
+
+
 
 export interface ConfigEmpresa {
   id: string; // "config_empresa"
@@ -47,5 +50,5 @@ export interface ConfigEmpresa {
     formatoFecha: string;
   };
 
-  updatedAt: string;
+  updatedAt: ISODateString;
 }

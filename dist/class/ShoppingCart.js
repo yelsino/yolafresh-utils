@@ -8,6 +8,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ShoppingCart = exports.ProcedenciaVenta = void 0;
 const interfaces_1 = require("../interfaces");
 const fiscales_1 = require("../utils/fiscales");
+const utils_1 = require("../utils");
 var ProcedenciaVenta;
 (function (ProcedenciaVenta) {
     ProcedenciaVenta["Tienda"] = "Tienda";
@@ -25,7 +26,7 @@ class ShoppingCart {
         var _a, _b, _c;
         this._items = [];
         this.updatedAt = new Date();
-        this.id = id || `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        this.id = id || (0, utils_1.generarUlid)("venta");
         this.createdAt = createdAt || new Date();
         this.nombre = nombre || `Carrito-${Date.now()}`;
         // Configuración fiscal por defecto (puede ser sobrescrita)
@@ -198,13 +199,13 @@ class ShoppingCart {
      * Calcular monto total de un ítem
      */
     calcularTotalLinea(carItem) {
-        var _a, _b;
+        var _a, _b, _c;
         // Respetar overrides manuales
         if (carItem.montoModificado && carItem.montoTotal != null) {
             return this.redondearMoneda(Number(carItem.montoTotal));
         }
-        const unit = (_a = carItem.precioUnitario) !== null && _a !== void 0 ? _a : carItem.product.precioVenta;
-        const qty = (_b = carItem.quantity) !== null && _b !== void 0 ? _b : 0;
+        const unit = Number((_b = (_a = carItem.precioUnitario) !== null && _a !== void 0 ? _a : carItem.product.precioVenta) !== null && _b !== void 0 ? _b : 0);
+        const qty = (_c = carItem.quantity) !== null && _c !== void 0 ? _c : 0;
         // Cálculo directo: Precio * Cantidad (cantidad ya es kg o unidad)
         const base = unit * qty;
         return this.redondearMoneda(base);
@@ -767,20 +768,31 @@ class ShoppingCart {
      * @description Elimina propiedades no serializables o innecesarias para reducir tamaño
      */
     cleanProduct(producto) {
-        // Crear una copia limpia del producto
-        const { 
-        // Propiedades a excluir explícitamente si existen y son pesadas/innecesarias
-        descripcion, caracteristicas, consideraciones, keywords, createdAt, updatedAt, 
-        // Mantener el resto
-        ...productData } = producto;
-        // Asegurar que las URLs sean strings o el objeto ImageSizes mínimo
-        let urlLimpia = productData.url;
         return {
-            ...productData,
-            url: urlLimpia,
-            // Asegurar campos mínimos requeridos si se perdieron
             id: producto.id,
-            nombre: producto.nombre
+            type: producto.type,
+            productoBaseId: producto.productoBaseId,
+            nombre: producto.nombre,
+            sku: producto.sku,
+            codigoBarra: producto.codigoBarra,
+            codigosAlternos: producto.codigosAlternos,
+            precioVenta: producto.precioVenta,
+            precioCompraReferencial: producto.precioCompraReferencial,
+            tipoVenta: producto.tipoVenta,
+            contenidoNeto: producto.contenidoNeto,
+            unidadContenido: producto.unidadContenido,
+            equivalenciaUnidadBase: producto.equivalenciaUnidadBase,
+            fraccionable: producto.fraccionable,
+            mayoreo: producto.mayoreo,
+            cantidadParaDescuento: producto.cantidadParaDescuento,
+            descuentoXCantidad: producto.descuentoXCantidad,
+            visibleEnPOS: producto.visibleEnPOS,
+            visibleOnline: producto.visibleOnline,
+            tipoEmpaque: producto.tipoEmpaque,
+            url: producto.url,
+            activo: producto.activo,
+            createdAt: producto.createdAt,
+            updatedAt: producto.updatedAt,
         };
     }
     // **MÉTODOS FACTORY ESTÁTICOS**

@@ -1,5 +1,5 @@
 import { OrderState } from "../utils/enums";
-import { IProducto } from "./producto";
+import { Presentacion } from "./producto";
 import { IUsuario } from "./usuario";
 export type Hora = {
     hora: string;
@@ -30,7 +30,7 @@ export interface ItemCarDB {
     productoId: string;
 }
 export interface ItemCar {
-    producto: IProducto;
+    producto: Presentacion;
     cantidad: number;
     monto: number;
     detalle: string[];

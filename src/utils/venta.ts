@@ -38,10 +38,8 @@ export function generarWhatsAppLink(carrito: Carrito): string {
       const cantidad = formatCantidad({ 
         cantidad: item.cantidad, 
         tipoVenta: item.producto.tipoVenta, 
-        unidadMedida: item.producto.unidadMedida,
         mayoreo: item.producto.mayoreo, 
         abreviado: true, 
-        categoriaId: item.producto.categorieId 
       });
       // const cantidad = formatCantidad(item.cantidad, item.producto.tipoVenta, item.producto.mayoreo, true);
       const monto = formatSolesPeruanos(item.monto);

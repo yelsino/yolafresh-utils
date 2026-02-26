@@ -14,10 +14,11 @@ import {
   RecepcionMercaderia,
   TipoMovimientoInventarioEnum,
 } from "@/interfaces";
+import { generarUlid } from "@/utils";
 
 export class RecepcionProcessor {
   private static generarId(prefijo: string): string {
-    return `${prefijo}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    return generarUlid(prefijo);
   }
 
   static procesar(data: {
@@ -26,7 +27,7 @@ export class RecepcionProcessor {
     recepcion: RecepcionMercaderia;
     asignacionesPrevias?: AsignacionRecepcionCompra[];
     almacenes?: Almacen[];
-    now?: Date;
+    now?: number;
     idFactory?: () => string;
   }): {
     movimiento: MovimientoInventario;
@@ -84,7 +85,7 @@ export class RecepcionProcessor {
       });
     });
 
-    const ahora = data.now ?? new Date();
+    const ahora = data.now ?? Date.now();
     const asignacionesPrevias = data.asignacionesPrevias ?? [];
     const asignadoPorItem = new Map<string, number>();
     asignacionesPrevias.forEach((asig) => {
@@ -110,8 +111,10 @@ export class RecepcionProcessor {
         if (encontrado.compraId !== item.compraId) {
           throw new Error("La compra asociada no coincide con el CompraItem");
         }
-        if (encontrado.item.productoId !== item.productoId) {
-          throw new Error("El producto recibido no coincide con el CompraItem");
+        if (encontrado.item.presentacionId !== item.presentacionId) {
+          throw new Error(
+            "La presentación recibida no coincide con el CompraItem",
+          );
         }
         if (encontrado.item.afectaInventario === false) {
           throw new Error(
@@ -134,7 +137,7 @@ export class RecepcionProcessor {
           recepcionMercaderiaId: data.recepcion.id,
           compraId: item.compraId,
           compraItemId: item.compraItemId,
-          productoId: item.productoId,
+          presentacionId: item.presentacionId,
           cantidadAsignada: item.cantidadRecibida,
           createdAt: ahora,
           updatedAt: ahora,
@@ -149,7 +152,7 @@ export class RecepcionProcessor {
         if (encontrado?.item.afectaInventario === false) return [];
         return [
           {
-            productoId: item.productoId,
+            presentacionId: item.presentacionId,
             cantidad: item.cantidadRecibida,
             costoUnitario: encontrado?.item.costoUnitario,
             lote: item.lote,

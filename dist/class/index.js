@@ -22,7 +22,6 @@ __exportStar(require("./CompraGenerator"), exports);
 __exportStar(require("./EventoCompraBuilder"), exports);
 __exportStar(require("./MovimientoInventarioProcessor"), exports);
 __exportStar(require("./PermisoValidator"), exports);
-__exportStar(require("./Producto"), exports);
 __exportStar(require("./RecepcionProcessor"), exports);
 __exportStar(require("./ShoppingCart"), exports);
 __exportStar(require("./Usuario"), exports);

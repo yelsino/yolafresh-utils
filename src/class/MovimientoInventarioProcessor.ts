@@ -5,23 +5,23 @@ import {
   MovimientoInventario,
   MovimientoInventarioItem,
   StockLote,
-  StockProductoAlmacen,
+  StockPresentacionAlmacen,
   TipoMovimientoInventarioEnum,
 } from "@/interfaces";
 
 type ResultadoLinea = {
-  stock: StockProductoAlmacen;
+  stock: StockPresentacionAlmacen;
   kardex: KardexLinea;
 };
 
 export class MovimientoInventarioProcessor {
   static aplicar(data: {
     movimiento: MovimientoInventario;
-    stocksActuales: StockProductoAlmacen[];
+    stocksActuales: StockPresentacionAlmacen[];
     almacenes: Almacen[];
     now?: Date;
   }): {
-    stocksActualizados: StockProductoAlmacen[];
+    stocksActualizados: StockPresentacionAlmacen[];
     kardexLineas: KardexLinea[];
   } {
     this.validarMovimiento(data.movimiento);
@@ -30,10 +30,10 @@ export class MovimientoInventarioProcessor {
       data.movimiento.documentoReferenciaId ?? data.movimiento._id;
     const fechaMovimiento = data.movimiento.fechaMovimiento;
 
-    const stockMap = new Map<string, StockProductoAlmacen>();
+    const stockMap = new Map<string, StockPresentacionAlmacen>();
     const inputOrder: string[] = [];
     data.stocksActuales.forEach((s) => {
-      const key = this.stockKey(s.productoId, s.almacenId);
+      const key = this.stockKey(s.presentacionId, s.almacenId);
       inputOrder.push(key);
       stockMap.set(key, this.clonarStock(s));
     });
@@ -47,7 +47,7 @@ export class MovimientoInventarioProcessor {
 
     const agregarResultado = (resultado: ResultadoLinea) => {
       const key = this.stockKey(
-        resultado.stock.productoId,
+        resultado.stock.presentacionId,
         resultado.stock.almacenId,
       );
       if (!stockMap.has(key)) inputOrder.push(key);
@@ -155,7 +155,7 @@ export class MovimientoInventarioProcessor {
 
     const stocksActualizados = inputOrder
       .map((key) => stockMap.get(key))
-      .filter((s): s is StockProductoAlmacen => Boolean(s));
+      .filter((s): s is StockPresentacionAlmacen => Boolean(s));
 
     return { stocksActualizados, kardexLineas };
   }
@@ -198,7 +198,7 @@ export class MovimientoInventarioProcessor {
     almacenId: string;
     documento: string;
     fechaMovimiento: string;
-    stockMap: Map<string, StockProductoAlmacen>;
+    stockMap: Map<string, StockPresentacionAlmacen>;
   }): ResultadoLinea {
     const cantidad = this.validarCantidadPositiva(data.item.cantidad);
     const costoUnitario = data.item.costoUnitario;
@@ -208,7 +208,7 @@ export class MovimientoInventarioProcessor {
 
     const stockActual = this.getOrCreateStock(
       data.stockMap,
-      data.item.productoId,
+      data.item.presentacionId,
       data.almacenId,
       data.documento,
     );
@@ -228,7 +228,7 @@ export class MovimientoInventarioProcessor {
     const nuevoCostoPromedio =
       nuevoStockActual === 0 ? 0 : nuevoValorInventario / nuevoStockActual;
 
-    const actualizado: StockProductoAlmacen = {
+    const actualizado: StockPresentacionAlmacen = {
       ...stockActual,
       stockActual: nuevoStockActual,
       stockDisponible: this.calcularDisponible(
@@ -262,12 +262,12 @@ export class MovimientoInventarioProcessor {
     almacenId: string;
     documento: string;
     fechaMovimiento: string;
-    stockMap: Map<string, StockProductoAlmacen>;
+    stockMap: Map<string, StockPresentacionAlmacen>;
   }): ResultadoLinea {
     const cantidad = this.validarCantidadPositiva(data.item.cantidad);
     const stockActual = this.getOrCreateStock(
       data.stockMap,
-      data.item.productoId,
+      data.item.presentacionId,
       data.almacenId,
       data.documento,
     );
@@ -293,7 +293,7 @@ export class MovimientoInventarioProcessor {
     const nuevoCostoPromedio =
       nuevoStockActual === 0 ? 0 : stockActual.costoPromedioActual;
 
-    const actualizado: StockProductoAlmacen = {
+    const actualizado: StockPresentacionAlmacen = {
       ...stockActual,
       stockActual: nuevoStockActual,
       stockDisponible: this.calcularDisponible(
@@ -322,7 +322,7 @@ export class MovimientoInventarioProcessor {
   }
 
   private static aplicarEntradaLote(data: {
-    stock: StockProductoAlmacen;
+    stock: StockPresentacionAlmacen;
     lote?: string;
     fechaVencimiento?: string;
     cantidad: number;
@@ -355,7 +355,7 @@ export class MovimientoInventarioProcessor {
   }
 
   private static aplicarSalidaLote(data: {
-    stock: StockProductoAlmacen;
+    stock: StockPresentacionAlmacen;
     lote?: string;
     cantidad: number;
     permitirNegativos: boolean;
@@ -380,16 +380,16 @@ export class MovimientoInventarioProcessor {
   }
 
   private static getOrCreateStock(
-    stockMap: Map<string, StockProductoAlmacen>,
-    productoId: string,
+    stockMap: Map<string, StockPresentacionAlmacen>,
+    presentacionId: string,
     almacenId: string,
     documento: string,
-  ): StockProductoAlmacen {
-    const key = this.stockKey(productoId, almacenId);
+  ): StockPresentacionAlmacen {
+    const key = this.stockKey(presentacionId, almacenId);
     const existing = stockMap.get(key);
     if (existing) return this.clonarStock(existing);
     return {
-      productoId,
+      presentacionId,
       almacenId,
       stockActual: 0,
       stockDisponible: 0,
@@ -440,13 +440,13 @@ export class MovimientoInventarioProcessor {
     return stockActual - (stockReservado ?? 0);
   }
 
-  private static stockKey(productoId: string, almacenId: string): string {
-    return `${productoId}_${almacenId}`;
+  private static stockKey(presentacionId: string, almacenId: string): string {
+    return `${presentacionId}_${almacenId}`;
   }
 
   private static clonarStock(
-    stock: StockProductoAlmacen,
-  ): StockProductoAlmacen {
+    stock: StockPresentacionAlmacen,
+  ): StockPresentacionAlmacen {
     return {
       ...stock,
       lotes: stock.lotes ? stock.lotes.map((l) => ({ ...l })) : stock.lotes,

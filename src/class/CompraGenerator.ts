@@ -4,14 +4,14 @@ import {
   EstadoCompraEnum,
   EstadoPagoEnum,
   EventoCompra,
-  EventoCompraItem,
-  ICompra,
   TipoDocumentoCompraEnum
 } from "@/interfaces";
+import { generarUlid } from "@/utils";
+import { Compra } from "./Compra";
 
 export class CompraGenerator {
   private static generarId(prefijo: string): string {
-    return `${prefijo}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    return generarUlid(prefijo);
   }
 
   private static redondear(valor: number): number {
@@ -21,41 +21,42 @@ export class CompraGenerator {
   static generarCompras(data: {
     evento: EventoCompra;
     items: CompraItem[];
-    relaciones: EventoCompraItem[];
-    proveedorInfo?: Record<string, { proveedorNombre?: string; proveedorRuc?: string }>;
-    now?: Date;
+    proveedorPorCompraId: Record<
+      string,
+      {
+        proveedorId: string;
+        proveedorNombreSnapshot?: string;
+        proveedorRucSnapshot?: string;
+      }
+    >;
+    now?: number;
     idFactory?: () => string;
     tipoDocumento?: TipoDocumentoCompraEnum;
     serieDocumento?: string;
     numeroDocumento?: string;
-    correlativo?: string;
-    fechaDocumento?: string;
-    fechaRegistro?: string;
+    correlativoInterno?: string;
+    fechaDocumento?: number;
+    fechaRegistro?: number;
     moneda?: "PEN" | "USD";
     tipoCambio?: number;
     condicionPago?: "CONTADO" | "CREDITO";
     estadoPago?: EstadoPagoEnum;
-    fechaVencimientoPago?: string;
+    fechaVencimientoPago?: number;
     estado?: EstadoCompraEnum;
     impuestos?: number;
     descuentos?: number;
     gastosAdicionales?: CompraEgresoRef[];
-  }): ICompra[] {
-    const itemsById = new Map<string, CompraItem>();
-    data.items.forEach((item) => itemsById.set(item.id, item));
-
-    const itemsPorProveedor = new Map<string, CompraItem[]>();
-    data.relaciones.forEach((rel) => {
-      const item = itemsById.get(rel.compraItemId);
-      if (!item) throw new Error("CompraItem no encontrado para relación");
-      const lista = itemsPorProveedor.get(rel.proveedorId) ?? [];
+  }): Compra[] {
+    const itemsPorCompraId = new Map<string, CompraItem[]>();
+    data.items.forEach((item) => {
+      const lista = itemsPorCompraId.get(item.compraId) ?? [];
       lista.push({ ...item });
-      itemsPorProveedor.set(rel.proveedorId, lista);
+      itemsPorCompraId.set(item.compraId, lista);
     });
 
-    const ahora = data.now ?? new Date();
-    const fechaDocumento = data.fechaDocumento ?? ahora.toISOString();
-    const fechaRegistro = data.fechaRegistro ?? ahora.toISOString();
+    const ahora = data.now ?? Date.now();
+    const fechaDocumento = data.fechaDocumento ?? ahora;
+    const fechaRegistro = data.fechaRegistro ?? ahora;
     const tipoDocumento = data.tipoDocumento ?? TipoDocumentoCompraEnum.FACTURA;
     const moneda = data.moneda ?? "PEN";
     const estado = data.estado ?? EstadoCompraEnum.BORRADOR;
@@ -68,29 +69,32 @@ export class CompraGenerator {
       0
     );
 
-    return Array.from(itemsPorProveedor.entries()).map(([proveedorId, items]) => {
+    return Array.from(itemsPorCompraId.entries()).map(([compraId, items]) => {
       const itemsConTotales = items.map((item) => {
-        const costoTotal = item.costoTotal ?? this.redondear(item.cantidad * item.costoUnitario);
+        const costoTotal = this.redondear(item.cantidad * item.costoUnitario);
         return { ...item, costoTotal };
       });
 
       const subtotal = this.redondear(
-        itemsConTotales.reduce((sum, item) => sum + (item.costoTotal ?? 0), 0)
+        itemsConTotales.reduce((sum, item) => sum + item.costoTotal, 0),
       );
       const total = this.redondear(subtotal + impuestos + totalGastos - descuentos);
 
-      const proveedorMeta = data.proveedorInfo?.[proveedorId];
+      const proveedorMeta = data.proveedorPorCompraId[compraId];
+      if (!proveedorMeta) {
+        throw new Error("Proveedor no encontrado para compraId");
+      }
 
-      return {
-        id: data.idFactory ? data.idFactory() : this.generarId("comp"),
+      return new Compra({
+        id: compraId || (data.idFactory ? data.idFactory() : this.generarId("comp")),
         eventoCompraId: data.evento.id,
-        proveedorId,
-        proveedorNombre: proveedorMeta?.proveedorNombre,
-        proveedorRuc: proveedorMeta?.proveedorRuc,
+        proveedorId: proveedorMeta.proveedorId,
+        proveedorNombreSnapshot: proveedorMeta.proveedorNombreSnapshot,
+        proveedorRucSnapshot: proveedorMeta.proveedorRucSnapshot,
         tipoDocumento,
         serieDocumento: data.serieDocumento,
         numeroDocumento: data.numeroDocumento,
-        correlativo: data.correlativo,
+        correlativoInterno: data.correlativoInterno,
         fechaDocumento,
         fechaRegistro,
         items: itemsConTotales,
@@ -106,8 +110,8 @@ export class CompraGenerator {
         fechaVencimientoPago: data.fechaVencimientoPago,
         estado,
         createdAt: ahora,
-        updatedAt: ahora
-      };
+        updatedAt: ahora,
+      });
     });
   }
 }

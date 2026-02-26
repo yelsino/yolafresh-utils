@@ -1,41 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EstadoRecepcionMercaderiaEnum = exports.EstadoTransferenciaEnum = exports.EstadoEventoCompraEnum = exports.EstadoPagoEnum = exports.TipoDocumentoCompraEnum = exports.EstadoCompraEnum = exports.OrigenDocumentoEnum = exports.EstadoMovimientoEnum = exports.TipoMovimientoInventarioEnum = exports.TipoAlmacenEnum = void 0;
-var TipoAlmacenEnum;
-(function (TipoAlmacenEnum) {
-    TipoAlmacenEnum["CENTRAL"] = "CENTRAL";
-    TipoAlmacenEnum["TIENDA"] = "TIENDA";
-    TipoAlmacenEnum["TRANSITO"] = "TRANSITO";
-    TipoAlmacenEnum["MOSTRADOR"] = "MOSTRADOR";
-})(TipoAlmacenEnum || (exports.TipoAlmacenEnum = TipoAlmacenEnum = {}));
-var TipoMovimientoInventarioEnum;
-(function (TipoMovimientoInventarioEnum) {
-    TipoMovimientoInventarioEnum["ENTRADA"] = "ENTRADA";
-    TipoMovimientoInventarioEnum["SALIDA"] = "SALIDA";
-    TipoMovimientoInventarioEnum["AJUSTE"] = "AJUSTE";
-    TipoMovimientoInventarioEnum["TRANSFERENCIA"] = "TRANSFERENCIA";
-})(TipoMovimientoInventarioEnum || (exports.TipoMovimientoInventarioEnum = TipoMovimientoInventarioEnum = {}));
-var EstadoMovimientoEnum;
-(function (EstadoMovimientoEnum) {
-    EstadoMovimientoEnum["PENDIENTE"] = "PENDIENTE";
-    EstadoMovimientoEnum["APLICADO"] = "APLICADO";
-    EstadoMovimientoEnum["ANULADO"] = "ANULADO";
-})(EstadoMovimientoEnum || (exports.EstadoMovimientoEnum = EstadoMovimientoEnum = {}));
-var OrigenDocumentoEnum;
-(function (OrigenDocumentoEnum) {
-    OrigenDocumentoEnum["COMPRA"] = "COMPRA";
-    OrigenDocumentoEnum["VENTA"] = "VENTA";
-    OrigenDocumentoEnum["AJUSTE"] = "AJUSTE";
-    OrigenDocumentoEnum["TRANSFERENCIA"] = "TRANSFERENCIA";
-    OrigenDocumentoEnum["PRODUCCION"] = "PRODUCCION";
-    OrigenDocumentoEnum["MERMA"] = "MERMA";
-    OrigenDocumentoEnum["DEVOLUCION"] = "DEVOLUCION";
-    OrigenDocumentoEnum["INVENTARIO_FISICO"] = "INVENTARIO_FISICO";
-})(OrigenDocumentoEnum || (exports.OrigenDocumentoEnum = OrigenDocumentoEnum = {}));
+exports.EstadoEventoCompraEnum = exports.EstadoPagoEnum = exports.TipoDocumentoCompraEnum = exports.EstadoCompraEnum = void 0;
 var EstadoCompraEnum;
 (function (EstadoCompraEnum) {
     EstadoCompraEnum["BORRADOR"] = "BORRADOR";
     EstadoCompraEnum["CONFIRMADO"] = "CONFIRMADO";
+    EstadoCompraEnum["CERRADO"] = "CERRADO";
     EstadoCompraEnum["ANULADO"] = "ANULADO";
 })(EstadoCompraEnum || (exports.EstadoCompraEnum = EstadoCompraEnum = {}));
 var TipoDocumentoCompraEnum;
@@ -60,16 +30,3 @@ var EstadoEventoCompraEnum;
     EstadoEventoCompraEnum["CERRADO"] = "CERRADO";
     EstadoEventoCompraEnum["CANCELADO"] = "CANCELADO";
 })(EstadoEventoCompraEnum || (exports.EstadoEventoCompraEnum = EstadoEventoCompraEnum = {}));
-var EstadoTransferenciaEnum;
-(function (EstadoTransferenciaEnum) {
-    EstadoTransferenciaEnum["PENDIENTE"] = "PENDIENTE";
-    EstadoTransferenciaEnum["EN_TRANSITO"] = "EN_TRANSITO";
-    EstadoTransferenciaEnum["RECIBIDO"] = "RECIBIDO";
-    EstadoTransferenciaEnum["ANULADO"] = "ANULADO";
-})(EstadoTransferenciaEnum || (exports.EstadoTransferenciaEnum = EstadoTransferenciaEnum = {}));
-var EstadoRecepcionMercaderiaEnum;
-(function (EstadoRecepcionMercaderiaEnum) {
-    EstadoRecepcionMercaderiaEnum["BORRADOR"] = "BORRADOR";
-    EstadoRecepcionMercaderiaEnum["CONFIRMADA"] = "CONFIRMADA";
-    EstadoRecepcionMercaderiaEnum["ANULADA"] = "ANULADA";
-})(EstadoRecepcionMercaderiaEnum || (exports.EstadoRecepcionMercaderiaEnum = EstadoRecepcionMercaderiaEnum = {}));

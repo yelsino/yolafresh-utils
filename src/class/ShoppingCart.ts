@@ -4,10 +4,11 @@
  * Simplificada: usa solo CarItem con congelación automática al guardar
  */
 
-import { IProducto, MetodoPago, TipoVentaEnum } from "@/interfaces";
+import { MetodoPago, Presentacion, TipoVentaEnum } from "@/interfaces";
 import { Cliente } from "@/interfaces/persons";
 import { IUsuario } from "@/interfaces/usuario";
 import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "@/utils/fiscales";
+import { generarUlid } from "@/utils";
 
 /**
  * Representa un ítem individual en el carrito de compras
@@ -19,10 +20,8 @@ import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "@/utils/fiscales"
  * ```typescript
  * const item: CarItem = {
  *   id: 'item-001',
- *   product: { id: 'prod-001', nombre: 'Manzana', precio: 5.50 },
+ *   product: { id: 'pres-001', nombre: 'Manzana 1kg', precioVenta: 5.50 },
  *   quantity: 2.5,
- *   peso: 2.5, // Para productos pesables
- *   tipoVenta: TipoVentaEnum.Kilogramo
  * };
  * ```
  */
@@ -37,7 +36,7 @@ export interface CarItem {
    * Información completa del producto
    * @description Contiene todos los datos del producto (nombre, precio, etc.)
    */
-  product: IProducto;
+  product: Presentacion;
   
   /** 
    * Cantidad en la unidad base del producto
@@ -67,7 +66,7 @@ export interface CarItem {
    * @description Siempre debe ser coherente con quantity y precioUnitario
    * @minimum 0
    */
-  montoTotal?: number | null;
+  montoTotal?: number;
   
   /** 
    * Descuento aplicado al ítem (opcional)
@@ -319,7 +318,7 @@ export class ShoppingCart implements IShoppingCart {
   private _finanzaId?: string;
 
   constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal, nombre?: string, createdAt?: Date) {
-    this.id = id || `venta_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    this.id = id || generarUlid("venta");
     this.createdAt = createdAt || new Date();
     this.nombre = nombre || `Carrito-${Date.now()}`;
     // Configuración fiscal por defecto (puede ser sobrescrita)
@@ -453,7 +452,7 @@ export class ShoppingCart implements IShoppingCart {
       precioUnitario: unit,
       montoModificado: !!carItem.montoModificado,
       
-      descuento: carItem.descuento ?? (itemExistente as any).descuento
+      descuento: carItem.descuento ?? itemExistente.descuento
     } as CarItem;
 
     // Calcular total y consistencia
@@ -519,7 +518,9 @@ export class ShoppingCart implements IShoppingCart {
       return this.redondearMoneda(Number(carItem.montoTotal));
     }
 
-    const unit = carItem.precioUnitario ?? carItem.product.precioVenta;
+    const unit = Number(
+      carItem.precioUnitario ?? carItem.product.precioVenta ?? 0,
+    );
     const qty = carItem.quantity ?? 0;
     
     // Cálculo directo: Precio * Cantidad (cantidad ya es kg o unidad)
@@ -1172,7 +1173,10 @@ export class ShoppingCart implements IShoppingCart {
    * Calcula la cantidad necesaria para llegar a un monto específico
    * @example "Dame 3 soles de papa" -> 3.00 / 1.50 = 2.00 kg
    */
-  static calcularCantidadDesdeMonto(producto: IProducto, montoObjetivo: number): number {
+  static calcularCantidadDesdeMonto(
+    producto: Presentacion,
+    montoObjetivo: number,
+  ): number {
      const precio = producto.precioVenta;
      if (!precio || precio <= 0) return 0;
      
@@ -1204,30 +1208,33 @@ export class ShoppingCart implements IShoppingCart {
    * Limpia el objeto producto para guardar solo lo necesario
    * @description Elimina propiedades no serializables o innecesarias para reducir tamaño
    */
-  private cleanProduct(producto: IProducto): IProducto {
-    // Crear una copia limpia del producto
-    const {
-      // Propiedades a excluir explícitamente si existen y son pesadas/innecesarias
-      descripcion,
-      caracteristicas,
-      consideraciones,
-      keywords,
-      createdAt,
-      updatedAt,
-      // Mantener el resto
-      ...productData
-    } = producto as any;
-
-    // Asegurar que las URLs sean strings o el objeto ImageSizes mínimo
-    let urlLimpia = productData.url;
-    
+  private cleanProduct(producto: Presentacion): Presentacion {
     return {
-      ...productData,
-      url: urlLimpia,
-      // Asegurar campos mínimos requeridos si se perdieron
       id: producto.id,
-      nombre: producto.nombre
-    } as IProducto;
+      type: producto.type,
+      productoBaseId: producto.productoBaseId,
+      nombre: producto.nombre,
+      sku: producto.sku,
+      codigoBarra: producto.codigoBarra,
+      codigosAlternos: producto.codigosAlternos,
+      precioVenta: producto.precioVenta,
+      precioCompraReferencial: producto.precioCompraReferencial,
+      tipoVenta: producto.tipoVenta,
+      contenidoNeto: producto.contenidoNeto,
+      unidadContenido: producto.unidadContenido,
+      equivalenciaUnidadBase: producto.equivalenciaUnidadBase,
+      fraccionable: producto.fraccionable,
+      mayoreo: producto.mayoreo,
+      cantidadParaDescuento: producto.cantidadParaDescuento,
+      descuentoXCantidad: producto.descuentoXCantidad,
+      visibleEnPOS: producto.visibleEnPOS,
+      visibleOnline: producto.visibleOnline,
+      tipoEmpaque: producto.tipoEmpaque,
+      url: producto.url,
+      activo: producto.activo,
+      createdAt: producto.createdAt,
+      updatedAt: producto.updatedAt,
+    };
   }
 
   // **MÉTODOS FACTORY ESTÁTICOS**

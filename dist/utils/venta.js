@@ -35,10 +35,8 @@ function generarWhatsAppLink(carrito) {
         const cantidad = (0, textos_1.formatCantidad)({
             cantidad: item.cantidad,
             tipoVenta: item.producto.tipoVenta,
-            unidadMedida: item.producto.unidadMedida,
             mayoreo: item.producto.mayoreo,
             abreviado: true,
-            categoriaId: item.producto.categorieId
         });
         // const cantidad = formatCantidad(item.cantidad, item.producto.tipoVenta, item.producto.mayoreo, true);
         const monto = (0, textos_1.formatSolesPeruanos)(item.monto);

@@ -6,27 +6,6 @@ export type ImageSizes = {
         large: string;
     };
 };
-export declare enum TipoEmpaqueEnum {
-    Saco = "sacos",
-    Bolsa = "bolsas",
-    Caja = "cajas",
-    Balde = "baldes",
-    Lata = "latas",
-    BolsaVacio = "bolsa_vacio",
-    Botella = "botellas",
-    Paquete = "paquetes",
-    Bandeja = "bandejas",
-    Frasco = "frascos",
-    Malla = "mallas",
-    Blister = "blisters",
-    TetraPack = "tetrapacks",
-    SixPack = "sixpacks",
-    Rollo = "rollos",
-    Bidon = "bidones",
-    Manojo = "manojos",
-    Atado = "atados",
-    SinEmpaque = "sin_empaque"
-}
 export declare enum UnidadMedidaEnum {
     Unidad = "unidad",
     Gramo = "gramo",
@@ -35,16 +14,16 @@ export declare enum UnidadMedidaEnum {
     Litro = "litro",
     Libra = "libra",
     Onza = "onza",
+    Saco = "saco",
+    Bolsa = "bolsa",
     Arroba = "arroba",
-    Docena = "docena",
     Quintal = "quintal",
+    Porcion = "porcion",
+    Docena = "docena",
     Tonelada = "tonelada",
     Metro = "metro",
     Centimetro = "centimetro",
-    Galon = "galon",
-    Saco = "saco",
-    Bolsa = "bolsa",
-    Porcion = "porcion"
+    Galon = "galon"
 }
 export declare enum UnidadMedidaAbreviadoEnum {
     Unidad = "und",
@@ -54,85 +33,53 @@ export declare enum UnidadMedidaAbreviadoEnum {
     Litro = "l",
     Libra = "lb",
     Onza = "oz",
-    Arroba = "ar",
+    Saco = "saco",
+    Bolsa = "bolsa",
+    Arroba = "arr",
     Quintal = "qq",
+    Porcion = "porc",
+    Docena = "doc",
     Tonelada = "t",
     Metro = "m",
     Centimetro = "cm",
-    Galon = "gal",
-    Docena = "docena",
+    Galon = "gal"
+}
+export declare enum TipoEmpaqueEnum {
     Saco = "saco",
     Bolsa = "bolsa",
-    Porcion = "porcion"
+    Caja = "caja",
+    Balde = "balde",
+    Lata = "lata",
+    Botella = "botella",
+    Paquete = "paquete",
+    Bandeja = "bandeja",
+    Frasco = "frasco",
+    Malla = "malla",
+    Blister = "blister",
+    TetraPack = "tetrapack",
+    SixPack = "sixpack",
+    Bidon = "bidon",
+    Manojo = "manojo",
+    Atado = "atado",
+    SinEmpaque = "sin_empaque"
 }
 export declare enum TipoVentaEnum {
-    Unidad = "unidad",// se vende como 1 unidad física
-    Peso = "peso",// se vende por kg/g/lb/etc
+    Unidad = "unidad",// se vende como unidad física
+    Peso = "peso",// se vende por peso
     Volumen = "volumen"
 }
-export interface IProducto {
-    id: string;
-    sku?: string;
-    codigosAlternos?: string[];
-    codigoBarra?: string;
-    idPrimario: string;
-    esPrimario: boolean;
-    factorConversion?: number;
-    mayoreo: boolean;
-    cantidadParaDescuento: number;
-    descuentoXCantidad: number;
-    nombre: string;
-    titulo: string;
-    descripcion: string;
-    consideraciones: string;
-    caracteristicas: string;
-    status: boolean;
-    url: ImageSizes;
-    marca?: string;
-    keywords?: string[];
-    visibleEnPOS?: boolean;
-    visibleOnline?: boolean;
-    categorieId: string;
-    subcategorieId?: string;
-    contenidoNeto: number;
-    unidadContenido: UnidadMedidaEnum;
-    unidadMedida: UnidadMedidaEnum;
-    tipoVenta: TipoVentaEnum;
-    tipoEmpaque: TipoEmpaqueEnum;
-    fraccionable: boolean;
-    stock?: number;
-    precioVenta: number;
-    precioCompra: number;
-    aplicaIGV?: boolean;
-    porcentajeIGV?: number;
-    createdAt: Date;
-    updatedAt: Date;
-}
-export interface ProductoPrecio {
-    id: string;
-    productoId: string;
-    unidadVenta: UnidadMedidaEnum;
-    precioVenta: number;
-    precioMinimo?: number;
-    precioMaximo?: number;
-    vigenteDesde: string;
-    vigenteHasta?: string;
-    origen: "COMPRA" | "MANUAL" | "PROMOCION";
-    activo: boolean;
-    compraId?: string;
-    compraItemId?: string;
-    createdAt: Date;
-}
+export type UnidadBaseInterna = "kilogramo" | "litro" | "unidad";
 export interface ProductoBase {
     id: string;
     type: "producto_base";
     nombre: string;
-    descripcion: string;
+    descripcion?: string;
     caracteristicas?: string;
     consideraciones?: string;
+    unidadBaseInterna: UnidadBaseInterna;
     categoriaId: string;
-    url: ImageSizes;
-    keywords: string[];
+    imagen: ImageSizes;
+    keywords?: string[];
     aplicaIGV: boolean;
     porcentajeIGV: number;
     activo: boolean;
@@ -143,68 +90,80 @@ export interface Presentacion {
     id: string;
     type: "presentacion";
     productoBaseId: string;
-    precioCompra: number;
-    precioVenta: number;
+    nombre: string;
+    sku?: string;
+    codigoBarra?: string;
+    codigosAlternos?: string[];
     tipoVenta: TipoVentaEnum;
     contenidoNeto: number;
     unidadContenido: UnidadMedidaEnum;
-    unidadMedida: UnidadMedidaEnum;
+    /**
+     * ¿Cuántas unidades base representa ESTA presentación?
+     * Ej:
+     * - Bolsa 5kg arroz → 5
+     * - Botella 500ml → 0.5
+     * - Caja x12 botellas 1L → 12
+     */
+    equivalenciaUnidadBase: number;
     fraccionable: boolean;
-    mayoreo: boolean;
-    cantidadParaDescuento: number;
-    descuentoXCantidad: number;
+    tipoEmpaque?: TipoEmpaqueEnum;
     visibleEnPOS: boolean;
     visibleOnline: boolean;
-    codigosAlternos: string[];
-    tipoEmpaque: TipoEmpaqueEnum;
+    precioCompraReferencial?: number;
+    precioVenta?: number;
+    activo: boolean;
+    imagen?: ImageSizes;
     url?: ImageSizes;
+    mayoreo?: boolean;
+    cantidadParaDescuento?: number;
+    descuentoXCantidad?: number;
     createdAt: number;
     updatedAt: number;
 }
-export interface PresentacionesProducto extends ProductoBase {
-    presentaciones: Presentacion[];
+export interface ProductoPrecio {
+    id: string;
+    presentacionId: string;
+    precioVenta: number;
+    precioMinimo?: number;
+    precioMaximo?: number;
+    vigenteDesde: number;
+    vigenteHasta?: number;
+    origen: "COMPRA" | "MANUAL" | "PROMOCION";
+    activo: boolean;
+    compraId?: string;
+    compraItemId?: string;
+    createdAt: number;
 }
 export interface Categoria {
     id: string;
     nombre: string;
     tag: string;
-    descripcion: string;
-    icono: string;
-    color: string;
+    descripcion?: string;
+    icono?: string;
+    color?: string;
     orden: number;
     activa: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-    subcategorias: string[];
-    imagen: ImageSizes;
-}
-export interface BeneficiosProducto {
-    id: string;
-    title: string;
-    descripcion: string;
-    productoId: string;
-}
-export interface UsosCulinariosProducto {
-    id: string;
-    title: string;
-    descripcion: string;
-    productoId: string;
+    subcategorias?: string[];
+    imagen?: ImageSizes;
+    createdAt: number;
+    updatedAt: number;
 }
 export interface Receta {
     id: string;
     nombre: string;
     descripcion: string;
     imagen: string;
-    url: string;
-    productos?: IProducto[];
+    url?: string;
+    createdAt: number;
 }
-export interface RecetasProducto {
+export interface RecetaProducto {
     id: string;
     recetaId: string;
-    productoId: string;
+    productoBaseId: string;
+    cantidadRequerida: number;
+    unidad: UnidadMedidaEnum;
 }
-export interface ProductosSubCategoria {
-    id: string;
-    productoId: string;
-    subcategoriaId: string;
+export interface ProductoConPresentacionesDTO {
+    producto: ProductoBase;
+    presentaciones: Presentacion[];
 }

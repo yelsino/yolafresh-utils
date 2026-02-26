@@ -3,7 +3,7 @@
  * Reutilizable para cualquier sistema POS
  * Simplificada: usa solo CarItem con congelación automática al guardar
  */
-import { IProducto, MetodoPago } from "../interfaces";
+import { MetodoPago, Presentacion } from "../interfaces";
 import { Cliente } from "../interfaces/persons";
 import { IUsuario } from "../interfaces/usuario";
 import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "../utils/fiscales";
@@ -17,10 +17,8 @@ import { ConfiguracionFiscal, CONFIGURACIONES_FISCALES } from "../utils/fiscales
  * ```typescript
  * const item: CarItem = {
  *   id: 'item-001',
- *   product: { id: 'prod-001', nombre: 'Manzana', precio: 5.50 },
+ *   product: { id: 'pres-001', nombre: 'Manzana 1kg', precioVenta: 5.50 },
  *   quantity: 2.5,
- *   peso: 2.5, // Para productos pesables
- *   tipoVenta: TipoVentaEnum.Kilogramo
  * };
  * ```
  */
@@ -34,7 +32,7 @@ export interface CarItem {
      * Información completa del producto
      * @description Contiene todos los datos del producto (nombre, precio, etc.)
      */
-    product: IProducto;
+    product: Presentacion;
     /**
      * Cantidad en la unidad base del producto
      * - Si el producto es por unidad → 3
@@ -60,7 +58,7 @@ export interface CarItem {
      * @description Siempre debe ser coherente con quantity y precioUnitario
      * @minimum 0
      */
-    montoTotal?: number | null;
+    montoTotal?: number;
     /**
      * Descuento aplicado al ítem (opcional)
      * @description Monto a descontar del total del ítem
@@ -502,7 +500,7 @@ export declare class ShoppingCart implements IShoppingCart {
      * Calcula la cantidad necesaria para llegar a un monto específico
      * @example "Dame 3 soles de papa" -> 3.00 / 1.50 = 2.00 kg
      */
-    static calcularCantidadDesdeMonto(producto: IProducto, montoObjetivo: number): number;
+    static calcularCantidadDesdeMonto(producto: Presentacion, montoObjetivo: number): number;
     /**
      * Calcula el contenido total real para procesos de inventario o despacho
      * @example quantity=0.5 (sacos), contenidoNeto=60 (kg) -> Retorna 30.00 (kg)

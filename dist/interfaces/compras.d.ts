@@ -1,53 +1,8 @@
-import { TipoEmpaqueEnum, UnidadMedidaEnum } from "../interfaces";
-export declare enum TipoAlmacenEnum {
-    CENTRAL = "CENTRAL",
-    TIENDA = "TIENDA",
-    TRANSITO = "TRANSITO",
-    MOSTRADOR = "MOSTRADOR"
-}
-export interface Almacen {
-    _id: string;
-    type: "almacen";
-    nombre: string;
-    codigo?: string;
-    descripcion?: string;
-    tipo: TipoAlmacenEnum;
-    ubicacionFisica?: string;
-    geoLat?: number;
-    geoLon?: number;
-    capacidad?: number;
-    unidadCapacidad?: string;
-    responsableId?: string;
-    activo: boolean;
-    permitirLotes: boolean;
-    permitirNegativos: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-}
-export declare enum TipoMovimientoInventarioEnum {
-    ENTRADA = "ENTRADA",
-    SALIDA = "SALIDA",
-    AJUSTE = "AJUSTE",
-    TRANSFERENCIA = "TRANSFERENCIA"
-}
-export declare enum EstadoMovimientoEnum {
-    PENDIENTE = "PENDIENTE",
-    APLICADO = "APLICADO",
-    ANULADO = "ANULADO"
-}
-export declare enum OrigenDocumentoEnum {
-    COMPRA = "COMPRA",
-    VENTA = "VENTA",
-    AJUSTE = "AJUSTE",
-    TRANSFERENCIA = "TRANSFERENCIA",
-    PRODUCCION = "PRODUCCION",
-    MERMA = "MERMA",
-    DEVOLUCION = "DEVOLUCION",
-    INVENTARIO_FISICO = "INVENTARIO_FISICO"
-}
+import { UnixMillis } from "../utils";
 export declare enum EstadoCompraEnum {
     BORRADOR = "BORRADOR",
     CONFIRMADO = "CONFIRMADO",
+    CERRADO = "CERRADO",
     ANULADO = "ANULADO"
 }
 export declare enum TipoDocumentoCompraEnum {
@@ -63,205 +18,67 @@ export declare enum EstadoPagoEnum {
     PAGADO_PARCIAL = "PAGADO_PARCIAL",
     PAGADO = "PAGADO"
 }
-export interface CompraEgresoRef {
-    egresoId: string;
-    montoAplicado: number;
-}
-export interface ICompra {
-    id: string;
-    eventoCompraId: string;
-    proveedorId: string;
-    proveedorNombre?: string;
-    proveedorRuc?: string;
-    tipoDocumento: TipoDocumentoCompraEnum;
-    serieDocumento?: string;
-    numeroDocumento?: string;
-    correlativo?: string;
-    fechaDocumento: string;
-    fechaRegistro: string;
-    items: CompraItem[];
-    subtotal: number;
-    impuestos?: number;
-    descuentos?: number;
-    gastosAdicionales?: CompraEgresoRef[];
-    moneda: "PEN" | "USD";
-    tipoCambio?: number;
-    total: number;
-    condicionPago?: "CONTADO" | "CREDITO";
-    estadoPago: EstadoPagoEnum;
-    fechaVencimientoPago?: string;
-    estado: EstadoCompraEnum;
-    createdAt: Date;
-    updatedAt: Date;
-}
-export interface CompraItem {
-    id: string;
-    productoId: string;
-    cantidad: number;
-    unidadMedida?: UnidadMedidaEnum;
-    envoltorio?: TipoEmpaqueEnum;
-    factorConversion?: number;
-    costoUnitario: number;
-    costoTotal?: number;
-    impuestoUnitario?: number;
-    impuestoTotal?: number;
-    afectaInventario?: boolean;
-    lote?: string;
-    fechaVencimiento?: string;
-}
 export declare enum EstadoEventoCompraEnum {
     EN_REGISTRO = "EN_REGISTRO",
     CONFIRMADO = "CONFIRMADO",
     CERRADO = "CERRADO",
     CANCELADO = "CANCELADO"
 }
+export interface ICompra {
+    id: string;
+    eventoCompraId: string;
+    proveedorId: string;
+    proveedorNombreSnapshot?: string;
+    proveedorRucSnapshot?: string;
+    tipoDocumento: TipoDocumentoCompraEnum;
+    serieDocumento?: string;
+    numeroDocumento?: string;
+    correlativoInterno?: string;
+    fechaDocumento: UnixMillis;
+    fechaRegistro: UnixMillis;
+    moneda: "PEN" | "USD";
+    tipoCambio?: number;
+    subtotal: number;
+    impuestos?: number;
+    descuentos?: number;
+    total: number;
+    gastosAdicionales?: CompraEgresoRef[];
+    condicionPago?: "CONTADO" | "CREDITO";
+    estadoPago: EstadoPagoEnum;
+    fechaVencimientoPago?: UnixMillis;
+    estado: EstadoCompraEnum;
+    items: CompraItem[];
+    createdAt: UnixMillis;
+    updatedAt: UnixMillis;
+}
+export interface CompraItem {
+    id: string;
+    compraId: string;
+    presentacionId: string;
+    cantidad: number;
+    costoUnitario: number;
+    costoTotal: number;
+    afectaInventario: boolean;
+}
+export interface CompraEgresoRef {
+    egresoId: string;
+    montoAplicado: number;
+}
 export interface EventoCompra {
     id: string;
     responsableId: string;
-    responsableNombre?: string;
+    responsableNombreSnapshot?: string;
     origen: string;
     destino?: string;
     montoAsignado?: number;
     estado: EstadoEventoCompraEnum;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: UnixMillis;
+    updatedAt: UnixMillis;
 }
 export interface EventoCompraItem {
     id: string;
     eventoCompraId: string;
-    proveedorId: string;
-    compraItemId: string;
-    createdAt: Date;
-    updatedAt: Date;
-}
-export interface KardexLinea {
-    fechaMovimiento: string;
-    documento: string;
-    tipo: "ENTRADA" | "SALIDA";
-    cantidadEntrada: number;
-    cantidadSalida: number;
-    costoUnitario: number;
-    costoTotal: number;
-    stockFinal: number;
-    costoPromedioFinal: number;
-    saldoCostoTotal: number;
-}
-export interface StockProductoAlmacen {
-    productoId: string;
-    almacenId: string;
-    stockActual: number;
-    stockReservado?: number;
-    stockDisponible: number;
-    costoPromedioActual: number;
-    valorInventario: number;
-    minimo?: number;
-    maximo?: number;
-    puntoReorden?: number;
-    ultimoMovimiento?: string;
-    lotes?: StockLote[];
-}
-export interface StockLote {
-    lote: string;
-    fechaVencimiento?: string;
-    cantidad: number;
-}
-export declare enum EstadoTransferenciaEnum {
-    PENDIENTE = "PENDIENTE",
-    EN_TRANSITO = "EN_TRANSITO",
-    RECIBIDO = "RECIBIDO",
-    ANULADO = "ANULADO"
-}
-export interface Transferencia {
-    _id: string;
-    type: "transferencia";
-    numeroTransferencia?: string;
-    almacenOrigenId: string;
-    almacenDestinoId: string;
-    motivo?: string;
-    observaciones?: string;
-    adjuntos?: string[];
-    items: TransferenciaItem[];
-    estado: EstadoTransferenciaEnum;
-    usuarioId: string;
-    usuarioSolicitaNombre?: string;
-    usuarioRecepcionId?: string;
-    usuarioRecibeNombre?: string;
-    fechaSolicitud: string;
-    fechaRecepcion?: string;
-    createdAt: Date;
-    updatedAt: Date;
-}
-export interface TransferenciaItem {
-    productoId: string;
-    cantidad: number;
-}
-export declare enum EstadoRecepcionMercaderiaEnum {
-    BORRADOR = "BORRADOR",
-    CONFIRMADA = "CONFIRMADA",
-    ANULADA = "ANULADA"
-}
-export interface RecepcionMercaderia {
-    id: string;
-    type: "recepcion_mercaderia";
-    eventoCompraId: string;
-    almacenDestinoId: string;
-    fechaRecepcion: string;
-    vehiculo?: string;
-    guiaTransportista?: string;
-    estado: EstadoRecepcionMercaderiaEnum;
-    items: RecepcionMercaderiaItem[];
-    usuarioId: string;
-    observaciones?: string;
-    createdAt: Date;
-    updatedAt: Date;
-}
-export interface RecepcionMercaderiaItem {
-    productoId: string;
-    cantidadRecibida: number;
-    lote?: string;
-    fechaVencimiento?: string;
-    compraItemId?: string;
-    compraId?: string;
-    proveedorId?: string;
-}
-export interface AsignacionRecepcionCompra {
-    id: string;
-    recepcionMercaderiaId: string;
     compraId: string;
-    compraItemId: string;
-    productoId: string;
-    cantidadAsignada: number;
-    createdAt: Date;
-}
-export interface MovimientoInventario {
-    _id: string;
-    type: "movimiento_inventario";
-    numeroMovimiento?: string;
-    tipo: TipoMovimientoInventarioEnum;
-    estado: EstadoMovimientoEnum;
-    origenDocumento: OrigenDocumentoEnum;
-    documentoReferenciaId?: string;
-    serieDocumentoReferencia?: string;
-    motivo?: string;
-    almacenOrigenId?: string;
-    almacenDestinoId?: string;
-    items: MovimientoInventarioItem[];
-    esAutomatico?: boolean;
-    notas?: string;
-    usuarioId: string;
-    usuarioNombre?: string;
-    fechaMovimiento: string;
-    createdAt: Date;
-    updatedAt: Date;
-}
-export interface MovimientoInventarioItem {
-    productoId: string;
-    cantidad: number;
-    costoUnitario?: number;
-    costoPromedioCalculado?: number;
-    costoPromedioAnterior?: number;
-    costoPromedioNuevo?: number;
-    lote?: string;
-    fechaVencimiento?: string;
-    ubicacionInterna?: string;
+    createdAt: UnixMillis;
+    updatedAt: UnixMillis;
 }

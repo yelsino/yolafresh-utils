@@ -7,7 +7,6 @@ export * from './CompraGenerator';
 export * from './EventoCompraBuilder';
 export * from './MovimientoInventarioProcessor';
 export * from './PermisoValidator';
-export * from './Producto';
 export * from './RecepcionProcessor';
 export * from './ShoppingCart';
 export * from './Usuario';

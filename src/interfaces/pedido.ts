@@ -1,6 +1,5 @@
 import { OrderState } from "@/utils/enums"
-import { TipoVentaEnum } from "./producto"
-import { IProducto } from "./producto"
+import { Presentacion } from "./producto"
 import { IUsuario } from "./usuario"
 
 export type Hora = {
@@ -38,7 +37,7 @@ export interface IntemList {
   }
   
   export interface ItemCar {
-    producto: IProducto
+    producto: Presentacion
     cantidad: number // peso
     monto: number
     detalle: string[]
