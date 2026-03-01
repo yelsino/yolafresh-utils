@@ -44,6 +44,41 @@
       "require": "./domain/*.js",
       "types": "./domain/*.d.ts"
     },
+    "./domain/ventas/*": {
+      "import": "./domain/ventas/*.js",
+      "require": "./domain/ventas/*.js",
+      "types": "./domain/ventas/*.d.ts"
+    },
+    "./domain/compras/*": {
+      "import": "./domain/compras/*.js",
+      "require": "./domain/compras/*.js",
+      "types": "./domain/compras/*.d.ts"
+    },
+    "./domain/inventario/*": {
+      "import": "./domain/inventario/*.js",
+      "require": "./domain/inventario/*.js",
+      "types": "./domain/inventario/*.d.ts"
+    },
+    "./domain/contabilidad/*": {
+      "import": "./domain/contabilidad/*.js",
+      "require": "./domain/contabilidad/*.js",
+      "types": "./domain/contabilidad/*.d.ts"
+    },
+    "./domain/tesoreria/*": {
+      "import": "./domain/tesoreria/*.js",
+      "require": "./domain/tesoreria/*.js",
+      "types": "./domain/tesoreria/*.d.ts"
+    },
+    "./domain/usuarios/*": {
+      "import": "./domain/usuarios/*.js",
+      "require": "./domain/usuarios/*.js",
+      "types": "./domain/usuarios/*.d.ts"
+    },
+    "./domain/shared/*": {
+      "import": "./domain/shared/*.js",
+      "require": "./domain/shared/*.js",
+      "types": "./domain/shared/*.d.ts"
+    },
     "./interfaces": {
       "import": "./dist/domain/shared/interfaces/index.js",
       "require": "./dist/domain/shared/interfaces/index.js",
@@ -69,6 +104,27 @@
     "*": {
       "domain/*": [
         "domain/*"
+      ],
+      "domain/ventas/*": [
+        "domain/ventas/*"
+      ],
+      "domain/compras/*": [
+        "domain/compras/*"
+      ],
+      "domain/inventario/*": [
+        "domain/inventario/*"
+      ],
+      "domain/contabilidad/*": [
+        "domain/contabilidad/*"
+      ],
+      "domain/tesoreria/*": [
+        "domain/tesoreria/*"
+      ],
+      "domain/usuarios/*": [
+        "domain/usuarios/*"
+      ],
+      "domain/shared/*": [
+        "domain/shared/*"
       ]
     }
   },
