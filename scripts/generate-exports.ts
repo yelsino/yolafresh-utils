@@ -72,6 +72,7 @@ async function generateMainIndex() {
   exportStatements.push("export * from './domain/shared/base';");
   exportStatements.push("export * from './domain/shared/value-objects';");
   exportStatements.push("export * from './domain/ventas/Venta';");
+  exportStatements.push("export * from './domain/ventas/CarritoVenta';");
 
 
   exportStatements.push('');

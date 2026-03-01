@@ -22,6 +22,7 @@ __exportStar(require("./domain/shared/utils"), exports);
 __exportStar(require("./domain/shared/base"), exports);
 __exportStar(require("./domain/shared/value-objects"), exports);
 __exportStar(require("./domain/ventas/Venta"), exports);
+__exportStar(require("./domain/ventas/CarritoVenta"), exports);
 // También puedes exportar directamente los módulos más utilizados aquí si lo deseas
 // Por ejemplo:
 // export { Producto, UpdateProducto } from './interfaces/producto';
