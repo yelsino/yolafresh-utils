@@ -40,9 +40,9 @@
       "types": "./dist/index.d.ts"
     },
     "./domain/*": {
-      "import": "./dist/domain/*.js",
-      "require": "./dist/domain/*.js",
-      "types": "./dist/domain/*.d.ts"
+      "import": "./domain/*.js",
+      "require": "./domain/*.js",
+      "types": "./domain/*.d.ts"
     },
     "./interfaces": {
       "import": "./dist/domain/shared/interfaces/index.js",
@@ -65,6 +65,13 @@
     "dist",
     "domain"
   ],
+  "typesVersions": {
+    "*": {
+      "domain/*": [
+        "domain/*"
+      ]
+    }
+  },
   "scripts": {
     "build": "tsc && tsc-alias && node scripts/generate-subpath-stubs.cjs",
     "prepare": "npm run build",
