@@ -49,6 +49,11 @@
       "require": "./domain/ventas/*.js",
       "types": "./domain/ventas/*.d.ts"
     },
+    "./domain/ventas/events/*": {
+      "import": "./domain/ventas/events/*.js",
+      "require": "./domain/ventas/events/*.js",
+      "types": "./domain/ventas/events/*.d.ts"
+    },
     "./domain/compras/*": {
       "import": "./domain/compras/*.js",
       "require": "./domain/compras/*.js",
@@ -79,6 +84,26 @@
       "require": "./domain/shared/*.js",
       "types": "./domain/shared/*.d.ts"
     },
+    "./domain/shared/interfaces/*": {
+      "import": "./domain/shared/interfaces/*.js",
+      "require": "./domain/shared/interfaces/*.js",
+      "types": "./domain/shared/interfaces/*.d.ts"
+    },
+    "./domain/shared/utils/*": {
+      "import": "./domain/shared/utils/*.js",
+      "require": "./domain/shared/utils/*.js",
+      "types": "./domain/shared/utils/*.d.ts"
+    },
+    "./domain/shared/base/*": {
+      "import": "./domain/shared/base/*.js",
+      "require": "./domain/shared/base/*.js",
+      "types": "./domain/shared/base/*.d.ts"
+    },
+    "./domain/shared/value-objects/*": {
+      "import": "./domain/shared/value-objects/*.js",
+      "require": "./domain/shared/value-objects/*.js",
+      "types": "./domain/shared/value-objects/*.d.ts"
+    },
     "./interfaces": {
       "import": "./dist/domain/shared/interfaces/index.js",
       "require": "./dist/domain/shared/interfaces/index.js",
@@ -108,6 +133,9 @@
       "domain/ventas/*": [
         "domain/ventas/*"
       ],
+      "domain/ventas/events/*": [
+        "domain/ventas/events/*"
+      ],
       "domain/compras/*": [
         "domain/compras/*"
       ],
@@ -125,6 +153,18 @@
       ],
       "domain/shared/*": [
         "domain/shared/*"
+      ],
+      "domain/shared/interfaces/*": [
+        "domain/shared/interfaces/*"
+      ],
+      "domain/shared/utils/*": [
+        "domain/shared/utils/*"
+      ],
+      "domain/shared/base/*": [
+        "domain/shared/base/*"
+      ],
+      "domain/shared/value-objects/*": [
+        "domain/shared/value-objects/*"
       ]
     }
   },
