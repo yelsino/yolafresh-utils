@@ -39,6 +39,11 @@
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
+    "./domain/*": {
+      "import": "./dist/domain/*.js",
+      "require": "./dist/domain/*.js",
+      "types": "./dist/domain/*.d.ts"
+    },
     "./interfaces": {
       "import": "./dist/domain/shared/interfaces/index.js",
       "require": "./dist/domain/shared/interfaces/index.js",
