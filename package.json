@@ -62,10 +62,11 @@
 
   },
   "files": [
-    "dist"
+    "dist",
+    "domain"
   ],
   "scripts": {
-    "build": "tsc && tsc-alias",
+    "build": "tsc && tsc-alias && node scripts/generate-subpath-stubs.cjs",
     "prepare": "npm run build",
     "generate-exports": "cd scripts && npx ts-node generate-exports.ts && cd ..",
     "test": "echo \"Error: no test specified\" && exit 1"
