@@ -111,6 +111,7 @@ export interface Presentacion {
   sku?: string;
   codigoBarra?: string;
   codigosAlternos?: string[];
+  precioVenta?: number;
 
   tipoVenta: TipoVentaEnum;
 
