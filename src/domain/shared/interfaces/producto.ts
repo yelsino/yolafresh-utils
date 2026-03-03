@@ -85,7 +85,6 @@ export interface ProductoBase {
   consideraciones?: string;
 
   unidadBaseInterna: UnidadBaseInterna;
-
   categoriaId: string;
 
   imagen: ImageSizes;
@@ -136,12 +135,9 @@ export interface Presentacion {
   visibleOnline: boolean;
 
   precioCompraReferencial?: number;
-  precioVenta?: number;
 
   activo: boolean;
-
   imagen?: ImageSizes;
-  url?: ImageSizes;
 
   mayoreo?: boolean;
   cantidadParaDescuento?: number;
