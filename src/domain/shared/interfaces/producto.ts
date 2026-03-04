@@ -81,15 +81,16 @@ export interface ProductoBase {
 
   nombre: string;
   descripcion?: string;
-  caracteristicas?: string;
+  // caracteristicas?: string;
   consideraciones?: string;
+  marca?: string;
 
   unidadBaseInterna: UnidadBaseInterna;
   categoriaId: string;
 
   imagen: ImageSizes;
 
-  keywords?: string[];
+  keywords?: string[]; 
 
   aplicaIGV: boolean;
   porcentajeIGV: number;
@@ -140,7 +141,6 @@ export interface Presentacion {
   activo: boolean;
   imagen?: ImageSizes;
 
-  mayoreo?: boolean;
   cantidadParaDescuento?: number;
   descuentoXCantidad?: number;
 

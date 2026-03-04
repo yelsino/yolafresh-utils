@@ -1227,7 +1227,6 @@ export class CarritoVenta implements ICarritoVenta {
       unidadContenido: producto.unidadContenido,
       equivalenciaUnidadBase: producto.equivalenciaUnidadBase,
       fraccionable: producto.fraccionable,
-      mayoreo: producto.mayoreo,
       cantidadParaDescuento: producto.cantidadParaDescuento,
       descuentoXCantidad: producto.descuentoXCantidad,
       visibleEnPOS: producto.visibleEnPOS,
