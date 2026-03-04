@@ -39,7 +39,7 @@ export function generarWhatsAppLink(carrito: Carrito): string {
       const cantidad = formatCantidad({ 
         cantidad: item.cantidad, 
         tipoVenta: item.producto.tipoVenta, 
-        mayoreo: item.producto.mayoreo, 
+        // mayoreo: item.producto.mayoreo, 
         abreviado: true, 
       });
       // const cantidad = formatCantidad(item.cantidad, item.producto.tipoVenta, item.producto.mayoreo, true);
