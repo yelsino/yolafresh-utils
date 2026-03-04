@@ -114,7 +114,7 @@ export interface Presentacion {
   codigosAlternos?: string[];
   precioVenta?: number;
 
-  tipoVenta: TipoVentaEnum;
+  tipoVenta: TipoVentaEnum; // al definir el tipo de venta en base, se define la unidad base en presentacion interna
 
   contenidoNeto: number;
 
@@ -141,6 +141,7 @@ export interface Presentacion {
   activo: boolean;
   imagen?: ImageSizes;
 
+  mayoreo?: boolean;
   cantidadParaDescuento?: number;
   descuentoXCantidad?: number;
 
