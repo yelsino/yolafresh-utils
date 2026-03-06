@@ -84,7 +84,6 @@ export interface CompraItem {
   impuestoUnitario?: number;
   impuestoTotal?: number;
   productoEmpaque?:TipoEmpaqueEnum;
-
   factorUnidadBase: number;
 
   lote?: string;
