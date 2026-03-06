@@ -75,76 +75,141 @@ export enum TipoVentaEnum {
 
 export type UnidadBaseInterna = "kilogramo" | "litro" | "unidad";
 
+/**
+ * Representa el producto genérico o conceptual dentro del catálogo.
+ * 
+ * Ejemplos:
+ * - Papa blanca
+ * - Arroz extra
+ * - Aceite vegetal
+ * 
+ * El ProductoBase define características comunes del producto,
+ * pero NO representa algo vendible directamente. Las ventas se
+ * realizan mediante sus "Presentaciones".
+ */
 export interface ProductoBase {
   id: string;
   type: "producto_base";
-
   nombre: string;
   descripcion?: string;
-  // caracteristicas?: string;
+  /** Consideraciones de uso, almacenamiento o manipulación. */
   consideraciones?: string;
   marca?: string;
-
+  /**
+   * Unidad base interna usada para inventario.
+   * 
+   * Ejemplo:
+   * - kilogramo
+   * - litro
+   * - unidad
+   * 
+   * Todo el stock del sistema se calcula en esta unidad.
+   */
   unidadBaseInterna: UnidadBaseInterna;
   categoriaId: string;
-
   imagen: ImageSizes;
-
-  keywords?: string[]; 
-
+  /** Palabras clave para búsqueda rápida en el POS o catálogo. */
+  keywords?: string[];
+  /** Indica si el producto está afecto al IGV. */
   aplicaIGV: boolean;
+  /** Porcentaje de IGV aplicado (ej: 18). */
   porcentajeIGV: number;
-
+  /** Indica si el producto está activo en el sistema. */
   activo: boolean;
 
+  /** Timestamp de creación del registro. */
   createdAt: number;
+  /** Timestamp de última actualización. */
   updatedAt: number;
 }
 
+/**
+ * Representa una forma específica de vender un ProductoBase.
+ * 
+ * Ejemplos:
+ * - Papa por kilogramo
+ * - Papa saco 60kg
+ * - Aceite botella 900ml
+ * - Caja x12 cervezas
+ * 
+ * Cada presentación define:
+ * - forma de venta
+ * - contenido
+ * - precio
+ * - equivalencia con la unidad base de inventario
+ */
 export interface Presentacion {
   id: string;
+
+  /** Tipo de documento para persistencia (CouchDB / NoSQL). */
   type: "presentacion";
-
   productoBaseId: string;
-
   nombre: string;
 
+  /** SKU interno opcional para control logístico. */
   sku?: string;
   codigoBarra?: string;
+  /** Códigos alternos (otros códigos de proveedor o empaques). */
   codigosAlternos?: string[];
+
+  /** Precio de venta actual de la presentación. */
   precioVenta?: number;
+  tipoVenta: TipoVentaEnum;
 
-  tipoVenta: TipoVentaEnum; // al definir el tipo de venta en base, se define la unidad base en presentacion interna
-
+  /**
+   * Cantidad física del contenido.
+   * 
+   * Ejemplos:
+   * - 5
+   * - 500
+   * - 12
+   */
   contenidoNeto: number;
 
+  /**
+   * Unidad física del contenido.
+   * 
+   * Ejemplos:
+   * - kilogramo
+   * - gramo
+   * - litro
+   * - mililitro
+   * - unidad
+   */
   unidadContenido: UnidadMedidaEnum;
 
   /**
-   * ¿Cuántas unidades base representa ESTA presentación?
-   * Ej:
-   * - Bolsa 5kg arroz → 5
-   * - Botella 500ml → 0.5
+   * Equivalencia de esta presentación respecto a la unidad base interna.
+   * 
+   * Permite convertir cualquier venta al sistema de inventario.
+   * 
+   * Ejemplos:
+   * - Bolsa arroz 5kg → 5
+   * - Botella 500ml (base litro) → 0.5
    * - Caja x12 botellas 1L → 12
    */
   equivalenciaUnidadBase: number;
 
+  /**
+   * Indica si la presentación puede venderse en fracciones.
+   * 
+   * Ejemplo:
+   * - papa por kilo → true
+   * - botella sellada → false
+   */
   fraccionable: boolean;
-
   tipoEmpaque?: TipoEmpaqueEnum;
-
   visibleEnPOS: boolean;
   visibleOnline: boolean;
-
+  /** Precio de compra referencial usado como guía para compras. */
   precioCompraReferencial?: number;
-
-  activo: boolean;
   imagen?: ImageSizes;
-
+  /** Indica si esta presentación maneja precios por mayoreo. */
   mayoreo?: boolean;
+  /** Cantidad mínima requerida para aplicar descuento por volumen. */
   cantidadParaDescuento?: number;
+  /** Porcentaje o monto de descuento aplicado al alcanzar la cantidad. */
   descuentoXCantidad?: number;
-
   createdAt: number;
   updatedAt: number;
 }

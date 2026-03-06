@@ -53,14 +53,24 @@ export interface StockPresentacionAlmacen {
   puntoReorden?: number;
   ultimoMovimiento?: string;
 
-  lotes?: StockLote[];
 }
 
-export interface StockLote {
-  lote: string;
-  fechaVencimiento?: ISODateOnly;
-  cantidad: number;
+
+
+
+export interface StockLoteAlmacen {
+  _id: string
+
+  presentacionId: string
+  almacenId: string
+
+  lote: string
+  fechaVencimiento?: ISODateOnly
+
+  cantidad: number
 }
+
+
 
 // 🔐 SOLO MovimientoInventario puede modificar el stock.
 export interface MovimientoInventario {
@@ -109,6 +119,7 @@ export interface MovimientoInventarioItem {
   costoPromedioNuevo?: number;
 
   lote?: string;
+  almacenId?: string;
   fechaVencimiento?: ISODateOnly;
 
   ubicacionInterna?: string; // pasillo, rack, estante

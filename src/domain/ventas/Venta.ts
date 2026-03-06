@@ -139,6 +139,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
 
   // === GETTERS PARA ACCESO A DATOS ===
 
+
   /**
    * Obtener items de la venta (desde carrito congelado)
    */

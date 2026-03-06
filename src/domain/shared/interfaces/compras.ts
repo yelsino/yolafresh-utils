@@ -69,7 +69,6 @@ export interface ICompra {
 
 export interface CompraItem {
   id: string;
-
   compraId: string;
 
   presentacionId: string;
@@ -79,7 +78,15 @@ export interface CompraItem {
   costoUnitario: number;
   costoTotal: number;
 
-  afectaInventario: boolean; 
+  afectaInventario: boolean;
+
+  impuestoUnitario?: number;
+  impuestoTotal?: number;
+
+  factorUnidadBase: number;
+
+  lote?: string;
+  fechaVencimiento?: string;
 }
 
 export interface CompraEgresoRef {
@@ -104,12 +111,12 @@ export interface EventoCompra {
   updatedAt: UnixMillis;
 }
 
+// SIRVE PARA RELACIONAR UN ITEM DE COMPRA CON UN EVENTO DE COMPRA
 export interface EventoCompraItem {
   id: string;
-
   eventoCompraId: string;
-  compraId: string;
-
-  createdAt: UnixMillis;
-  updatedAt: UnixMillis;
+  proveedorId: string;
+  compraItemId: string;
 }
+
+
