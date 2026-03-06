@@ -1,5 +1,6 @@
 import { UnixMillis } from "@/domain/shared/utils/dates";
 import { EstadoPagoEnum } from "@/domain/shared/utils/enums";
+import { TipoEmpaqueEnum } from "./producto";
 
 export enum EstadoCompraEnum {
   BORRADOR = "BORRADOR",
@@ -82,6 +83,7 @@ export interface CompraItem {
 
   impuestoUnitario?: number;
   impuestoTotal?: number;
+  productoEmpaque?:TipoEmpaqueEnum;
 
   factorUnidadBase: number;
 
