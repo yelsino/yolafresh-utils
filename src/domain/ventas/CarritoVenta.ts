@@ -1233,7 +1233,6 @@ export class CarritoVenta implements ICarritoVenta {
       visibleOnline: producto.visibleOnline,
       tipoEmpaque: producto.tipoEmpaque,
       imagen: producto.imagen,
-      activo: producto.activo,
       createdAt: producto.createdAt,
       updatedAt: producto.updatedAt,
     };
