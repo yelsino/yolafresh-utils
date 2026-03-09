@@ -1,5 +1,5 @@
 import { generarUlid } from "@/domain/shared/utils/dates";
-import { EstadoEventoCompraEnum, EventoCompra, CompraItem, EventoCompraItem } from "./compras";
+import { EstadoEventoCompraEnum, EventoCompra, CompraItem, EventoCompraItem } from "@/domain/shared/interfaces";
 
 
 export class EventoCompraFactory {
@@ -49,6 +49,7 @@ export class EventoCompraFactory {
     items: CompraItem[];
     relaciones: EventoCompraItem[];
     item: CompraItem;
+    proveedorId: string;
     relacionId?: string;
     now?: number;
   }): { items: CompraItem[]; relaciones: EventoCompraItem[] } {
@@ -60,9 +61,8 @@ export class EventoCompraFactory {
     const relacion: EventoCompraItem = {
       id: data.relacionId ?? this.generarId("eci"),
       eventoCompraId: data.evento.id,
-      compraId: itemNuevo.compraId,
-      createdAt: ahora,
-      updatedAt: ahora,
+      proveedorId: data.proveedorId,
+      compraItemId: itemNuevo.id,
     };
     return {
       items: [...data.items, itemNuevo],
@@ -87,16 +87,16 @@ export class EventoCompraFactory {
 
   static actualizarProveedorItem(data: {
     relaciones: EventoCompraItem[];
-    compraId: string;
-    updatedAt?: number;
+    compraItemId: string;
+    proveedorId: string;
   }): EventoCompraItem[] {
     let encontrado = false;
     const relaciones = data.relaciones.map((rel) => {
-      if (rel.compraId !== data.compraId) return rel;
+      if (rel.compraItemId !== data.compraItemId) return rel;
       encontrado = true;
       return {
         ...rel,
-        updatedAt: data.updatedAt ?? Date.now(),
+        proveedorId: data.proveedorId,
       };
     });
     if (!encontrado) throw new Error("Relación de proveedor no encontrada");
@@ -111,7 +111,7 @@ export class EventoCompraFactory {
     const item = data.items.find((it) => it.id === data.itemId);
     const items = data.items.filter((it) => it.id !== data.itemId);
     const relaciones = item
-      ? data.relaciones.filter((rel) => rel.compraId !== item.compraId)
+      ? data.relaciones.filter((rel) => rel.compraItemId !== item.id)
       : data.relaciones;
     if (items.length === data.items.length)
       throw new Error("CompraItem no encontrado");

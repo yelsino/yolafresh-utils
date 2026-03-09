@@ -6,9 +6,10 @@
  * Esta clase representa el documento persistido en la base de datos.
  */
 
+import { ICompra, TipoDocumentoCompraEnum, CompraItem, CompraEgresoRef, EstadoCompraEnum } from "../shared/interfaces";
 import { EstadoPagoEnum } from "../shared/utils";
 import { DateUtils } from "../shared/utils/dates";
-import { CompraEgresoRef, CompraItem, EstadoCompraEnum, ICompra, TipoDocumentoCompraEnum } from "./compras";
+
 
 export class Compra implements ICompra {
   public readonly id: string;

@@ -1,13 +1,8 @@
-import {
-  CompraEgresoRef,
-  CompraItem,
-  EstadoCompraEnum,
-  EstadoPagoEnum,
-  EventoCompra,
-  TipoDocumentoCompraEnum
-} from "./compras";
+
 import { generarUlid } from "@/domain/shared/utils/dates";
 import { Compra } from "./Compra";
+import { EventoCompra, CompraItem, TipoDocumentoCompraEnum, EstadoCompraEnum, CompraEgresoRef } from "../shared/interfaces";
+import { EstadoPagoEnum } from "../shared/utils";
 
 export class GeneradorCompra {
   private static generarId(prefijo: string): string {

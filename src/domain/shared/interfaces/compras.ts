@@ -73,6 +73,7 @@ export interface CompraItem {
   compraId: string;
 
   presentacionId: string;
+  productoBaseId?: string;
 
   cantidad: number;
 

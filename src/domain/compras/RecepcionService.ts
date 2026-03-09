@@ -1,6 +1,7 @@
 import { RecepcionMercaderia, AsignacionRecepcionCompra, Almacen, MovimientoInventario, MovimientoInventarioItem, TipoMovimientoInventarioEnum, EstadoMovimientoEnum, OrigenDocumentoEnum } from "@/domain/inventario/Inventario";
 import { generarUlid } from "@/domain/shared/utils/dates";
-import { EventoCompra, ICompra, EstadoEventoCompraEnum, EstadoCompraEnum, CompraItem } from "./compras";
+import { EventoCompra, ICompra, EstadoEventoCompraEnum, EstadoCompraEnum, CompraItem } from "../shared/interfaces";
+
 
 
 export class RecepcionService {
