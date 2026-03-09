@@ -5,7 +5,6 @@
 export * from './Device';
 export * from './Inventario';
 export * from './caja';
-export * from './compras copy';
 export * from './compras';
 export * from './documentos';
 export * from './empresa';
