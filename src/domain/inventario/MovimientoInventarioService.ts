@@ -319,11 +319,7 @@ export class MovimientoInventarioService {
     fechaVencimiento?: string;
     cantidad: number;
   }): void {
-    if (!data.lote) {
-      throw new Error(
-        "Se requiere lote para ENTRADA en almacén con lotes habilitados",
-      );
-    }
+   
     const lotes = data.stock.lotes
       ? data.stock.lotes.map((l) => ({ ...l }))
       : [];
@@ -337,7 +333,7 @@ export class MovimientoInventarioService {
       };
     } else {
       const nuevoLote: StockLote = {
-        lote: data.lote,
+        lote: data.lote ?? "",
         fechaVencimiento: data.fechaVencimiento,
         cantidad: data.cantidad,
       };
