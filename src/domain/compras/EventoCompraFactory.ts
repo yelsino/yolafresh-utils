@@ -62,7 +62,8 @@ export class EventoCompraFactory {
       id: data.relacionId ?? this.generarId("eci"),
       eventoCompraId: data.evento.id,
       proveedorId: data.proveedorId,
-      compraItemId: itemNuevo.id,
+      // compraItemId: itemNuevo.id,
+      productoCompra: itemNuevo,
     };
     return {
       items: [...data.items, itemNuevo],
@@ -92,7 +93,7 @@ export class EventoCompraFactory {
   }): EventoCompraItem[] {
     let encontrado = false;
     const relaciones = data.relaciones.map((rel) => {
-      if (rel.compraItemId !== data.compraItemId) return rel;
+      if (rel.productoCompra.id !== data.compraItemId) return rel;
       encontrado = true;
       return {
         ...rel,
@@ -111,7 +112,7 @@ export class EventoCompraFactory {
     const item = data.items.find((it) => it.id === data.itemId);
     const items = data.items.filter((it) => it.id !== data.itemId);
     const relaciones = item
-      ? data.relaciones.filter((rel) => rel.compraItemId !== item.id)
+      ? data.relaciones.filter((rel) => rel.productoCompra.id !== item.id)
       : data.relaciones;
     if (items.length === data.items.length)
       throw new Error("CompraItem no encontrado");

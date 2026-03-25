@@ -55,9 +55,6 @@ export interface StockPresentacionAlmacen {
 
 }
 
-
-
-
 export interface StockLoteAlmacen {
   _id: string
 
@@ -69,8 +66,6 @@ export interface StockLoteAlmacen {
 
   cantidad: number
 }
-
-
 
 // 🔐 SOLO MovimientoInventario puede modificar el stock.
 export interface MovimientoInventario {

@@ -143,7 +143,7 @@ export interface Presentacion {
 
   /** Tipo de documento para persistencia (CouchDB / NoSQL). */
   type: "presentacion";
-  productoBaseId: string;
+  productoBaseId: string; // id de la base
   nombre: string;
 
   /** SKU interno opcional para control logístico. */
@@ -188,8 +188,7 @@ export interface Presentacion {
    * - Botella 500ml (base litro) → 0.5
    * - Caja x12 botellas 1L → 12
    */
-  equivalenciaUnidadBase: number;
-
+  equivalenciaUnidadBase: 6;
   /**
    * Indica si la presentación puede venderse en fracciones.
    * 
@@ -239,7 +238,8 @@ export interface ProductoPrecio {
 
 export interface Categoria {
   id: string;
-
+  type: "categoria";
+  parentId: string; 
   nombre: string;
   tag: string;
   descripcion?: string;
@@ -285,3 +285,34 @@ export interface ProductoConPresentacionesDTO {
   producto: ProductoBase;
   presentaciones: Presentacion[];
 }
+
+
+
+
+export interface Categoria {
+  id: string;
+  type: "categoria";
+  parentId: string;
+  nombre: string;
+}
+
+[
+  {
+    id: "1",
+    type: "categoria",
+    parentId: "", 
+    nombre: "Alimentos frescos",
+  },
+  {
+    id: "2",
+    type: "categoria",
+    parentId: "1",
+    nombre: "Categoría 2",
+  },
+  {
+    id: "3",
+    type: "categoria",
+    parentId: "2",
+    nombre: "Subcategoría 1.1",
+  },
+]

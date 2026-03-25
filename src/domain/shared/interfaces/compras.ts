@@ -118,7 +118,8 @@ export interface EventoCompraItem {
   id: string;
   eventoCompraId: string;
   proveedorId: string;
-  compraItemId: string;
+  // compraItemId: string;
+  productoCompra: Partial<CompraItem>;
 }
 
 
