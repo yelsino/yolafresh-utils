@@ -188,7 +188,7 @@ export interface Presentacion {
    * - Botella 500ml (base litro) → 0.5
    * - Caja x12 botellas 1L → 12
    */
-  equivalenciaUnidadBase: 6;
+  equivalenciaUnidadBase: number;
   /**
    * Indica si la presentación puede venderse en fracciones.
    * 
