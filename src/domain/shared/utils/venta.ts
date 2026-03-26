@@ -1,8 +1,8 @@
 import {  capitalizarPrimeraLetra, formatCantidad, formatearFecha, formatSolesPeruanos } from "./textos";
 
-import { Carrito, Hora } from "../interfaces/pedido";
 import { IUsuario } from "../interfaces/usuario";
 import { Cliente, Personal } from "../interfaces/persons";
+import { Carrito, Hora } from "../interfaces/pedido";
 
 /**
  * Obtiene el nombre para mostrar de un usuario
