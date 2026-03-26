@@ -42,9 +42,16 @@ async function generateExportsForDirectory(dir: { path: string, prefix: string }
     tsFiles.sort();
     
     // Generar las líneas de exportación
+    const isInterfacesDir = dir.path.includes('domain/shared/interfaces');
     for (const file of tsFiles) {
       const moduleName = path.basename(file, '.ts');
+      if (isInterfacesDir && moduleName === 'pedido') continue;
       exportStatements.push(`export * from './${moduleName}';`);
+    }
+    if (isInterfacesDir) {
+      exportStatements.push(
+        "export type { Hora, Carrito, IntemList, ItemCarDB, ItemCar, Direccion as DireccionPedido, Register, Pedido, Tipo, ItemLista, Lista, UserCaracteristicProduct, SendEmail } from './pedido';",
+      );
     }
     
     // Escribir al archivo de salida
