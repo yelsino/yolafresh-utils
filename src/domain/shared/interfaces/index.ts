@@ -13,7 +13,6 @@ export * from './entidades';
 export * from './evidencias';
 export * from './finanzas';
 export * from './pagos';
-export * from './pedido';
 export * from './persons';
 export * from './producto';
 export * from './producto.update.interface';
