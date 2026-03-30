@@ -257,6 +257,9 @@ export class Compra implements ICompra {
     const totalItems = redondear(
       this.items.reduce((sum, item) => {
         if (!item.id) throw new Error("CompraItem sin id");
+        if (!item.nombreItem || item.nombreItem.trim() === "") {
+          throw new Error("CompraItem sin nombreItem");
+        }
         if (!item.presentacionId) throw new Error("CompraItem sin presentacionId");
         if (!Number.isFinite(item.cantidad) || item.cantidad <= 0) {
           throw new Error("Cantidad inválida en CompraItem");

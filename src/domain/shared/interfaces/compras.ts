@@ -72,6 +72,7 @@ export interface CompraItem {
   id: string;
   compraId: string;
 
+  nombreItem: string;
   presentacionId: string;
   productoBaseId?: string;
 

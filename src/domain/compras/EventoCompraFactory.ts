@@ -54,10 +54,12 @@ export class EventoCompraFactory {
     now?: number;
   }): { items: CompraItem[]; relaciones: EventoCompraItem[] } {
     const ahora = data.now ?? Date.now();
+    if (!data.item.nombreItem || data.item.nombreItem.trim() === "") {
+      throw new Error("nombreItem es requerido en CompraItem");
+    }
     const itemIdRepetido = data.items.some((item) => item.id === data.item.id);
-    const itemNuevo = itemIdRepetido
-      ? { ...data.item, id: this.generarId("ci") }
-      : { ...data.item };
+    const base = { ...data.item, nombreItem: data.item.nombreItem.trim() };
+    const itemNuevo = itemIdRepetido ? { ...base, id: this.generarId("ci") } : base;
     const relacion: EventoCompraItem = {
       id: data.relacionId ?? this.generarId("eci"),
       eventoCompraId: data.evento.id,

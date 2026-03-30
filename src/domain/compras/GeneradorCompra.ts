@@ -44,8 +44,11 @@ export class GeneradorCompra {
   }): Compra[] {
     const itemsPorCompraId = new Map<string, CompraItem[]>();
     data.items.forEach((item) => {
+      if (!item.nombreItem || item.nombreItem.trim() === "") {
+        throw new Error("nombreItem es requerido en CompraItem");
+      }
       const lista = itemsPorCompraId.get(item.compraId) ?? [];
-      lista.push({ ...item });
+      lista.push({ ...item, nombreItem: item.nombreItem.trim() });
       itemsPorCompraId.set(item.compraId, lista);
     });
 
