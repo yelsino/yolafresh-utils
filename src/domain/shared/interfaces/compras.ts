@@ -102,13 +102,14 @@ export interface EventoCompra {
 
   responsableId: string;
   responsableNombreSnapshot?: string;
-
+  
   origen: string;
   destino?: string;
-
+  
   montoAsignado?: number;
-
+  
   estado: EstadoEventoCompraEnum;
+  correlativoInterno?: string;
 
   createdAt: UnixMillis;
   updatedAt: UnixMillis;
