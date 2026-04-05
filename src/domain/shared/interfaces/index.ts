@@ -12,6 +12,7 @@ export * from './empresa';
 export * from './entidades';
 export * from './evidencias';
 export * from './finanzas';
+export * from './ledger';
 export * from './pagos';
 export * from './persons';
 export * from './producto';

@@ -9,24 +9,24 @@ export enum EntidadReferenciaEnum {
   TRANSFERENCIA = "TRANSFERENCIA",
   OTRO = "OTRO",
 }
-
+export type MetodoRegistro = "BOT" | "AUTOMATICO" | "MANUAL";
 export interface Egreso {
+  type: "egreso";
   id?: string;
   monto: number;
   tipoEgreso: TipoEgreso;
+  centroCostoId?: string;
   quienRegistroId: string;
   quienHizoGastoId: string;
-  type: TypeFinanza;
+  metodoRegistro: MetodoRegistro;
   detalle?: string;
   observaciones?: string;
   fechaGasto?: Date;
   estado: EstadoEgreso;
   metodoPago: MetodoPago;
-
-  entidadReferencia: EntidadReferenciaEnum;
+  entidadReferencia?: EntidadReferenciaEnum;
   referenciaId?: string;
   prorrateable?: boolean;
-
   createdAt: Date;
   updatedAt: Date;
 }
@@ -192,6 +192,70 @@ export interface Anulacion {
   codigoVenta: string;
   finanzaAnuladaId: string;
   createdAt: Date;
+  updatedAt: Date;
+}
+
+export type TipoMovimientoCuentaCliente =
+  | "CARGO"
+  | "ABONO"
+  | "SALDO_FAVOR"
+  | "USO_SALDO"
+  | "DEVOLUCION";
+
+export type ReferenciaTipoMovimientoCuentaCliente =
+  | "VENTA"
+  | "PAGO"
+  | "AJUSTE"
+  | "DEVOLUCION";
+
+export interface MovimientoCuentaCliente {
+  id: string;
+  clienteId: string;
+  tipo: TipoMovimientoCuentaCliente;
+  monto: number;
+  moneda: "PEN" | "USD";
+  referenciaTipo: ReferenciaTipoMovimientoCuentaCliente;
+  referenciaId?: string;
+  descripcion?: string;
+  createdAt: Date;
+}
+
+export interface CuentaCliente {
+  clienteId: string;
+  saldoActual: number;
+  moneda: "PEN" | "USD";
+  updatedAt: Date;
+}
+
+export type TipoMovimientoCuentaProveedor =
+  | "CARGO"
+  | "ABONO"
+  | "SALDO_FAVOR"
+  | "USO_SALDO"
+  | "DEVOLUCION";
+
+export type ReferenciaTipoMovimientoCuentaProveedor =
+  | "COMPRA"
+  | "PAGO"
+  | "AJUSTE"
+  | "DEVOLUCION";
+
+export interface MovimientoCuentaProveedor {
+  id: string;
+  proveedorId: string;
+  tipo: TipoMovimientoCuentaProveedor;
+  monto: number;
+  moneda: "PEN" | "USD";
+  referenciaTipo: ReferenciaTipoMovimientoCuentaProveedor;
+  referenciaId?: string;
+  descripcion?: string;
+  createdAt: Date;
+}
+
+export interface CuentaProveedor {
+  proveedorId: string;
+  saldoActual: number;
+  moneda: "PEN" | "USD";
   updatedAt: Date;
 }
 
