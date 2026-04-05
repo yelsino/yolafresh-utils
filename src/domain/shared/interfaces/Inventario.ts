@@ -38,6 +38,13 @@ export interface Almacen {
 }
 
 export interface StockPresentacionAlmacen {
+  // no significa que el stock viva en la presentación.
+//   no significa que el stock viva en la presentación.
+// Significa:
+// la presentación es la unidad de movimiento
+// Pero el inventario está normalizado por:
+// equivalenciaUnidadBase
+// stock = suma(cantidad × equivalenciaUnidadBase)
   presentacionId: string;
   almacenId: string;
 
