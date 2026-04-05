@@ -2,6 +2,7 @@
 // Movimientos,Transferencias,Lotes,Kardex
 
 import { UnixMillis, ISODateOnly, ISODateString } from "@/utils";
+import { UnidadMedidaEnum } from "./producto";
 
 
 export enum TipoAlmacenEnum {
@@ -49,8 +50,9 @@ export interface StockPresentacionAlmacen {
   almacenId: string;
 
   stockActual: number;
+  // unidadStock: UnidadMedidaEnum;
   stockReservado?: number;
-  stockDisponible: number;
+  stockDisponible: number; // debe eliminarse
 
   costoPromedioActual: number; // Costo promedio ponderado actual
   valorInventario: number;
@@ -60,6 +62,7 @@ export interface StockPresentacionAlmacen {
   puntoReorden?: number;
   ultimoMovimiento?: string;
 
+  lotes?: StockLoteAlmacen[];
 }
 
 export interface StockLoteAlmacen {

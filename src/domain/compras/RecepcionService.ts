@@ -1,8 +1,6 @@
-import { RecepcionMercaderia, AsignacionRecepcionCompra, Almacen, MovimientoInventario, MovimientoInventarioItem, TipoMovimientoInventarioEnum, EstadoMovimientoEnum, OrigenDocumentoEnum } from "@/domain/inventario/Inventario";
+
 import { generarUlid } from "@/domain/shared/utils/dates";
-import { EventoCompra, ICompra, EstadoEventoCompraEnum, EstadoCompraEnum, CompraItem } from "../shared/interfaces";
-
-
+import { EventoCompra, ICompra, EstadoEventoCompraEnum, EstadoCompraEnum, CompraItem, Almacen, AsignacionRecepcionCompra, EstadoMovimientoEnum, MovimientoInventario, MovimientoInventarioItem, OrigenDocumentoEnum, RecepcionMercaderia, TipoMovimientoInventarioEnum } from "../shared/interfaces";
 
 export class RecepcionService {
   private static generarId(prefijo: string): string {

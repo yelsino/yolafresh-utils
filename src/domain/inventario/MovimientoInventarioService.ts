@@ -1,4 +1,5 @@
-import { StockPresentacionAlmacen, KardexLinea, MovimientoInventario, Almacen, TipoMovimientoInventarioEnum, EstadoMovimientoEnum, MovimientoInventarioItem, StockLote } from "./Inventario";
+import { StockPresentacionAlmacen, KardexLinea, MovimientoInventario, Almacen, TipoMovimientoInventarioEnum, EstadoMovimientoEnum, MovimientoInventarioItem, StockLoteAlmacen } from "../shared/interfaces";
+
 
 
 type ResultadoLinea = {
@@ -316,10 +317,14 @@ export class MovimientoInventarioService {
   private static aplicarEntradaLote(data: {
     stock: StockPresentacionAlmacen;
     lote?: string;
-    fechaVencimiento?: string;
+    fechaVencimiento?: MovimientoInventarioItem["fechaVencimiento"];
     cantidad: number;
   }): void {
-   
+    if (!data.lote) {
+      throw new Error(
+        "Se requiere lote para ENTRADA en almacén con lotes habilitados",
+      );
+    }
     const lotes = data.stock.lotes
       ? data.stock.lotes.map((l) => ({ ...l }))
       : [];
@@ -332,8 +337,15 @@ export class MovimientoInventarioService {
           data.fechaVencimiento ?? lotes[index].fechaVencimiento,
       };
     } else {
-      const nuevoLote: StockLote = {
-        lote: data.lote ?? "",
+      const nuevoLote: StockLoteAlmacen = {
+        _id: this.loteId(
+          data.stock.presentacionId,
+          data.stock.almacenId,
+          data.lote,
+        ),
+        presentacionId: data.stock.presentacionId,
+        almacenId: data.stock.almacenId,
+        lote: data.lote,
         fechaVencimiento: data.fechaVencimiento,
         cantidad: data.cantidad,
       };
@@ -365,6 +377,14 @@ export class MovimientoInventarioService {
     const nuevo = disponible - data.cantidad;
     lotes[index] = { ...lotes[index], cantidad: nuevo };
     data.stock.lotes = lotes.filter((l) => l.cantidad !== 0);
+  }
+
+  private static loteId(
+    presentacionId: string,
+    almacenId: string,
+    lote: string,
+  ): string {
+    return `lote_${presentacionId}_${almacenId}_${lote}`;
   }
 
   private static getOrCreateStock(

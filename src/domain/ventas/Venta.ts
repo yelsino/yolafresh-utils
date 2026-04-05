@@ -1,7 +1,7 @@
 import { CarItem, ICarritoVenta, ProcedenciaVenta, CarritoVenta } from "./CarritoVenta";
 import { AggregateRoot } from "@/domain/shared/base/AggregateRoot";
 import { VentaConfirmada } from "./events/VentaConfirmada";
-import { MetodoPago } from "@/domain/contabilidad/finanzas";
+import { MetodoPago } from "@/domain/shared/interfaces/finanzas";
 import { OrderState } from "@/domain/shared/utils/enums";
 
 /**
