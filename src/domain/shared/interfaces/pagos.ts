@@ -36,6 +36,8 @@ export interface Pago {
   // === DECISIÓN HUMANA ===
   usuarioConfirmaId?: string;
   fechaConfirmacion?: number;
+  conciliado?: boolean;
+  conciliadoAt?: number;
 
   // === CONTEXTO POS ===
   dispositivoId?: string;

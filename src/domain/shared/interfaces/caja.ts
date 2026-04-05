@@ -69,8 +69,19 @@ export type OrigenMovimiento =
   | 'GASTO'
   | 'AJUSTE';
 
+export type EstadoMovimientoCaja = 'ACTIVO' | 'ANULADO';
+
+export type ReferenciaTipoMovimientoCaja =
+  | 'VENTA'
+  | 'EGRESO'
+  | 'INGRESO'
+  | 'PAGO'
+  | 'AJUSTE';
+
 export interface MovimientoCaja {
   id: string;
+
+  codigoMovimiento: string;
 
   turnoId: string;          // Turno activo
   cajaDestinoId: string;   // Caja física o digital
@@ -78,11 +89,19 @@ export interface MovimientoCaja {
   tipo: TipoMovimientoCaja;       // INGRESO | EGRESO
   subtipo?: SubtipoMovimientoCaja; // VENTA | GASTO | CAMBIO | ANULACION
 
+  estado: EstadoMovimientoCaja;
+
   monto: number;           // Siempre positivo
   metodoPago: MetodoPago;
+  moneda: "PEN" | "USD";
 
   referenciaId?: string;   // ventaId | egresoId | ingresoId
+  referenciaTipo?: ReferenciaTipoMovimientoCaja;
   generadoPorId: string;
+
+  saldoEfectivoPosterior: number;
+  saldoDigitalPosterior: number;
+  saldoTotalPosterior: number;
 
   createdAt: Date;
 }

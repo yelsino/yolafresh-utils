@@ -18,6 +18,8 @@ export interface Egreso {
   quienHizoGastoId: string;
   type: TypeFinanza;
   detalle?: string;
+  observaciones?: string;
+  fechaGasto?: Date;
   estado: EstadoEgreso;
   metodoPago: MetodoPago;
 
@@ -184,6 +186,8 @@ export interface Anulacion {
   id: string;
   monto: number;
   metodoPago: MetodoPago;
+  motivo: string;
+  aprobadoPorId?: string;
   quienGeneroId: string;
   codigoVenta: string;
   finanzaAnuladaId: string;
