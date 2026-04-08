@@ -215,6 +215,7 @@ export interface Presentacion {
 
 export interface ProductoPrecio {
   id: string;
+  type: "producto_precio";
 
   presentacionId: string;
 

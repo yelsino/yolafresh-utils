@@ -33,7 +33,7 @@ export interface Evidencia {
   formato: FormatoArchivoEnum;
 
   nombreArchivo: string;
-  url: string; // local, s3, cloudinary, etc
+  url: string; // local, S2, cloudinary, etc
 
   // 🔗 Relación flexible
   entidadReferencia: 
