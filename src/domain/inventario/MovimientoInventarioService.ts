@@ -8,6 +8,8 @@ type ResultadoLinea = {
 };
 
 export class MovimientoInventarioService {
+  private static readonly SIN_LOTE = "__SIN_LOTE__";
+
   static aplicar(data: {
     movimiento: MovimientoInventario;
     stocksActuales: StockPresentacionAlmacen[];
@@ -320,15 +322,11 @@ export class MovimientoInventarioService {
     fechaVencimiento?: MovimientoInventarioItem["fechaVencimiento"];
     cantidad: number;
   }): void {
-    if (!data.lote) {
-      throw new Error(
-        "Se requiere lote para ENTRADA en almacén con lotes habilitados",
-      );
-    }
+    const lote = (data.lote ?? "").trim() || this.SIN_LOTE;
     const lotes = data.stock.lotes
       ? data.stock.lotes.map((l) => ({ ...l }))
       : [];
-    const index = lotes.findIndex((l) => l.lote === data.lote);
+    const index = lotes.findIndex((l) => l.lote === lote);
     if (index >= 0) {
       lotes[index] = {
         ...lotes[index],
@@ -341,11 +339,11 @@ export class MovimientoInventarioService {
         _id: this.loteId(
           data.stock.presentacionId,
           data.stock.almacenId,
-          data.lote,
+          lote,
         ),
         presentacionId: data.stock.presentacionId,
         almacenId: data.stock.almacenId,
-        lote: data.lote,
+        lote,
         fechaVencimiento: data.fechaVencimiento,
         cantidad: data.cantidad,
       };
@@ -360,23 +358,88 @@ export class MovimientoInventarioService {
     cantidad: number;
     permitirNegativos: boolean;
   }): void {
-    if (!data.lote) {
-      throw new Error(
-        "Se requiere lote para SALIDA en almacén con lotes habilitados",
-      );
-    }
     const lotes = data.stock.lotes
       ? data.stock.lotes.map((l) => ({ ...l }))
       : [];
-    const index = lotes.findIndex((l) => l.lote === data.lote);
-    if (index < 0) throw new Error("Lote no encontrado en stock");
-    const disponible = lotes[index].cantidad;
-    if (!data.permitirNegativos && disponible < data.cantidad) {
-      throw new Error("Stock de lote insuficiente");
+    const loteSolicitado = (data.lote ?? "").trim();
+
+    const ordenarLotes = (xs: StockLoteAlmacen[]): StockLoteAlmacen[] => {
+      const maxDate = "9999-12-31";
+      return [...xs].sort((a, b) => {
+        const fa = a.fechaVencimiento ?? maxDate;
+        const fb = b.fechaVencimiento ?? maxDate;
+        if (fa < fb) return -1;
+        if (fa > fb) return 1;
+        return a.lote.localeCompare(b.lote);
+      });
+    };
+
+    const consumir = (xs: StockLoteAlmacen[], cantidad: number): StockLoteAlmacen[] => {
+      let remaining = cantidad;
+      const out: StockLoteAlmacen[] = xs.map((l) => ({ ...l }));
+      for (let i = 0; i < out.length && remaining > 0; i++) {
+        const disponible = out[i].cantidad;
+        if (disponible <= 0) continue;
+        const take = Math.min(disponible, remaining);
+        out[i].cantidad = disponible - take;
+        remaining -= take;
+      }
+      if (remaining > 0) {
+        if (!data.permitirNegativos) throw new Error("Stock de lote insuficiente");
+        const idx = out.findIndex((l) => l.lote === this.SIN_LOTE);
+        if (idx >= 0) out[idx].cantidad = out[idx].cantidad - remaining;
+        else {
+          out.push({
+            _id: this.loteId(
+              data.stock.presentacionId,
+              data.stock.almacenId,
+              this.SIN_LOTE,
+            ),
+            presentacionId: data.stock.presentacionId,
+            almacenId: data.stock.almacenId,
+            lote: this.SIN_LOTE,
+            cantidad: -remaining,
+          });
+        }
+      }
+      return out.filter((l) => l.cantidad !== 0);
+    };
+
+    if (loteSolicitado) {
+      const index = lotes.findIndex((l) => l.lote === loteSolicitado);
+      if (index < 0) {
+        if (!data.permitirNegativos) throw new Error("Lote no encontrado en stock");
+        const agregado: StockLoteAlmacen = {
+          _id: this.loteId(
+            data.stock.presentacionId,
+            data.stock.almacenId,
+            loteSolicitado,
+          ),
+          presentacionId: data.stock.presentacionId,
+          almacenId: data.stock.almacenId,
+          lote: loteSolicitado,
+          cantidad: -data.cantidad,
+        };
+        data.stock.lotes = [...lotes, agregado];
+        return;
+      }
+      const disponible = lotes[index].cantidad;
+      if (!data.permitirNegativos && disponible < data.cantidad) {
+        throw new Error("Stock de lote insuficiente");
+      }
+      const nuevo = disponible - data.cantidad;
+      lotes[index] = { ...lotes[index], cantidad: nuevo };
+      data.stock.lotes = lotes.filter((l) => l.cantidad !== 0);
+      return;
     }
-    const nuevo = disponible - data.cantidad;
-    lotes[index] = { ...lotes[index], cantidad: nuevo };
-    data.stock.lotes = lotes.filter((l) => l.cantidad !== 0);
+
+    if (lotes.length === 0) {
+      if (!data.permitirNegativos) throw new Error("Stock de lote insuficiente");
+      data.stock.lotes = consumir([], data.cantidad);
+      return;
+    }
+
+    data.stock.lotes = consumir(ordenarLotes(lotes), data.cantidad);
   }
 
   private static loteId(
