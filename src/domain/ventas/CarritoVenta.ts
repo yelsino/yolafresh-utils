@@ -1138,6 +1138,18 @@ export class CarritoVenta implements ICarritoVenta {
       };
     };
 
+    const cleanClienteForVenta = (cliente: Cliente | undefined) => {
+      if (!cliente) return undefined;
+      return {
+        id: cliente.id,
+        nombres: cliente.nombres,
+        celular: cliente.celular,
+        correo: cliente.correo,
+        dni: cliente.dni,
+        direccion: cliente.direccion,
+      };
+    };
+
     return {
       id: this.id,
       createdAt: this.createdAt.getTime(),
@@ -1156,7 +1168,7 @@ export class CarritoVenta implements ICarritoVenta {
       notas: this._notas,
       configuracionFiscal: { ...this._configuracionFiscal },
       tasaImpuesto: this._configuracionFiscal.tasaImpuesto || 0,
-      cliente: this._cliente ? { ...this._cliente } : undefined,
+      cliente: cleanClienteForVenta(this._cliente),
       personal: this._personal ? { ...this._personal } : undefined,
       clienteColor: this._clienteColor,
       clienteId: this._cliente?.id,
