@@ -242,7 +242,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
    * Buscar item por ID de producto
    */
   buscarItemPorProducto(productId: string): CarItem | undefined {
-    return this.items.find(item => item.product.id === productId);
+    return this.items.find(item => item.product?.id === productId);
   }
 
   /**
@@ -259,7 +259,10 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     const productosMap = new Map();
     
     this.items.forEach(item => {
-      const productId = item.product.id;
+      const productId = item.product?.id;
+      if (!productId) {
+        throw new Error("CarItem.product.id es requerido");
+      }
       if (productosMap.has(productId)) {
         const existing = productosMap.get(productId);
         existing.cantidadTotal += item.quantity;
@@ -267,7 +270,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       } else {
         productosMap.set(productId, {
           id: productId,
-          nombre: item.product.nombre,
+          nombre: item.product?.nombre ?? "",
           cantidadTotal: item.quantity,
           montoTotal: item.montoTotal || 0
         });
@@ -478,7 +481,7 @@ export function getVentaItemsResumen(venta: IVenta): Array<{id: string, nombre: 
   const items = getVentaItems(venta);
   return items.map(item => ({
     id: item.id,
-    nombre: item.product.nombre,
+    nombre: item.product?.nombre ?? "",
     cantidad: item.quantity,
     total: item.montoTotal || 0
   }));

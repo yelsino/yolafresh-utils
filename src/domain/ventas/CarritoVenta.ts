@@ -39,7 +39,8 @@ export interface CarItem {
    * Información completa del producto
    * @description Contiene todos los datos del producto (nombre, precio, etc.)
    */
-  product: Presentacion;
+
+  product: Partial<Presentacion>;
   
   /** 
    * Cantidad en la unidad base del producto
@@ -379,8 +380,13 @@ export class CarritoVenta implements ICarritoVenta {
   agregarProducto(carItem: CarItem, opciones: OpcionesAgregarProducto = {}): void {
     const { replaceCompletely = false, itemId, fromSelection = false, agrupar = true } = opciones;
 
+    const productId = carItem.product?.id;
+    if (!productId) {
+      throw new Error("CarItem.product.id es requerido");
+    }
+
     // Generar ID único para el nuevo ítem si no existe
-    const nuevoItemId = carItem.id || `${carItem.product.id}-${Date.now()}`;
+    const nuevoItemId = carItem.id || `${productId}-${Date.now()}`;
 
     // Buscar ítem existente SOLO por itemId para evitar colisiones
     let itemExistente: CarItem | undefined = undefined;
@@ -389,7 +395,7 @@ export class CarritoVenta implements ICarritoVenta {
     } else if (!replaceCompletely && agrupar) {
       // Si no es reemplazo completo Y se permite agrupar, buscar si ya existe el mismo producto
       // Se usa el ID del producto para agrupar
-      itemExistente = this._items.find(item => item.product.id === carItem.product.id);
+      itemExistente = this._items.find(item => item.product?.id === productId);
     }
 
     // Procesar según el caso
@@ -543,7 +549,7 @@ export class CarritoVenta implements ICarritoVenta {
     if (index === -1) return false;
 
     const item = this._items[index];
-    const itemTipoVenta = item.product.tipoVenta; // Usar siempre la definición del producto
+    const itemTipoVenta = item.product?.tipoVenta ?? TipoVentaEnum.Unidad;
     const esPesable = itemTipoVenta === TipoVentaEnum.Peso || itemTipoVenta === TipoVentaEnum.Volumen;
 
     let nuevaCantidad = item.quantity;
@@ -570,7 +576,7 @@ export class CarritoVenta implements ICarritoVenta {
     if (index === -1) return false;
 
     const item = this._items[index];
-    const itemTipoVenta = item.product.tipoVenta;
+    const itemTipoVenta = item.product?.tipoVenta ?? TipoVentaEnum.Unidad;
     const esPesable = itemTipoVenta === TipoVentaEnum.Peso || itemTipoVenta === TipoVentaEnum.Volumen;
 
     let nuevaCantidad = item.quantity;
@@ -598,7 +604,7 @@ export class CarritoVenta implements ICarritoVenta {
   private buscarIndexPorId(id: string): number {
     let index = this._items.findIndex(item => item.id === id);
     if (index === -1) {
-      index = this._items.findIndex(item => item.product.id === id);
+      index = this._items.findIndex(item => item.product?.id === id);
     }
     return index;
   }
@@ -1035,7 +1041,7 @@ export class CarritoVenta implements ICarritoVenta {
    * Buscar ítem por ID de producto
    */
   buscarPorProducto(productId: string): CarItem | undefined {
-    return this._items.find(item => item.product.id === productId);
+    return this._items.find(item => item.product?.id === productId);
   }
 
   /**
@@ -1211,7 +1217,7 @@ export class CarritoVenta implements ICarritoVenta {
    * Limpia el objeto producto para guardar solo lo necesario
    * @description Elimina propiedades no serializables o innecesarias para reducir tamaño
    */
-  private cleanProduct(producto: Presentacion): Presentacion {
+  private cleanProduct(producto: Partial<Presentacion>): Partial<Presentacion> {
     return {
       id: producto.id,
       type: producto.type,
