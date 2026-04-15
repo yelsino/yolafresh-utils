@@ -3,6 +3,7 @@ import { AggregateRoot } from "@/domain/shared/base/AggregateRoot";
 import { VentaConfirmada } from "./events/VentaConfirmada";
 import { MetodoPago } from "@/domain/shared/interfaces/finanzas";
 import { OrderState } from "@/domain/shared/utils/enums";
+import { VentaDetalleSnapshot } from "./snapshots";
 
 /**
  * Interfaz para datos inmutables de una venta
@@ -23,7 +24,7 @@ export interface IVenta {
   updatedAt?: Date;
   
   // === CARRITO COMPLETO (ÚNICA FUENTE) ===
-  detalleVenta: ICarritoVenta; // ⭐ TODA la información aquí
+  detalleVenta: ICarritoVenta | VentaDetalleSnapshot; // ⭐ snapshot de venta (preferido) o legacy
   
   // === CÁLCULOS FINANCIEROS ===
   costoEnvio?: number;
@@ -69,10 +70,18 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   public readonly updatedAt: Date;
   
   public readonly detalleVenta: ICarritoVenta;
-  
-  public readonly subtotal: number;
-  public readonly impuesto: number;
-  public readonly total: number;
+
+  get subtotal(): number {
+    return this.detalleVenta.subtotal;
+  }
+
+  get impuesto(): number {
+    return this.detalleVenta.impuesto;
+  }
+
+  get total(): number {
+    return this.detalleVenta.total;
+  }
   public readonly montoRedondeo?: number;
   
   public readonly procedencia: ProcedenciaVenta;
@@ -99,10 +108,6 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       throw new Error('detalleVenta con items es requerido');
     }
 
-    if (data.total <= 0) {
-      throw new Error('El total de la venta debe ser mayor a 0');
-    }
-
     // Asignar propiedades (inmutables)
     this.nombre = data.nombre;
     this.type = data.type || 'venta';
@@ -112,12 +117,11 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     
     // ⭐ Congelar el carrito para inmutabilidad
     // Crear instancia nativa para usar sus métodos
-    const carritoInstance = CarritoVenta.fromJSON(data.detalleVenta);
-    this.detalleVenta = Object.freeze(carritoInstance.toJSON());
-    
-    this.subtotal = data.subtotal;
-    this.impuesto = data.impuesto;
-    this.total = data.total;
+    const carritoInstance = CarritoVenta.fromJSON(data.detalleVenta as any);
+    this.detalleVenta = Object.freeze(carritoInstance.toVentaSnapshot() as any);
+    if (this.total <= 0) {
+      throw new Error("El total de la venta debe ser mayor a 0");
+    }
     this.montoRedondeo = data.montoRedondeo ?? 0;
     
     this.procedencia = data.procedencia;
@@ -341,25 +345,16 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     options?: { nombre?: string; montoRedondeo?: number }
   ): Venta {
     const ahora = new Date();
-    
-    // Si se proporciona configuestra fiscal, recalcular el impuesto
-    let impuestoFinal = carritoJSON.impuesto;
-    let totalCalculado = carritoJSON.total;
     const montoRedondeo = options?.montoRedondeo ?? 0;
-    
-    if (carritoJSON.configuracionFiscal) {
-      const { tasaImpuesto, aplicaImpuesto } = carritoJSON.configuracionFiscal;
-      
-      if (aplicaImpuesto && tasaImpuesto !== undefined) {
-        const baseImponible = carritoJSON.subtotal;
-        impuestoFinal = Math.round(baseImponible * tasaImpuesto * 100) / 100;
-        totalCalculado = Math.round((carritoJSON.subtotal + impuestoFinal) * 100) / 100;
-      } else if (!aplicaImpuesto) {
-        impuestoFinal = 0;
-        totalCalculado = Math.round(carritoJSON.subtotal * 100) / 100;
-      }
-    }
-    const totalFinal = Math.round((totalCalculado + montoRedondeo) * 100) / 100;
+
+    const carritoInstance = CarritoVenta.fromJSON(carritoJSON as any);
+    const detalle = carritoInstance.toVentaSnapshot();
+    const totalFinal = Math.round((detalle.total + montoRedondeo) * 100) / 100;
+    const detalleFinal: VentaDetalleSnapshot = {
+      ...detalle,
+      total: totalFinal,
+      updatedAt: ahora.getTime(),
+    };
     
     return new Venta({
       id: id,
@@ -368,20 +363,10 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       estado: OrderState.DESPACHADO,
       createdAt: ahora,
       updatedAt: ahora,
-      detalleVenta: {
-        ...carritoJSON,
-        // 🔧 FIX: Preservar objetos completos del cliente y personal
-        cliente: carritoJSON.cliente,
-        personal: carritoJSON.personal,
-        clienteId: carritoJSON.clienteId,
-        personalId: carritoJSON.personalId,
-        // Actualizar con los valores finales
-        impuesto: impuestoFinal,
-        total: totalFinal
-      },
-      subtotal: carritoJSON.subtotal,
-      impuesto: impuestoFinal,
-      total: totalFinal,
+      detalleVenta: detalleFinal,
+      subtotal: detalleFinal.subtotal,
+      impuesto: detalleFinal.impuesto,
+      total: detalleFinal.total,
       montoRedondeo,
       procedencia: carritoJSON.procedencia || ProcedenciaVenta.Tienda,
       tipoPago: carritoJSON.metodoPago,

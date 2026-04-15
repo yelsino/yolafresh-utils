@@ -8,6 +8,7 @@ export * from './domain/shared/base';
 export * from './domain/shared/value-objects';
 export * from './domain/ventas/Venta';
 export * from './domain/ventas/CarritoVenta';
+export * from './domain/ventas/snapshots';
 export * from './domain/inventario/MovimientoInventarioService';
 
 // También puedes exportar directamente los módulos más utilizados aquí si lo deseas

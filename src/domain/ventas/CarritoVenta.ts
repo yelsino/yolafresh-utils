@@ -10,6 +10,7 @@ import { generarUlid } from "@/domain/shared/utils/dates";
 import { Cliente } from "@/domain/shared/interfaces/persons";
 import { IUsuario } from "@/domain/shared/interfaces/usuario";
 import { Presentacion, TipoVentaEnum } from "@/domain/shared/interfaces/producto";
+import { VentaClienteSnapshot, VentaDetalleSnapshot, VentaProductSnapshot } from "./snapshots";
 
 
 
@@ -1111,34 +1112,41 @@ export class CarritoVenta implements ICarritoVenta {
     return carrito;
   }
 
-  toVentaSnapshot() {
-    const getImagen = (product: Partial<Presentacion> | undefined) => {
+  toVentaSnapshot(): VentaDetalleSnapshot {
+    const getImagenUrl = (product: Partial<Presentacion> | undefined): string | undefined => {
       const img: any = (product as any)?.imagen;
-      const small =
+      const url =
         (img?.sizes?.small as string | undefined) ??
         (img?.base as string | undefined) ??
-        "";
-      return { sizes: { small } };
+        undefined;
+      const clean = typeof url === "string" ? url.trim() : undefined;
+      return clean ? clean : undefined;
     };
 
-    const cleanProductForVenta = (product: Partial<Presentacion> | undefined) => {
-      if (!product) return undefined;
+    const cleanProductForVenta = (product: Partial<Presentacion> | undefined): VentaProductSnapshot => {
+      if (!product) throw new Error("CarItem.product es requerido");
       const id = (product as any).id;
+      const nombre = (product as any).nombre;
+      const tipoVenta = (product as any).tipoVenta;
+      const precioVenta = (product as any).precioVenta;
       if (!id) throw new Error("CarItem.product.id es requerido");
+      if (!nombre) throw new Error("CarItem.product.nombre es requerido");
+      if (!tipoVenta) throw new Error("CarItem.product.tipoVenta es requerido");
+      if (precioVenta == null || Number.isNaN(Number(precioVenta))) {
+        throw new Error("CarItem.product.precioVenta es requerido");
+      }
       return {
         id,
-        type: (product as any).type,
-        sku: (product as any).sku,
-        codigoBarra: (product as any).codigoBarra,
-        tipoVenta: (product as any).tipoVenta,
+        nombre,
+        tipoVenta,
+        precioVenta: Number(precioVenta),
         contenidoNeto: (product as any).contenidoNeto,
         unidadContenido: (product as any).unidadContenido,
-        tipoEmpaque: (product as any).tipoEmpaque,
-        imagen: getImagen(product),
+        imagenUrl: getImagenUrl(product),
       };
     };
 
-    const cleanClienteForVenta = (cliente: Cliente | undefined) => {
+    const cleanClienteForVenta = (cliente: Cliente | undefined): VentaClienteSnapshot | undefined => {
       if (!cliente) return undefined;
       return {
         id: cliente.id,
@@ -1150,15 +1158,29 @@ export class CarritoVenta implements ICarritoVenta {
       };
     };
 
+    const items = this._items.map((item) => {
+      const product = cleanProductForVenta(item.product);
+      const quantity = Number(item.quantity ?? 0);
+      const precioUnitario = Number(item.precioUnitario ?? product.precioVenta ?? 0);
+      const montoTotal = Number(item.montoTotal ?? precioUnitario * quantity);
+      return {
+        id: item.id,
+        product,
+        quantity,
+        precioUnitario,
+        montoTotal,
+        descuento: item.descuento,
+        esPedido: item.esPedido,
+        montoModificado: item.montoModificado,
+      };
+    });
+
     return {
       id: this.id,
       createdAt: this.createdAt.getTime(),
       updatedAt: this.updatedAt.getTime(),
       nombre: this.nombre,
-      items: this._items.map((item: any) => ({
-        ...item,
-        product: cleanProductForVenta(item.product),
-      })),
+      items,
       subtotal: this.subtotal,
       descuentoTotal: this.descuentoTotal,
       impuesto: this.impuesto,
@@ -1169,7 +1191,6 @@ export class CarritoVenta implements ICarritoVenta {
       configuracionFiscal: { ...this._configuracionFiscal },
       tasaImpuesto: this._configuracionFiscal.tasaImpuesto || 0,
       cliente: cleanClienteForVenta(this._cliente),
-      personal: this._personal ? { ...this._personal } : undefined,
       clienteColor: this._clienteColor,
       clienteId: this._cliente?.id,
       personalId: this._personal?.id,
@@ -1178,6 +1199,8 @@ export class CarritoVenta implements ICarritoVenta {
       procedencia: this._procedencia,
       esPedido: this._esPedido,
       finanzaId: this._finanzaId,
+      clienteRaw: this._cliente ? { ...this._cliente } : undefined,
+      personalRaw: this._personal ? { ...this._personal } : undefined,
     };
   }
 
