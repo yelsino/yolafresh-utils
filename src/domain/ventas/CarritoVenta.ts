@@ -1111,6 +1111,64 @@ export class CarritoVenta implements ICarritoVenta {
     return carrito;
   }
 
+  toVentaSnapshot() {
+    const getImagen = (product: Partial<Presentacion> | undefined) => {
+      const img: any = (product as any)?.imagen;
+      const small =
+        (img?.sizes?.small as string | undefined) ??
+        (img?.base as string | undefined) ??
+        "";
+      return { sizes: { small } };
+    };
+
+    const cleanProductForVenta = (product: Partial<Presentacion> | undefined) => {
+      if (!product) return undefined;
+      const id = (product as any).id;
+      if (!id) throw new Error("CarItem.product.id es requerido");
+      return {
+        id,
+        type: (product as any).type,
+        sku: (product as any).sku,
+        codigoBarra: (product as any).codigoBarra,
+        tipoVenta: (product as any).tipoVenta,
+        contenidoNeto: (product as any).contenidoNeto,
+        unidadContenido: (product as any).unidadContenido,
+        tipoEmpaque: (product as any).tipoEmpaque,
+        imagen: getImagen(product),
+      };
+    };
+
+    return {
+      id: this.id,
+      createdAt: this.createdAt.getTime(),
+      updatedAt: this.updatedAt.getTime(),
+      nombre: this.nombre,
+      items: this._items.map((item: any) => ({
+        ...item,
+        product: cleanProductForVenta(item.product),
+      })),
+      subtotal: this.subtotal,
+      descuentoTotal: this.descuentoTotal,
+      impuesto: this.impuesto,
+      total: this.total,
+      cantidadItems: this.cantidadItems,
+      cantidadTotal: this.cantidadTotal,
+      notas: this._notas,
+      configuracionFiscal: { ...this._configuracionFiscal },
+      tasaImpuesto: this._configuracionFiscal.tasaImpuesto || 0,
+      cliente: this._cliente ? { ...this._cliente } : undefined,
+      personal: this._personal ? { ...this._personal } : undefined,
+      clienteColor: this._clienteColor,
+      clienteId: this._cliente?.id,
+      personalId: this._personal?.id,
+      metodoPago: this._metodoPago,
+      dineroRecibido: this._dineroRecibido,
+      procedencia: this._procedencia,
+      esPedido: this._esPedido,
+      finanzaId: this._finanzaId,
+    };
+  }
+
   /**
    * Crear instancia desde JSON (para cargar desde base de datos)
    */
