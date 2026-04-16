@@ -4,7 +4,6 @@ import { VentaConfirmada } from "./events/VentaConfirmada";
 import { MetodoPago } from "@/domain/shared/interfaces/finanzas";
 import { OrderState } from "@/domain/shared/utils/enums";
 import {
-  VentaCouchMinimalItemSnapshot,
   VentaCouchMinimalSnapshot,
   VentaPersistenceSnapshot,
 } from "./snapshots";
@@ -366,24 +365,75 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   }
 
   toCouchSnapshotMinimal(): VentaCouchMinimalSnapshot {
-    const items: VentaCouchMinimalItemSnapshot[] = this.detalleVenta.items.map((item) => ({
-      presentacionId: String(item.product?.id || ""),
-      productoBaseId:
-        typeof (item.product as { productoBaseId?: unknown })?.productoBaseId === "string"
-          ? String((item.product as { productoBaseId?: string }).productoBaseId)
-          : undefined,
-      quantity: Number(item.quantity || 0),
-      precioUnitario:
-        typeof item.precioUnitario === "number" ? item.precioUnitario : undefined,
-      montoTotal:
-        typeof item.montoTotal === "number" ? item.montoTotal : undefined,
-      montoModificado:
-        typeof item.montoModificado === "boolean" ? item.montoModificado : undefined,
-      descuento:
-        typeof item.descuento === "number" ? item.descuento : undefined,
-      esPedido:
-        typeof item.esPedido === "boolean" ? item.esPedido : undefined,
-    })).filter((item) => item.presentacionId);
+    const getImagenSnapshot = (
+      product: Partial<CarItem["product"]> | undefined,
+    ): { sizes: { small: string } } | undefined => {
+      const img = (product as { imagen?: { sizes?: { small?: string }; base?: string } } | undefined)
+        ?.imagen;
+      const small = img?.sizes?.small ?? img?.base ?? "";
+      const clean = String(small || "").trim();
+      return clean ? { sizes: { small: clean } } : undefined;
+    };
+
+    const compactItemId = (item: CarItem): string => {
+      const rawId = String(item.id || "").trim();
+      const productId = String(item.product?.id || "").trim();
+      if (!rawId) return productId || this.id;
+      const parts = rawId.split("_").filter(Boolean);
+      const base = parts[0] || rawId;
+      const suffix = parts.length > 1 ? parts[parts.length - 1] : "";
+      const baseShort =
+        base.length > 12 ? `${base.slice(0, 8)}${base.slice(-4)}` : base;
+      return suffix ? `${baseShort}_${suffix}` : baseShort;
+    };
+
+    const items = this.detalleVenta.items
+      .map((item) => {
+        const productId = String(item.product?.id || "").trim();
+        if (!productId) return null;
+
+        return {
+          id: compactItemId(item),
+          product: {
+            id: productId,
+            type:
+              typeof (item.product as { type?: unknown })?.type === "string"
+                ? String((item.product as { type?: string }).type)
+                : undefined,
+            productoBaseId:
+              typeof (item.product as { productoBaseId?: unknown })?.productoBaseId === "string"
+                ? String((item.product as { productoBaseId?: string }).productoBaseId)
+                : undefined,
+            tipoVenta: item.product?.tipoVenta,
+            contenidoNeto:
+              typeof item.product?.contenidoNeto === "number"
+                ? item.product.contenidoNeto
+                : undefined,
+            unidadContenido: item.product?.unidadContenido,
+            tipoEmpaque:
+              typeof item.product?.tipoEmpaque === "string"
+                ? item.product.tipoEmpaque
+                : undefined,
+            fraccionable:
+              typeof item.product?.fraccionable === "boolean"
+                ? item.product.fraccionable
+                : undefined,
+            imagen: getImagenSnapshot(item.product),
+          },
+          quantity: Number(item.quantity || 0),
+          precioUnitario:
+            typeof item.precioUnitario === "number" ? item.precioUnitario : undefined,
+          montoTotal:
+            typeof item.montoTotal === "number" ? item.montoTotal : undefined,
+          montoModificado:
+            typeof item.montoModificado === "boolean" ? item.montoModificado : undefined,
+          descuento:
+            typeof item.descuento === "number" ? item.descuento : undefined,
+          esPedido:
+            typeof item.esPedido === "boolean" ? item.esPedido : undefined,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
     return {
       id: this.id,
@@ -402,6 +452,25 @@ export class Venta extends AggregateRoot<string> implements IVenta {
         cantidadTotal: this.detalleVenta.cantidadTotal,
         tasaImpuesto: this.detalleVenta.tasaImpuesto,
         notas: this.detalleVenta.notas,
+        configuracionFiscal: this.detalleVenta.configuracionFiscal,
+        cliente: this.detalleVenta.cliente
+          ? {
+              id: this.detalleVenta.cliente.id,
+              nombres: this.detalleVenta.cliente.nombres,
+              celular: this.detalleVenta.cliente.celular,
+              correo: this.detalleVenta.cliente.correo,
+              dni: this.detalleVenta.cliente.dni,
+              direccion: this.detalleVenta.cliente.direccion,
+            }
+          : undefined,
+        personal: this.detalleVenta.personal
+          ? {
+              id: this.detalleVenta.personal.id,
+              username: this.detalleVenta.personal.username,
+              email: this.detalleVenta.personal.email,
+            }
+          : undefined,
+        clienteColor: this.detalleVenta.clienteColor,
         metodoPago: this.detalleVenta.metodoPago,
         dineroRecibido: this.detalleVenta.dineroRecibido,
         procedencia: this.detalleVenta.procedencia,

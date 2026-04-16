@@ -105,10 +105,23 @@ export interface VentaPersistenceSnapshot {
   esPedido?: boolean;
 }
 
-// Snapshot ultra-minimo para Couch/Pouch (sync). Diseñado para minimizar tamaño.
-export interface VentaCouchMinimalItemSnapshot {
-  presentacionId: string;
+// Snapshot compacto para Couch/Pouch (sync).
+// Mantiene trazabilidad util para UI/auditoria, pero elimina redundancia.
+export interface VentaCouchCompactProductSnapshot {
+  id: string;
+  type?: string;
   productoBaseId?: string;
+  tipoVenta?: TipoVentaEnum;
+  contenidoNeto?: number;
+  unidadContenido?: UnidadMedidaEnum;
+  tipoEmpaque?: string;
+  fraccionable?: boolean;
+  imagen?: VentaImageSnapshot;
+}
+
+export interface VentaCouchCompactItemSnapshot {
+  id: string;
+  product: VentaCouchCompactProductSnapshot;
   quantity: number;
   precioUnitario?: number;
   montoTotal?: number;
@@ -117,8 +130,8 @@ export interface VentaCouchMinimalItemSnapshot {
   esPedido?: boolean;
 }
 
-export interface VentaCouchMinimalDetalleSnapshot {
-  items: VentaCouchMinimalItemSnapshot[];
+export interface VentaCouchCompactDetalleSnapshot {
+  items: VentaCouchCompactItemSnapshot[];
   subtotal: number;
   impuesto: number;
   total: number;
@@ -127,6 +140,14 @@ export interface VentaCouchMinimalDetalleSnapshot {
   cantidadTotal: number;
   tasaImpuesto: number;
   notas?: string;
+  configuracionFiscal?: {
+    tasaImpuesto?: number;
+    aplicaImpuesto?: boolean;
+    nombreImpuesto?: string;
+  };
+  cliente?: VentaClienteSnapshot;
+  personal?: VentaPersonalSnapshot;
+  clienteColor?: string;
   metodoPago?: MetodoPago;
   dineroRecibido?: number;
   procedencia?: ProcedenciaVenta;
@@ -143,7 +164,7 @@ export interface VentaCouchMinimalSnapshot {
   estado: string;
   createdAt: number;
   updatedAt: number;
-  detalleVenta: VentaCouchMinimalDetalleSnapshot;
+  detalleVenta: VentaCouchCompactDetalleSnapshot;
   costoEnvio?: number;
   subtotal: number;
   impuesto: number;
