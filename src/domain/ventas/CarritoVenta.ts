@@ -10,7 +10,13 @@ import { generarUlid } from "@/domain/shared/utils/dates";
 import { Cliente } from "@/domain/shared/interfaces/persons";
 import { IUsuario } from "@/domain/shared/interfaces/usuario";
 import { Presentacion, TipoVentaEnum } from "@/domain/shared/interfaces/producto";
-import { VentaClienteSnapshot, VentaDetalleSnapshot, VentaProductSnapshot } from "./snapshots";
+import {
+  VentaClienteSnapshot,
+  VentaDetalleSnapshot,
+  VentaImageSnapshot,
+  VentaPersonalSnapshot,
+  VentaProductSnapshot,
+} from "./snapshots";
 
 
 
@@ -1113,40 +1119,45 @@ export class CarritoVenta implements ICarritoVenta {
   }
 
   toVentaSnapshot(): VentaDetalleSnapshot {
-    const getImagenUrl = (product: Partial<Presentacion> | undefined): string | undefined => {
+    const getImagenSnapshot = (
+      product: Partial<Presentacion> | undefined,
+    ): VentaImageSnapshot | undefined => {
       const img: any = (product as any)?.imagen;
-      const url =
+      const small =
         (img?.sizes?.small as string | undefined) ??
         (img?.base as string | undefined) ??
         undefined;
-      const clean = typeof url === "string" ? url.trim() : undefined;
-      return clean ? clean : undefined;
+      const clean = typeof small === "string" ? small.trim() : undefined;
+      return clean ? { sizes: { small: clean } } : undefined;
     };
 
-    const cleanProductForVenta = (product: Partial<Presentacion> | undefined): VentaProductSnapshot => {
+    const cleanProductForVenta = (
+      product: Partial<Presentacion> | undefined,
+    ): VentaProductSnapshot | undefined => {
+      if (!product) return undefined;
       if (!product) throw new Error("CarItem.product es requerido");
       const id = (product as any).id;
-      const nombre = (product as any).nombre;
-      const tipoVenta = (product as any).tipoVenta;
-      const precioVenta = (product as any).precioVenta;
       if (!id) throw new Error("CarItem.product.id es requerido");
-      if (!nombre) throw new Error("CarItem.product.nombre es requerido");
-      if (!tipoVenta) throw new Error("CarItem.product.tipoVenta es requerido");
-      if (precioVenta == null || Number.isNaN(Number(precioVenta))) {
-        throw new Error("CarItem.product.precioVenta es requerido");
-      }
+
       return {
         id,
-        nombre,
-        tipoVenta,
-        precioVenta: Number(precioVenta),
+        type: (product as any).type,
+        productoBaseId: (product as any).productoBaseId,
+        nombre: (product as any).nombre,
+        sku: (product as any).sku,
+        codigoBarra: (product as any).codigoBarra,
+        tipoVenta: (product as any).tipoVenta,
         contenidoNeto: (product as any).contenidoNeto,
         unidadContenido: (product as any).unidadContenido,
-        imagenUrl: getImagenUrl(product),
+        tipoEmpaque: (product as any).tipoEmpaque,
+        fraccionable: (product as any).fraccionable,
+        imagen: getImagenSnapshot(product),
       };
     };
 
-    const cleanClienteForVenta = (cliente: Cliente | undefined): VentaClienteSnapshot | undefined => {
+    const cleanClienteForVenta = (
+      cliente: Cliente | undefined,
+    ): VentaClienteSnapshot | undefined => {
       if (!cliente) return undefined;
       return {
         id: cliente.id,
@@ -1158,11 +1169,30 @@ export class CarritoVenta implements ICarritoVenta {
       };
     };
 
+    const cleanPersonalForVenta = (
+      personal: IUsuario | undefined,
+    ): VentaPersonalSnapshot | undefined => {
+      if (!personal) return undefined;
+      return {
+        id: personal.id,
+        username: personal.username,
+        email: personal.email,
+      };
+    };
+
     const items = this._items.map((item) => {
       const product = cleanProductForVenta(item.product);
+      if (!product) {
+        throw new Error(`CarItem.product es requerido (${item.id})`);
+      }
       const quantity = Number(item.quantity ?? 0);
-      const precioUnitario = Number(item.precioUnitario ?? product.precioVenta ?? 0);
+      const precioVenta = Number((item.product as any)?.precioVenta ?? 0);
+      const precioUnitario = Number(item.precioUnitario ?? precioVenta ?? 0);
       const montoTotal = Number(item.montoTotal ?? precioUnitario * quantity);
+      const itemMetadata = item as CarItem & {
+        displayName?: string;
+        productoBaseNombre?: string;
+      };
       return {
         id: item.id,
         product,
@@ -1172,6 +1202,8 @@ export class CarritoVenta implements ICarritoVenta {
         descuento: item.descuento,
         esPedido: item.esPedido,
         montoModificado: item.montoModificado,
+        displayName: itemMetadata.displayName,
+        productoBaseNombre: itemMetadata.productoBaseNombre,
       };
     });
 
@@ -1191,6 +1223,7 @@ export class CarritoVenta implements ICarritoVenta {
       configuracionFiscal: { ...this._configuracionFiscal },
       tasaImpuesto: this._configuracionFiscal.tasaImpuesto || 0,
       cliente: cleanClienteForVenta(this._cliente),
+      personal: cleanPersonalForVenta(this._personal),
       clienteColor: this._clienteColor,
       clienteId: this._cliente?.id,
       personalId: this._personal?.id,
@@ -1199,8 +1232,6 @@ export class CarritoVenta implements ICarritoVenta {
       procedencia: this._procedencia,
       esPedido: this._esPedido,
       finanzaId: this._finanzaId,
-      clienteRaw: this._cliente ? { ...this._cliente } : undefined,
-      personalRaw: this._personal ? { ...this._personal } : undefined,
     };
   }
 

@@ -3,7 +3,7 @@ import { AggregateRoot } from "@/domain/shared/base/AggregateRoot";
 import { VentaConfirmada } from "./events/VentaConfirmada";
 import { MetodoPago } from "@/domain/shared/interfaces/finanzas";
 import { OrderState } from "@/domain/shared/utils/enums";
-import { VentaDetalleSnapshot } from "./snapshots";
+import { VentaPersistenceSnapshot } from "./snapshots";
 
 /**
  * Interfaz para datos inmutables de una venta
@@ -24,7 +24,7 @@ export interface IVenta {
   updatedAt?: Date;
   
   // === CARRITO COMPLETO (ÚNICA FUENTE) ===
-  detalleVenta: ICarritoVenta | VentaDetalleSnapshot; // ⭐ snapshot de venta (preferido) o legacy
+  detalleVenta: ICarritoVenta;
   
   // === CÁLCULOS FINANCIEROS ===
   costoEnvio?: number;
@@ -115,10 +115,9 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     this.createdAt = data.createdAt ? new Date(data.createdAt) : new Date();
     this.updatedAt = data.updatedAt ? new Date(data.updatedAt) : new Date();
     
-    // ⭐ Congelar el carrito para inmutabilidad
-    // Crear instancia nativa para usar sus métodos
-    const carritoInstance = CarritoVenta.fromJSON(data.detalleVenta as any);
-    this.detalleVenta = Object.freeze(carritoInstance.toVentaSnapshot() as any);
+    // Congelar una copia consistente del carrito de dominio
+    const carritoInstance = CarritoVenta.fromJSON(data.detalleVenta as ICarritoVenta);
+    this.detalleVenta = Object.freeze(carritoInstance.toJSON());
     if (this.total <= 0) {
       throw new Error("El total de la venta debe ser mayor a 0");
     }
@@ -334,6 +333,34 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     };
   }
 
+  toPersistenceSnapshot(): VentaPersistenceSnapshot {
+    const detalleVenta = CarritoVenta.fromJSON(this.detalleVenta as ICarritoVenta)
+      .toVentaSnapshot();
+
+    return {
+      id: this.id,
+      nombre: this.nombre,
+      type: this.type,
+      estado: this.estado,
+      createdAt: this.createdAt.getTime(),
+      updatedAt: this.updatedAt.getTime(),
+      detalleVenta,
+      costoEnvio: this.costoEnvio,
+      subtotal: this.subtotal,
+      impuesto: this.impuesto,
+      total: this.total,
+      montoRedondeo: this.montoRedondeo,
+      procedencia: this.procedencia,
+      tipoPago: this.tipoPago,
+      clienteId: this.clienteId,
+      vendedorId: this.vendedorId,
+      finanzaId: this.finanzaId,
+      codigoVenta: this.codigoVenta,
+      numeroVenta: this.numeroVenta,
+      esPedido: this.esPedido,
+    };
+  }
+
   // === MÉTODOS ESTÁTICOS ===
 
   /**
@@ -348,12 +375,12 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     const montoRedondeo = options?.montoRedondeo ?? 0;
 
     const carritoInstance = CarritoVenta.fromJSON(carritoJSON as any);
-    const detalle = carritoInstance.toVentaSnapshot();
+    const detalle = carritoInstance.toJSON();
     const totalFinal = Math.round((detalle.total + montoRedondeo) * 100) / 100;
-    const detalleFinal: VentaDetalleSnapshot = {
+    const detalleFinal: ICarritoVenta = {
       ...detalle,
       total: totalFinal,
-      updatedAt: ahora.getTime(),
+      updatedAt: ahora,
     };
     
     return new Venta({
