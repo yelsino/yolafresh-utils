@@ -3,7 +3,11 @@ import { AggregateRoot } from "@/domain/shared/base/AggregateRoot";
 import { VentaConfirmada } from "./events/VentaConfirmada";
 import { MetodoPago } from "@/domain/shared/interfaces/finanzas";
 import { OrderState } from "@/domain/shared/utils/enums";
-import { VentaPersistenceSnapshot } from "./snapshots";
+import {
+  VentaCouchMinimalItemSnapshot,
+  VentaCouchMinimalSnapshot,
+  VentaPersistenceSnapshot,
+} from "./snapshots";
 
 /**
  * Interfaz para datos inmutables de una venta
@@ -345,6 +349,67 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       createdAt: this.createdAt.getTime(),
       updatedAt: this.updatedAt.getTime(),
       detalleVenta,
+      costoEnvio: this.costoEnvio,
+      subtotal: this.subtotal,
+      impuesto: this.impuesto,
+      total: this.total,
+      montoRedondeo: this.montoRedondeo,
+      procedencia: this.procedencia,
+      tipoPago: this.tipoPago,
+      clienteId: this.clienteId,
+      vendedorId: this.vendedorId,
+      finanzaId: this.finanzaId,
+      codigoVenta: this.codigoVenta,
+      numeroVenta: this.numeroVenta,
+      esPedido: this.esPedido,
+    };
+  }
+
+  toCouchSnapshotMinimal(): VentaCouchMinimalSnapshot {
+    const items: VentaCouchMinimalItemSnapshot[] = this.detalleVenta.items.map((item) => ({
+      presentacionId: String(item.product?.id || ""),
+      productoBaseId:
+        typeof (item.product as { productoBaseId?: unknown })?.productoBaseId === "string"
+          ? String((item.product as { productoBaseId?: string }).productoBaseId)
+          : undefined,
+      quantity: Number(item.quantity || 0),
+      precioUnitario:
+        typeof item.precioUnitario === "number" ? item.precioUnitario : undefined,
+      montoTotal:
+        typeof item.montoTotal === "number" ? item.montoTotal : undefined,
+      montoModificado:
+        typeof item.montoModificado === "boolean" ? item.montoModificado : undefined,
+      descuento:
+        typeof item.descuento === "number" ? item.descuento : undefined,
+      esPedido:
+        typeof item.esPedido === "boolean" ? item.esPedido : undefined,
+    })).filter((item) => item.presentacionId);
+
+    return {
+      id: this.id,
+      nombre: this.nombre,
+      type: this.type,
+      estado: this.estado,
+      createdAt: this.createdAt.getTime(),
+      updatedAt: this.updatedAt.getTime(),
+      detalleVenta: {
+        items,
+        subtotal: this.detalleVenta.subtotal,
+        impuesto: this.detalleVenta.impuesto,
+        total: this.detalleVenta.total,
+        descuentoTotal: this.detalleVenta.descuentoTotal,
+        cantidadItems: this.detalleVenta.cantidadItems,
+        cantidadTotal: this.detalleVenta.cantidadTotal,
+        tasaImpuesto: this.detalleVenta.tasaImpuesto,
+        notas: this.detalleVenta.notas,
+        metodoPago: this.detalleVenta.metodoPago,
+        dineroRecibido: this.detalleVenta.dineroRecibido,
+        procedencia: this.detalleVenta.procedencia,
+        esPedido: this.detalleVenta.esPedido,
+        finanzaId: this.detalleVenta.finanzaId,
+        clienteId: this.detalleVenta.clienteId,
+        personalId: this.detalleVenta.personalId,
+      },
       costoEnvio: this.costoEnvio,
       subtotal: this.subtotal,
       impuesto: this.impuesto,
