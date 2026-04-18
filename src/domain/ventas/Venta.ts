@@ -43,6 +43,7 @@ export interface IVenta {
   clienteId?: string;
   vendedorId?: string;
   finanzaId?: string;
+  turnoCajaId?: string;
   
   // === CAMPOS DE TRAZABILIDAD ADICIONALES ===
   codigoVenta?: string;
@@ -93,6 +94,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   public readonly clienteId?: string;
   public readonly vendedorId?: string;
   public readonly finanzaId?: string;
+  public readonly turnoCajaId?: string;
   
   // === CAMPOS DE TRAZABILIDAD ADICIONALES ===
   public readonly codigoVenta?: string;
@@ -132,6 +134,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     this.clienteId = data.clienteId;
     this.vendedorId = data.vendedorId;
     this.finanzaId = data.finanzaId;
+    this.turnoCajaId = data.turnoCajaId;
     
     // Campos de trazabilidad adicionales
     this.codigoVenta = data.codigoVenta;
@@ -328,6 +331,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       clienteId: this.clienteId,
       vendedorId: this.vendedorId,
       finanzaId: this.finanzaId,
+      turnoCajaId: this.turnoCajaId,
       // Campos de trazabilidad adicionales
       codigoVenta: this.codigoVenta,
       numeroVenta: this.numeroVenta,
@@ -358,6 +362,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       clienteId: this.clienteId,
       vendedorId: this.vendedorId,
       finanzaId: this.finanzaId,
+      turnoCajaId: this.turnoCajaId,
       codigoVenta: this.codigoVenta,
       numeroVenta: this.numeroVenta,
       esPedido: this.esPedido,
@@ -489,6 +494,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       clienteId: this.clienteId,
       vendedorId: this.vendedorId,
       finanzaId: this.finanzaId,
+      turnoCajaId: this.turnoCajaId,
       codigoVenta: this.codigoVenta,
       numeroVenta: this.numeroVenta,
       esPedido: this.esPedido,
@@ -535,6 +541,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       clienteId: carritoJSON.clienteId,
       vendedorId: carritoJSON.personalId, // ✅ Correcto: personalId del carrito
       finanzaId: undefined, // finanzaId se asigna posteriormente si es necesario
+      turnoCajaId: undefined,
       // Campos de trazabilidad adicionales
       codigoVenta: "",
       numeroVenta: "",

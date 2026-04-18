@@ -100,6 +100,7 @@ export interface VentaPersistenceSnapshot {
   clienteId?: string;
   vendedorId?: string;
   finanzaId?: string;
+  turnoCajaId?: string;
   codigoVenta?: string;
   numeroVenta?: string;
   esPedido?: boolean;
@@ -175,6 +176,7 @@ export interface VentaCouchMinimalSnapshot {
   clienteId?: string;
   vendedorId?: string;
   finanzaId?: string;
+  turnoCajaId?: string;
   codigoVenta?: string;
   numeroVenta?: string;
   esPedido?: boolean;
