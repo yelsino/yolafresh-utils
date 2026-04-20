@@ -65,6 +65,10 @@ export interface IVenta {
  * - 📊 Cálculos automáticos y validaciones
  */ 
 export class Venta extends AggregateRoot<string> implements IVenta {
+  private static roundMoney(value: number): number {
+    return Math.round(value * 100) / 100;
+  }
+
   // === PROPIEDADES INMUTABLES ===
   public readonly nombre: string;
   public readonly type: string = 'venta';
@@ -84,7 +88,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   }
 
   get total(): number {
-    return this.detalleVenta.total;
+    return Venta.roundMoney(this.detalleVenta.total + (this.montoRedondeo ?? 0));
   }
   public readonly montoRedondeo?: number;
   
@@ -123,10 +127,20 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     // Congelar una copia consistente del carrito de dominio
     const carritoInstance = CarritoVenta.fromJSON(data.detalleVenta as ICarritoVenta);
     this.detalleVenta = Object.freeze(carritoInstance.toJSON());
-    if (this.total <= 0) {
+    this.montoRedondeo = data.montoRedondeo ?? 0;
+
+    const expectedTotalFinal = Venta.roundMoney(
+      this.detalleVenta.total + (this.montoRedondeo ?? 0),
+    );
+    const providedTotalFinal = Venta.roundMoney(data.total);
+    if (providedTotalFinal !== expectedTotalFinal) {
+      throw new Error(
+        `Total inconsistente: total=${providedTotalFinal} debe ser detalleVenta.total + montoRedondeo = ${expectedTotalFinal}`,
+      );
+    }
+    if (expectedTotalFinal <= 0) {
       throw new Error("El total de la venta debe ser mayor a 0");
     }
-    this.montoRedondeo = data.montoRedondeo ?? 0;
     
     this.procedencia = data.procedencia;
     this.tipoPago = data.tipoPago;
@@ -516,12 +530,11 @@ export class Venta extends AggregateRoot<string> implements IVenta {
 
     const carritoInstance = CarritoVenta.fromJSON(carritoJSON as any);
     const detalle = carritoInstance.toJSON();
-    const totalFinal = Math.round((detalle.total + montoRedondeo) * 100) / 100;
     const detalleFinal: ICarritoVenta = {
       ...detalle,
-      total: totalFinal,
       updatedAt: ahora,
     };
+    const totalFinal = Venta.roundMoney(detalleFinal.total + montoRedondeo);
     
     return new Venta({
       id: id,
@@ -533,7 +546,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       detalleVenta: detalleFinal,
       subtotal: detalleFinal.subtotal,
       impuesto: detalleFinal.impuesto,
-      total: detalleFinal.total,
+      total: totalFinal,
       montoRedondeo,
       procedencia: carritoJSON.procedencia || ProcedenciaVenta.Tienda,
       tipoPago: carritoJSON.metodoPago,
@@ -562,6 +575,20 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     if (!data.detalleVenta?.items?.length) errores.push('La venta debe tener al menos un item');
     if ((data.total || 0) <= 0) errores.push('El total debe ser mayor a 0');
     if (!data.procedencia) errores.push('Procedencia es requerida');
+
+    if (
+      typeof data.total === "number" &&
+      typeof data.detalleVenta?.total === "number"
+    ) {
+      const montoRedondeo = typeof data.montoRedondeo === "number" ? data.montoRedondeo : 0;
+      const expectedTotalFinal = Venta.roundMoney(data.detalleVenta.total + montoRedondeo);
+      const providedTotalFinal = Venta.roundMoney(data.total);
+      if (providedTotalFinal !== expectedTotalFinal) {
+        errores.push(
+          `Total inconsistente: total=${providedTotalFinal} debe ser detalleVenta.total + montoRedondeo = ${expectedTotalFinal}`,
+        );
+      }
+    }
     
     // Validaciones opcionales para campos de trazabilidad
     if (data.costoEnvio !== undefined && data.costoEnvio < 0) {
@@ -614,7 +641,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
    * Calcula el total de la venta dinámicamente
    */
   calcularTotal(): number {
-    return this.calcularSubtotal() + this.impuesto;
+    return Venta.roundMoney(this.calcularSubtotal() + this.impuesto + (this.montoRedondeo ?? 0));
   }
 }
 
