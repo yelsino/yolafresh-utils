@@ -76,6 +76,7 @@ export type ReferenciaTipoMovimientoCaja =
   | 'EGRESO'
   | 'INGRESO'
   | 'PAGO'
+  | 'ADELANTO'
   | 'AJUSTE';
 
 export interface MovimientoCaja {
@@ -97,6 +98,7 @@ export interface MovimientoCaja {
 
   referenciaId?: string;   // ventaId | egresoId | ingresoId
   referenciaTipo?: ReferenciaTipoMovimientoCaja;
+  clienteId?: string;
   generadoPorId: string;
 
   saldoEfectivoPosterior: number;

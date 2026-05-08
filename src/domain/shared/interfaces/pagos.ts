@@ -11,6 +11,7 @@ export enum EstadoPagoCapturaEnum {
 export interface Pago {
   // === IDENTIDAD ===
   id: string;
+  clienteId?: string;
   // === RELACIÓN CON VENTA ===
   ventaId?: string;                 // se asigna SOLO cuando se aplica
   montoAplicado?: number;           // cuánto de este pago se usó

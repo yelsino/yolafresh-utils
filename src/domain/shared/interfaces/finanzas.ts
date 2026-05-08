@@ -205,8 +205,11 @@ export type TipoMovimientoCuentaCliente =
 export type ReferenciaTipoMovimientoCuentaCliente =
   | "VENTA"
   | "PAGO"
+  | "ADELANTO"
   | "AJUSTE"
   | "DEVOLUCION";
+
+export type EstadoMovimientoCuenta = "ACTIVO" | "ANULADO";
 
 export interface MovimientoCuentaCliente {
   id: string;
@@ -217,6 +220,11 @@ export interface MovimientoCuentaCliente {
   referenciaTipo: ReferenciaTipoMovimientoCuentaCliente;
   referenciaId?: string;
   descripcion?: string;
+  estado?: EstadoMovimientoCuenta;
+  reversaDeId?: string;
+  anuladoPorId?: string;
+  anuladoAt?: Date;
+  anulacionMotivo?: string;
   createdAt: Date;
 }
 
@@ -237,6 +245,7 @@ export type TipoMovimientoCuentaProveedor =
 export type ReferenciaTipoMovimientoCuentaProveedor =
   | "COMPRA"
   | "PAGO"
+  | "ADELANTO"
   | "AJUSTE"
   | "DEVOLUCION";
 
@@ -249,6 +258,11 @@ export interface MovimientoCuentaProveedor {
   referenciaTipo: ReferenciaTipoMovimientoCuentaProveedor;
   referenciaId?: string;
   descripcion?: string;
+  estado?: EstadoMovimientoCuenta;
+  reversaDeId?: string;
+  anuladoPorId?: string;
+  anuladoAt?: Date;
+  anulacionMotivo?: string;
   createdAt: Date;
 }
 
@@ -256,6 +270,48 @@ export interface CuentaProveedor {
   proveedorId: string;
   saldoActual: number;
   moneda: "PEN" | "USD";
+  updatedAt: Date;
+}
+
+export type CobroClienteOrigen = "EFECTIVO" | "DIGITAL" | "TARJETA" | "OTRO";
+export type CobroClienteEstado = "BORRADOR" | "CONFIRMADO" | "ANULADO";
+
+export type CobroClienteAplicacionTipo = "VENTA" | "SALDO_FAVOR";
+
+export interface CobroClienteAplicacion {
+  id: string;
+  tipo: CobroClienteAplicacionTipo;
+  ventaId?: string;
+  monto: number;
+  createdAt: Date;
+}
+
+export interface CobroCliente {
+  id: string;
+  clienteId: string;
+  moneda: "PEN" | "USD";
+
+  montoRecibido: number;
+
+  origen: CobroClienteOrigen;
+  metodoPago: MetodoPago;
+
+  estado: CobroClienteEstado;
+
+  cajaId?: string;
+  turnoCajaId?: string;
+  movimientoCajaId?: string;
+
+  aplicaciones: CobroClienteAplicacion[];
+
+  creadoPorId: string;
+  confirmadoPorId?: string;
+  confirmadoAt?: Date;
+  anuladoPorId?: string;
+  anuladoAt?: Date;
+  anulacionMotivo?: string;
+
+  createdAt: Date;
   updatedAt: Date;
 }
 
