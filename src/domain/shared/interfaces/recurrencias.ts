@@ -18,7 +18,7 @@ export interface ReglaRecurrencia {
   horarioUTC: RecurrenciaHorarioUTC;
 }
 
-export interface RecurrenciaEgresoTemplate {
+export interface RecurrenciaCrearEgresoPayload {
   monto: number;
   tipoEgreso: TipoEgreso;
   centroCostoId?: string;
@@ -31,23 +31,39 @@ export interface RecurrenciaEgresoTemplate {
   prorrateable?: boolean;
 }
 
-export interface RecurrenciaCargoClienteTemplate {
+export interface RecurrenciaCrearCargoClientePayload {
   clienteId: string;
   monto: number;
   moneda: "PEN" | "USD";
   descripcion?: string;
 }
 
-export type AccionRecurrencia =
-  | { tipo: "EGRESO"; template: RecurrenciaEgresoTemplate }
-  | { tipo: "CARGO_CLIENTE"; template: RecurrenciaCargoClienteTemplate };
+export interface RecurrenciaAccionPayloadMap {
+  CREAR_EGRESO: RecurrenciaCrearEgresoPayload;
+  CREAR_CARGO_CLIENTE: RecurrenciaCrearCargoClientePayload;
+  CREAR_MERMA: unknown;
+  CREAR_COMPRA: unknown;
+  CREAR_RECORDATORIO: unknown;
+  ENVIAR_WHATSAPP: unknown;
+  GENERAR_REPORTE: unknown;
+  CREAR_VENTA: unknown;
+}
+
+export type TipoAccionRecurrencia = keyof RecurrenciaAccionPayloadMap | (string & {});
+
+export type PayloadAccionRecurrencia<TAction extends TipoAccionRecurrencia> =
+  TAction extends keyof RecurrenciaAccionPayloadMap
+    ? RecurrenciaAccionPayloadMap[TAction]
+    : unknown;
 
 export interface Recurrencia {
   id: string;
+  type: "recurrencia";
   nombre: string;
   estado: RecurrenciaEstado;
   regla: ReglaRecurrencia;
-  accion: AccionRecurrencia;
+  accion: TipoAccionRecurrencia;
+  payload: unknown;
   inicioAt: UnixMillis;
   finAt?: UnixMillis;
   siguienteEjecucionAt: UnixMillis;
@@ -56,25 +72,42 @@ export interface Recurrencia {
   updatedAt: UnixMillis;
 }
 
-export type EstadoEjecucionRecurrencia =
-  | "PENDIENTE"
-  | "EJECUTADA"
-  | "FALLIDA"
-  | "ANULADA";
-
-export type TipoDocumentoRecurrenciaGenerado = "EGRESO" | "MOV_CUENTA_CLIENTE";
-
-export interface DocumentoRecurrenciaGenerado {
-  tipo: TipoDocumentoRecurrenciaGenerado;
-  id: string;
-}
+export type EstadoEjecucionRecurrencia = "DESPACHADA" | "COMPLETADA" | "FALLIDA" | "ANULADA";
 
 export interface EjecucionRecurrencia {
   id: string;
+  type: "recurrencia_ejecucion";
   recurrenciaId: string;
   scheduledFor: UnixMillis;
-  executedAt?: UnixMillis;
+  accion: TipoAccionRecurrencia;
+  payload: unknown;
   estado: EstadoEjecucionRecurrencia;
-  documentosGenerados: DocumentoRecurrenciaGenerado[];
+  dispatchedAt?: UnixMillis;
+  completedAt?: UnixMillis;
   error?: string;
 }
+
+export type RecurrenciaTyped<TAction extends TipoAccionRecurrencia> = Omit<
+  Recurrencia,
+  "accion" | "payload"
+> & {
+  accion: TAction;
+  payload: PayloadAccionRecurrencia<TAction>;
+};
+
+export type RecurrenciaDispatch = Pick<
+  EjecucionRecurrencia,
+  "id" | "type" | "recurrenciaId" | "scheduledFor" | "accion" | "payload"
+>;
+
+export type RecurrenciaActionHandlerResultado =
+  | { estado: "COMPLETADA"; descripcion?: string }
+  | { estado: "FALLIDA"; error: string };
+
+export type RecurrenciaActionHandler<TAction extends TipoAccionRecurrencia> = (
+  params: {
+    dispatch: RecurrenciaDispatch;
+    recurrencia: RecurrenciaTyped<TAction>;
+    payload: PayloadAccionRecurrencia<TAction>;
+  },
+) => RecurrenciaActionHandlerResultado | Promise<RecurrenciaActionHandlerResultado>;

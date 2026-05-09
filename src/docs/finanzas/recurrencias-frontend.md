@@ -9,7 +9,7 @@ Este documento describe lo que la librería expone para que un frontend/consumer
 ## Importaciones
 
 Desde la librería puedes usar:
-- Contratos: `Recurrencia`, `ReglaRecurrencia`, `AccionRecurrencia`, `EjecucionRecurrencia`
+- Contratos: `Recurrencia`, `ReglaRecurrencia`, `TipoAccionRecurrencia`, `EjecucionRecurrencia`
 - Entidad: `RecurrenciaEntity`
 - Procesador: `RecurrenciaProcessor`
 
@@ -21,7 +21,8 @@ Rutas habituales:
 
 Una recurrencia define:
 - `regla`: cuándo debe ejecutarse (frecuencia + horario UTC)
-- `accion`: qué debe generar cuando se ejecuta (ej: `EGRESO`, `CARGO_CLIENTE`)
+- `accion`: qué acción debe despachar cuando se ejecuta (ej: `CREAR_EGRESO`)
+- `payload`: datos para que un handler (en tu app) ejecute la acción
 - `siguienteEjecucionAt`: timestamp (UnixMillis) que el scheduler usa para decidir si corresponde ejecutar
 
 Archivo: `src/domain/shared/interfaces/recurrencias.ts`
@@ -36,23 +37,21 @@ Archivo: `src/domain/shared/interfaces/recurrencias.ts`
 - `diaMes`: (mensual/anual) `1..31` (si el mes no tiene ese día, se usa el último día del mes)
 - `mes`: (anual) `1..12`
 
-## Acciones soportadas (generación de documentos)
+## Acciones soportadas (despacho)
 
-`AccionRecurrencia` soporta:
+La recurrencia es un motor genérico: agenda y despacha acciones.
 
-### 1) `EGRESO`
-Genera un `Egreso` (finanzas) listo para ser persistido por tu app.
+La librería expone `TipoAccionRecurrencia` con acciones base (y permite extenderlo):
+- `CREAR_EGRESO`
+- `CREAR_CARGO_CLIENTE`
+- `CREAR_MERMA`
+- `CREAR_COMPRA`
+- `CREAR_RECORDATORIO`
+- `ENVIAR_WHATSAPP`
+- `GENERAR_REPORTE`
+- `CREAR_VENTA`
 
-Salida del procesador:
-- `egresos: Egreso[]`
-
-### 2) `CARGO_CLIENTE`
-Genera un `MovimientoCuentaCliente` con:
-- `tipo="CARGO"`
-- `referenciaTipo="RECURRENCIA"`
-
-Salida del procesador:
-- `movimientosCuentaCliente: MovimientoCuentaCliente[]`
+El contenido de `payload` depende de la acción. Para acciones base, existe un mapa de payloads (`RecurrenciaAccionPayloadMap`) que puedes usar/expandir.
 
 ## Entidad: `RecurrenciaEntity`
 
@@ -74,8 +73,9 @@ Salida:
 - `null` si no corresponde (no está activa, fuera de rango, o aún no llega `siguienteEjecucionAt`)
 - si corresponde, retorna:
   - `recurrenciaActualizada` (con `ultimaEjecucionAt`, `siguienteEjecucionAt` y `updatedAt`)
-  - `ejecucion` (`EjecucionRecurrencia`) para historial
-  - documentos generados (`egresos`, `movimientosCuentaCliente`)
+  - `ejecucion` (`EjecucionRecurrencia`) en estado `DESPACHADA` con `{ accion, payload }`
+
+Tip: puedes tratar `ejecucion` como un `RecurrenciaDispatch` para pasarlo a tu dispatcher/handlers.
 
 ## Flujo recomendado (frontend / consumer)
 
@@ -91,7 +91,8 @@ Salida:
    - para cada una, llamar `RecurrenciaProcessor.ejecutarSiCorresponde`
    - si retorna resultado:
      - persistir `EjecucionRecurrencia`
-     - persistir documentos (`Egreso` / `MovimientoCuentaCliente`)
+     - encolar o ejecutar un dispatcher local: `switch (ejecucion.accion)` → handler
+     - los handlers crean y persisten documentos (ej: `Egreso`, `MovimientoCuentaCliente`, etc.)
      - actualizar la `Recurrencia` con `recurrenciaActualizada`
 
 4) Sync:
@@ -102,6 +103,6 @@ Salida:
 
 - Lista de recurrencias (ACTIVA/PAUSADA/ANULADA)
 - Detalle de recurrencia (regla + acción)
-- Historial de ejecuciones (EJECUTADA/FALLIDA)
+- Historial de ejecuciones (DESPACHADA/COMPLETADA/FALLIDA)
 - Acciones: pausar, reanudar, anular, editar regla
 - Vista “próximas ejecuciones” (calculada a partir de `siguienteEjecucionAt` y la regla)

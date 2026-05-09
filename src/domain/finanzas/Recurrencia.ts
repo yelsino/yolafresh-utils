@@ -1,6 +1,6 @@
 import { AggregateRoot } from "@/domain/shared/base/AggregateRoot";
 import { generarUlid } from "@/utils";
-import { AccionRecurrencia, Recurrencia, RecurrenciaEstado, ReglaRecurrencia } from "@/interfaces/recurrencias";
+import { Recurrencia, RecurrenciaEstado, ReglaRecurrencia, TipoAccionRecurrencia } from "@/interfaces/recurrencias";
 
 export class RecurrenciaEntity extends AggregateRoot<string> {
   private data: Recurrencia;
@@ -13,7 +13,8 @@ export class RecurrenciaEntity extends AggregateRoot<string> {
   static crear(params: {
     nombre: string;
     regla: ReglaRecurrencia;
-    accion: AccionRecurrencia;
+    accion: TipoAccionRecurrencia;
+    payload: unknown;
     inicioAt: number;
     finAt?: number;
     now?: number;
@@ -29,10 +30,12 @@ export class RecurrenciaEntity extends AggregateRoot<string> {
 
     return new RecurrenciaEntity({
       id,
+      type: "recurrencia",
       nombre: params.nombre,
       estado: "ACTIVA",
       regla: params.regla,
       accion: params.accion,
+      payload: params.payload,
       inicioAt,
       finAt: params.finAt,
       siguienteEjecucionAt,
