@@ -82,6 +82,8 @@ async function generateMainIndex() {
   exportStatements.push("export * from './domain/ventas/CarritoVenta';");
   exportStatements.push("export * from './domain/ventas/snapshots';");
   exportStatements.push("export * from './domain/inventario/MovimientoInventarioService';");
+  exportStatements.push("export * from './domain/finanzas/Recurrencia';");
+  exportStatements.push("export * from './domain/finanzas/RecurrenciaProcessor';");
 
 
   exportStatements.push('');

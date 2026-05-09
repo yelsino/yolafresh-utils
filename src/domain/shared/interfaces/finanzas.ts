@@ -206,6 +206,7 @@ export type ReferenciaTipoMovimientoCuentaCliente =
   | "VENTA"
   | "PAGO"
   | "ADELANTO"
+  | "RECURRENCIA"
   | "AJUSTE"
   | "DEVOLUCION";
 
@@ -246,6 +247,7 @@ export type ReferenciaTipoMovimientoCuentaProveedor =
   | "COMPRA"
   | "PAGO"
   | "ADELANTO"
+  | "RECURRENCIA"
   | "AJUSTE"
   | "DEVOLUCION";
 

@@ -74,6 +74,11 @@
       "require": "./domain/tesoreria/*.js",
       "types": "./domain/tesoreria/*.d.ts"
     },
+    "./domain/finanzas/*": {
+      "import": "./domain/finanzas/*.js",
+      "require": "./domain/finanzas/*.js",
+      "types": "./domain/finanzas/*.d.ts"
+    },
     "./domain/usuarios/*": {
       "import": "./domain/usuarios/*.js",
       "require": "./domain/usuarios/*.js",
@@ -147,6 +152,9 @@
       ],
       "domain/tesoreria/*": [
         "domain/tesoreria/*"
+      ],
+      "domain/finanzas/*": [
+        "domain/finanzas/*"
       ],
       "domain/usuarios/*": [
         "domain/usuarios/*"

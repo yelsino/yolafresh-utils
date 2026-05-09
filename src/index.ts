@@ -10,6 +10,8 @@ export * from './domain/ventas/Venta';
 export * from './domain/ventas/CarritoVenta';
 export * from './domain/ventas/snapshots';
 export * from './domain/inventario/MovimientoInventarioService';
+export * from './domain/finanzas/Recurrencia';
+export * from './domain/finanzas/RecurrenciaProcessor';
 
 // También puedes exportar directamente los módulos más utilizados aquí si lo deseas
 // Por ejemplo:

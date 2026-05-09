@@ -25,6 +25,8 @@ __exportStar(require("./domain/ventas/Venta"), exports);
 __exportStar(require("./domain/ventas/CarritoVenta"), exports);
 __exportStar(require("./domain/ventas/snapshots"), exports);
 __exportStar(require("./domain/inventario/MovimientoInventarioService"), exports);
+__exportStar(require("./domain/finanzas/Recurrencia"), exports);
+__exportStar(require("./domain/finanzas/RecurrenciaProcessor"), exports);
 // También puedes exportar directamente los módulos más utilizados aquí si lo deseas
 // Por ejemplo:
 // export { Producto, UpdateProducto } from './interfaces/producto';
