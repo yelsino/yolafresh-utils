@@ -55,7 +55,7 @@ export function generarWhatsAppLink(carrito: Carrito): string {
     : `*Dirección de Envío:* _${carrito?.direccion?.nombre}_`;
 
   const mensaje = `*Lista de Compras de Vegetales*\n\n${listaDeCompras}\n\n` +
-    `*Monto Total: ${formatSolesPeruanos(carrito.total, 'version1')}*\n\n` +
+    `*Monto Total: ${formatSolesPeruanos(carrito.total)}*\n\n` +
     `*Solicitante:* _${capitalizarPrimeraLetra(obtenerNombreUsuario(carrito?.usuario))}_\n` +
     `*Fecha:* _${fechaEntrega}_\n` +
     `${direccionORecojo}\n` +

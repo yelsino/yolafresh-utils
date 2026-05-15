@@ -80,35 +80,38 @@ const decimalToSymbolicFraction: { [key: number]: string } = {
   0.75: '¾',
 };
 
-export function formatSolesPeruanos(monto: number | null | undefined, version: Versions = 'version1'): string {
-  if (monto === null || monto === undefined) {
-    if (version === 'sinSimbolo') {
-      return '0.00';
-    }
-    if (version === 'version2') {
-      return 'S/. 0.00';
-    }
-    return 'S/ 0.00';
+
+export function formatSolesPeruanos(
+  monto: number | null | undefined,
+  opciones: {
+    version?: Versions;
+    locale?: string;
+    decimales?: number;
+    useGrouping?: boolean;
+  } = {},
+): string {
+  const version = opciones.version ?? "version1";
+  const decimales = opciones.decimales ?? 2;
+  const locale = opciones.locale ?? "es-PE";
+  const useGrouping = opciones.useGrouping ?? true;
+
+  if (version === "sinSimbolo") {
+    return formatMontoProfesional(monto, {
+      mostrarSimbolo: false,
+      locale,
+      decimales,
+      useGrouping,
+    });
   }
-  
-  // Redondear a 2 decimales
-  const montoRedondeado = Math.round(monto * 100) / 100;
-  
-  if (version === 'version1') {
-    return `S/ ${montoRedondeado.toFixed(2)}`;
-  } else if (version === 'version2') {
-    return `S/. ${montoRedondeado.toFixed(2)}`;
-  } else if (version === 'sinSimbolo') {
-    return new Intl.NumberFormat('es-PE', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-      useGrouping: true
-    }).format(montoRedondeado);
-  } else {
-    // version3: lógica de fracciones si aplica (ej: 0.50 -> 1/2)
-    // Aquí simplificado
-    return `S/ ${montoRedondeado.toFixed(2)}`;
-  }
+
+  return formatMontoProfesional(monto, {
+    mostrarSimbolo: true,
+    simbolo: version === "version2" ? "S/." : "S/",
+    locale,
+    currency: "PEN",
+    decimales,
+    useGrouping,
+  });
 }
 
 export function capitalizarPrimeraLetra(texto: string): string {
