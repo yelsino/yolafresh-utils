@@ -8,6 +8,8 @@
  * - Rol: permisos y capacidades en el sistema
  */
 
+import type { Permisos } from "./permisos";
+
 /**
  * Tipos de entidades disponibles en el sistema
  */
@@ -53,7 +55,7 @@ export interface Rol {
   descripcion?: string;
   
   /** Lista de permisos que otorga este rol */
-  permisos: string[];
+  permisos: Permisos[];
   
   /** Indica si el rol está activo */
   activo: boolean;
@@ -63,75 +65,6 @@ export interface Rol {
   
   /** Fecha de última actualización */
   updatedAt: Date;
-}
-
-/**
- * Tipos de permisos predefinidos en el sistema
- * 
- * @description Define los permisos básicos que pueden ser asignados a roles
- * Formato: "recurso:acción"
- */
-export enum Permisos {
-  // Permisos de Ventas
-  VENTAS_CREAR = "ventas:crear",
-  VENTAS_VER = "ventas:ver",
-  VENTAS_EDITAR = "ventas:editar",
-  VENTAS_ELIMINAR = "ventas:eliminar",
-  VENTAS_REPORTES = "ventas:reportes",
-  
-  // Permisos de Productos
-  PRODUCTOS_CREAR = "productos:crear",
-  PRODUCTOS_VER = "productos:ver",
-  PRODUCTOS_EDITAR = "productos:editar",
-  PRODUCTOS_ELIMINAR = "productos:eliminar",
-  PRODUCTOS_STOCK = "productos:stock",
-  
-  // Permisos de Clientes
-  CLIENTES_CREAR = "clientes:crear",
-  CLIENTES_VER = "clientes:ver",
-  CLIENTES_EDITAR = "clientes:editar",
-  CLIENTES_ELIMINAR = "clientes:eliminar",
-  
-  // Permisos de Personal
-  PERSONAL_CREAR = "personal:crear",
-  PERSONAL_VER = "personal:ver",
-  PERSONAL_EDITAR = "personal:editar",
-  PERSONAL_ELIMINAR = "personal:eliminar",
-  
-  // Permisos de Proveedores
-  PROVEEDORES_CREAR = "proveedores:crear",
-  PROVEEDORES_VER = "proveedores:ver",
-  PROVEEDORES_EDITAR = "proveedores:editar",
-  PROVEEDORES_ELIMINAR = "proveedores:eliminar",
-  
-  // Permisos de Finanzas
-  FINANZAS_VER = "finanzas:ver",
-  FINANZAS_CREAR = "finanzas:crear",
-  FINANZAS_EDITAR = "finanzas:editar",
-  FINANZAS_REPORTES = "finanzas:reportes",
-  
-  // Permisos de Sistema
-  SISTEMA_ADMIN = "sistema:admin",
-  SISTEMA_CONFIGURACION = "sistema:configuracion",
-  SISTEMA_USUARIOS = "sistema:usuarios",
-  SISTEMA_ROLES = "sistema:roles",
-  
-  // Permisos de Perfil
-  PERFIL_VER = "perfil:ver",
-  PERFIL_EDITAR = "perfil:editar",
-}
-
-/**
- * Roles predefinidos del sistema
- */
-export enum RolesPredefinidos {
-  ADMIN = "admin",
-  CAJERO = "cajero", 
-  VENDEDOR = "vendedor",
-  CLIENTE = "cliente",
-  PROVEEDOR = "proveedor",
-  SUPERVISOR = "supervisor",
-  CONTADOR = "contador",
 }
 
 /**

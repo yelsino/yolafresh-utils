@@ -5,8 +5,16 @@
  * Implementa un sistema robusto de control de acceso basado en roles
  */
 
-import { IUsuario, LoginRespuesta } from "@/interfaces/usuario";
-import { Rol, Permisos, RolesPredefinidos, SesionContexto, Entidad } from "@/interfaces/entidades";
+import { IUsuario } from "@/interfaces/usuario";
+import { Rol, SesionContexto, Entidad } from "@/interfaces/entidades";
+import { Permisos } from "@/interfaces/permisos";
+import { RolesPredefinidos } from "@/interfaces/roles";
+
+type ConfiguracionRolPredefinido = {
+  nombre: RolesPredefinidos;
+  descripcion: string;
+  permisos: Permisos[];
+};
 
 /**
  * Verifica si un usuario tiene un permiso específico
@@ -22,7 +30,7 @@ import { Rol, Permisos, RolesPredefinidos, SesionContexto, Entidad } from "@/int
  * }
  * ```
  */
-export function puede(usuario: IUsuario, permiso: string): boolean {
+export function puede(usuario: IUsuario, permiso: Permisos): boolean {
   // Verificar si el usuario está activo
   if (!usuario.activo || usuario.cuentaBloqueada) {
     return false;
@@ -69,12 +77,12 @@ export function puedeAccederEntidad(usuario: IUsuario, entidadId: string): boole
  * @param usuario - Usuario del cual obtener permisos
  * @returns Array de permisos únicos
  */
-export function obtenerPermisos(usuario: IUsuario): string[] {
-  const permisos = new Set<string>();
+export function obtenerPermisos(usuario: IUsuario): Permisos[] {
+  const permisos = new Set<Permisos>();
   
   usuario.roles.forEach((rol: Rol) => {
     if (rol.activo) {
-      rol.permisos.forEach((permiso: string) => permisos.add(permiso));
+      rol.permisos.forEach((permiso: Permisos) => permisos.add(permiso));
     }
   });
   
@@ -91,7 +99,7 @@ export function obtenerPermisos(usuario: IUsuario): string[] {
  */
 export function puedeMultiple(
   usuario: IUsuario, 
-  permisos: string[], 
+  permisos: Permisos[], 
   requiereTodos: boolean = true
 ): boolean {
   if (requiereTodos) {
@@ -146,7 +154,7 @@ export function crearSesionContexto(
  * @param permisoRequerido - Permiso necesario para acceder
  * @returns Función middleware
  */
-export function requierePermiso(permisoRequerido: string) {
+export function requierePermiso(permisoRequerido: Permisos) {
   return (usuario: IUsuario) => {
     if (!puede(usuario, permisoRequerido)) {
       throw new Error(`Acceso denegado. Se requiere el permiso: ${permisoRequerido}`);
@@ -161,7 +169,7 @@ export function requierePermiso(permisoRequerido: string) {
  * @param rolRequerido - Rol necesario para acceder
  * @returns Función middleware
  */
-export function requiereRol(rolRequerido: string) {
+export function requiereRol(rolRequerido: RolesPredefinidos | string) {
   return (usuario: IUsuario) => {
     if (!tieneRol(usuario, rolRequerido)) {
       throw new Error(`Acceso denegado. Se requiere el rol: ${rolRequerido}`);
@@ -180,7 +188,7 @@ export function requiereRol(rolRequerido: string) {
  */
 export function puedeEnEntidad(
   usuario: IUsuario, 
-  permiso: string, 
+  permiso: Permisos, 
   entidadId: string
 ): boolean {
   return puede(usuario, permiso) && puedeAccederEntidad(usuario, entidadId);
@@ -195,7 +203,7 @@ export function puedeEnEntidad(
  */
 export function obtenerEntidadesAccesibles(
   usuario: IUsuario, 
-  tipo?: string
+  tipo?: Entidad["tipoEntidad"]
 ): Entidad[] {
   let entidades = usuario.entidades.filter((entidad: Entidad) => entidad.activo);
   
@@ -209,19 +217,23 @@ export function obtenerEntidadesAccesibles(
 /**
  * Configuraciones predefinidas de roles del sistema
  */
-export const CONFIGURACIONES_ROLES = {
+export const CONFIGURACIONES_ROLES: Record<RolesPredefinidos, ConfiguracionRolPredefinido> = {
   [RolesPredefinidos.ADMIN]: {
     nombre: RolesPredefinidos.ADMIN,
     descripcion: "Administrador del sistema con acceso completo",
-    permisos: Object.values(Permisos)
+    permisos: [...new Set(Object.values(Permisos))] as Permisos[]
   },
   
   [RolesPredefinidos.CAJERO]: {
     nombre: RolesPredefinidos.CAJERO,
-    descripcion: "Cajero con permisos de venta y consulta",
+    descripcion: "Cajero con permisos de venta y operación de caja",
     permisos: [
       Permisos.VENTAS_CREAR,
       Permisos.VENTAS_VER,
+      Permisos.CAJA_ABRIR,
+      Permisos.CAJA_CERRAR,
+      Permisos.CAJA_ARQUEO,
+      Permisos.CAJA_MOVIMIENTOS,
       Permisos.PRODUCTOS_VER,
       Permisos.CLIENTES_VER,
       Permisos.CLIENTES_CREAR,
@@ -245,43 +257,28 @@ export const CONFIGURACIONES_ROLES = {
     ]
   },
   
-  [RolesPredefinidos.CLIENTE]: {
-    nombre: RolesPredefinidos.CLIENTE,
-    descripcion: "Cliente con acceso limitado a su información",
-    permisos: [
-      Permisos.PRODUCTOS_VER,
-      Permisos.PERFIL_VER,
-      Permisos.PERFIL_EDITAR
-    ]
-  },
-  
-  [RolesPredefinidos.PROVEEDOR]: {
-    nombre: RolesPredefinidos.PROVEEDOR,
-    descripcion: "Proveedor con acceso a gestión de productos y órdenes",
-    permisos: [
-      Permisos.PRODUCTOS_VER,
-      Permisos.PRODUCTOS_CREAR,
-      Permisos.PRODUCTOS_EDITAR,
-      Permisos.PERFIL_VER,
-      Permisos.PERFIL_EDITAR
-    ]
-  },
-  
   [RolesPredefinidos.SUPERVISOR]: {
     nombre: RolesPredefinidos.SUPERVISOR,
-    descripcion: "Supervisor con permisos de gestión y reportes",
+    descripcion: "Supervisor con permisos de gestión operativa y reportes",
     permisos: [
       Permisos.VENTAS_CREAR,
       Permisos.VENTAS_VER,
       Permisos.VENTAS_EDITAR,
+      Permisos.VENTAS_ANULAR,
       Permisos.VENTAS_REPORTES,
+      Permisos.CAJA_ARQUEO,
+      Permisos.CAJA_MOVIMIENTOS,
       Permisos.PRODUCTOS_VER,
       Permisos.PRODUCTOS_EDITAR,
       Permisos.PRODUCTOS_STOCK,
+      Permisos.INVENTARIO_VER,
+      Permisos.INVENTARIO_CONTEO,
+      Permisos.INVENTARIO_AJUSTAR,
       Permisos.CLIENTES_VER,
       Permisos.CLIENTES_CREAR,
       Permisos.CLIENTES_EDITAR,
       Permisos.PERSONAL_VER,
+      Permisos.PERSONAL_EDITAR,
       Permisos.PERFIL_VER,
       Permisos.PERFIL_EDITAR
     ]
@@ -289,10 +286,13 @@ export const CONFIGURACIONES_ROLES = {
   
   [RolesPredefinidos.CONTADOR]: {
     nombre: RolesPredefinidos.CONTADOR,
-    descripcion: "Contador con acceso a finanzas y reportes",
+    descripcion: "Contador con acceso a finanzas, compras y reportes",
     permisos: [
       Permisos.VENTAS_VER,
       Permisos.VENTAS_REPORTES,
+      Permisos.COMPRAS_CREAR,
+      Permisos.COMPRAS_APROBAR,
+      Permisos.COMPRAS_ANULAR,
       Permisos.FINANZAS_VER,
       Permisos.FINANZAS_CREAR,
       Permisos.FINANZAS_EDITAR,

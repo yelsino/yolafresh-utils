@@ -6,12 +6,11 @@
  */
 
 import { Usuario } from "./usuario";
-import { IUsuario } from "@/domain/shared/interfaces/usuario";
 import { 
-  Permisos, 
-  RolesPredefinidos, 
   Entidad 
 } from "@/domain/shared/interfaces/entidades";
+import { Permisos } from "@/domain/shared/interfaces/permisos";
+import { RolesPredefinidos } from "@/domain/shared/interfaces/roles";
 
 
 /**
@@ -84,6 +83,40 @@ export interface ReglaValidacion {
  * - ⚡ Cache de validaciones
  */
 export class PermisoValidator {
+  private static readonly TODOS_LOS_PERMISOS = new Set<Permisos>(Object.values(Permisos));
+
+  private static readonly PERMISOS_VENTA: Record<
+    "crear" | "ver" | "editar" | "anular" | "reportes",
+    Permisos
+  > = {
+    crear: Permisos.VENTAS_CREAR,
+    ver: Permisos.VENTAS_VER,
+    editar: Permisos.VENTAS_EDITAR,
+    anular: Permisos.VENTAS_ANULAR,
+    reportes: Permisos.VENTAS_REPORTES,
+  };
+
+  private static readonly PERMISOS_PRODUCTO: Record<
+    "crear" | "ver" | "editar" | "desactivar" | "stock",
+    Permisos
+  > = {
+    crear: Permisos.PRODUCTOS_CREAR,
+    ver: Permisos.PRODUCTOS_VER,
+    editar: Permisos.PRODUCTOS_EDITAR,
+    desactivar: Permisos.PRODUCTOS_DESACTIVAR,
+    stock: Permisos.PRODUCTOS_STOCK,
+  };
+
+  private static readonly PERMISOS_FINANZAS: Record<
+    "ver" | "crear" | "editar" | "reportes",
+    Permisos
+  > = {
+    ver: Permisos.FINANZAS_VER,
+    crear: Permisos.FINANZAS_CREAR,
+    editar: Permisos.FINANZAS_EDITAR,
+    reportes: Permisos.FINANZAS_REPORTES,
+  };
+
   private reglasPersonalizadas: Map<string, ReglaValidacion> = new Map();
   private cacheValidaciones: Map<string, { resultado: ResultadoValidacion; expiracion: Date }> = new Map();
   private auditoria: Array<{ contexto: ContextoValidacion; resultado: ResultadoValidacion; timestamp: Date }> = [];
@@ -116,9 +149,11 @@ export class PermisoValidator {
       }
 
       // Validar permiso específico
-      const validacionPermiso = this.validarPermiso(accion, contexto.usuario);
-      if (!validacionPermiso.permitido) {
-        return this.registrarYRetornar(contexto, validacionPermiso);
+      if (PermisoValidator.esPermiso(accion)) {
+        const validacionPermiso = this.validarPermiso(accion, contexto.usuario);
+        if (!validacionPermiso.permitido) {
+          return this.registrarYRetornar(contexto, validacionPermiso);
+        }
       }
 
       // Aplicar reglas personalizadas
@@ -192,10 +227,10 @@ export class PermisoValidator {
    * Valida operaciones de ventas
    */
   async validarOperacionVenta(
-    operacion: 'crear' | 'ver' | 'editar' | 'eliminar' | 'reportes',
+    operacion: 'crear' | 'ver' | 'editar' | 'anular' | 'reportes',
     contexto: ContextoValidacion
   ): Promise<ResultadoValidacion> {
-    const permisoRequerido = `ventas:${operacion}`;
+    const permisoRequerido = PermisoValidator.PERMISOS_VENTA[operacion];
     
     // Validación básica de permiso
     const validacionBasica = await this.validarAccion(permisoRequerido, contexto);
@@ -211,8 +246,8 @@ export class PermisoValidator {
       case 'editar':
         return this.validarEdicionVenta(contexto);
       
-      case 'eliminar':
-        return this.validarEliminacionVenta(contexto);
+      case 'anular':
+        return this.validarAnulacionVenta(contexto);
       
       case 'reportes':
         return this.validarReportesVenta(contexto);
@@ -226,10 +261,10 @@ export class PermisoValidator {
    * Valida operaciones de productos
    */
   async validarOperacionProducto(
-    operacion: 'crear' | 'ver' | 'editar' | 'eliminar' | 'stock',
+    operacion: 'crear' | 'ver' | 'editar' | 'desactivar' | 'stock',
     contexto: ContextoValidacion
   ): Promise<ResultadoValidacion> {
-    const permisoRequerido = `productos:${operacion}`;
+    const permisoRequerido = PermisoValidator.PERMISOS_PRODUCTO[operacion];
     
     const validacionBasica = await this.validarAccion(permisoRequerido, contexto);
     if (!validacionBasica.permitido) {
@@ -237,12 +272,12 @@ export class PermisoValidator {
     }
 
     // Reglas específicas de productos
-    if (operacion === 'eliminar') {
-      // Solo administradores pueden eliminar productos
+    if (operacion === 'desactivar') {
+      // Solo administradores pueden desactivar productos
       if (!contexto.usuario.esAdmin()) {
         return {
           permitido: false,
-          mensaje: 'Solo los administradores pueden eliminar productos',
+          mensaje: 'Solo los administradores pueden desactivar productos',
           codigoError: 'ADMIN_REQUIRED'
         };
       }
@@ -258,7 +293,7 @@ export class PermisoValidator {
     operacion: 'ver' | 'crear' | 'editar' | 'reportes',
     contexto: ContextoValidacion
   ): Promise<ResultadoValidacion> {
-    const permisoRequerido = `finanzas:${operacion}`;
+    const permisoRequerido = PermisoValidator.PERMISOS_FINANZAS[operacion];
     
     const validacionBasica = await this.validarAccion(permisoRequerido, contexto);
     if (!validacionBasica.permitido) {
@@ -303,7 +338,7 @@ export class PermisoValidator {
     }
   }
 
-  private validarPermiso(permiso: string, usuario: Usuario): ResultadoValidacion {
+  private validarPermiso(permiso: Permisos, usuario: Usuario): ResultadoValidacion {
     if (!usuario.puede(permiso)) {
       return {
         permitido: false,
@@ -315,6 +350,10 @@ export class PermisoValidator {
     }
 
     return { permitido: true };
+  }
+
+  private static esPermiso(valor: string): valor is Permisos {
+    return PermisoValidator.TODOS_LOS_PERMISOS.has(valor as Permisos);
   }
 
   private async validarAccionEspecifica(
@@ -331,6 +370,9 @@ export class PermisoValidator {
       
       case Permisos.CLIENTES_ELIMINAR:
         return this.validarEliminacionCliente(contexto);
+
+      case Permisos.VENTAS_ANULAR:
+        return this.validarAnulacionVenta(contexto);
       
       default:
         return { permitido: true };
@@ -388,13 +430,24 @@ export class PermisoValidator {
     return { permitido: true };
   }
 
-  private validarEliminacionVenta(contexto: ContextoValidacion): ResultadoValidacion {
-    // Solo administradores pueden eliminar ventas
-    if (!contexto.usuario.esAdmin()) {
+  private validarAnulacionVenta(contexto: ContextoValidacion): ResultadoValidacion {
+    // Solo administradores y supervisores pueden anular ventas
+    const rolesPermitidos = [RolesPredefinidos.ADMIN, RolesPredefinidos.SUPERVISOR];
+    const tieneRol = rolesPermitidos.some(rol => contexto.usuario.tieneRol(rol));
+
+    if (!tieneRol) {
       return {
         permitido: false,
-        mensaje: 'Solo administradores pueden eliminar ventas',
-        codigoError: 'ADMIN_REQUIRED'
+        mensaje: 'Solo administradores y supervisores pueden anular ventas',
+        codigoError: 'INSUFFICIENT_ROLE'
+      };
+    }
+
+    if (contexto.datosAdicionales?.ventaCerradaContablemente) {
+      return {
+        permitido: false,
+        mensaje: 'No se puede anular una venta ya cerrada contablemente',
+        codigoError: 'SALE_LOCKED_BY_ACCOUNTING'
       };
     }
 

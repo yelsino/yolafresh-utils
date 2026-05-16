@@ -1,6 +1,8 @@
 
 import { IUsuario, ConfiguracionUsuario } from "@/domain/shared/interfaces/usuario";
 import { Entidad, Rol, SesionContexto } from "@/domain/shared/interfaces/entidades";
+import { RolesPredefinidos } from "@/domain/shared/interfaces/roles";
+import { Permisos } from "@/domain/shared/interfaces/permisos";
 
 /**
  * Entidad de Dominio Usuario
@@ -51,7 +53,7 @@ export class Usuario implements IUsuario {
   /**
    * Verifica si el usuario tiene un rol específico
    */
-  public tieneRol(nombreRol: string): boolean {
+  public tieneRol(nombreRol: RolesPredefinidos | string): boolean {
     return this.roles.some(rol => rol.activo && rol.nombre === nombreRol);
   }
 
@@ -59,13 +61,13 @@ export class Usuario implements IUsuario {
    * Verifica si el usuario es administrador
    */
   public esAdmin(): boolean {
-    return this.tieneRol("ADMIN") || this.tieneRol("Administrador");
+    return this.tieneRol(RolesPredefinidos.ADMIN);
   }
 
   /**
    * Verifica si el usuario tiene un permiso específico
    */
-  public puede(permiso: string): boolean {
+  public puede(permiso: Permisos): boolean {
     if (this.esAdmin()) return true;
     return this.roles.some(rol => rol.activo && rol.permisos.includes(permiso));
   }

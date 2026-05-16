@@ -154,7 +154,6 @@ export interface Cliente extends Entidad {
     facturacion?: InformacionFacturacion;
   }
 
-/*3
 /**
  * Preferencias del cliente
  */
