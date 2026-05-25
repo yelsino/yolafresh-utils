@@ -6,8 +6,16 @@
  */
 export enum RolesPredefinidos {
   ADMIN = "admin",
-  CAJERO = "cajero",
-  VENDEDOR = "vendedor",
   SUPERVISOR = "supervisor",
+  CAJERO = "cajero",
+  VENTAS = "ventas",
+  OPERACIONES = "operaciones",
+  INVENTARIO = "inventario",
+  COMPRAS = "compras",
+  FINANZAS = "finanzas",
+  VENDEDOR = "vendedor",
   CONTADOR = "contador",
+  AUDITOR = "auditor",
+  SOPORTE_TECNICO = "soporte-tecnico",
+  SOLO_LECTURA = "solo-lectura",
 }

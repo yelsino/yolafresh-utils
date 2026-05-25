@@ -34,8 +34,8 @@ El control de acceso sigue RBAC:
 - **Rol**: describe qué puede hacer dentro del sistema. Pertenece al dominio RBAC.
 
 Ejemplos:
-- cargos: `CAJERO`, `REPONEDOR`, `SECRETARIO`, `VENDEDOR`
-- roles: `admin`, `cajero`, `supervisor`, `contador`
+- cargos: `ADMINISTRADOR`, `CAJERO`, `OPERADOR_ATENCION_COMERCIAL`, `ENCARGADO_INVENTARIO`, `CONTADOR`
+- roles: `admin`, `cajero`, `ventas`, `supervisor`, `contador`, `auditor`
 
 Regla oficial:
 - nunca modelar permisos desde el cargo
@@ -125,6 +125,18 @@ Fuente: [persons.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared
 
 ```ts
 export enum CargosPersonal {
+  ADMINISTRADOR = "ADMINISTRADOR",
+  SUPERVISOR = "SUPERVISOR",
+  OPERADOR_ATENCION_COMERCIAL = "OPERADOR_ATENCION_COMERCIAL",
+  ASISTENTE_OPERACIONES_COMERCIALES = "ASISTENTE_OPERACIONES_COMERCIALES",
+  ENCARGADO_COMPRAS = "ENCARGADO_COMPRAS",
+  ENCARGADO_INVENTARIO = "ENCARGADO_INVENTARIO",
+  ENCARGADO_ALMACEN = "ENCARGADO_ALMACEN",
+  DESPACHADOR = "DESPACHADOR",
+  AUXILIAR_ADMINISTRATIVO = "AUXILIAR_ADMINISTRATIVO",
+  CONTADOR = "CONTADOR",
+  AUDITOR = "AUDITOR",
+  SOPORTE_TECNICO = "SOPORTE_TECNICO",
   SECRETARIO = "SECRETARIO",
   ADMINISTRATIVO = "ADMINISTRATIVO",
   REPONEDOR = "REPONEDOR",
@@ -178,10 +190,18 @@ export interface Rol {
 
 export enum RolesPredefinidos {
   ADMIN = "admin",
-  CAJERO = "cajero",
-  VENDEDOR = "vendedor",
   SUPERVISOR = "supervisor",
+  CAJERO = "cajero",
+  VENTAS = "ventas",
+  OPERACIONES = "operaciones",
+  INVENTARIO = "inventario",
+  COMPRAS = "compras",
+  FINANZAS = "finanzas",
+  VENDEDOR = "vendedor",
   CONTADOR = "contador",
+  AUDITOR = "auditor",
+  SOPORTE_TECNICO = "soporte-tecnico",
+  SOLO_LECTURA = "solo-lectura",
 }
 
 export interface SesionContexto {
@@ -199,12 +219,19 @@ Fuente: [permisos.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/share
 
 ```ts
 export enum Permisos {
+  DASHBOARD_VER = "dashboard:ver",
+  PUNTO_VENTA_VER = "punto-venta:ver",
+  PUNTO_VENTA_CREAR = "punto-venta:crear",
   VENTAS_CREAR = "ventas:crear",
   VENTAS_VER = "ventas:ver",
+  VENTAS_VER_PROPIAS = "ventas:ver-propias",
+  VENTAS_VER_TODAS = "ventas:ver-todas",
   VENTAS_EDITAR = "ventas:editar",
   VENTAS_ANULAR = "ventas:anular",
   VENTAS_REPORTES = "ventas:reportes",
 
+  CAJA_VER_PROPIA = "caja:ver-propia",
+  CAJA_VER_TODAS = "caja:ver-todas",
   CAJA_ABRIR = "caja:abrir",
   CAJA_CERRAR = "caja:cerrar",
   CAJA_ARQUEO = "caja:arqueo",
@@ -213,6 +240,8 @@ export enum Permisos {
   PRODUCTOS_CREAR = "productos:crear",
   PRODUCTOS_VER = "productos:ver",
   PRODUCTOS_EDITAR = "productos:editar",
+  PRODUCTOS_EDITAR_PRECIO = "productos:editar-precio",
+  PRODUCTOS_VER_COSTO = "productos:ver-costo",
   PRODUCTOS_DESACTIVAR = "productos:desactivar",
   PRODUCTOS_STOCK = "productos:stock",
 
@@ -221,19 +250,25 @@ export enum Permisos {
   INVENTARIO_CONTEO = "inventario:conteo",
   INVENTARIO_TRANSFERIR = "inventario:transferir",
 
+  CUENTAS_VER = "cuentas:ver",
+  CUENTAS_REGISTRAR_PAGO = "cuentas:registrar-pago",
   CLIENTES_CREAR = "clientes:crear",
   CLIENTES_VER = "clientes:ver",
   CLIENTES_EDITAR = "clientes:editar",
+  CLIENTES_VER_CUENTAS = "clientes:ver-cuentas",
 
   PERSONAL_CREAR = "personal:crear",
   PERSONAL_VER = "personal:ver",
   PERSONAL_EDITAR = "personal:editar",
+  PERSONAL_ASIGNAR_CARGO = "personal:asignar-cargo",
 
   PROVEEDORES_CREAR = "proveedores:crear",
   PROVEEDORES_VER = "proveedores:ver",
   PROVEEDORES_EDITAR = "proveedores:editar",
 
+  COMPRAS_VER = "compras:ver",
   COMPRAS_CREAR = "compras:crear",
+  COMPRAS_EDITAR = "compras:editar",
   COMPRAS_APROBAR = "compras:aprobar",
   COMPRAS_ANULAR = "compras:anular",
 
@@ -242,10 +277,13 @@ export enum Permisos {
   FINANZAS_EDITAR = "finanzas:editar",
   FINANZAS_REPORTES = "finanzas:reportes",
 
-  SISTEMA_ADMIN = "sistema:admin",
-  SISTEMA_CONFIGURACION = "sistema:configuracion",
-  SISTEMA_USUARIOS = "sistema:usuarios",
-  SISTEMA_ROLES = "sistema:roles",
+  USUARIOS_VER = "usuarios:ver",
+  USUARIOS_CREAR = "usuarios:crear",
+  ROLES_VER = "roles:ver",
+  ROLES_EDITAR_PERMISOS = "roles:editar-permisos",
+  AUDITORIA_VER = "auditoria:ver",
+  CONFIGURACION_VER = "configuracion:ver",
+  NOTIFICACIONES_VER = "notificaciones:ver",
 
   PERFIL_VER = "perfil:ver",
   PERFIL_EDITAR = "perfil:editar",
