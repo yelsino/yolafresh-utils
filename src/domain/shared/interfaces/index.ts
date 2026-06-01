@@ -21,5 +21,6 @@ export * from './producto';
 export * from './producto.update.interface';
 export * from './recurrencias';
 export * from './roles';
+export * from './tarjetaVirtual';
 export * from './usuario';
 export type { Hora, Carrito, IntemList, ItemCarDB, ItemCar, Direccion as DireccionPedido, Register, Pedido, Tipo, ItemLista, Lista, UserCaracteristicProduct, SendEmail } from './pedido';
