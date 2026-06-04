@@ -210,7 +210,11 @@ export type ReferenciaTipoMovimientoCuentaCliente =
   | "AJUSTE"
   | "DEVOLUCION";
 
-export type EstadoMovimientoCuenta = "ACTIVO" | "ANULADO";
+export type EstadoMovimientoCuenta =
+  | "PENDIENTE"
+  | "CONFIRMADO"
+  | "RECHAZADO"
+  | "ANULADO";
 
 export interface MovimientoCuentaCliente {
   id: string;
@@ -221,12 +225,19 @@ export interface MovimientoCuentaCliente {
   referenciaTipo: ReferenciaTipoMovimientoCuentaCliente;
   referenciaId?: string;
   descripcion?: string;
-  estado?: EstadoMovimientoCuenta;
+  estado: EstadoMovimientoCuenta;
+  idempotencyKey: string;
+  cajaId?: string;
+  turnoCajaId?: string;
+  dispositivoId?: string;
+  creadoPorId: string;
   reversaDeId?: string;
   anuladoPorId?: string;
   anuladoAt?: Date;
   anulacionMotivo?: string;
+  rechazoMotivo?: string;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface CuentaCliente {
@@ -276,7 +287,12 @@ export interface CuentaProveedor {
 }
 
 export type CobroClienteOrigen = "EFECTIVO" | "DIGITAL" | "TARJETA" | "OTRO";
-export type CobroClienteEstado = "BORRADOR" | "CONFIRMADO" | "ANULADO";
+export type CobroClienteEstado =
+  | "BORRADOR"
+  | "PENDIENTE"
+  | "CONFIRMADO"
+  | "RECHAZADO"
+  | "ANULADO";
 
 export type CobroClienteAplicacionTipo = "VENTA" | "SALDO_FAVOR";
 
@@ -299,6 +315,8 @@ export interface CobroCliente {
   metodoPago: MetodoPago;
 
   estado: CobroClienteEstado;
+  idempotencyKey: string;
+  dispositivoId?: string;
 
   cajaId?: string;
   turnoCajaId?: string;
@@ -312,6 +330,7 @@ export interface CobroCliente {
   anuladoPorId?: string;
   anuladoAt?: Date;
   anulacionMotivo?: string;
+  rechazoMotivo?: string;
 
   createdAt: Date;
   updatedAt: Date;
