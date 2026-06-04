@@ -1,0 +1,6 @@
+- [x] La especificación distingue claramente auditoría mínima por entidad vs audit log separado.
+- [x] La especificación deja claro que `MovimientoCaja` y `MovimientoCuentaCliente` son la trazabilidad oficial del dinero.
+- [x] La especificación define a `Pago` como captura/conciliación y no como entidad universal para cualquier cobro.
+- [x] La especificación aterriza a `CobroCliente` como punto de recepción/custodia/entrega cuando el dinero no entra directo a caja.
+- [x] La especificación evita proponer auditoría pesada en todas las entidades monetarias.
+- [x] La especificación queda orientada a contratos de `yolafresh-utils`, sin mezclar infraestructura o base de datos.

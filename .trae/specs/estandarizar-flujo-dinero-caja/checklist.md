@@ -1,0 +1,6 @@
+- [ ] Los contratos definen claramente que "dinero operativo" debe reflejarse como `MovimientoCaja`.
+- [ ] `Pago` soporta enlazado a caja mediante `movimientoCajaId?: string` (o criterio equivalente documentado).
+- [ ] `Egreso`, `Ingreso`, `Cambio` y `Anulacion` incluyen referencias opcionales a `cajaId`, `turnoCajaId`, `movimientoCajaId`, `dispositivoId`.
+- [ ] Se define un tipo reusable de contexto de caja/turno (sin duplicar estructuras innecesarias).
+- [ ] La duplicidad `shared/interfaces/caja.ts` vs `tesoreria/caja.ts` queda definida (fuente canonica) sin romper imports.
+- [ ] `npm run build` pasa sin errores.

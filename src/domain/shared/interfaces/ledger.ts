@@ -16,6 +16,20 @@ export type ReferenciaTipoMovimientoFinanciero =
   | "DEVOLUCION"
   | "AJUSTE";
 
+/**
+ * Contrato genérico y legacy de apoyo para representar movimientos financieros
+ * en integraciones, reportes o compatibilidad histórica.
+ *
+ * Importante:
+ * - NO reemplaza la trazabilidad oficial del dinero.
+ * - La trazabilidad oficial debe descansar en `MovimientoCaja` y
+ *   `MovimientoCuentaCliente`, según corresponda al flujo real.
+ * - Debe tratarse como vista auxiliar o consolidada, no como fuente canónica
+ *   para auditoría o reconstrucción de saldos.
+ *
+ * Se mantiene por compatibilidad retroactiva. No renombrar ni eliminar sin una
+ * migración formal de consumidores existentes.
+ */
 export interface MovimientoFinanciero {
   id: string;
   tipo: TipoMovimientoFinanciero;
@@ -93,4 +107,3 @@ export interface AuditLog {
   fecha: Date;
   cambios?: AuditLogCambio[];
 }
-

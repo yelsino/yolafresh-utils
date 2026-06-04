@@ -11,6 +11,8 @@ export enum EstadoPagoCapturaEnum {
 export interface Pago {
   // === IDENTIDAD ===
   id: string;
+  clienteId?: string;
+  movimientoCajaId?: string;
   // === RELACIÓN CON VENTA ===
   ventaId?: string;                 // se asigna SOLO cuando se aplica
   montoAplicado?: number;           // cuánto de este pago se usó
@@ -36,6 +38,8 @@ export interface Pago {
   // === DECISIÓN HUMANA ===
   usuarioConfirmaId?: string;
   fechaConfirmacion?: number;
+  conciliado?: boolean;
+  conciliadoAt?: number;
 
   // === CONTEXTO POS ===
   dispositivoId?: string;

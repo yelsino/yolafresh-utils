@@ -14,6 +14,10 @@ export interface Egreso {
   type: "egreso";
   id?: string;
   monto: number;
+  cajaId?: string;
+  turnoCajaId?: string;
+  movimientoCajaId?: string;
+  dispositivoId?: string;
   tipoEgreso: TipoEgreso;
   centroCostoId?: string;
   quienRegistroId: string;
@@ -76,6 +80,10 @@ export interface Ingreso {
    * @description Se genera automáticamente si no se proporciona
    */
   id?: string;
+  cajaId?: string;
+  turnoCajaId?: string;
+  movimientoCajaId?: string;
+  dispositivoId?: string;
 
   /**
    * ID del usuario que registró este ingreso
@@ -175,6 +183,10 @@ export interface Ingreso {
 export interface Cambio {
   id: string;
   monto: number;
+  cajaId?: string;
+  turnoCajaId?: string;
+  movimientoCajaId?: string;
+  dispositivoId?: string;
   deMetodoPago: MetodoPago;
   aMetodoPago: MetodoPago;
   quienGeneroId: string;
@@ -185,6 +197,10 @@ export interface Cambio {
 export interface Anulacion {
   id: string;
   monto: number;
+  cajaId?: string;
+  turnoCajaId?: string;
+  movimientoCajaId?: string;
+  dispositivoId?: string;
   metodoPago: MetodoPago;
   motivo: string;
   aprobadoPorId?: string;
@@ -325,6 +341,11 @@ export interface CobroCliente {
   aplicaciones: CobroClienteAplicacion[];
 
   creadoPorId: string;
+  recibidoPorId?: string;
+  entregadoPorId?: string;
+  entregadoAt?: Date;
+  recibidoEnCajaPorId?: string;
+  recibidoEnCajaAt?: Date;
   confirmadoPorId?: string;
   confirmadoAt?: Date;
   anuladoPorId?: string;
