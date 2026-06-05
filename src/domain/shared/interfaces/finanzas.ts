@@ -305,7 +305,9 @@ export interface CuentaProveedor {
 export type CobroClienteOrigen = "EFECTIVO" | "DIGITAL" | "TARJETA" | "OTRO";
 export type CobroClienteEstado =
   | "BORRADOR"
-  | "PENDIENTE"
+  | "DERIVADO"
+  | "PENDIENTE_RECEPCION"
+  | "RECIBIDO_EN_CAJA"
   | "CONFIRMADO"
   | "RECHAZADO"
   | "ANULADO";
@@ -334,9 +336,17 @@ export interface CobroCliente {
   idempotencyKey: string;
   dispositivoId?: string;
 
+  // Caja/turno responsables una vez aceptada la recepción oficial.
   cajaId?: string;
   turnoCajaId?: string;
   movimientoCajaId?: string;
+
+  // Caja/turno/cajero objetivo mientras el cobro está en derivación.
+  derivadoACajaId?: string;
+  derivadoATurnoCajaId?: string;
+  derivadoACajeroId?: string;
+  derivadoPorId?: string;
+  derivadoAt?: Date;
 
   aplicaciones: CobroClienteAplicacion[];
 
@@ -348,6 +358,8 @@ export interface CobroCliente {
   recibidoEnCajaAt?: Date;
   confirmadoPorId?: string;
   confirmadoAt?: Date;
+  rechazadoPorId?: string;
+  rechazadoAt?: Date;
   anuladoPorId?: string;
   anuladoAt?: Date;
   anulacionMotivo?: string;

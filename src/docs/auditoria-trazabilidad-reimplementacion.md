@@ -78,6 +78,11 @@ export interface CobroCliente {
   cajaId?: string;
   turnoCajaId?: string;
   movimientoCajaId?: string;
+  derivadoACajaId?: string;
+  derivadoATurnoCajaId?: string;
+  derivadoACajeroId?: string;
+  derivadoPorId?: string;
+  derivadoAt?: Date;
   aplicaciones: CobroClienteAplicacion[];
   creadoPorId: string;
   recibidoPorId?: string;
@@ -87,6 +92,8 @@ export interface CobroCliente {
   recibidoEnCajaAt?: Date;
   confirmadoPorId?: string;
   confirmadoAt?: Date;
+  rechazadoPorId?: string;
+  rechazadoAt?: Date;
   anuladoPorId?: string;
   anuladoAt?: Date;
   anulacionMotivo?: string;
@@ -100,10 +107,13 @@ Interpretación:
 
 - `CobroCliente` pasa a ser la entidad principal para modelar:
   - dinero recibido del cliente,
+  - derivación operativa hacia caja/turno custodio,
   - custodia humana,
   - entrega a caja,
   - confirmación operativa.
 - Si ventas recibe dinero pero caja todavía no lo acepta, el cobro puede existir **sin** `MovimientoCaja` confirmado.
+- `cajaId` y `turnoCajaId` deben leerse como la caja/turno que finalmente asumieron la recepción oficial.
+- `derivadoACajaId` y `derivadoATurnoCajaId` representan el objetivo operativo mientras el cobro aún no ha sido aceptado por el custodio.
 
 ### 2.3 `MovimientoCaja`
 
@@ -175,6 +185,7 @@ Solo auditoría mínima y contextual:
 - `updatedAt`
 - `creadoPorId`
 - estado
+- derivación / recepción / confirmación cuando son parte central del flujo
 - anulación / rechazo si aplica
 - referencias a caja / turno / movimiento cuando el flujo lo requiere
 
@@ -230,6 +241,7 @@ Backend debe usar `CobroCliente` cuando:
 
 - un cliente entrega dinero,
 - hay intervención humana antes de caja,
+- el dinero debe derivarse a un cajero custodio,
 - el cobro puede quedar pendiente de entrega,
 - el cajero confirma posteriormente.
 
@@ -239,10 +251,11 @@ Flujo recomendado:
 1. Cliente entrega dinero.
 2. Se crea CobroCliente.
 3. Se registra recibidoPorId.
-4. Si ventas entrega a caja, se registra entregadoPorId / entregadoAt.
-5. Si caja acepta oficialmente, se registra recibidoEnCajaPorId / recibidoEnCajaAt.
-6. Recién ahí se crea o enlaza MovimientoCaja.
-7. Se confirma el cobro.
+4. Si quien recibió no es el custodio, se registra la derivación con `derivadoACajaId`, `derivadoATurnoCajaId`, `derivadoACajeroId`, `derivadoPorId` y `derivadoAt`.
+5. Si ventas entrega a caja, se registra entregadoPorId / entregadoAt.
+6. Si caja acepta oficialmente, se registra recibidoEnCajaPorId / recibidoEnCajaAt y se asignan `cajaId` / `turnoCajaId`.
+7. Recién ahí se crea o enlaza MovimientoCaja.
+8. Se confirma el cobro.
 ```
 
 ### 4.4 Reservar `Pago` para captura/conciliación
@@ -272,6 +285,7 @@ Ejemplo conceptual:
 CobroCliente CONFIRMADO -> AuditLog
 CobroCliente ANULADO -> AuditLog
 Cambio manual de cajaId o turnoCajaId -> AuditLog
+Rechazo operativo por cajero custodio -> AuditLog
 ```
 
 ## 5. Cómo debe adaptarse el frontend
@@ -296,8 +310,10 @@ En su lugar:
 Frontend debería poder mostrar:
 
 - quién recibió el dinero,
+- a qué caja/turno/cajero fue derivado,
 - quién lo entregó a caja,
 - quién lo recibió en caja,
+- quién rechazó la recepción,
 - quién lo confirmó,
 - si fue rechazado o anulado.
 
@@ -315,8 +331,10 @@ Aunque la librería no impone una pantalla, la UI debería reflejar algo como:
 
 ```txt
 Recibido
-Entregado a caja
+Derivado
+Pendiente de recepción
 Recibido en caja
+Entregado a caja
 Confirmado
 Rechazado
 Anulado
@@ -329,6 +347,7 @@ Si el estado formal sigue siendo simple en el contrato, estos labels pueden deri
 ### No hacer esto
 
 - crear `MovimientoCaja` apenas ventas recibe dinero,
+- marcar `cajaId` o `turnoCajaId` como definitivos mientras el cobro solo está derivado,
 - usar `Pago` para cada cobro manual en efectivo,
 - guardar auditoría pesada en todas las entidades,
 - usar `MovimientoFinanciero` como fuente canónica del dinero.
@@ -338,6 +357,7 @@ Si el estado formal sigue siendo simple en el contrato, estos labels pueden deri
 - usar `MovimientoCaja` como rastro oficial de caja,
 - usar `MovimientoCuentaCliente` como rastro oficial de cuenta,
 - usar `CobroCliente` para recepción/custodia,
+- usar los nuevos campos de derivación para distinguir intención operativa de recepción oficial,
 - usar `AuditLog` para historial detallado de cambios.
 
 ## 7. Lectura correcta de cada contrato
@@ -357,12 +377,14 @@ AuditLog = auditoría detallada de cambios
 
 - dejar de usar `Pago` como entidad universal para todo cobro,
 - crear `CobroCliente` cuando el cliente entrega dinero,
+- derivar el cobro a caja/turno/cajero custodio cuando el usuario originador no es custodio activo,
 - crear `MovimientoCaja` solo cuando caja acepta oficialmente,
 - emitir `AuditLog` para cambios importantes.
 
 ### Frontend
 
 - separar visualmente recepción de caja confirmada,
+- mostrar derivación, pendiente de aceptación y rechazo operativo,
 - no mostrar todo cobro como caja efectiva,
 - usar los nuevos campos de `CobroCliente` para timeline operativo,
 - tratar `Pago` digital como evidencia y no como caja automática.
