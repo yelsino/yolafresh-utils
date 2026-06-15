@@ -233,6 +233,12 @@ export enum Permisos {
   CONFIGURACION_INTEGRACIONES_VER = "configuracion:integraciones-ver",
   CONFIGURACION_INTEGRACIONES_EDITAR = "configuracion:integraciones-editar",
 
+  // Impresoras
+  IMPRESORAS_VER = "impresoras:ver",
+  IMPRESORAS_CONECTAR = "impresoras:conectar",
+  IMPRESORAS_DESCONECTAR = "impresoras:desconectar",
+  IMPRESORAS_PROBAR = "impresoras:probar",
+
   // Auditoria
   AUDITORIA_VER = "auditoria:ver",
   AUDITORIA_VER_ACCIONES_CRITICAS = "auditoria:ver-acciones-criticas",

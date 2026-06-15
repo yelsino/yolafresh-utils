@@ -415,6 +415,22 @@ Los permisos representan acciones específicas que se pueden habilitar o restrin
 
 ---
 
+## 6.18.1 Impresoras
+
+| Permiso | Descripción |
+|---|---|
+| Ver impresoras operativas | Permite listar impresoras ya registradas para uso diario. |
+| Conectar impresora | Permite vincular la sesión/dispositivo del usuario con una impresora disponible. |
+| Desconectar impresora | Permite desvincular la impresora activa de la sesión/dispositivo. |
+| Probar impresora | Permite ejecutar impresión de prueba o validación operativa. |
+
+Regla recomendada:
+
+- administrar o crear impresoras sigue siendo una capacidad restringida,
+- usar impresoras ya creadas es una capacidad operativa universal.
+
+---
+
 ## 6.19 Auditoría
 
 | Permiso | Descripción |

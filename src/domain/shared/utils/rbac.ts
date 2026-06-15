@@ -17,6 +17,13 @@ type ConfiguracionRolPredefinido = {
   permisos: Permisos[];
 };
 
+const PERMISOS_IMPRESORAS_USO_UNIVERSAL: Permisos[] = [
+  Permisos.IMPRESORAS_VER,
+  Permisos.IMPRESORAS_CONECTAR,
+  Permisos.IMPRESORAS_DESCONECTAR,
+  Permisos.IMPRESORAS_PROBAR,
+];
+
 /**
  * Verifica si un usuario tiene un permiso específico
  * 
@@ -268,6 +275,7 @@ export const CONFIGURACIONES_ROLES: Record<RolesPredefinidos, ConfiguracionRolPr
     nombre: RolesPredefinidos.SUPERVISOR,
     descripcion: "Supervision operativa con control de ventas, caja, inventario y reportes",
     permisos: [
+      ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
       Permisos.DASHBOARD_OPERATIVO,
       Permisos.ALERTAS_VER,
@@ -315,6 +323,7 @@ export const CONFIGURACIONES_ROLES: Record<RolesPredefinidos, ConfiguracionRolPr
     nombre: RolesPredefinidos.CAJERO,
     descripcion: "Caja, cobros y cierre de turno propio",
     permisos: [
+      ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
       Permisos.DASHBOARD_OPERATIVO,
       Permisos.PUNTO_VENTA_VER,
@@ -350,6 +359,7 @@ export const CONFIGURACIONES_ROLES: Record<RolesPredefinidos, ConfiguracionRolPr
     nombre: RolesPredefinidos.VENTAS,
     descripcion: "Atencion comercial, ventas y gestion basica de clientes",
     permisos: [
+      ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
       Permisos.PUNTO_VENTA_VER,
       Permisos.PUNTO_VENTA_CREAR,
@@ -375,6 +385,7 @@ export const CONFIGURACIONES_ROLES: Record<RolesPredefinidos, ConfiguracionRolPr
     nombre: RolesPredefinidos.OPERACIONES,
     descripcion: "Operacion fisica, reposicion, despacho y apoyo de almacen",
     permisos: [
+      ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
       Permisos.ALERTAS_VER,
       Permisos.PRODUCTOS_VER,
@@ -394,6 +405,7 @@ export const CONFIGURACIONES_ROLES: Record<RolesPredefinidos, ConfiguracionRolPr
     nombre: RolesPredefinidos.INVENTARIO,
     descripcion: "Control de stock, ajustes, mermas, almacenes y transferencias",
     permisos: [
+      ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
       Permisos.ALERTAS_VER,
       Permisos.PRODUCTOS_VER,
@@ -422,6 +434,7 @@ export const CONFIGURACIONES_ROLES: Record<RolesPredefinidos, ConfiguracionRolPr
     nombre: RolesPredefinidos.COMPRAS,
     descripcion: "Abastecimiento, proveedores, costos y recepcion de mercaderia",
     permisos: [
+      ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
       Permisos.COMPRAS_VER,
       Permisos.COMPRAS_CREAR,
@@ -449,6 +462,7 @@ export const CONFIGURACIONES_ROLES: Record<RolesPredefinidos, ConfiguracionRolPr
     nombre: RolesPredefinidos.FINANZAS,
     descripcion: "Control de ingresos, egresos, cuentas y caja historica",
     permisos: [
+      ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
       Permisos.DASHBOARD_FINANCIERO,
       Permisos.FINANZAS_VER,
@@ -479,6 +493,7 @@ export const CONFIGURACIONES_ROLES: Record<RolesPredefinidos, ConfiguracionRolPr
     nombre: RolesPredefinidos.VENDEDOR,
     descripcion: "Rol legacy para apps antiguas; equivalente funcional a ventas",
     permisos: [
+      ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
       Permisos.PUNTO_VENTA_VER,
       Permisos.PUNTO_VENTA_CREAR,
@@ -499,6 +514,7 @@ export const CONFIGURACIONES_ROLES: Record<RolesPredefinidos, ConfiguracionRolPr
     nombre: RolesPredefinidos.CONTADOR,
     descripcion: "Revision contable y financiera con acceso a exportaciones y reportes",
     permisos: [
+      ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
       Permisos.DASHBOARD_FINANCIERO,
       Permisos.VENTAS_VER,
@@ -534,6 +550,7 @@ export const CONFIGURACIONES_ROLES: Record<RolesPredefinidos, ConfiguracionRolPr
     nombre: RolesPredefinidos.AUDITOR,
     descripcion: "Revision de historial, auditoria y acciones sensibles sin operacion directa",
     permisos: [
+      ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
       Permisos.VENTAS_VER,
       Permisos.VENTAS_VER_TODAS,
@@ -556,6 +573,7 @@ export const CONFIGURACIONES_ROLES: Record<RolesPredefinidos, ConfiguracionRolPr
     nombre: RolesPredefinidos.SOPORTE_TECNICO,
     descripcion: "Soporte tecnico, dispositivos, impresoras y configuracion operativa",
     permisos: [
+      ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
       Permisos.UTILIDADES_VER,
       Permisos.UTILIDADES_USAR_CAMARA,
@@ -573,6 +591,7 @@ export const CONFIGURACIONES_ROLES: Record<RolesPredefinidos, ConfiguracionRolPr
     nombre: RolesPredefinidos.SOLO_LECTURA,
     descripcion: "Consulta autorizada sin crear, editar, anular ni aprobar registros",
     permisos: [
+      ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
       Permisos.VENTAS_VER,
       Permisos.VENTAS_VER_DETALLE,
