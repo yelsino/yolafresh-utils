@@ -533,13 +533,13 @@ Archivo: [rbac.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/u
 
 ## 5) Personas y finanzas (cuenta corriente)
 
-Para crédito, deudas, adelantos y saldo a favor:
-- `MovimientoCuentaCliente` / `CuentaCliente`
+Para crédito, deuda, saldo disponible y custodia de dinero:
+- `CustomerAccount` / `AccountEntry` / `Allocation`
 - `MovimientoCuentaProveedor` / `CuentaProveedor`
 
-Archivo: [finanzas.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/finanzas.ts#L198-L276)
+Archivo: [customer-account.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/customer-account.ts)
 
-Recomendación: tratar “deuda vs saldo a favor” como movimientos contables (no como un número mutable sin trazabilidad).
+Recomendación: tratar la cuenta cliente como ledger + snapshot reconstruible, no como un número mutable sin trazabilidad.
 
 ## 6) Direcciones (modelo polimórfico)
 

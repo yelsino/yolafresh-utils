@@ -1,2 +1,2 @@
 'use strict';
-module.exports = require('../../dist/domain/usuarios/Usuario.js');
+module.exports = require('../../dist/domain/usuarios/usuario.js');

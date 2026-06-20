@@ -1,1 +1,1 @@
-export * from '../../dist/domain/usuarios/Usuario';
+export * from '../../dist/domain/usuarios/usuario';

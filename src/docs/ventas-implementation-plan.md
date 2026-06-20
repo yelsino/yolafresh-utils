@@ -86,7 +86,7 @@ Cada venta debe impactar caja con un movimiento:
 
 Si hay crédito / pedido:
 - registrar ingreso/pago según reglas de negocio del consumer
-- si el pago excede deuda, usar `MovimientoCuentaCliente` (`SALDO_FAVOR`)
+- si el pago excede lo aplicado, registrar `DEPOSIT` y luego resolver consumo con `Allocation`
 
 ### 3.2 Pago (si aplica)
 Si usas captura/confirmación:
@@ -147,7 +147,7 @@ Contratos:
 
 ### Fase 3 — Crédito / pedidos
 - pedidos (`esPedido`, `finanzaId`)
-- cuentas de cliente (`MovimientoCuentaCliente`)
+- cuenta cliente v2 (`CustomerAccount`, `AccountEntry`, `Allocation`)
 
 ### Fase 4 — Auditoría pro
 - saldos posteriores y correlativos en MovimientoCaja

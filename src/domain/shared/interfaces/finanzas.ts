@@ -211,58 +211,6 @@ export interface Anulacion {
   updatedAt: Date;
 }
 
-export type TipoMovimientoCuentaCliente =
-  | "CARGO"
-  | "ABONO"
-  | "SALDO_FAVOR"
-  | "USO_SALDO"
-  | "DEVOLUCION";
-
-export type ReferenciaTipoMovimientoCuentaCliente =
-  | "VENTA"
-  | "PAGO"
-  | "ADELANTO"
-  | "RECURRENCIA"
-  | "AJUSTE"
-  | "DEVOLUCION";
-
-export type EstadoMovimientoCuenta =
-  | "PENDIENTE"
-  | "CONFIRMADO"
-  | "RECHAZADO"
-  | "ANULADO";
-
-export interface MovimientoCuentaCliente {
-  id: string;
-  clienteId: string;
-  tipo: TipoMovimientoCuentaCliente;
-  monto: number;
-  moneda: "PEN" | "USD";
-  referenciaTipo: ReferenciaTipoMovimientoCuentaCliente;
-  referenciaId?: string;
-  descripcion?: string;
-  estado: EstadoMovimientoCuenta;
-  idempotencyKey: string;
-  cajaId?: string;
-  turnoCajaId?: string;
-  dispositivoId?: string;
-  creadoPorId: string;
-  reversaDeId?: string;
-  anuladoPorId?: string;
-  anuladoAt?: Date;
-  anulacionMotivo?: string;
-  rechazoMotivo?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface CuentaCliente {
-  clienteId: string;
-  saldoActual: number;
-  moneda: "PEN" | "USD";
-  updatedAt: Date;
-}
-
 export type TipoMovimientoCuentaProveedor =
   | "CARGO"
   | "ABONO"
@@ -278,6 +226,12 @@ export type ReferenciaTipoMovimientoCuentaProveedor =
   | "AJUSTE"
   | "DEVOLUCION";
 
+export type EstadoMovimientoFinanciero =
+  | "PENDIENTE"
+  | "CONFIRMADO"
+  | "RECHAZADO"
+  | "ANULADO";
+
 export interface MovimientoCuentaProveedor {
   id: string;
   proveedorId: string;
@@ -287,7 +241,7 @@ export interface MovimientoCuentaProveedor {
   referenciaTipo: ReferenciaTipoMovimientoCuentaProveedor;
   referenciaId?: string;
   descripcion?: string;
-  estado?: EstadoMovimientoCuenta;
+  estado?: EstadoMovimientoFinanciero;
   reversaDeId?: string;
   anuladoPorId?: string;
   anuladoAt?: Date;
@@ -299,73 +253,6 @@ export interface CuentaProveedor {
   proveedorId: string;
   saldoActual: number;
   moneda: "PEN" | "USD";
-  updatedAt: Date;
-}
-
-export type CobroClienteOrigen = "EFECTIVO" | "DIGITAL" | "TARJETA" | "OTRO";
-export type CobroClienteEstado =
-  | "BORRADOR"
-  | "DERIVADO"
-  | "PENDIENTE_RECEPCION"
-  | "RECIBIDO_EN_CAJA"
-  | "CONFIRMADO"
-  | "RECHAZADO"
-  | "ANULADO";
-
-export type CobroClienteAplicacionTipo = "VENTA" | "SALDO_FAVOR";
-
-export interface CobroClienteAplicacion {
-  id: string;
-  tipo: CobroClienteAplicacionTipo;
-  ventaId?: string;
-  monto: number;
-  createdAt: Date;
-}
-
-export interface CobroCliente {
-  id: string;
-  clienteId: string;
-  moneda: "PEN" | "USD";
-
-  montoRecibido: number;
-
-  origen: CobroClienteOrigen;
-  metodoPago: MetodoPago;
-
-  estado: CobroClienteEstado;
-  idempotencyKey: string;
-  dispositivoId?: string;
-
-  // Caja/turno responsables una vez aceptada la recepción oficial.
-  cajaId?: string;
-  turnoCajaId?: string;
-  movimientoCajaId?: string;
-
-  // Caja/turno/cajero objetivo mientras el cobro está en derivación.
-  derivadoACajaId?: string;
-  derivadoATurnoCajaId?: string;
-  derivadoACajeroId?: string;
-  derivadoPorId?: string;
-  derivadoAt?: Date;
-
-  aplicaciones: CobroClienteAplicacion[];
-
-  creadoPorId: string;
-  recibidoPorId?: string;
-  entregadoPorId?: string;
-  entregadoAt?: Date;
-  recibidoEnCajaPorId?: string;
-  recibidoEnCajaAt?: Date;
-  confirmadoPorId?: string;
-  confirmadoAt?: Date;
-  rechazadoPorId?: string;
-  rechazadoAt?: Date;
-  anuladoPorId?: string;
-  anuladoAt?: Date;
-  anulacionMotivo?: string;
-  rechazoMotivo?: string;
-
-  createdAt: Date;
   updatedAt: Date;
 }
 

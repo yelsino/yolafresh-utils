@@ -125,9 +125,6 @@ export interface Cliente extends Entidad {
     direccion: string;
     pseudonimo: string;
     
-    /** Créditos pendientes de pago */
-    creditosPendientes?: number;
-    
     /** Límite de crédito autorizado */
     limiteCredito?: number;
     

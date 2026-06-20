@@ -1,184 +1,94 @@
-# Cobros, adelantos y saldo a favor (implementación exterior)
+# Cobros, Adelantos y Saldo Disponible
 
-Este documento describe cómo implementar en un proyecto consumidor (POS/ERP) la gestión de:
-- adelantos sin venta
-- pagos parciales
-- pagos en exceso (saldo a favor)
-- aplicación del saldo a favor a futuras ventas
-- anulación/reversión con trazabilidad
-
-La librería define contratos (interfaces/types) y entidades de negocio; el proyecto consumidor implementa persistencia, sincronización y casos de uso.
+Este documento aterriza los casos operativos del nuevo modelo de cuenta cliente.
 
 ## Contratos involucrados
 
-- Cuenta corriente cliente:
-  - `MovimientoCuentaCliente`, `CuentaCliente`
-  - `TipoMovimientoCuentaCliente`: `CARGO | ABONO | SALDO_FAVOR | USO_SALDO | DEVOLUCION`
-  - `ReferenciaTipoMovimientoCuentaCliente`: incluye `ADELANTO`
-  - Archivo: `src/domain/shared/interfaces/finanzas.ts`
+- `CustomerAccount`
+- `AccountEntry`
+- `Allocation`
+- `CashReceipt`
+- `CustodyTransfer`
+- `CashBox`
+- `CashShift`
+- `AccountSnapshot`
 
-- Documento de cobro (para agrupar aplicaciones y trazabilidad):
-  - `CobroCliente`, `CobroClienteAplicacion`
-  - Archivo: `src/domain/shared/interfaces/finanzas.ts`
+## Regla contable
 
-- Caja / turno:
-  - `MovimientoCaja`, `TurnoCaja`
-  - `ReferenciaTipoMovimientoCaja`: incluye `ADELANTO`
-  - Archivo: `src/domain/shared/interfaces/caja.ts`
+### Dinero recibido
 
-- Captura de pago (opcional):
-  - `Pago`
-  - Archivo: `src/domain/shared/interfaces/pagos.ts`
+Siempre inicia con `CashReceipt`.
 
-## Convención de saldos (recomendación)
+### Impacto de cuenta
 
-Definir una convención única para `CuentaCliente.saldoActual`:
-- `saldoActual > 0`: deuda del cliente (cuenta por cobrar)
-- `saldoActual < 0`: saldo a favor del cliente (crédito disponible)
+Siempre se registra con `AccountEntry`.
 
-Alternativa: mantener `saldoActual` siempre positivo y derivar “saldo a favor” desde movimientos. Si eliges esto, documenta cómo se calcula y cómo se evita doble contabilización.
+### Aplicacion entre movimientos
 
-## Regla contable mínima (ERP)
+Siempre se registra con `Allocation`.
 
-1) El dinero real que entra/sale se registra con `MovimientoCaja`.
-2) La relación deuda/favor del cliente se registra con `MovimientoCuentaCliente`.
-3) Aplicar saldo a favor a una venta NO mueve caja (solo mueve cuenta corriente).
-4) No borrar registros para “corregir”: anular y registrar reversas.
+### Caja/turno/custodia
 
-## Flujo 1: Adelanto sin venta (cliente deja S/ 1000)
+Se expresa por `CashBox`, `CashShift` y `CustodyTransfer`.
 
-Objetivo: registrar que el cliente dejó dinero sin asociarlo aún a una venta.
+## Flujos minimos
 
-### 1.1 Crear `CobroCliente`
+### Adelanto sin venta
 
-- `montoRecibido = 1000`
-- `aplicaciones = [{ tipo: \"SALDO_FAVOR\", monto: 1000 }]`
-- `estado = \"CONFIRMADO\"` (o `BORRADOR` si hay revisión previa)
+1. Crear `CashReceipt`
+2. Si la custodia ya es oficial, crear `AccountEntry` tipo `DEPOSIT`
+3. Actualizar `AccountSnapshot.availableBalance`
 
-### 1.2 Registrar ingreso en caja
+### Pago parcial de deuda
 
-Crear `MovimientoCaja`:
-- `tipo = \"INGRESO\"`
-- `monto = 1000`
-- `metodoPago` y `moneda`
-- `referenciaTipo = \"ADELANTO\"`
-- `referenciaId = cobroCliente.id`
-- `clienteId = cobroCliente.clienteId`
-- `turnoId` del turno activo
-- `saldoEfectivoPosterior/saldoDigitalPosterior/saldoTotalPosterior` calculados por el consumer
+1. Crear `CashReceipt`
+2. Crear `AccountEntry` tipo `PAYMENT`
+3. Actualizar `AccountSnapshot.receivableBalance`
 
-Guardar el `movimientoCaja.id` en `cobroCliente.movimientoCajaId`.
+### Sobrepago
 
-### 1.3 Registrar cuenta corriente del cliente
+Si el cliente paga mas de lo necesario:
 
-Crear `MovimientoCuentaCliente`:
-- `tipo = \"SALDO_FAVOR\"`
-- `monto = 1000`
-- `referenciaTipo = \"ADELANTO\"`
-- `referenciaId = cobroCliente.id`
-- `estado = \"ACTIVO\"`
+- la parte aplicada a deuda o venta se registra con el `AccountEntry` correspondiente
+- el excedente se registra como `DEPOSIT`
+- si un debito consume un credito previo, se crea `Allocation`
 
-### 1.4 Resultado esperado
+### Uso de saldo
 
-- Caja sube S/ 1000
-- Cuenta cliente queda con saldo a favor (según convención, `saldoActual` negativo o movimientos que lo respalden)
+1. Crear `AccountEntry` tipo `SALE`
+2. Aplicar FIFO con `Allocation`
+3. Reducir `availableBalance` en el snapshot
 
-## Flujo 2: Venta a crédito de S/ 2000 (genera deuda)
+### Devolucion
 
-Cuando se confirma una venta a crédito, registrar el cargo:
+1. Crear `AccountEntry` tipo `REFUND`
+2. Recalcular snapshot
 
-Crear `MovimientoCuentaCliente`:
-- `tipo = \"CARGO\"`
-- `monto = 2000`
-- `referenciaTipo = \"VENTA\"`
-- `referenciaId = ventaId`
-- `estado = \"ACTIVO\"`
+### Anulacion
 
-## Flujo 3: Pago parcial de deuda (cliente paga S/ 1000 de una deuda de 2000)
+1. Crear `AccountEntry` tipo `REVERSAL`
+2. No borrar ni sobreescribir movimientos previos
 
-### 3.1 Crear `CobroCliente`
+## Regla de custodia
 
-- `montoRecibido = 1000`
-- `aplicaciones = [{ tipo: \"VENTA\", ventaId, monto: 1000 }]`
+### Cajero recibe directamente
 
-### 3.2 Caja
+- `CashReceipt`
+- `AccountEntry`
+- `AccountSnapshot`
 
-`MovimientoCaja`:
-- `tipo = \"INGRESO\"`
-- `referenciaTipo = \"PAGO\"`
-- `referenciaId = cobroCliente.id`
-- `clienteId = clienteId`
+### Vendedor recibe y luego entrega
 
-### 3.3 Cuenta corriente
+- `CashReceipt`
+- `CustodyTransfer`
+- aceptacion del custodio
+- `AccountEntry`
+- `AccountSnapshot`
 
-`MovimientoCuentaCliente`:
-- `tipo = \"ABONO\"`
-- `monto = 1000`
-- `referenciaTipo = \"PAGO\"`
-- `referenciaId = cobroCliente.id`
+## Validaciones recomendadas
 
-## Flujo 4: Sobrepago (cliente debe 2000 y deja 3000)
-
-### 4.1 Crear `CobroCliente` con 2 aplicaciones
-
-- `montoRecibido = 3000`
-- `aplicaciones`:
-  - `{ tipo: \"VENTA\", ventaId, monto: 2000 }`
-  - `{ tipo: \"SALDO_FAVOR\", monto: 1000 }`
-
-### 4.2 Caja
-
-`MovimientoCaja` por S/ 3000 (ingreso real).
-
-### 4.3 Cuenta corriente
-
-Crear dos movimientos:
-- `ABONO` por 2000 (referencia al `CobroCliente`)
-- `SALDO_FAVOR` por 1000 (misma referencia)
-
-## Flujo 5: Usar saldo a favor en una nueva venta
-
-Si el cliente tiene saldo a favor y se aplica S/ 500 a una venta:
-
-Crear `MovimientoCuentaCliente`:
-- `tipo = \"USO_SALDO\"`
-- `monto = 500`
-- `referenciaTipo = \"VENTA\"`
-- `referenciaId = ventaId`
-
-Opcionalmente, reflejar esta aplicación dentro del documento de cobro o en un documento interno de “aplicación”, según tu UX.
-
-## Flujo 6: Anulación / reversión (sin borrar)
-
-### 6.1 Anular `CobroCliente`
-
-Cambiar:
-- `estado = \"ANULADO\"`
-- `anuladoPorId`, `anuladoAt`, `anulacionMotivo`
-
-### 6.2 Revertir caja
-
-Crear un `MovimientoCaja` compensatorio (o anular el original si tu política lo permite):
-- Si el original queda `ANULADO`, conserva trazabilidad del motivo.
-
-### 6.3 Revertir cuenta corriente
-
-Para cada `MovimientoCuentaCliente` generado por el cobro:
-- registrar una reversa con `reversaDeId = movimientoOriginal.id`
-- `estado = \"ACTIVO\"` en la reversa
-- y marcar el original como `estado = \"ANULADO\"` con motivo, si tu política usa estados.
-
-La reversa debe compensar el mismo monto pero con el tipo correspondiente según tu regla contable (por ejemplo, revertir `SALDO_FAVOR` con un movimiento que retire ese favor, o un `AJUSTE` interno según tu convención).
-
-## Validaciones mínimas recomendadas (consumer)
-
-- `CobroCliente.aplicaciones` debe sumar exactamente `montoRecibido`.
-- Si una aplicación es `tipo=\"VENTA\"`, `ventaId` es obligatorio.
-- No permitir aplicar más de lo pendiente en una venta (si hay sobrepago, el excedente pasa a `SALDO_FAVOR`).
-- No permitir `USO_SALDO` si no hay saldo suficiente, salvo que lo permitas explícitamente como crédito.
-
-## Offline-first (consumer)
-
-- Guardar primero localmente (SQLite vía PouchDB adapter sqlite).
-- En sincronización, emitir documentos y movimientos como eventos idempotentes (IDs deterministas o control de duplicados).
-- En conflictos, priorizar inmutabilidad: no editar movimientos ya sincronizados; emitir anulaciones/reversas.
+- no aceptar dinero sin custodio
+- no aceptar custodio sin turno
+- no registrar `AccountEntry` sin origen
+- no crear `Allocation` por monto mayor al disponible en el credito fuente
+- no mutar snapshots manualmente fuera del proceso de reconstruccion
