@@ -272,7 +272,7 @@ Todas las interfaces de `yola-fresh-utils` pueden extenderse usando este patrón
 
 - `IProducto`
 - `IVenta`
-- `IPedido`
+- `Pedido`
 - `ICompra`
 - `IPersona`
 - `IFinanzas`

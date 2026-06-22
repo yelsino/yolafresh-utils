@@ -87,6 +87,7 @@ export interface VentaPersistenceSnapshot {
   nombre: string;
   type: string;
   estado: string;
+  pedidoId?: string;
   createdAt: number;
   updatedAt: number;
   detalleVenta: VentaDetalleSnapshot;
@@ -96,13 +97,17 @@ export interface VentaPersistenceSnapshot {
   total: number;
   montoRedondeo?: number;
   procedencia: string;
+  /** @deprecated Compatibilidad temporal. */
   tipoPago?: string;
   clienteId?: string;
   vendedorId?: string;
+  /** @deprecated Compatibilidad temporal. */
   finanzaId?: string;
+  /** @deprecated Compatibilidad temporal. */
   turnoCajaId?: string;
   codigoVenta?: string;
   numeroVenta?: string;
+  /** @deprecated Compatibilidad temporal. */
   esPedido?: boolean;
 }
 
@@ -163,6 +168,7 @@ export interface VentaCouchMinimalSnapshot {
   nombre: string;
   type: string;
   estado: string;
+  pedidoId?: string;
   createdAt: number;
   updatedAt: number;
   detalleVenta: VentaCouchCompactDetalleSnapshot;
@@ -172,12 +178,16 @@ export interface VentaCouchMinimalSnapshot {
   total: number;
   montoRedondeo?: number;
   procedencia: string;
+  /** @deprecated Compatibilidad temporal. */
   tipoPago?: string;
   clienteId?: string;
   vendedorId?: string;
+  /** @deprecated Compatibilidad temporal. */
   finanzaId?: string;
+  /** @deprecated Compatibilidad temporal. */
   turnoCajaId?: string;
   codigoVenta?: string;
   numeroVenta?: string;
+  /** @deprecated Compatibilidad temporal. */
   esPedido?: boolean;
 }

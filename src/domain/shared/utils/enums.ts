@@ -1,4 +1,21 @@
 
+export enum PedidoState {
+  ABIERTO = 'ABIERTO',
+  PARCIALMENTE_ATENDIDO = 'PARCIALMENTE_ATENDIDO',
+  CONVERTIDO = 'CONVERTIDO',
+  CANCELADO = 'CANCELADO',
+  VENCIDO = 'VENCIDO',
+}
+
+export enum VentaState {
+  CONFIRMADA = 'CONFIRMADA',
+  DESPACHADA = 'DESPACHADA',
+  ANULADA = 'ANULADA',
+}
+
+/**
+ * @deprecated Usar `PedidoState` o `VentaState` según agregado.
+ */
 export enum OrderState {
   PENDIENTE = 'PENDIENTE',
   ATENDIENDO = 'ATENDIENDO',

@@ -24,4 +24,5 @@ export * from './recurrencias';
 export * from './roles';
 export * from './tarjetaVirtual';
 export * from './usuario';
-export type { Hora, Carrito, IntemList, ItemCarDB, ItemCar, Direccion as DireccionPedido, Register, Pedido, Tipo, ItemLista, Lista, UserCaracteristicProduct, SendEmail } from './pedido';
+export type { Pedido, PedidoItem } from './pedido';
+export type { Hora, Carrito, IntemList, ItemCarDB, ItemCar, Direccion as DireccionPedido, Register, PedidoLegacy, Tipo, ItemLista, Lista, UserCaracteristicProduct, SendEmail } from './pedido.legacy';

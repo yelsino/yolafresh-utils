@@ -1,0 +1,12 @@
+- [x] La especificación parte de contratos reales observados en `Venta.ts`, `CarritoVenta.ts`, `pedido.ts`, `snapshots.ts` y enums oficiales.
+- [x] La especificación enumera campos reales actuales de `IVenta`, `ICarritoVenta` y `Pedido`.
+- [x] La especificación deja explícita la mezcla semántica actual entre venta, pedido, pago, finanza y caja.
+- [x] La especificación deja claro que `CarritoVenta` es captura mutable y no documento histórico final.
+- [x] La especificación deja claro que `Pedido` ya existe, pero es legacy y no alineado todavía con `Venta` moderna.
+- [x] La especificación define relación canónica entre `CarritoVenta`, `Pedido`, `Venta`, `Pago`, `MovimientoCaja` y `CuentaCliente`.
+- [x] La especificación propone contrato mínimo profesional de `Pedido`.
+- [x] La especificación propone contrato mínimo profesional de `Venta`.
+- [x] La especificación introduce `pedidoId` como relación objetivo en `Venta`.
+- [x] La especificación marca `finanzaId`, `turnoCajaId`, `tipoPago`, `dineroRecibido` y `esPedido` como responsabilidades ajenas al agregado `Venta`.
+- [x] La especificación declara delta de refactor: conservar, mover, deprecar y agregar.
+- [x] La especificación mantiene `Pago` y `EstadoPagoCapturaEnum` sin renombre en esta fase.

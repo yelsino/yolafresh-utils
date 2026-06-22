@@ -23,9 +23,10 @@ Responsabilidad:
 - `Venta` y `IVenta`: [Venta.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/ventas/Venta.ts)
 
 Responsabilidad:
-- congelar snapshot del carrito para auditoría
-- exponer getters (items, totales) sin mutación
+- representar hecho comercial confirmado o despachado
+- exponer `items`, `totales`, `clienteId`, `vendedorId` y `pedidoId?`
 - emitir eventos de dominio (ej. `VentaConfirmada`)
+- no cargar como contrato principal datos de cobro, caja o deuda
 
 ### 1.3 Snapshot estable (para escalabilidad)
 - `VentaDetalleSnapshot`, `VentaProductSnapshot`, etc.: [snapshots.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/ventas/snapshots.ts)
@@ -68,13 +69,14 @@ Usar:
 - `Venta.fromCarritoVenta(carritoJSON, ventaId, { montoRedondeo })`
 
 Regla:
-- `Venta` siempre congela el snapshot resultante para inmutabilidad.
-- totales de `Venta` se leen desde `detalleVenta` (evita inconsistencias).
+- `Venta` se construye con `items` como contrato principal.
+- `detalleVenta` queda solo como compatibilidad temporal para snapshots heredados.
+- totales de `Venta` deben mantenerse consistentes con `items`, `impuesto` y `montoRedondeo`.
 
 ## 3) Integración financiera (caja/pagos)
 
 ### 3.1 MovimientoCaja
-Cada venta debe impactar caja con un movimiento:
+Si entra dinero real, la operación debe impactar caja con un movimiento:
 - `MovimientoCaja.tipo = "INGRESO"`
 - `monto = total`
 - `metodoPago`
@@ -89,7 +91,7 @@ Si hay crédito / pedido:
 - si el pago excede lo aplicado, registrar `DEPOSIT` y luego resolver consumo con `Allocation`
 
 ### 3.2 Pago (si aplica)
-Si usas captura/confirmación:
+Si usas captura o confirmación:
 - crear `Pago` con estado `CAPTURADO/CONFIRMADO/...`
 - usar conciliación (`conciliado/conciliadoAt`) cuando aplique
 
@@ -101,7 +103,7 @@ Crear `MovimientoInventario`:
 - `origenDocumento = "VENTA"`
 - `documentoReferenciaId = ventaId`
 - `almacenOrigenId`
-- `items`: mapear desde `detalleVenta.items`
+- `items`: mapear desde `venta.items` o desde snapshot de compatibilidad solo si estás migrando legacy
 
 Cantidad a descontar:
 - si es unidad: `quantity`
@@ -146,11 +148,11 @@ Contratos:
 - kardex + stocks actualizados
 
 ### Fase 3 — Crédito / pedidos
-- pedidos (`esPedido`, `finanzaId`)
+- pedidos (`Pedido` + `pedidoId`)
 - cuenta cliente v2 (`CustomerAccount`, `AccountEntry`, `Allocation`)
+- pagos y conciliación (`Pago`)
 
 ### Fase 4 — Auditoría pro
 - saldos posteriores y correlativos en MovimientoCaja
 - ledger (`MovimientoFinanciero`)
 - audit log
-

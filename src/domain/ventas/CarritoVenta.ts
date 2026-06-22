@@ -86,11 +86,6 @@ export interface CarItem {
    */
   descuento?: number;
 
-  /** 
-   * Indica si la venta es un pedido
-   * @description Cuando es true, la venta se considera un pedido, el app debe crear una finanza de credito, la venta se marca como pendiente de pago
-   */
-  esPedido?: boolean;
 }
 
 /**
@@ -250,14 +245,16 @@ export interface ICarritoVenta {
   
   /** 
    * Método de pago seleccionado (opcional)
-   * @description Forma en que se realizará el pago
+   * @description Dato de captura temporal. El cobro final vive en `Pago`.
+   * @deprecated Compatibilidad temporal. No es parte canónica del agregado `Venta`.
    */
   metodoPago?: MetodoPago;
   
   /** 
    * Dinero recibido del cliente (opcional)
-   * @description Monto entregado por el cliente
+   * @description Dato de captura temporal. No debe consolidarse como contrato final de `Venta`.
    * @minimum 0
+   * @deprecated Compatibilidad temporal. El dinero confirmado vive fuera de `CarritoVenta`.
    */
   dineroRecibido?: number;
   
@@ -273,19 +270,6 @@ export interface ICarritoVenta {
    */
   configuracionFiscal?: ConfiguracionFiscal;
 
-  /** 
-   * Indica si toda la venta es un pedido
-   * @description Cuando es true, toda la venta se considera un pedido, 
-   * el app debe crear una finanza de crédito, la venta se marca como pendiente de pago
-   */
-  esPedido?: boolean;
-
-  /** 
-   * ID de la finanza asociada (opcional)
-   * @description Vincula el carrito con una finanza específica para pedidos o ventas a crédito
-   */
-  finanzaId?: string;
-  
   // === IDS DE COMPATIBILIDAD ===
   
   /** 
@@ -325,8 +309,6 @@ export class CarritoVenta implements ICarritoVenta {
   private _metodoPago?: MetodoPago;
   private _dineroRecibido?: number;
   private _procedencia?: ProcedenciaVenta;
-  private _esPedido?: boolean;
-  private _finanzaId?: string;
 
   constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal, nombre?: string, createdAt?: Date) {
     this.id = id || generarUlid("venta");
@@ -852,173 +834,18 @@ export class CarritoVenta implements ICarritoVenta {
     this._procedencia = value;
   }
 
-  get esPedido(): boolean | undefined {
-    return this._esPedido;
-  }
-
-  set esPedido(value: boolean | undefined) {
-    this._esPedido = value;
-  }
-
-  get finanzaId(): string | undefined {
-    return this._finanzaId;
-  }
-
-  set finanzaId(value: string | undefined) {
-    this._finanzaId = value;
-  }
-
   /**
-   * Configurar datos de pago
+   * Configurar datos de pago.
+   * @deprecated Compatibilidad temporal de captura. No consolida contrato final.
    */
   configurarPago(datos: {
     metodoPago?: MetodoPago;
     dineroRecibido?: number;
     procedencia?: ProcedenciaVenta;
-    esPedido?: boolean;
-    finanzaId?: string;
   }): void {
     this._metodoPago = datos.metodoPago;
     this._dineroRecibido = datos.dineroRecibido;
     this._procedencia = datos.procedencia;
-    this._esPedido = datos.esPedido;
-    this._finanzaId = datos.finanzaId;
-  }
-
-  // **MÉTODOS ESPECÍFICOS PARA PEDIDOS**
-  // 
-  // Los pedidos permiten manejar ventas que requieren:
-  // - Finanzas de crédito (pago pendiente)
-  // - Gestión de clientes obligatoria
-  // - Separación de items entre pedidos y venta normal
-  // - Cálculos diferenciados para reporting
-  //
-  // Ejemplos de uso:
-  // 
-  // 1. Marcar todo el carrito como pedido:
-  //    carrito.marcarComoPedido({ cliente, notas: "Entrega mañana" });
-  //
-  // 2. Marcar items específicos como pedido:
-  //    carrito.marcarItemComoPedido("item-123", true);
-  //
-  // 3. Obtener totales separados:
-  //    const { pedidos, ventaNormal } = carrito.totalesSeparados;
-  //
-
-  /**
-   * Marcar la venta como pedido
-   * @description Configura la venta como pedido, lo que implica que:
-   * - Se debe crear una finanza de crédito
-   * - La venta se marca como pendiente de pago
-   * - Se puede configurar información adicional del pedido
-   */
-  marcarComoPedido(configuracion?: { 
-    cliente?: Cliente; 
-    fechaEntrega?: Date; 
-    anticipo?: number;
-    notas?: string;
-  }): void {
-    this._esPedido = true;
-    
-    if (configuracion) {
-      if (configuracion.cliente) {
-        this._cliente = configuracion.cliente;
-      }
-      if (configuracion.notas) {
-        this._notas = configuracion.notas;
-      }
-      // Nota: fechaEntrega y anticipo se pueden manejar en campos adicionales 
-      // o extender la interfaz según necesidades específicas
-    }
-  }
-
-
-
-  /**
-   * Desmarcar como pedido y convertir a venta normal
-   */
-  convertirAVentaNormal(): void {
-    this._esPedido = false;
-  }
-
-  /**
-   * Verificar si la venta es un pedido
-   */
-  get esUnPedido(): boolean {
-    return this._esPedido === true;
-  }
-
-  /**
-   * Verificar si algún item individual es un pedido
-   */
-  get tieneItemsPedido(): boolean {
-    return this._items.some(item => item.esPedido === true);
-  }
-
-  /**
-   * Obtener solo los items que son pedidos
-   */
-  get itemsPedido(): CarItem[] {
-    return this._items.filter(item => item.esPedido === true);
-  }
-
-  /**
-   * Obtener solo los items que NO son pedidos
-   */
-  get itemsVentaNormal(): CarItem[] {
-    return this._items.filter(item => item.esPedido !== true);
-  }
-
-  /**
-   * Marcar un item específico como pedido
-   */
-  marcarItemComoPedido(itemId: string, esPedido: boolean = true): boolean {
-    const index = this._items.findIndex(item => item.id === itemId);
-    if (index === -1) return false;
-
-    this._items[index] = {
-      ...this._items[index],
-      esPedido
-    };
-    
-    return true;
-  }
-
-  /**
-   * Calcular totales separados entre pedidos y venta normal
-   */
-  get totalesSeparados(): {
-    pedidos: { subtotal: number; impuesto: number; total: number; items: number };
-    ventaNormal: { subtotal: number; impuesto: number; total: number; items: number };
-  } {
-    const itemsPedido = this.itemsPedido;
-    const itemsVentaNormal = this.itemsVentaNormal;
-    
-    const subtotalPedidos = itemsPedido.reduce((sum, item) => sum + (item.montoTotal || 0), 0);
-    const subtotalVentaNormal = itemsVentaNormal.reduce((sum, item) => sum + (item.montoTotal || 0), 0);
-    
-    const impuestoPedidos = this._configuracionFiscal.aplicaImpuesto 
-      ? this.redondearMoneda(subtotalPedidos * (this._configuracionFiscal.tasaImpuesto || 0))
-      : 0;
-    
-    const impuestoVentaNormal = this._configuracionFiscal.aplicaImpuesto 
-      ? this.redondearMoneda(subtotalVentaNormal * (this._configuracionFiscal.tasaImpuesto || 0))
-      : 0;
-
-    return {
-      pedidos: {
-        subtotal: subtotalPedidos,
-        impuesto: impuestoPedidos,
-        total: subtotalPedidos + impuestoPedidos,
-        items: itemsPedido.length
-      },
-      ventaNormal: {
-        subtotal: subtotalVentaNormal,
-        impuesto: impuestoVentaNormal,
-        total: subtotalVentaNormal + impuestoVentaNormal,
-        items: itemsVentaNormal.length
-      }
-    };
   }
 
   /**
@@ -1110,8 +937,6 @@ export class CarritoVenta implements ICarritoVenta {
       metodoPago: this._metodoPago,
       dineroRecibido: this._dineroRecibido,
       procedencia: this._procedencia,
-      esPedido: this._esPedido,
-      finanzaId: this._finanzaId,
       updatedAt: this.updatedAt,
     };
 
@@ -1200,7 +1025,6 @@ export class CarritoVenta implements ICarritoVenta {
         precioUnitario,
         montoTotal,
         descuento: item.descuento,
-        esPedido: item.esPedido,
         montoModificado: item.montoModificado,
         displayName: itemMetadata.displayName,
         productoBaseNombre: itemMetadata.productoBaseNombre,
@@ -1230,8 +1054,6 @@ export class CarritoVenta implements ICarritoVenta {
       metodoPago: this._metodoPago,
       dineroRecibido: this._dineroRecibido,
       procedencia: this._procedencia,
-      esPedido: this._esPedido,
-      finanzaId: this._finanzaId,
     };
   }
 
@@ -1287,8 +1109,6 @@ export class CarritoVenta implements ICarritoVenta {
     carrito._metodoPago = data.metodoPago;
     carrito._dineroRecibido = data.dineroRecibido;
     carrito._procedencia = data.procedencia;
-    carrito._esPedido = data.esPedido;
-    carrito._finanzaId = data.finanzaId;
 
     return carrito;
   }

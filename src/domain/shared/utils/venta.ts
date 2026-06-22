@@ -2,7 +2,7 @@ import {  capitalizarPrimeraLetra, formatCantidad, formatearFecha, formatSolesPe
 
 import { IUsuario } from "../interfaces/usuario";
 import { Cliente, Personal } from "../interfaces/persons";
-import { Carrito, Hora } from "../interfaces/pedido";
+import { Carrito, Hora } from "../interfaces/pedido.legacy";
 
 /**
  * Obtiene el nombre para mostrar de un usuario

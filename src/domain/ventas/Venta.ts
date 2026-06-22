@@ -1,248 +1,255 @@
-import { CarItem, ICarritoVenta, ProcedenciaVenta, CarritoVenta } from "./CarritoVenta";
+import { CarItem, CarritoVenta, ICarritoVenta, ProcedenciaVenta } from "./CarritoVenta";
 import { AggregateRoot } from "@/domain/shared/base/AggregateRoot";
 import { VentaConfirmada } from "./events/VentaConfirmada";
-import { MetodoPago } from "@/domain/shared/interfaces/finanzas";
-import { OrderState } from "@/domain/shared/utils/enums";
+import { OrderState, VentaState } from "@/domain/shared/utils/enums";
 import {
   VentaCouchMinimalSnapshot,
   VentaPersistenceSnapshot,
 } from "./snapshots";
 
-/**
- * Interfaz para datos inmutables de una venta
- * 
- * NOTA: Los items están en detalleVenta.items (carrito congelado)
- * No hay redundancia de datos - una sola fuente de verdad
- */
+export interface VentaItem {
+  id: string;
+  presentacionId: string;
+  cantidadVendida: number;
+  precioUnitario: number;
+  descuento?: number;
+}
+
 export interface IVenta {
-  // === IDENTIFICACIÓN ===
   id: string;
   nombre: string;
   type: string;
-  
-  // === ESTADO Y FECHAS ===
-  estado: OrderState;
-  
+  estado: VentaState;
+  items: VentaItem[];
+  pedidoId?: string;
   createdAt?: Date;
   updatedAt?: Date;
-  
-  // === CARRITO COMPLETO (ÚNICA FUENTE) ===
-  detalleVenta: ICarritoVenta;
-  
-  // === CÁLCULOS FINANCIEROS ===
   costoEnvio?: number;
   subtotal: number;
   impuesto: number;
   total: number;
   montoRedondeo?: number;
-  
-  // === INFORMACIÓN DE PAGO ===
   procedencia: ProcedenciaVenta;
-  tipoPago?: MetodoPago;
-  // IDs de trazabilidad
   clienteId?: string;
   vendedorId?: string;
-  finanzaId?: string;
-  turnoCajaId?: string;
-  
-  // === CAMPOS DE TRAZABILIDAD ADICIONALES ===
   codigoVenta?: string;
   numeroVenta?: string;
-  esPedido?: boolean;
-
-
-  // "movimientoInventarioId": "string",
-  
 }
 
-/**
- * Clase Venta - Maneja toda la lógica de una venta finalizada
- * 
- * 🎯 Características:
- * - ❄️ Inmutable después de creación (para auditoría)
- * - 🛒 Carrito completo congelado en detalleVenta
- * - 🔍 Métodos para acceder a datos sin romper encapsulación
- * - 📊 Cálculos automáticos y validaciones
- */ 
+interface VentaLegacyCompatibilityFields {
+  detalleVenta?: ICarritoVenta;
+  tipoPago?: string;
+  finanzaId?: string;
+  turnoCajaId?: string;
+  esPedido?: boolean;
+}
+
+export interface VentaCreateInput
+  extends Omit<IVenta, "estado"> {
+  estado: VentaState;
+}
+
+interface VentaLegacyInput
+  extends Partial<Omit<IVenta, "estado">>,
+    VentaLegacyCompatibilityFields {
+  id: string;
+  nombre: string;
+  estado: VentaState | OrderState;
+  subtotal: number;
+  impuesto: number;
+  total: number;
+  procedencia: ProcedenciaVenta;
+}
+
 export class Venta extends AggregateRoot<string> implements IVenta {
-  private static roundMoney(value: number): number {
+  static roundMoney(value: number): number {
     return Math.round(value * 100) / 100;
   }
 
-  // === PROPIEDADES INMUTABLES ===
+  private static normalizeLegacyEstado(
+    estado: VentaState | OrderState | string | undefined,
+  ): VentaState {
+    switch (estado) {
+      case VentaState.CONFIRMADA:
+      case "CONFIRMADA":
+        return VentaState.CONFIRMADA;
+      case VentaState.DESPACHADA:
+      case "DESPACHADA":
+      case OrderState.DESPACHADO:
+      case OrderState.ENTREGADO:
+      case "DESPACHADO":
+      case "ENTREGADO":
+        return VentaState.DESPACHADA;
+      case VentaState.ANULADA:
+      case "ANULADA":
+      case OrderState.CANCELADO:
+      case "CANCELADO":
+        return VentaState.ANULADA;
+      default:
+        return VentaState.CONFIRMADA;
+    }
+  }
+
+  private static mapCarItemToVentaItem(item: CarItem): VentaItem {
+    const presentacionId = String(item.product?.id || "").trim();
+    if (!presentacionId) {
+      throw new Error("CarItem.product.id es requerido para crear VentaItem");
+    }
+
+    return {
+      id: item.id,
+      presentacionId,
+      cantidadVendida: Number(item.quantity ?? 0),
+      precioUnitario: Number(
+        item.precioUnitario ?? item.product?.precioVenta ?? 0,
+      ),
+      descuento: typeof item.descuento === "number" ? item.descuento : undefined,
+    };
+  }
+
+  private static mapVentaItemToCarItem(item: VentaItem): CarItem {
+    const montoBase = Venta.roundMoney(item.precioUnitario * item.cantidadVendida);
+    return {
+      id: item.id,
+      product: { id: item.presentacionId },
+      quantity: item.cantidadVendida,
+      precioUnitario: item.precioUnitario,
+      montoTotal: montoBase,
+      descuento: item.descuento,
+    };
+  }
+
+  private static buildDetalleVentaCompat(
+    data: IVenta,
+    createdAt: Date,
+    updatedAt: Date,
+  ): ICarritoVenta {
+    const carItems = data.items.map((item) => Venta.mapVentaItemToCarItem(item));
+    const descuentoTotal = data.items.reduce(
+      (sum, item) => sum + Number(item.descuento ?? 0),
+      0,
+    );
+    const cantidadTotal = data.items.reduce(
+      (sum, item) => sum + Number(item.cantidadVendida ?? 0),
+      0,
+    );
+    const detalleTotal = Venta.roundMoney(data.total - (data.montoRedondeo ?? 0));
+
+    return Object.freeze({
+      id: `${data.id}-detalle`,
+      createdAt,
+      updatedAt,
+      nombre: data.nombre,
+      items: carItems,
+      subtotal: data.subtotal,
+      impuesto: data.impuesto,
+      total: detalleTotal,
+      descuentoTotal,
+      cantidadItems: data.items.length,
+      cantidadTotal,
+      tasaImpuesto: 0,
+      clienteId: data.clienteId,
+      personalId: data.vendedorId,
+      procedencia: data.procedencia,
+    });
+  }
+
   public readonly nombre: string;
-  public readonly type: string = 'venta';
-  
-  public estado: OrderState;
+  public readonly type: string;
+  public estado: VentaState;
+  public readonly items: VentaItem[];
+  public readonly pedidoId?: string;
   public readonly createdAt: Date;
-  public readonly updatedAt: Date;
-  
-  public readonly detalleVenta: ICarritoVenta;
-
-  get subtotal(): number {
-    return this.detalleVenta.subtotal;
-  }
-
-  get impuesto(): number {
-    return this.detalleVenta.impuesto;
-  }
-
-  get total(): number {
-    return Venta.roundMoney(this.detalleVenta.total + (this.montoRedondeo ?? 0));
-  }
+  public updatedAt: Date;
+  public readonly costoEnvio?: number;
+  public readonly subtotal: number;
+  public readonly impuesto: number;
+  public readonly total: number;
   public readonly montoRedondeo?: number;
-  
   public readonly procedencia: ProcedenciaVenta;
-  public readonly tipoPago?: MetodoPago;
-  // IDs de trazabilidad
   public readonly clienteId?: string;
   public readonly vendedorId?: string;
-  public readonly finanzaId?: string;
-  public readonly turnoCajaId?: string;
-  
-  // === CAMPOS DE TRAZABILIDAD ADICIONALES ===
   public readonly codigoVenta?: string;
   public readonly numeroVenta?: string;
-  public readonly costoEnvio?: number;
-  public readonly esPedido?: boolean;
+  private _detalleVentaCompat: ICarritoVenta;
 
-  constructor(data: IVenta) {
+  constructor(data: VentaCreateInput) {
     super(data.id);
-    // Validaciones básicas
+
     if (!data.id || !data.nombre) {
-      throw new Error('ID y nombre son requeridos para crear una venta');
-    }
-    
-    if (!data.detalleVenta || !data.detalleVenta.items) {
-      throw new Error('detalleVenta con items es requerido');
+      throw new Error("ID y nombre son requeridos para crear una venta");
     }
 
-    // Asignar propiedades (inmutables)
     this.nombre = data.nombre;
-    this.type = data.type || 'venta';
-    this.estado = data.estado;
+    this.type = data.type || "venta";
     this.createdAt = data.createdAt ? new Date(data.createdAt) : new Date();
     this.updatedAt = data.updatedAt ? new Date(data.updatedAt) : new Date();
-    
-    // Congelar una copia consistente del carrito de dominio
-    const carritoInstance = CarritoVenta.fromJSON(data.detalleVenta as ICarritoVenta);
-    this.detalleVenta = Object.freeze(carritoInstance.toJSON());
-    this.montoRedondeo = data.montoRedondeo ?? 0;
-
-    const expectedTotalFinal = Venta.roundMoney(
-      this.detalleVenta.total + (this.montoRedondeo ?? 0),
-    );
-    const providedTotalFinal = Venta.roundMoney(data.total);
-    if (providedTotalFinal !== expectedTotalFinal) {
-      throw new Error(
-        `Total inconsistente: total=${providedTotalFinal} debe ser detalleVenta.total + montoRedondeo = ${expectedTotalFinal}`,
-      );
-    }
-    if (expectedTotalFinal <= 0) {
-      throw new Error("El total de la venta debe ser mayor a 0");
-    }
-    
+    this.items = Object.freeze(
+      data.items.map((item) => ({
+        id: item.id,
+        presentacionId: item.presentacionId,
+        cantidadVendida: Number(item.cantidadVendida ?? 0),
+        precioUnitario: Number(item.precioUnitario ?? 0),
+        descuento:
+          typeof item.descuento === "number" ? Number(item.descuento) : undefined,
+      })),
+    ) as VentaItem[];
+    this.estado = data.estado;
+    this.pedidoId =
+      typeof data.pedidoId === "string" && data.pedidoId.trim() !== ""
+        ? data.pedidoId
+        : undefined;
+    this.subtotal = Venta.roundMoney(Number(data.subtotal ?? 0));
+    this.impuesto = Venta.roundMoney(Number(data.impuesto ?? 0));
+    this.total = Venta.roundMoney(Number(data.total ?? 0));
+    this.montoRedondeo = Number(data.montoRedondeo ?? 0);
     this.procedencia = data.procedencia;
-    this.tipoPago = data.tipoPago;
-    // IDs de trazabilidad
     this.clienteId = data.clienteId;
     this.vendedorId = data.vendedorId;
-    this.finanzaId = data.finanzaId;
-    this.turnoCajaId = data.turnoCajaId;
-    
-    // Campos de trazabilidad adicionales
     this.codigoVenta = data.codigoVenta;
     this.numeroVenta = data.numeroVenta;
     this.costoEnvio = data.costoEnvio;
-    this.esPedido = data.esPedido;
+    this._detalleVentaCompat = Venta.buildDetalleVentaCompat(
+      this.toJSON(),
+      this.createdAt,
+      this.updatedAt,
+    );
 
-    // Congelar la instancia completa
-    Object.freeze(this);
+    const validation = Venta.validar(data);
+    if (!validation.valida) {
+      throw new Error(validation.errores.join("; "));
+    }
   }
 
-  // === GETTERS PARA ACCESO A DATOS ===
-
-
-  /**
-   * Obtener items de la venta (desde carrito congelado)
-   */
-  get items(): readonly CarItem[] {
-    return this.detalleVenta.items;
-  }
-
-  /**
-   * Obtener cantidad total de items
-   */
   get cantidadItems(): number {
-    return this.detalleVenta.cantidadItems;
+    return this.items.length;
   }
 
-  /**
-   * Obtener cantidad total de productos
-   */
   get cantidadTotal(): number {
-    return this.detalleVenta.cantidadTotal;
+    return this.items.reduce(
+      (sum, item) => sum + Number(item.cantidadVendida ?? 0),
+      0,
+    );
   }
 
-  /**
-   * Verificar si es una venta procesada/finalizada
-   */
   get estaProcesada(): boolean {
-    return this.estado === OrderState.DESPACHADO;
+    return (
+      this.estado === VentaState.CONFIRMADA ||
+      this.estado === VentaState.DESPACHADA
+    );
   }
 
   /**
-   * Verificar si es una lista pendiente
+   * @deprecated `Venta` ya no usa estados pendientes como canónicos.
    */
   get esPendiente(): boolean {
-    return this.estado === OrderState.PENDIENTE;
+    return false;
   }
 
-  /**
-   * Verificar si la venta es un pedido
-   */
   get esUnPedido(): boolean {
-    return this.esPedido === true || this.detalleVenta.esPedido === true;
+    return Boolean(this.pedidoId);
   }
 
-  /**
-   * Verificar si tiene items marcados como pedido
-   */
-  get tieneItemsPedido(): boolean {
-    return this.items.some(item => item.esPedido === true);
-  }
-
-  /**
-   * Obtener solo los items que son pedidos
-   */
-  get itemsPedido(): readonly CarItem[] {
-    return this.items.filter(item => item.esPedido === true);
-  }
-
-  /**
-   * Obtener solo los items que NO son pedidos  
-   */
-  get itemsVentaNormal(): readonly CarItem[] {
-    return this.items.filter(item => item.esPedido !== true);
-  }
-
-  /**
-   * Verificar si tiene finanza asociada
-   */
-  get tieneFinanzaAsociada(): boolean {
-    return this.finanzaId !== undefined && this.finanzaId !== null && this.finanzaId.trim() !== '';
-  }
-
-  /**
-   * Verificar si requiere finanza (es pedido pero no tiene finanza)
-   */
-  get requiereFinanza(): boolean {
-    return this.esUnPedido && !this.tieneFinanzaAsociada;
-  }
-
-  /**
-   * Obtener resumen de la venta
-   */
   get resumen(): {
     cantidadItems: number;
     cantidadTotal: number;
@@ -255,114 +262,101 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       cantidadTotal: this.cantidadTotal,
       subtotal: this.subtotal,
       impuesto: this.impuesto,
-      total: this.total
+      total: this.total,
     };
   }
 
-  // === MÉTODOS DE BÚSQUEDA ===
-
-  /**
-   * Buscar item por ID de producto
-   */
-  buscarItemPorProducto(productId: string): CarItem | undefined {
-    return this.items.find(item => item.product?.id === productId);
+  buscarItemPorProducto(productId: string): VentaItem | undefined {
+    return this.items.find((item) => item.presentacionId === productId);
   }
 
-  /**
-   * Buscar item por ID único del item
-   */
-  buscarItemPorId(itemId: string): CarItem | undefined {
-    return this.items.find(item => item.id === itemId);
+  buscarItemPorId(itemId: string): VentaItem | undefined {
+    return this.items.find((item) => item.id === itemId);
   }
 
-  /**
-   * Obtener productos únicos (sin repetir)
-   */
-  get productosUnicos(): Array<{ id: string; nombre: string; cantidadTotal: number; montoTotal: number }> {
-    const productosMap = new Map();
-    
-    this.items.forEach(item => {
-      const productId = item.product?.id;
-      if (!productId) {
-        throw new Error("CarItem.product.id es requerido");
-      }
-      if (productosMap.has(productId)) {
-        const existing = productosMap.get(productId);
-        existing.cantidadTotal += item.quantity;
-        existing.montoTotal += item.montoTotal || 0;
-      } else {
-        productosMap.set(productId, {
-          id: productId,
-          nombre: item.product?.nombre ?? "",
-          cantidadTotal: item.quantity,
-          montoTotal: item.montoTotal || 0
-        });
+  get productosUnicos(): Array<{
+    id: string;
+    nombre: string;
+    cantidadTotal: number;
+    montoTotal: number;
+  }> {
+    const nombres = new Map<string, string>();
+    this._detalleVentaCompat.items.forEach((item) => {
+      const productId = String(item.product?.id || "").trim();
+      if (productId) {
+        nombres.set(productId, item.product?.nombre ?? productId);
       }
     });
-    
+
+    const productosMap = new Map<
+      string,
+      { id: string; nombre: string; cantidadTotal: number; montoTotal: number }
+    >();
+
+    this.items.forEach((item) => {
+      const current = productosMap.get(item.presentacionId);
+      const montoItem = this.calcularTotalItem(item);
+      if (current) {
+        current.cantidadTotal += item.cantidadVendida;
+        current.montoTotal += montoItem;
+        return;
+      }
+
+      productosMap.set(item.presentacionId, {
+        id: item.presentacionId,
+        nombre: nombres.get(item.presentacionId) ?? item.presentacionId,
+        cantidadTotal: item.cantidadVendida,
+        montoTotal: montoItem,
+      });
+    });
+
     return Array.from(productosMap.values());
   }
 
-  // === COMPORTAMIENTOS DE DOMINIO ===
-
-  /**
-   * Confirma la venta y dispara el evento de dominio correspondiente.
-   */
   confirmar() {
     if (this.items.length === 0) {
       throw new Error("No se puede confirmar venta vacía");
     }
 
-    this.estado = OrderState.DESPACHADO; // Simulando "CONFIRMADA"
-
-    this.addDomainEvent(
-      new VentaConfirmada(this.id, this.total)
-    );
+    this.estado = VentaState.CONFIRMADA;
+    this.updatedAt = new Date();
+    this.addDomainEvent(new VentaConfirmada(this.id, this.total));
   }
 
-  // === MÉTODOS DE SERIALIZACIÓN ===
-
-
-  /**
-   * Convertir a JSON para APIs externas
-   */
   toJSON(): IVenta {
     return {
       id: this.id,
       nombre: this.nombre,
       type: this.type,
       estado: this.estado,
+      items: this.items.map((item) => ({ ...item })),
+      pedidoId: this.pedidoId,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
-      detalleVenta: this.detalleVenta,
       subtotal: this.subtotal,
       impuesto: this.impuesto,
       total: this.total,
       montoRedondeo: this.montoRedondeo,
       procedencia: this.procedencia,
-      tipoPago: this.tipoPago,
-      // IDs de compatibilidad
       clienteId: this.clienteId,
       vendedorId: this.vendedorId,
-      finanzaId: this.finanzaId,
-      turnoCajaId: this.turnoCajaId,
-      // Campos de trazabilidad adicionales
       codigoVenta: this.codigoVenta,
       numeroVenta: this.numeroVenta,
       costoEnvio: this.costoEnvio,
-      esPedido: this.esPedido
     };
   }
 
   toPersistenceSnapshot(): VentaPersistenceSnapshot {
-    const detalleVenta = CarritoVenta.fromJSON(this.detalleVenta as ICarritoVenta)
-      .toVentaSnapshot();
+    const detalleVenta = CarritoVenta.fromJSON(
+      this._detalleVentaCompat,
+    ).toVentaSnapshot();
 
     return {
       id: this.id,
       nombre: this.nombre,
       type: this.type,
       estado: this.estado,
+      pedidoId: this.pedidoId,
       createdAt: this.createdAt.getTime(),
       updatedAt: this.updatedAt.getTime(),
       detalleVenta,
@@ -372,14 +366,10 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       total: this.total,
       montoRedondeo: this.montoRedondeo,
       procedencia: this.procedencia,
-      tipoPago: this.tipoPago,
       clienteId: this.clienteId,
       vendedorId: this.vendedorId,
-      finanzaId: this.finanzaId,
-      turnoCajaId: this.turnoCajaId,
       codigoVenta: this.codigoVenta,
       numeroVenta: this.numeroVenta,
-      esPedido: this.esPedido,
     };
   }
 
@@ -387,8 +377,11 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     const getImagenSnapshot = (
       product: Partial<CarItem["product"]> | undefined,
     ): { sizes: { small: string } } | undefined => {
-      const img = (product as { imagen?: { sizes?: { small?: string }; base?: string } } | undefined)
-        ?.imagen;
+      const img = (
+        product as
+          | { imagen?: { sizes?: { small?: string }; base?: string } }
+          | undefined
+      )?.imagen;
       const small = img?.sizes?.small ?? img?.base ?? "";
       const clean = String(small || "").trim();
       return clean ? { sizes: { small: clean } } : undefined;
@@ -406,7 +399,8 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       return suffix ? `${baseShort}_${suffix}` : baseShort;
     };
 
-    const items = this.detalleVenta.items
+    const detalleVenta = this._detalleVentaCompat;
+    const items = detalleVenta.items
       .map((item) => {
         const productId = String(item.product?.id || "").trim();
         if (!productId) return null;
@@ -420,8 +414,11 @@ export class Venta extends AggregateRoot<string> implements IVenta {
                 ? String((item.product as { type?: string }).type)
                 : undefined,
             productoBaseId:
-              typeof (item.product as { productoBaseId?: unknown })?.productoBaseId === "string"
-                ? String((item.product as { productoBaseId?: string }).productoBaseId)
+              typeof (item.product as { productoBaseId?: unknown })
+                ?.productoBaseId === "string"
+                ? String(
+                    (item.product as { productoBaseId?: string }).productoBaseId,
+                  )
                 : undefined,
             tipoVenta: item.product?.tipoVenta,
             contenidoNeto:
@@ -441,15 +438,17 @@ export class Venta extends AggregateRoot<string> implements IVenta {
           },
           quantity: Number(item.quantity || 0),
           precioUnitario:
-            typeof item.precioUnitario === "number" ? item.precioUnitario : undefined,
+            typeof item.precioUnitario === "number"
+              ? item.precioUnitario
+              : undefined,
           montoTotal:
             typeof item.montoTotal === "number" ? item.montoTotal : undefined,
           montoModificado:
-            typeof item.montoModificado === "boolean" ? item.montoModificado : undefined,
+            typeof item.montoModificado === "boolean"
+              ? item.montoModificado
+              : undefined,
           descuento:
             typeof item.descuento === "number" ? item.descuento : undefined,
-          esPedido:
-            typeof item.esPedido === "boolean" ? item.esPedido : undefined,
         };
       })
       .filter((item): item is NonNullable<typeof item> => Boolean(item));
@@ -459,44 +458,43 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       nombre: this.nombre,
       type: this.type,
       estado: this.estado,
+      pedidoId: this.pedidoId,
       createdAt: this.createdAt.getTime(),
       updatedAt: this.updatedAt.getTime(),
       detalleVenta: {
         items,
-        subtotal: this.detalleVenta.subtotal,
-        impuesto: this.detalleVenta.impuesto,
-        total: this.detalleVenta.total,
-        descuentoTotal: this.detalleVenta.descuentoTotal,
-        cantidadItems: this.detalleVenta.cantidadItems,
-        cantidadTotal: this.detalleVenta.cantidadTotal,
-        tasaImpuesto: this.detalleVenta.tasaImpuesto,
-        notas: this.detalleVenta.notas,
-        configuracionFiscal: this.detalleVenta.configuracionFiscal,
-        cliente: this.detalleVenta.cliente
+        subtotal: detalleVenta.subtotal,
+        impuesto: detalleVenta.impuesto,
+        total: detalleVenta.total,
+        descuentoTotal: detalleVenta.descuentoTotal,
+        cantidadItems: detalleVenta.cantidadItems,
+        cantidadTotal: detalleVenta.cantidadTotal,
+        tasaImpuesto: detalleVenta.tasaImpuesto,
+        notas: detalleVenta.notas,
+        configuracionFiscal: detalleVenta.configuracionFiscal,
+        cliente: detalleVenta.cliente
           ? {
-              id: this.detalleVenta.cliente.id,
-              nombres: this.detalleVenta.cliente.nombres,
-              celular: this.detalleVenta.cliente.celular,
-              correo: this.detalleVenta.cliente.correo,
-              dni: this.detalleVenta.cliente.dni,
-              direccion: this.detalleVenta.cliente.direccion,
+              id: detalleVenta.cliente.id,
+              nombres: detalleVenta.cliente.nombres,
+              celular: detalleVenta.cliente.celular,
+              correo: detalleVenta.cliente.correo,
+              dni: detalleVenta.cliente.dni,
+              direccion: detalleVenta.cliente.direccion,
             }
           : undefined,
-        personal: this.detalleVenta.personal
+        personal: detalleVenta.personal
           ? {
-              id: this.detalleVenta.personal.id,
-              username: this.detalleVenta.personal.username,
-              email: this.detalleVenta.personal.email,
+              id: detalleVenta.personal.id,
+              username: detalleVenta.personal.username,
+              email: detalleVenta.personal.email,
             }
           : undefined,
-        clienteColor: this.detalleVenta.clienteColor,
-        metodoPago: this.detalleVenta.metodoPago,
-        dineroRecibido: this.detalleVenta.dineroRecibido,
-        procedencia: this.detalleVenta.procedencia,
-        esPedido: this.detalleVenta.esPedido,
-        finanzaId: this.detalleVenta.finanzaId,
-        clienteId: this.detalleVenta.clienteId,
-        personalId: this.detalleVenta.personalId,
+        clienteColor: detalleVenta.clienteColor,
+        metodoPago: detalleVenta.metodoPago,
+        dineroRecibido: detalleVenta.dineroRecibido,
+        procedencia: detalleVenta.procedencia,
+        clienteId: detalleVenta.clienteId,
+        personalId: detalleVenta.personalId,
       },
       costoEnvio: this.costoEnvio,
       subtotal: this.subtotal,
@@ -504,172 +502,258 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       total: this.total,
       montoRedondeo: this.montoRedondeo,
       procedencia: this.procedencia,
-      tipoPago: this.tipoPago,
       clienteId: this.clienteId,
       vendedorId: this.vendedorId,
-      finanzaId: this.finanzaId,
-      turnoCajaId: this.turnoCajaId,
       codigoVenta: this.codigoVenta,
       numeroVenta: this.numeroVenta,
-      esPedido: this.esPedido,
     };
   }
 
-  // === MÉTODOS ESTÁTICOS ===
-
-  /**
-   * Crear Venta desde ICarritoVenta (para procesar pago)
-   */
   static fromCarritoVenta(
     carritoJSON: ICarritoVenta,
     id: string,
-    options?: { nombre?: string; montoRedondeo?: number }
+    options?: { nombre?: string; montoRedondeo?: number; pedidoId?: string },
   ): Venta {
     const ahora = new Date();
     const montoRedondeo = options?.montoRedondeo ?? 0;
-
-    const carritoInstance = CarritoVenta.fromJSON(carritoJSON as any);
+    const carritoInstance = CarritoVenta.fromJSON(carritoJSON);
     const detalle = carritoInstance.toJSON();
     const detalleFinal: ICarritoVenta = {
       ...detalle,
       updatedAt: ahora,
     };
     const totalFinal = Venta.roundMoney(detalleFinal.total + montoRedondeo);
-    
-    return new Venta({
-      id: id,
-      nombre: options?.nombre ?? carritoJSON.nombre ?? 'Venta',
-      type: 'venta',
-      estado: OrderState.DESPACHADO,
+    const venta = new Venta({
+      id,
+      nombre: options?.nombre ?? carritoJSON.nombre ?? "Venta",
+      type: "venta",
+      estado: VentaState.CONFIRMADA,
       createdAt: ahora,
       updatedAt: ahora,
-      detalleVenta: detalleFinal,
+      items: detalleFinal.items.map((item) => Venta.mapCarItemToVentaItem(item)),
+      pedidoId: options?.pedidoId,
       subtotal: detalleFinal.subtotal,
       impuesto: detalleFinal.impuesto,
       total: totalFinal,
       montoRedondeo,
       procedencia: carritoJSON.procedencia || ProcedenciaVenta.Tienda,
-      tipoPago: carritoJSON.metodoPago,
-      // 🔧 FIX: IDs de trazabilidad corregidos
       clienteId: carritoJSON.clienteId,
-      vendedorId: carritoJSON.personalId, // ✅ Correcto: personalId del carrito
-      finanzaId: undefined, // finanzaId se asigna posteriormente si es necesario
-      turnoCajaId: undefined,
-      // Campos de trazabilidad adicionales
+      vendedorId: carritoJSON.personalId,
       codigoVenta: "",
       numeroVenta: "",
       costoEnvio: 0,
-      esPedido: carritoJSON.esPedido
+    });
+    venta._detalleVentaCompat = Object.freeze(
+      CarritoVenta.fromJSON(detalleFinal).toJSON(),
+    );
+    return venta;
+  }
+
+  static fromLegacyInput(data: VentaLegacyInput): Venta {
+    const items =
+      Array.isArray(data.items) && data.items.length > 0
+        ? data.items
+        : data.detalleVenta?.items?.map((item) => Venta.mapCarItemToVentaItem(item)) ?? [];
+
+    const pedidoId =
+      typeof data.pedidoId === "string" && data.pedidoId.trim() !== ""
+        ? data.pedidoId
+        : data.esPedido
+          ? data.id
+          : undefined;
+
+    const venta = new Venta({
+      id: data.id,
+      nombre: data.nombre,
+      type: data.type || "venta",
+      estado: Venta.normalizeLegacyEstado(data.estado),
+      items,
+      pedidoId,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      costoEnvio: data.costoEnvio,
+      subtotal: Number(data.subtotal ?? 0),
+      impuesto: Number(data.impuesto ?? 0),
+      total: Number(data.total ?? 0),
+      montoRedondeo: data.montoRedondeo,
+      procedencia: data.procedencia,
+      clienteId: data.clienteId,
+      vendedorId: data.vendedorId,
+      codigoVenta: data.codigoVenta,
+      numeroVenta: data.numeroVenta,
+    });
+
+    if (data.detalleVenta?.items?.length) {
+      venta._detalleVentaCompat = Object.freeze(
+        CarritoVenta.fromJSON(data.detalleVenta).toJSON(),
+      );
+    }
+
+    return venta;
+  }
+
+  static fromPersistenceSnapshot(snapshot: VentaPersistenceSnapshot): Venta {
+    return Venta.fromLegacyInput({
+      id: snapshot.id,
+      nombre: snapshot.nombre,
+      type: snapshot.type,
+      estado: snapshot.estado as VentaState | OrderState,
+      pedidoId: snapshot.pedidoId,
+      createdAt: new Date(snapshot.createdAt),
+      updatedAt: new Date(snapshot.updatedAt),
+      detalleVenta: CarritoVenta.fromJSON({
+        ...snapshot.detalleVenta,
+        createdAt: new Date(snapshot.detalleVenta.createdAt),
+        updatedAt: new Date(snapshot.detalleVenta.updatedAt),
+      }).toJSON(),
+      costoEnvio: snapshot.costoEnvio,
+      subtotal: snapshot.subtotal,
+      impuesto: snapshot.impuesto,
+      total: snapshot.total,
+      montoRedondeo: snapshot.montoRedondeo,
+      procedencia: snapshot.procedencia as ProcedenciaVenta,
+      clienteId: snapshot.clienteId,
+      vendedorId: snapshot.vendedorId,
+      codigoVenta: snapshot.codigoVenta,
+      numeroVenta: snapshot.numeroVenta,
+      esPedido: snapshot.esPedido,
+      tipoPago: snapshot.tipoPago,
+      finanzaId: snapshot.finanzaId,
+      turnoCajaId: snapshot.turnoCajaId,
     });
   }
 
-  /**
-   * Validar estructura de datos de venta
-   */
-  static validar(data: Partial<IVenta>): { valida: boolean; errores: string[] } {
+  static fromCouchSnapshot(snapshot: VentaCouchMinimalSnapshot): Venta {
+    return Venta.fromLegacyInput({
+      id: snapshot.id,
+      nombre: snapshot.nombre,
+      type: snapshot.type,
+      estado: snapshot.estado as VentaState | OrderState,
+      pedidoId: snapshot.pedidoId,
+      createdAt: new Date(snapshot.createdAt),
+      updatedAt: new Date(snapshot.updatedAt),
+      detalleVenta: CarritoVenta.fromJSON({
+        ...snapshot.detalleVenta,
+        id: snapshot.id,
+        nombre: snapshot.nombre,
+        createdAt: new Date(snapshot.createdAt),
+        updatedAt: new Date(snapshot.updatedAt),
+      }).toJSON(),
+      costoEnvio: snapshot.costoEnvio,
+      subtotal: snapshot.subtotal,
+      impuesto: snapshot.impuesto,
+      total: snapshot.total,
+      montoRedondeo: snapshot.montoRedondeo,
+      procedencia: snapshot.procedencia as ProcedenciaVenta,
+      clienteId: snapshot.clienteId,
+      vendedorId: snapshot.vendedorId,
+      codigoVenta: snapshot.codigoVenta,
+      numeroVenta: snapshot.numeroVenta,
+      esPedido: snapshot.esPedido,
+      tipoPago: snapshot.tipoPago,
+      finanzaId: snapshot.finanzaId,
+      turnoCajaId: snapshot.turnoCajaId,
+    });
+  }
+
+  static validar(data: Partial<VentaCreateInput>): { valida: boolean; errores: string[] } {
     const errores: string[] = [];
-    
-    if (!data.id) errores.push('ID es requerido');
-    if (!data.nombre) errores.push('Nombre es requerido');
-    if (!data.detalleVenta) errores.push('detalleVenta es requerido');
-    if (!data.detalleVenta?.items?.length) errores.push('La venta debe tener al menos un item');
-    if ((data.total || 0) <= 0) errores.push('El total debe ser mayor a 0');
-    if (!data.procedencia) errores.push('Procedencia es requerida');
 
-    if (
-      typeof data.total === "number" &&
-      typeof data.detalleVenta?.total === "number"
-    ) {
-      const montoRedondeo = typeof data.montoRedondeo === "number" ? data.montoRedondeo : 0;
-      const expectedTotalFinal = Venta.roundMoney(data.detalleVenta.total + montoRedondeo);
-      const providedTotalFinal = Venta.roundMoney(data.total);
-      if (providedTotalFinal !== expectedTotalFinal) {
-        errores.push(
-          `Total inconsistente: total=${providedTotalFinal} debe ser detalleVenta.total + montoRedondeo = ${expectedTotalFinal}`,
-        );
-      }
+    if (!data.id) errores.push("ID es requerido");
+    if (!data.nombre) errores.push("Nombre es requerido");
+    if (!data.procedencia) errores.push("Procedencia es requerida");
+
+    if (!Array.isArray(data.items) || data.items.length === 0) {
+      errores.push("La venta debe tener al menos un item");
     }
-    
-    // Validaciones opcionales para campos de trazabilidad
+
+    if ((data.total || 0) <= 0) {
+      errores.push("El total debe ser mayor a 0");
+    }
+
+    if ((data.subtotal || 0) < 0) errores.push("El subtotal no puede ser negativo");
+    if ((data.impuesto || 0) < 0) errores.push("El impuesto no puede ser negativo");
     if (data.costoEnvio !== undefined && data.costoEnvio < 0) {
-      errores.push('El costo de envío no puede ser negativo');
+      errores.push("El costo de envío no puede ser negativo");
     }
 
-    // Validaciones específicas para pedidos
-    if (data.esPedido === true) {
-      if (!data.clienteId && !data.detalleVenta?.clienteId && !data.detalleVenta?.cliente) {
-        errores.push('Un pedido debe tener un cliente asociado');
-      }
+    if (Array.isArray(data.items)) {
+      data.items.forEach((item, index) => {
+        if (!item.id) errores.push(`Item ${index + 1}: id es requerido`);
+        if (!item.presentacionId) {
+          errores.push(`Item ${index + 1}: presentacionId es requerido`);
+        }
+        if ((item.cantidadVendida || 0) <= 0) {
+          errores.push(`Item ${index + 1}: cantidadVendida debe ser mayor a 0`);
+        }
+        if ((item.precioUnitario || 0) < 0) {
+          errores.push(`Item ${index + 1}: precioUnitario no puede ser negativo`);
+        }
+      });
     }
 
-    // Validaciones específicas para finanzas
-    if (data.finanzaId !== undefined && data.finanzaId !== null) {
-      if (typeof data.finanzaId !== 'string' || data.finanzaId.trim() === '') {
-        errores.push('finanzaId debe ser un string no vacío');
-      }
-    }
-    
     return {
       valida: errores.length === 0,
-      errores
+      errores,
     };
   }
-  /**
-   * Calcula el subtotal de un ítem
-   */
-  calcularSubtotalItem(item: ItemVenta): number {
-    const precioUnitario = Number(item.precioUnitario ?? item.product.precioVenta ?? 0);
-    const cantidad = item.quantity ?? 0;
-    return precioUnitario * cantidad;
+
+  calcularSubtotalItem(item: VentaItem): number {
+    return Venta.roundMoney(item.precioUnitario * item.cantidadVendida);
   }
 
-  /**
-   * Calcula el total de un ítem (subtotal - descuento)
-   */
-  calcularTotalItem(item: ItemVenta): number {
-    return this.calcularSubtotalItem(item) - (item.descuento || 0);
+  calcularTotalItem(item: VentaItem): number {
+    return Venta.roundMoney(
+      this.calcularSubtotalItem(item) - Number(item.descuento ?? 0),
+    );
   }
 
-  /**
-   * Calcula el subtotal de la venta dinámicamente
-   */
   calcularSubtotal(): number {
-    return this.items.reduce((sum, item) => sum + this.calcularSubtotalItem(item as ItemVenta), 0);
+    return Venta.roundMoney(
+      this.items.reduce((sum, item) => sum + this.calcularSubtotalItem(item), 0),
+    );
   }
 
-  /**
-   * Calcula el total de la venta dinámicamente
-   */
   calcularTotal(): number {
-    return Venta.roundMoney(this.calcularSubtotal() + this.impuesto + (this.montoRedondeo ?? 0));
+    const totalItems = this.items.reduce(
+      (sum, item) => sum + this.calcularTotalItem(item),
+      0,
+    );
+    return Venta.roundMoney(totalItems + this.impuesto + (this.montoRedondeo ?? 0));
   }
 }
 
 /**
- * Helper para obtener items de una venta (compatibilidad con código existente)
- * @deprecated Usar venta.items directamente
+ * Helper para obtener items de una venta.
  */
-export function getVentaItems(venta: IVenta): CarItem[] {
-  return venta.detalleVenta?.items || [];
+export function getVentaItems(venta: IVenta): VentaItem[] {
+  return venta.items || [];
 }
 
 /**
- * Helper para obtener resumen de items
- * @deprecated Usar venta.productosUnicos directamente
+ * Helper para obtener resumen de items.
  */
-export function getVentaItemsResumen(venta: IVenta): Array<{id: string, nombre: string, cantidad: number, total: number}> {
-  const items = getVentaItems(venta);
-  return items.map(item => ({
+export function getVentaItemsResumen(
+  venta: IVenta | Venta,
+): Array<{ id: string; nombre: string; cantidad: number; total: number }> {
+  const detailNames = new Map<string, string>();
+  if (venta instanceof Venta) {
+    venta.productosUnicos.forEach((producto) => {
+      detailNames.set(producto.id, producto.nombre);
+    });
+  }
+
+  return getVentaItems(venta).map((item) => ({
     id: item.id,
-    nombre: item.product?.nombre ?? "",
-    cantidad: item.quantity,
-    total: item.montoTotal || 0
+    nombre: detailNames.get(item.presentacionId) ?? item.presentacionId,
+    cantidad: item.cantidadVendida,
+    total: Venta.roundMoney(
+      item.precioUnitario * item.cantidadVendida - Number(item.descuento ?? 0),
+    ),
   }));
 }
 
 /**
- * Interfaz para ítems de venta con métodos de cálculo
+ * @deprecated Usar `VentaItem`.
  */
-export interface ItemVenta extends CarItem {
-  descuento?: number; // Descuento aplicado al ítem
-}
+export type ItemVenta = VentaItem;

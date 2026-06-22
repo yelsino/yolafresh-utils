@@ -1,7 +1,7 @@
 import { capitalizarPrimeraLetra, formatCantidad, formatSolesPeruanos, formatearFecha } from "@/domain/shared/utils/textos";
 import { Cliente, Personal } from "@/domain/shared/interfaces/persons";
 import { IUsuario } from "@/domain/shared/interfaces/usuario";
-import { Carrito, Hora } from "./pedido";
+import { Carrito, Hora } from "@/domain/shared/interfaces/pedido.legacy";
 
 
 

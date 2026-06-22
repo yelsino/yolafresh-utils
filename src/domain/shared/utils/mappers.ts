@@ -1,6 +1,7 @@
 import { ImageSizes } from "@/interfaces/producto";
-import { OrderState } from "./enums";
-import { Carrito, Lista, Pedido } from "@/interfaces/pedido";
+import { PedidoState } from "./enums";
+import type { Pedido } from "@/interfaces/pedido";
+import type { Carrito, Lista } from "@/interfaces/pedido.legacy";
 
 
 
@@ -24,20 +25,37 @@ function toProductImage(val: ImageSizes | string | undefined): ImageSizes {
 }
 
 export function pedidodbToPedido(pedido: any): Pedido {
+  const carrito = (pedido.datosPedido || {}) as Carrito;
+  const items = Array.isArray(carrito.items)
+    ? carrito.items.map((item, index) => {
+        const presentacionId = String(item?.producto?.id || "").trim();
+        const cantidadSolicitada = Number(item?.cantidad || 0);
+        const monto = Number(item?.monto || 0);
+        const precioUnitario =
+          cantidadSolicitada > 0 ? monto / cantidadSolicitada : 0;
+
+        return {
+          id: `${pedido.id || "pedido"}-item-${index + 1}`,
+          presentacionId,
+          cantidadSolicitada,
+          cantidadAtendida: 0,
+          cantidadCancelada: 0,
+          precioUnitario,
+        };
+      })
+    : [];
+
   return {
     id: pedido.id,
-    fechaEntrega: new Date(pedido.fechaEntrega),
-    estado: pedido.estado as OrderState, // 
-    datosPedido: pedido.datosPedido as Carrito,
-    numeroPedido: pedido.numeroPedido,
-    porcentajeDescuento: pedido.porcentajeDescuento,
-    subTotal: pedido.subTotal,
+    type: "pedido",
+    estado: pedido.estado as PedidoState,
+    clienteId: carrito.usuario?.id,
+    creadoPorId: pedido.usuarioId,
+    items,
+    subtotal: pedido.subTotal,
     total: pedido.total,
-    codigo: pedido.codigo,
-    costoEnvio: pedido.costoEnvio,
-    usuarioId: pedido.usuarioId,
-    creacion: pedido.creacion,
-    actualizacion: pedido.actualizacion
+    createdAt: pedido.creacion ? new Date(pedido.creacion) : new Date(),
+    updatedAt: pedido.actualizacion ? new Date(pedido.actualizacion) : new Date(),
   };
 }
 

@@ -1,0 +1,36 @@
+# Tareas
+- [x] Tarea 1: Auditar contratos actuales reales de venta y pedido.
+  - [x] Revisar `src/domain/ventas/Venta.ts`.
+  - [x] Revisar `src/domain/ventas/CarritoVenta.ts`.
+  - [x] Revisar `src/domain/shared/interfaces/pedido.ts`.
+  - [x] Revisar `src/domain/ventas/snapshots.ts`.
+  - [x] Revisar enums y contratos vecinos relevantes.
+- [x] Tarea 2: Definir semántica canónica entre agregados.
+  - [x] Separar rol de `CarritoVenta`, `Pedido`, `Venta`, `Pago`, `MovimientoCaja` y `CuentaCliente`.
+  - [x] Redactar casos canónicos de contado, pedido sin pago, pedido convertido y venta a crédito.
+- [x] Tarea 3: Especificar contrato objetivo de `Pedido`.
+  - [x] Proponer campos mínimos de negocio.
+  - [x] Proponer `PedidoItem` con atención parcial y cancelación parcial.
+  - [x] Proponer estados e invariantes mínimos.
+- [x] Tarea 4: Especificar contrato objetivo de `Venta`.
+  - [x] Conservar campos nucleares del hecho comercial.
+  - [x] Introducir `pedidoId` opcional como relación objetivo.
+  - [x] Marcar responsabilidades a mover fuera del agregado.
+  - [x] Proponer estados e invariantes mínimos.
+- [x] Tarea 5: Declarar delta de refactor y compatibilidad temporal.
+  - [x] Marcar `esPedido` como deprecación temporal.
+  - [x] Marcar `snapshots.ts` y `detalleVenta` como puntos de compatibilidad a revisar.
+  - [x] Mantener `Pago` y `EstadoPagoCapturaEnum` sin renombre en esta fase.
+- [x] Tarea 6: Implementación contractual futura en código.
+  - [x] Redefinir enums/estados separados para `Pedido` y `Venta`.
+  - [x] Revisar `src/domain/shared/interfaces/pedido.ts` para migrar desde contrato legacy.
+  - [x] Revisar `src/domain/ventas/Venta.ts` para sacar responsabilidades de cobro/caja/crédito.
+  - [x] Revisar `src/domain/ventas/CarritoVenta.ts` para dejarlo como captura mutable.
+  - [x] Revisar `src/domain/ventas/snapshots.ts` para compatibilidad de persistencia.
+
+# Dependencias de tareas
+- Tarea 2 depende de Tarea 1.
+- Tarea 3 depende de Tarea 2.
+- Tarea 4 depende de Tarea 2.
+- Tarea 5 depende de Tarea 3 y Tarea 4.
+- Tarea 6 depende de Tarea 5.
