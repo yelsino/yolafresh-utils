@@ -9,6 +9,7 @@
 - `auditoria-trazabilidad-reimplementacion.md`: capas de trazabilidad del nuevo modelo.
 - `personas.md`: contratos de personas, entidades y relaciones con otros contextos.
 - `ventas-implementation-plan.md`: lineamientos de implementacion exterior para ventas.
+- `ventas-pedidos-modelo-negocio.md`: explicacion del nuevo modelado de negocio y contratos de `Venta` y `Pedido`.
 
 ## Nota
 
