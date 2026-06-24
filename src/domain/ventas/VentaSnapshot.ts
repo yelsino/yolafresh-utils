@@ -278,10 +278,13 @@ export function mapVentaItemToSnapshotItem(
     nombre: safeTrim(options?.nombre) ?? item.presentacionId,
     cantidadVendida: Number(item.cantidadVendida ?? 0),
     precioUnitario: Number(item.precioUnitario ?? 0),
-    total: roundMoney(
-      Number(item.precioUnitario ?? 0) * Number(item.cantidadVendida ?? 0) -
-        Number(item.descuento ?? 0),
-    ),
+    total:
+      typeof item.montoTotal === "number" && Number.isFinite(item.montoTotal)
+        ? roundMoney(item.montoTotal)
+        : roundMoney(
+            Number(item.precioUnitario ?? 0) * Number(item.cantidadVendida ?? 0) -
+              Number(item.descuento ?? 0),
+          ),
     descuento,
   };
 }

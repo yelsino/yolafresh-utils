@@ -17,6 +17,8 @@ export interface VentaItem {
   presentacionId: string;
   cantidadVendida: number;
   precioUnitario: number;
+  montoTotal?: number;
+  montoModificado?: boolean;
   descuento?: number;
 }
 
@@ -108,18 +110,27 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       precioUnitario: Number(
         item.precioUnitario ?? item.product?.precioVenta ?? 0,
       ),
+      montoTotal:
+        typeof item.montoTotal === "number" ? Venta.roundMoney(item.montoTotal) : undefined,
+      montoModificado:
+        typeof item.montoModificado === "boolean" ? item.montoModificado : undefined,
       descuento: typeof item.descuento === "number" ? item.descuento : undefined,
     };
   }
 
   private static mapVentaItemToCarItem(item: VentaItem): CarItem {
-    const montoBase = Venta.roundMoney(item.precioUnitario * item.cantidadVendida);
+    const montoBase =
+      typeof item.montoTotal === "number"
+        ? Venta.roundMoney(item.montoTotal)
+        : Venta.roundMoney(item.precioUnitario * item.cantidadVendida);
     return {
       id: item.id,
       product: { id: item.presentacionId },
       quantity: item.cantidadVendida,
       precioUnitario: item.precioUnitario,
       montoTotal: montoBase,
+      montoModificado:
+        typeof item.montoModificado === "boolean" ? item.montoModificado : undefined,
       descuento: item.descuento,
     };
   }
@@ -195,6 +206,14 @@ export class Venta extends AggregateRoot<string> implements IVenta {
         presentacionId: item.presentacionId,
         cantidadVendida: Number(item.cantidadVendida ?? 0),
         precioUnitario: Number(item.precioUnitario ?? 0),
+        montoTotal:
+          typeof item.montoTotal === "number"
+            ? Venta.roundMoney(Number(item.montoTotal))
+            : undefined,
+        montoModificado:
+          typeof item.montoModificado === "boolean"
+            ? item.montoModificado
+            : undefined,
         descuento:
           typeof item.descuento === "number" ? Number(item.descuento) : undefined,
       })),
@@ -701,6 +720,12 @@ export class Venta extends AggregateRoot<string> implements IVenta {
         if ((item.precioUnitario || 0) < 0) {
           errores.push(`Item ${index + 1}: precioUnitario no puede ser negativo`);
         }
+        if (
+          item.montoTotal !== undefined &&
+          (!Number.isFinite(item.montoTotal) || item.montoTotal < 0)
+        ) {
+          errores.push(`Item ${index + 1}: montoTotal no puede ser negativo`);
+        }
       });
     }
 
@@ -715,6 +740,9 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   }
 
   calcularTotalItem(item: VentaItem): number {
+    if (typeof item.montoTotal === "number" && Number.isFinite(item.montoTotal)) {
+      return Venta.roundMoney(item.montoTotal);
+    }
     return Venta.roundMoney(
       this.calcularSubtotalItem(item) - Number(item.descuento ?? 0),
     );
