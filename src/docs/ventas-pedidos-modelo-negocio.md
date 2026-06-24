@@ -4,6 +4,7 @@ Este documento explica modelo nuevo de `Venta` y `Pedido` en `yola-fresh-utils`,
 
 Fuentes reales de implementación:
 - [Venta.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/ventas/Venta.ts)
+- [VentaSnapshot.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/ventas/VentaSnapshot.ts)
 - [CarritoVenta.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/ventas/CarritoVenta.ts)
 - [pedido.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/pedido.ts)
 - [pedido.legacy.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/pedido.legacy.ts)
@@ -82,6 +83,28 @@ No debe modelar como propiedad primaria:
 Si venta proviene de pedido, relación correcta es `pedidoId`.
 
 Fuente: [Venta.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/ventas/Venta.ts)
+
+### `VentaSnapshot`
+
+Rol:
+- representación histórica visible e indexable de una venta
+- snapshot separado para UI histórica, ticket y trazabilidad humana
+- soporte de persistencia offline-first en Couch/Pouch/SQLite sin depender de catálogo vivo
+
+Debe contener:
+- `ventaId` como FK lógica 1:1 hacia `Venta`
+- `items` con nombre visible, `presentacionId`, cantidad, precio y total de línea
+- actores visibles opcionales (`cliente`, `vendedor`)
+- `subtotal`, `impuesto`, `total`, `codigoVenta` y `procedencia`
+
+No debe contener:
+- `tipoPago`
+- `finanzaId`
+- `turnoCajaId`
+- `esPedido`
+- payloads fiscales o de caja
+
+Fuente: [VentaSnapshot.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/ventas/VentaSnapshot.ts)
 
 ### `Pago`
 
@@ -323,6 +346,12 @@ Eso volvía difuso agregado porque no se sabía si documento era:
 - fechas
 - `pedidoId?`
 
+`VentaSnapshot` conserva representación visible histórica:
+- nombres mostrables de items
+- imagen/unidad comercial si existen en contexto visible
+- nombre visible de cliente y vendedor
+- índices por `type`, `ventaId` y `codigoVenta`
+
 Y saca de contrato principal:
 - `tipoPago`
 - `finanzaId`
@@ -374,6 +403,8 @@ Relación objetivo:
 CarritoVenta -> Pedido -> Venta -> Pago -> MovimientoCaja
                     \------> Venta
 
+Venta ---------> VentaSnapshot
+
 Venta -> CuentaCliente   (solo si negocio genera deuda o saldo)
 ```
 
@@ -382,6 +413,7 @@ Lectura correcta:
 - `CarritoVenta`: captura mutable
 - `Pedido`: reserva comercial
 - `Venta`: hecho comercial confirmado
+- `VentaSnapshot`: representación histórica visible
 - `Pago`: dinero capturado o conciliado
 - `MovimientoCaja`: impacto de tesorería
 - `CuentaCliente`: deuda, adelanto, saldo aplicado
@@ -393,6 +425,7 @@ Lectura correcta:
 ```text
 CarritoVenta
   -> Venta
+  -> VentaSnapshot
   -> Pago        (si negocio registra captura/confirmación)
   -> MovimientoCaja
 ```
@@ -416,6 +449,7 @@ No genera todavía:
 ```text
 Pedido
   -> Venta(pedidoId)
+  -> VentaSnapshot
   -> Pago
   -> MovimientoCaja
 ```
@@ -498,8 +532,11 @@ Si estás implementando consumer nuevo:
 
 - usa `Pedido` de [pedido.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/pedido.ts)
 - usa `IVenta` y `Venta` de [Venta.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/ventas/Venta.ts)
+- usa `IVentaSnapshot` y `VentaSnapshot` de [VentaSnapshot.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/ventas/VentaSnapshot.ts)
 - usa `PedidoState` y `VentaState`
 - usa `pedidoId` para unir venta con pedido
+- usa `ventaId` para unir `VentaSnapshot` con `Venta`
+- crea snapshot desde `Venta.toVentaSnapshot()` o `VentaSnapshot.fromPersistenceSnapshot()`
 
 Evita en código nuevo:
 
@@ -509,6 +546,7 @@ Evita en código nuevo:
 - `finanzaId` dentro de `Venta`
 - `tipoPago` como dato principal de `Venta`
 - `detalleVenta` como contrato principal de lectura/escritura
+- depender de catálogo vivo como única fuente para render histórico
 
 ## 12. Resumen ejecutivo
 
@@ -516,6 +554,7 @@ Cambio central:
 
 - antes `Venta` era agregado contaminado
 - ahora `Venta` representa hecho comercial
+- `VentaSnapshot` representa vista histórica durable
 - `Pedido` representa reserva comercial
 - `CarritoVenta` representa captura mutable
 - `Pago`, `MovimientoCaja` y `CuentaCliente` quedan fuera de contrato principal de `Venta`

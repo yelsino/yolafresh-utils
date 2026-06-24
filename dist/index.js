@@ -23,6 +23,7 @@ __exportStar(require("./domain/shared/base"), exports);
 __exportStar(require("./domain/shared/value-objects"), exports);
 __exportStar(require("./domain/ventas/Venta"), exports);
 __exportStar(require("./domain/ventas/CarritoVenta"), exports);
+__exportStar(require("./domain/ventas/VentaSnapshot"), exports);
 __exportStar(require("./domain/ventas/snapshots"), exports);
 __exportStar(require("./domain/inventario/MovimientoInventarioService"), exports);
 __exportStar(require("./domain/finanzas/Recurrencia"), exports);

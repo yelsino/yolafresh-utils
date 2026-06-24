@@ -21,19 +21,23 @@ Responsabilidad:
 
 ### 1.2 Venta (estado inmutable)
 - `Venta` y `IVenta`: [Venta.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/ventas/Venta.ts)
+- `VentaSnapshot` e `IVentaSnapshot`: [VentaSnapshot.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/ventas/VentaSnapshot.ts)
 
 Responsabilidad:
 - representar hecho comercial confirmado o despachado
 - exponer `items`, `totales`, `clienteId`, `vendedorId` y `pedidoId?`
 - emitir eventos de dominio (ej. `VentaConfirmada`)
 - no cargar como contrato principal datos de cobro, caja o deuda
+- delegar render histórico humano a `VentaSnapshot`
 
 ### 1.3 Snapshot estable (para escalabilidad)
 - `VentaDetalleSnapshot`, `VentaProductSnapshot`, etc.: [snapshots.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/ventas/snapshots.ts)
+- `VentaSnapshot` persistible e indexable: [VentaSnapshot.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/ventas/VentaSnapshot.ts)
 
 Regla:
 - el snapshot histórico NO debe depender del catálogo completo (`Presentacion`) ni de `Partial<Presentacion>`
 - debe ser mínimo y estable (tamaño controlado)
+- `VentaSnapshot` debe quedar libre de `tipoPago`, `finanzaId`, `turnoCajaId` y `esPedido`
 
 ## 2) Flujo operativo (paso a paso)
 
@@ -58,20 +62,24 @@ Para pesables:
 ### 2.4 Congelar carrito para venta (snapshot)
 Usar:
 - `carrito.toVentaSnapshot()`
+- `VentaSnapshot.fromPersistenceSnapshot(venta.toPersistenceSnapshot())` cuando ya existe `Venta`
 
 Garantías del snapshot:
 - `product` se convierte a `VentaProductSnapshot` (id/nombre/tipoVenta/precioVenta/contenidoNeto/unidadContenido/imagenUrl)
 - `cliente` se reduce a `VentaClienteSnapshot`
 - se evita guardar basura (campos del catálogo, createdAt/updatedAt del producto, urls extra, etc.)
+- `VentaSnapshot` toma solo representación visible durable para historial/ticket
 
 ### 2.5 Crear Venta
 Usar:
 - `Venta.fromCarritoVenta(carritoJSON, ventaId, { montoRedondeo })`
+- `venta.toVentaSnapshot()` para materializar documento histórico separado
 
 Regla:
 - `Venta` se construye con `items` como contrato principal.
 - `detalleVenta` queda solo como compatibilidad temporal para snapshots heredados.
 - totales de `Venta` deben mantenerse consistentes con `items`, `impuesto` y `montoRedondeo`.
+- `VentaSnapshot` usa `ventaId` como relación lógica 1:1 y se trata como inmutable al cerrar venta.
 
 ## 3) Integración financiera (caja/pagos)
 
@@ -140,7 +148,7 @@ Contratos:
 
 ### Fase 1 — Venta simple
 - CarritoVenta (crear/agregar/calcular)
-- Venta.fromCarritoVenta() + snapshot limpio
+- Venta.fromCarritoVenta() + `VentaSnapshot`
 - MovimientoCaja ingreso
 
 ### Fase 2 — Inventario

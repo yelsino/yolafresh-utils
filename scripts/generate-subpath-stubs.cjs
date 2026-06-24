@@ -47,7 +47,12 @@ function generateDomainStubs() {
     throw new Error(`No existe ${distDomainDir}. Ejecuta build primero.`);
   }
 
-  fs.rmSync(outDomainDir, { recursive: true, force: true });
+  fs.rmSync(outDomainDir, {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 100,
+  });
   ensureDir(outDomainDir);
 
   const files = walkFiles(distDomainDir);

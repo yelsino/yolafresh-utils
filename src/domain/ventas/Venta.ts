@@ -6,6 +6,11 @@ import {
   VentaCouchMinimalSnapshot,
   VentaPersistenceSnapshot,
 } from "./snapshots";
+import {
+  IVentaSnapshot,
+  VentaSnapshot,
+  VentaSnapshotBuildContext,
+} from "./VentaSnapshot";
 
 export interface VentaItem {
   id: string;
@@ -371,6 +376,13 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       codigoVenta: this.codigoVenta,
       numeroVenta: this.numeroVenta,
     };
+  }
+
+  toVentaSnapshot(context: VentaSnapshotBuildContext = {}): IVentaSnapshot {
+    return VentaSnapshot.fromVenta(this, {
+      ...context,
+      detalleVenta: context.detalleVenta ?? this.toPersistenceSnapshot().detalleVenta,
+    }).toJSON();
   }
 
   toCouchSnapshotMinimal(): VentaCouchMinimalSnapshot {

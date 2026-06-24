@@ -1,0 +1,10 @@
+- [x] La spec define `venta_snapshot` como documento separado de `Venta`.
+- [x] La spec deja explícito que `venta_snapshot` preserva representación histórica visible y no reemplaza `Venta`.
+- [x] La spec define contrato mínimo de `VentaSnapshot`, `VentaSnapshotItem` y `VentaSnapshotActor`.
+- [x] La spec define relación lógica entre `Venta` y `VentaSnapshot` mediante `ventaId`.
+- [x] La spec declara invariantes mínimas e inmutabilidad de `venta_snapshot`.
+- [x] La spec prohíbe incluir `tipoPago`, `finanzaId`, `turnoCajaId`, `esPedido`, payloads de caja y payloads fiscales.
+- [x] La spec deja claro que `venta_snapshot` no revive `detalleVenta` legacy como contrato principal.
+- [x] La spec define uso esperado de `Venta` + `VentaSnapshot` en historial y ticket/voucher histórico.
+- [x] La spec define estrategia de persistencia compatible con Couch/Pouch/SQLite.
+- [x] La spec documenta fallback transitorio para ventas antiguas sin snapshot.
