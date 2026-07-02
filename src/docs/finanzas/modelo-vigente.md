@@ -193,11 +193,11 @@ La relación financiera específica con cliente ahora se documenta dentro del mi
 - `Recurrencia` no ejecuta handlers ni define persistencia;
 - `MovimientoFinanciero` se conserva como contrato auxiliar histórico.
 
-## Pendiente de validación
+## Decisiones vigentes observables
 
-- criterio funcional uniforme entre `Ingreso` y `Pago` en flows de cobro híbridos;
-- política oficial para consolidar `MovimientoCaja` en `MovimientoFinanciero`;
-- criterio futuro para tipar acciones recurrentes hoy genéricas.
+- `Ingreso` representa registro financiero de negocio; `Pago` pertenece a tesorería como evidencia externa y no sustituye a `Ingreso`;
+- `MovimientoCaja` conserva trazabilidad operativa del dinero; `MovimientoFinanciero` permanece como vista auxiliar o consolidada, no como fuente oficial;
+- `Recurrencia` tipa payloads estables para `CREAR_EGRESO` y `CREAR_CARGO_CLIENTE`; las demás acciones siguen abiertas como payload genérico.
 
 ## Referencias
 

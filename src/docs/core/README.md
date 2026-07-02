@@ -26,8 +26,35 @@ El core documenta:
 - entidades ricas que siguen en surface pública;
 - límites entre dominio e infraestructura.
 
+## Por qué existe este módulo
+
+`core` existe para explicar marco conceptual común del paquete.
+
+Su valor está en concentrar:
+
+- visión general;
+- arquitectura vigente;
+- publicación raíz;
+- ownership de contratos;
+- criterios que ordenan resto de dominios.
+
+Sin este módulo, una persona nueva vería contratos y carpetas, pero no entendería por qué sistema está organizado de esta forma.
+
+## Cuándo entra en juego
+
+Este módulo entra en juego cuando una persona necesita:
+
+- entender qué es `yolafresh-utils`;
+- decidir desde dónde consumir símbolos;
+- ubicar dueño semántico de un contrato;
+- entender límites antes de tocar un dominio específico.
+
 ## Documentos
 
+- [vision-general-del-paquete.md](./vision-general-del-paquete.md): explicación de qué es la librería, por qué existe y qué valor aporta.
+- [guia-de-onboarding.md](./guia-de-onboarding.md): recorrido recomendado para una persona nueva.
+- [mapa-del-dominio.md](./mapa-del-dominio.md): vista de alto nivel de relaciones entre dominios.
+- [glosario.md](./glosario.md): terminología canónica mínima para evitar ambigüedades.
 - [arquitectura-vigente.md](./arquitectura-vigente.md): arquitectura actual, capas y límites.
 - [contratos-compartidos.md](./contratos-compartidos.md): mapa de contratos por dominio propietario.
 - [primitivas-y-publicacion.md](./primitivas-y-publicacion.md): primitivas base, eventos y publicación raíz.

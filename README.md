@@ -104,6 +104,9 @@ Fuente principal:
 
 - [src/docs/README.md](./src/docs/README.md)
 - [src/docs/core/README.md](./src/docs/core/README.md)
+- [src/docs/core/vision-general-del-paquete.md](./src/docs/core/vision-general-del-paquete.md)
+- [src/docs/core/guia-de-onboarding.md](./src/docs/core/guia-de-onboarding.md)
+- [src/docs/core/mapa-del-dominio.md](./src/docs/core/mapa-del-dominio.md)
 - [src/docs/ventas/README.md](./src/docs/ventas/README.md)
 - [src/docs/finanzas/README.md](./src/docs/finanzas/README.md)
 - [src/docs/compras/README.md](./src/docs/compras/README.md)
@@ -111,6 +114,16 @@ Fuente principal:
 - [src/docs/tesoreria/README.md](./src/docs/tesoreria/README.md)
 - [src/docs/personas/README.md](./src/docs/personas/README.md)
 - [src/docs/contabilidad/README.md](./src/docs/contabilidad/README.md)
+
+Cuando paquete se instala desde npm o GitHub, carpeta `src/docs/` también viaja dentro del paquete publicado.
+
+Ruta esperada en consumer:
+
+```txt
+node_modules/yola-fresh-utils/src/docs/
+```
+
+Eso permite leer documentación oficial sin entrar al repositorio fuente.
 
 ## Alcance negativo
 

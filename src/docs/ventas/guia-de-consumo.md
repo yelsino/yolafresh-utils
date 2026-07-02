@@ -44,10 +44,17 @@ Para historial humano durable:
 
 Si entra dinero real:
 
-- crear o confirmar `Pago`
+- recibir o validar `Pago` como evidencia externa cuando exista
 - registrar `MovimientoCaja`
 
 No guardar cobro dentro de `Venta`.
+
+Lectura correcta:
+
+- `Pago` no siempre nace dentro del flujo de venta;
+- `Pago` puede llegar desde sistema externo después;
+- `Pago` puede no terminar asociado a la venta y seguir siendo válido;
+- asociación a venta ocurre solo cuando evidencia se aplica efectivamente.
 
 ### 5. Cuenta cliente
 
@@ -73,7 +80,7 @@ Si venta impacta stock:
 - `Venta`
 - `VentaSnapshot`
 
-### Cobro y conciliación
+### Evidencia de pago y tesorería
 
 - `Pago`
 - `MovimientoCaja`
@@ -99,6 +106,7 @@ Si venta impacta stock:
 - `Venta` != `MovimientoCuentaCliente`
 - `Venta` != `MovimientoInventario`
 - `Venta` != `VentaSnapshot`
+- `Pago` huérfano != error de dominio
 
 ## Errores de modelado a evitar
 
@@ -108,12 +116,13 @@ Si venta impacta stock:
 - usar `esPedido` en vez de `pedidoId`
 - usar `Venta` como si fuera documento de stock
 - usar `Venta` como si fuera documento de deuda
+- asumir que todo `Pago` debe asociarse a una venta
 
-## Preguntas abiertas
+## Límites vigentes del paquete
 
-- cuándo exactamente debe nacer `VentaSnapshot` en todos los flows de consumer
-- cuándo exactamente debe nacer `MovimientoInventario` en todos los flows de consumer
-- cómo se resuelve políticamente la anulación entre venta, caja, cuenta cliente e inventario
+- `VentaSnapshot` puede construirse desde `Venta`, pero la librería no obliga instante único de persistencia;
+- `MovimientoInventario` se mantiene desacoplado del agregado `Venta`, por lo que cada consumer decide disparo operativo;
+- la anulación interdominio requiere coordinación externa entre contratos, no automatismo dentro de `Venta`.
 
 ## Referencias
 

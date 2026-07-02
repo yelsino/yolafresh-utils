@@ -151,7 +151,13 @@ No reemplaza a movimientos ni imputaciones como fuente primaria.
 
 ### Con `Pago`
 
-`Pago` mantiene captura y conciliación del medio de pago. No sustituye a `RecepcionCobroCliente` ni a `MovimientoCuentaCliente`.
+`Pago` mantiene evidencia externa de pago y su eventual validación operativa. No sustituye a `RecepcionCobroCliente` ni a `MovimientoCuentaCliente`.
+
+Lectura importante:
+
+- un `Pago` puede no quedar asociado a una venta;
+- un `Pago` puede quedar solo como evidencia externa sin efecto financiero en cuenta cliente;
+- cuenta cliente solo cambia cuando se registra contrato financiero propio del subdominio.
 
 ### Con `MovimientoCaja`
 
@@ -172,12 +178,12 @@ No reemplaza a movimientos ni imputaciones como fuente primaria.
 - la estrategia explícita de imputación observada es `FIFO`;
 - recepción y movimiento exponen vínculos a caja, turno y custodio.
 
-## Pendiente de validación
+## Decisiones vigentes observables
 
-- criterio exacto para `AJUSTE`;
-- transición funcional completa de `RecepcionCobroCliente`;
-- transición funcional completa de `TransferenciaCustodiaCobro`;
-- criterio funcional entre `CONFIRMADO` y `CONTABILIZADO`.
+- `AJUSTE` existe como tipo explícito de `MovimientoCuentaCliente` para correcciones manuales auditablemente separadas de `VENTA`, `COBRO`, `DEPOSITO`, `DEVOLUCION` y `REVERSA`;
+- `RecepcionCobroCliente` publica ciclo observable `CREADO`, `RECIBIDO`, `EN_TRANSFERENCIA_CUSTODIA`, `LIQUIDADO`, `RECHAZADO` y `ANULADO`;
+- `TransferenciaCustodiaCobro` publica ciclo observable `CREADA`, `RECIBIDA`, `PENDIENTE`, `ACEPTADA`, `RECHAZADA` y `ANULADA`;
+- `MovimientoCuentaCliente` diferencia `CONFIRMADO` de `CONTABILIZADO`, por lo que confirmación operativa y reflejo contable no son el mismo estado.
 
 ## Referencias
 

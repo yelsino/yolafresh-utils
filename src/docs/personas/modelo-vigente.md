@@ -167,11 +167,11 @@ Los datos maestros del cliente viven aquí. La deuda y el saldo se resuelven en 
 - varias interfaces mantienen campos de contacto, facturación y preferencias sin validadores funcionales explícitos en la librería;
 - la librería publica contratos y algo de comportamiento en `Usuario`, no autenticación técnica completa.
 
-## Pendiente de validación
+## Decisiones vigentes observables
 
-- política oficial de multi-entidad cuando un usuario combina varios actores reales;
-- alcance futuro de `ValuesPersonals`, que hoy aparece como contrato auxiliar;
-- homogenización futura entre direcciones rápidas embebidas y modelo polimórfico `Direccion`.
+- `IUsuario.entidades` permite múltiples actores reales asociados al mismo usuario y `SesionContexto.entidadActiva` fija una entidad activa por sesión;
+- `ValuesPersonals` se conserva como contrato auxiliar liviano para relacionar personal, método de pago y monto;
+- el Domain convive hoy con direcciones embebidas en algunos contratos y con modelo reusable `Direccion` + `DireccionRelacion`.
 
 ## Referencias
 

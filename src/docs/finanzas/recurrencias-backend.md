@@ -104,11 +104,11 @@ Lectura recomendada:
 - convertir horario local a UTC al capturar la regla;
 - comparar ejecuciones contra `Date.now()` o reloj equivalente del backend.
 
-## Pendiente de validación
+## Decisiones vigentes observables
 
-- si el proyecto volverá a introducir un processor puro o mantendrá esta responsabilidad solo en consumers;
-- qué acciones del mapa contractual seguirán siendo canónicas y cuáles quedarán como placeholders;
-- si `EjecucionRecurrencia` se consolidará como documento oficial de auditoría en todos los backends del ecosistema.
+- la librería actual no publica processor operativo de recurrencias; esa responsabilidad queda en consumers;
+- acciones con payload tipado estable hoy: `CREAR_EGRESO` y `CREAR_CARGO_CLIENTE`; resto del mapa permanece extensible y genérico;
+- `EjecucionRecurrencia` existe como contrato de ejecución auditable disponible para backends que quieran persistir despacho y resultado.
 
 ## Referencias
 

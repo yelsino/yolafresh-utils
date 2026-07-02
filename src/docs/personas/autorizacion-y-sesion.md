@@ -117,11 +117,11 @@ El catálogo actual cubre, entre otras áreas:
 - la librería no define autenticación HTTP, tokens, middleware ni persistencia de sesión;
 - los permisos deprecados deben tratarse como compatibilidad, no como vocabulario recomendado.
 
-## Pendiente de validación
+## Decisiones vigentes observables
 
-- si existirán nuevamente helpers canónicos de autorización fuera de la entidad `Usuario`;
-- política oficial para usuarios activos con email no verificado en consumers no basados en email;
-- uso futuro de seeds adicionales o matrices oficiales por rol.
+- el paquete no publica helpers externos de autorización; el vocabulario canónico vive en `Usuario`, `Rol`, `Permisos` y `SesionContexto`;
+- `IUsuario` separa `activo` de `emailVerificado`, por lo que ambos estados conviven sin equivalencia automática;
+- `RolesPredefinidos` publica seeds oficiales iniciales sin impedir roles personalizados en consumers.
 
 ## Referencias
 

@@ -156,7 +156,7 @@ flowchart LR
   CarritoVenta --> Venta
   Pedido --> Venta
   Venta --> VentaSnapshot
-  Venta --> Pago
+  Pago[Pago: evidencia externa]
   Venta --> MovimientoCaja
   Venta --> MovimientoCuentaCliente
   Venta --> MovimientoInventario
@@ -167,16 +167,16 @@ Lectura correcta:
 - `CarritoVenta` prepara operación
 - `Venta` congela hecho comercial
 - `VentaSnapshot` congela representación humana
-- `Pago` resuelve captura/conciliación
+- `Pago` conserva evidencia externa de pago sin producir movimientos por sí mismo
 - `MovimientoCaja` resuelve tesorería
 - `MovimientoCuentaCliente` resuelve deuda o saldo
 - `MovimientoInventario` resuelve impacto de stock
 
-## Pendiente de validación
+## Límites vigentes del paquete
 
-- criterio funcional exacto para anular ventas ya confirmadas
-- uniformidad operativa para generar `VentaSnapshot` en todos los consumers
-- momento exacto de despacho frente a entrega real
+- `Venta` publica estado `ANULADA`, pero la librería no orquesta cascadas automáticas sobre caja, cuenta cliente o inventario;
+- `VentaSnapshot` existe como representación histórica disponible desde la propia entidad `Venta`, pero cada consumer decide momento exacto de persistencia;
+- `DESPACHADA` existe como estado canónico, aunque la librería no modela logística completa de entrega física.
 
 ## Referencias
 

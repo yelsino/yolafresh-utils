@@ -135,12 +135,12 @@ Por eso:
 - auditoría financiera: `MovimientoCuentaCliente` + `ImputacionCuentaCliente`;
 - lectura rápida: `ResumenCuentaCliente`.
 
-## Pendiente de validación
+## Decisiones vigentes observables
 
-- cuándo una recepción debe pasar a `LIQUIDADO`;
-- cuándo registrar `MovimientoCuentaCliente` antes o después de aceptar custodia;
-- cuál es política exacta para `AJUSTE`;
-- política funcional entre `RECHAZADO`, `ANULADO` y `REVERTIDO`.
+- `LIQUIDADO` pertenece al ciclo de `RecepcionCobroCliente` y representa cierre operativo de una recepción ya resuelta;
+- `MovimientoCuentaCliente` y `TransferenciaCustodiaCobro` son contratos separados, por lo que custodia y movimiento financiero pueden auditarse sin colapsar en un único documento;
+- `AJUSTE` existe como movimiento explícito y debe tratarse como corrección manual, no como sustituto de `REVERSA`;
+- `RECHAZADO`, `ANULADO` y `REVERTIDO` expresan decisiones distintas: rechazo operativo, anulación del documento y reversa de movimiento ya registrado.
 
 ## Referencias
 

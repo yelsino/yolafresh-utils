@@ -26,6 +26,37 @@ Este Domain no reemplaza:
 - `Compra` como documento económico de abastecimiento;
 - `MovimientoCaja` o `Egreso` como registros de dinero.
 
+## Por qué existe este Domain
+
+`inventario` existe para preservar verdad física del stock.
+
+Su valor está en modelar de forma explícita:
+
+- dónde está el stock;
+- cuánto stock existe;
+- cómo entra, sale, se transfiere o se ajusta;
+- cómo se registra recepción de mercadería.
+
+Esa separación evita que ventas, compras o finanzas muten stock de manera implícita.
+
+## Cuándo entra en juego
+
+Este Domain entra en juego cuando un consumer necesita:
+
+- consultar stock por presentación y almacén;
+- registrar movimiento de inventario;
+- modelar transferencia entre almacenes;
+- modelar recepción física de mercadería;
+- relacionar compra o venta con impacto real de stock.
+
+## Qué problema evita
+
+Evita errores conceptuales como:
+
+- guardar stock dentro del contrato de venta;
+- asumir que compra implica ingreso físico automático;
+- tratar catálogo de producto como si fuera inventario operativo.
+
 ## Documentos
 
 - [modelo-vigente.md](./modelo-vigente.md): conceptos, relaciones y reglas observadas del dominio.

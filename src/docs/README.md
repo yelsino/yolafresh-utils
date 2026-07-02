@@ -15,6 +15,10 @@ La lectura recomendada va de:
 ### Core
 
 - [core/README.md](./core/README.md): índice del núcleo vigente.
+- [core/vision-general-del-paquete.md](./core/vision-general-del-paquete.md): qué es la librería, por qué existe y qué problema resuelve.
+- [core/guia-de-onboarding.md](./core/guia-de-onboarding.md): recorrido recomendado para personas nuevas.
+- [core/mapa-del-dominio.md](./core/mapa-del-dominio.md): mapa de módulos y flujos interdominio.
+- [core/glosario.md](./core/glosario.md): vocabulario canónico mínimo del negocio.
 - [core/arquitectura-vigente.md](./core/arquitectura-vigente.md): arquitectura actual, límites y surface pública.
 - [core/contratos-compartidos.md](./core/contratos-compartidos.md): mapa de ownership contractual por dominio.
 - [core/primitivas-y-publicacion.md](./core/primitivas-y-publicacion.md): primitivas base, eventos y root mínimo.
@@ -93,6 +97,8 @@ Los siguientes archivos pueden conservar valor contextual, pero no son fuente pr
 - [rbac-frontend-implementation.md](./rbac-frontend-implementation.md)
 - [notificaciones-implementation-plan.md](./notificaciones-implementation-plan.md)
 - [tarjetas-virtuales-consumo.md](./tarjetas-virtuales-consumo.md)
+
+Nunca usar documentos históricos para redefinir semántica vigente de contratos activos cuando exista documentación oficial más reciente dentro de `core/` o de cada Domain.
 
 ## Nota
 

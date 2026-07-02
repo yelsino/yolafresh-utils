@@ -6,10 +6,10 @@ Este directorio agrupa la documentación vigente del Domain de compras en `yolaf
 
 La evidencia principal vive en:
 
-- [compras.ts](../../domain/shared/interfaces/compras.ts)
-- [Compra.ts](../../domain/compras/Compra.ts)
-- [Inventario.ts](../../domain/shared/interfaces/Inventario.ts)
-- [finanzas.ts](../../domain/shared/interfaces/finanzas.ts)
+- [compra.contract.ts](../../domain/compras/contracts/compra.contract.ts)
+- [Compra.ts](../../domain/compras/entities/Compra.ts)
+- [inventario.contract.ts](../../domain/inventario/contracts/inventario.contract.ts)
+- [finanzas.contract.ts](../../domain/finanzas/contracts/finanzas.contract.ts)
 
 ## Alcance
 
@@ -27,6 +27,36 @@ Este Domain no reemplaza:
 - `MovimientoInventario` como impacto real de stock;
 - `Egreso` como salida financiera;
 - `MovimientoCuentaProveedor` como relación financiera con proveedor.
+
+## Por qué existe este Domain
+
+`compras` existe para modelar abastecimiento económico a proveedor como hecho distinto de recepción física y pago.
+
+Su valor está en preservar:
+
+- documento comercial de compra;
+- items comprados;
+- condición de pago;
+- estado comercial de la compra.
+
+Esa separación evita que abastecimiento se mezcle con stock, caja o ledger financiero.
+
+## Cuándo entra en juego
+
+Este Domain entra en juego cuando un consumer necesita:
+
+- registrar compra formal a proveedor;
+- conservar items y totales de compra;
+- expresar condición o estado de pago;
+- vincular compra con egresos o con recepción física sin confundir conceptos.
+
+## Qué problema evita
+
+Evita errores conceptuales como:
+
+- tratar recepción física como si fuera compra formal;
+- tratar egreso como si fuera documento de abastecimiento;
+- usar inventario como reemplazo del documento económico de compra.
 
 ## Documentos
 

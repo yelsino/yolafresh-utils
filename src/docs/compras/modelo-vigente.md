@@ -148,11 +148,11 @@ La compra declara tipo, serie y número de documento, pero no reemplaza al contr
 - `Compra` sigue siendo módulo con comportamiento, pero no está publicado en la raíz del paquete;
 - la recepción física se documenta fuera del Domain de compras puro.
 
-## Pendiente de validación
+## Decisiones vigentes observables
 
-- criterio funcional exacto para pasar de `CONFIRMADO` a `CERRADO`;
-- política uniforme para compras sin impacto de inventario;
-- nivel de obligatoriedad futura de `EventoCompra` en todos los consumers del ecosistema.
+- `Compra` solo puede pasar de `CONFIRMADO` a `CERRADO` mediante transición explícita del agregado;
+- `CompraItem.afectaInventario` permite compras con o sin impacto de inventario según cada ítem;
+- `eventoCompraId` es obligatorio en `ICompra`, por lo que la compra vigente siempre nace vinculada a un evento de compra.
 
 ## Referencias
 

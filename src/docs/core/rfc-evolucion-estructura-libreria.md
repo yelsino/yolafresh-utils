@@ -324,12 +324,12 @@ RFC aceptado e implementado.
 
 La estructura vigente del paquete pasa a ser referencia arquitectonica oficial para cambios futuros.
 
-## Preguntas abiertas
+## Decisiones vigentes post-implementacion
 
-- si `Compra`, `Usuario` y `AsientoContable` deben seguir como entidades con comportamiento dentro del paquete o migrar a contratos puros en el futuro;
-- si `ledger-auxiliar.contract.ts` seguira como contrato auxiliar o se fragmentara en piezas mas especificas;
-- si el paquete mantendra a largo plazo convencion `*.contract.ts` en todos los dominios sin excepcion;
-- si la raiz mantendra `Venta` y `RecurrenciaEntity` como simbolos estrategicos o tambien se moveran a consumo por subpath.
+- `Compra`, `Usuario` y `AsientoContable` permanecen como entidades con comportamiento en estructura vigente;
+- `ledger-auxiliar.contract.ts` queda como contrato auxiliar histórico explícitamente separado del núcleo canónico;
+- la convención `*.contract.ts` se adopta como patrón vigente para contratos de dominio;
+- la raíz mantiene publicación mínima con símbolos estratégicos y resto del consumo por subpaths.
 
 ## Referencias
 

@@ -1,11 +1,11 @@
 import { MetodoPago } from "../../finanzas/contracts/finanzas.contract";
 
 export enum EstadoPagoCapturaEnum {
-  CAPTURADO = "CAPTURADO",     // llegó la notificación
-  CONFIRMADO = "CONFIRMADO",   // vendedor valida que es real
-  APLICADO = "APLICADO",       // impactó una venta
-  RECHAZADO = "RECHAZADO",     // no corresponde
-  ANULADO = "ANULADO",         // se deshizo
+  CAPTURADO = "CAPTURADO",     // llegó evidencia desde sistema externo
+  CONFIRMADO = "CONFIRMADO",   // usuario valida que evidencia es real
+  APLICADO = "APLICADO",       // evidencia se relacionó a una venta
+  RECHAZADO = "RECHAZADO",     // evidencia no corresponde al flujo esperado
+  ANULADO = "ANULADO",         // evidencia quedó sin efecto operativo
 }
 
 export interface Pago {
@@ -14,11 +14,14 @@ export interface Pago {
   clienteId?: string;
   movimientoCajaId?: string;
   // === RELACIÓN CON VENTA ===
-  ventaId?: string;                 // se asigna SOLO cuando se aplica
+  // Pago puede quedar sin venta asociada. Eso es válido cuando la evidencia llega
+  // tarde, no se pudo usar a tiempo o no corresponde a una venta concreta.
+  ventaId?: string;                 // se asigna SOLO cuando evidencia se aplica
   montoAplicado?: number;           // cuánto de este pago se usó
   fechaAplicacion?: number;
 
   // === ORIGEN FINANCIERO ===
+  // La evidencia nace en sistema externo de captura y luego se valida en POS.
   proveedor: "YAPE" | "PLIN" | "EFECTIVO" | "TARJETA" | "OTRO";
   tipoMedio: MetodoPago;
   idTransaccionProveedor?: string;

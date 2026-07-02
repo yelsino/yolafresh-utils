@@ -29,6 +29,38 @@ Este Domain documenta:
 
 La librería ya no publica snapshots técnicos de persistencia ni helpers operativos de integración.
 
+## Por qué existe este Domain
+
+`ventas` existe para preservar verdad comercial de una operación sin mezclarla con verdades de otros dominios cercanos.
+
+Su valor está en separar de forma explícita:
+
+- captura previa de la operación;
+- hecho comercial confirmado;
+- representación histórica visible;
+- reserva comercial previa vía `Pedido`.
+
+Esa separación evita que `Venta` absorba cobro, caja, deuda o stock como si fueran misma cosa.
+
+## Cuándo entra en juego
+
+Este Domain entra en juego cuando un consumer necesita:
+
+- capturar productos antes de confirmar una venta;
+- confirmar un hecho comercial;
+- relacionar una venta con un pedido;
+- conservar snapshot histórico mostrable;
+- enlazar la venta con caja, pagos, cuenta cliente o inventario sin confundir ownership.
+
+## Qué problema evita
+
+Evita errores conceptuales como:
+
+- tratar `Venta` como ledger de dinero;
+- tratar `Venta` como resumen de deuda del cliente;
+- tratar `Venta` como salida directa de stock;
+- tratar UI histórica como contrato transaccional principal.
+
 ## Documentos
 
 - [modelo-vigente.md](./modelo-vigente.md): conceptos, contratos, estados y reglas vigentes.
@@ -41,16 +73,16 @@ La librería ya no publica snapshots técnicos de persistencia ni helpers operat
 - `Venta`: hecho comercial confirmado
 - `VentaSnapshot`: representación histórica mostrable
 - `Pedido`: reserva comercial
-- `Pago`: captura y conciliación de dinero
+- `Pago`: evidencia externa de pago validable y relacionable manualmente
 - `MovimientoCaja`: impacto operativo en tesorería
 - `MovimientoCuentaCliente`: impacto financiero sobre cuenta cliente
 - `MovimientoInventario`: impacto de stock
 
-## Preguntas abiertas
+## Límites vigentes del paquete
 
-- cuál es política funcional exacta para pasar de `CONFIRMADA` a `DESPACHADA`
-- en qué momento operativo debe nacer `MovimientoInventario` en todos los consumers
-- qué reglas funcionales uniformes gobiernan anulación de venta y reversas interdominio
+- el paquete distingue estados `CONFIRMADA`, `DESPACHADA` y `ANULADA`, pero no impone workflow operativo completo entre ellos;
+- el paquete separa `Venta` de `MovimientoInventario`, por lo que no obliga momento único de descuento de stock;
+- el paquete no define orquestación automática de reversas entre ventas, tesorería, finanzas e inventario.
 
 ## Referencias
 

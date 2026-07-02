@@ -12,7 +12,7 @@ Este documento explica cómo se relaciona `Venta` con otros Domains relevantes d
 
 Otros Domains responden preguntas distintas:
 
-- `Pago`: cómo se capturó o concilió dinero
+- `Pago`: qué evidencia externa de pago llegó y si fue validada
 - `MovimientoCaja`: en qué caja o turno impactó dinero real
 - `CuentaCliente`: qué deuda, saldo o aplicación quedó registrada
 - `MovimientoInventario`: qué stock salió o se ajustó
@@ -56,17 +56,20 @@ Esos conceptos viven en [finanzas](../finanzas/README.md) y en [cuenta-cliente-m
 
 ## Relación con `Pago`
 
-`Pago` representa captura y conciliación de dinero, no hecho comercial.
+`Pago` representa evidencia externa de pago validable por humano, no hecho comercial ni disparador de efectos.
 
 Evidencia observada:
 
-- `Pago.ventaId` se asigna solo cuando pago se aplica
-- `Pago.movimientoCajaId` vincula cobro con tesorería
-- `Pago.estado` expresa ciclo de captura
+- `Pago.ventaId` se asigna solo cuando usuario relaciona evidencia con una venta
+- `Pago` puede existir sin `ventaId`
+- `Pago.movimientoCajaId` puede usarse como referencia posterior sin implicar causalidad
+- `Pago.estado` expresa llegada y validación de evidencia externa
 
 ### Regla canónica
 
 `Venta` no debe cargar `tipoPago` como propiedad primaria.
+
+Tampoco debe asumirse que toda venta tendrá un `Pago` asociado ni que todo `Pago` terminará asociado a una venta o movimiento.
 
 ## Relación con `Caja`
 
@@ -159,7 +162,7 @@ flowchart TD
   CarritoVenta --> Venta
   Pedido --> Venta
   Venta --> VentaSnapshot
-  Venta --> Pago
+  Pago[Pago: evidencia externa]
   Venta --> MovimientoCaja
   Venta --> MovimientoCuentaCliente
   MovimientoCuentaCliente --> ImputacionCuentaCliente
@@ -177,11 +180,11 @@ flowchart TD
 
 Eso se resuelve mediante integración entre Domains.
 
-## Preguntas abiertas
+## Límites vigentes del paquete
 
-- cuándo una venta debe generar inmediatamente `MovimientoInventario` en todos los consumers
-- si todas las ventas despachadas equivalen a stock ya descontado
-- cómo se define de forma uniforme el almacén origen en escenarios multi-almacén
+- la relación entre `Venta` y `MovimientoInventario` es explícita pero no automática;
+- `VentaState.DESPACHADA` no equivale por contrato a stock ya descontado;
+- el almacén origen y la política multi-almacén permanecen como decisión del consumer usando contratos de inventario.
 
 ## Referencias
 

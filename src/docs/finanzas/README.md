@@ -28,6 +28,39 @@ Este Domain no reemplaza:
 - `MovimientoCaja` como trazabilidad operativa de tesorería;
 - `AsientoContable` como registro contable balanceado.
 
+## Por qué existe este Domain
+
+`finanzas` existe para modelar relación monetaria del negocio más allá de la operación inmediata de caja.
+
+Su valor está en separar:
+
+- salida y entrada financiera;
+- relación con proveedor;
+- deuda y saldo del cliente;
+- recurrencias;
+- vistas auxiliares de consolidación.
+
+Esa separación evita que tesorería, ventas o contabilidad absorban responsabilidades financieras que no les pertenecen.
+
+## Cuándo entra en juego
+
+Este Domain entra en juego cuando un consumer necesita:
+
+- registrar ingreso, egreso, cambio o anulación;
+- modelar cuenta proveedor;
+- modelar cuenta cliente, cobros, custodia e imputaciones;
+- expresar recurrencias del negocio;
+- consolidar lectura financiera auxiliar previa a contabilidad formal.
+
+## Qué problema evita
+
+Evita errores conceptuales como:
+
+- usar `MovimientoCaja` como única verdad financiera;
+- usar `Venta` para modelar deuda o saldo del cliente;
+- usar `ResumenCuentaCliente` como ledger oficial;
+- usar contabilidad formal para resolver operación financiera diaria.
+
 ## Documentos
 
 - [modelo-vigente.md](./modelo-vigente.md): conceptos, responsabilidades, relaciones y restricciones vigentes.
@@ -68,16 +101,22 @@ flowchart LR
   RecepcionCobroCliente --> MovimientoCuentaCliente
   Recurrencia --> Egreso
   Recurrencia --> MovimientoCuentaProveedor
-  Pago --> MovimientoCaja
-  MovimientoCaja --> MovimientoFinanciero
-  MovimientoFinanciero --> AsientoContable
+  Pago[Pago: evidencia externa]
+  MovimientoCaja -. puede consolidarse .-> MovimientoFinanciero
+  MovimientoFinanciero -. puede reflejarse .-> AsientoContable
 ```
 
-## Preguntas abiertas
+Lectura correcta del diagrama:
 
-- si `MovimientoFinanciero` en `ledger.ts` seguirá como contrato auxiliar histórico o se dividirá en contratos más específicos;
-- qué acciones de `Recurrencia` pasarán de `unknown` a payload tipado estable;
-- hasta dónde `CuentaProveedor` debe seguir como saldo resumido y no como ledger detallado.
+- las flechas sólidas representan relación estructural fuerte;
+- las flechas punteadas representan relación eventual o dependiente de decisión operativa;
+- `Pago` no forma parte de cadena financiera canónica ni genera movimientos por sí mismo.
+
+## Decisiones vigentes observables
+
+- `MovimientoFinanciero` en `ledger-auxiliar.contract.ts` se documenta como contrato auxiliar histórico y no como fuente canónica de auditoría;
+- `Recurrencia` hoy publica payload tipado solo para `CREAR_EGRESO` y `CREAR_CARGO_CLIENTE`; el resto de acciones permanece genérico;
+- `CuentaProveedor` sigue siendo saldo resumido por proveedor; el detalle auditable vive en `MovimientoCuentaProveedor`.
 
 ## Referencias
 

@@ -100,11 +100,11 @@ Tesoreria conserva caja, turno y pago. Contabilidad no reemplaza esa operación 
 - no se observaron eventos contables públicos adicionales más allá del agregado;
 - la librería no define journals, repositorios ni cierre contable completo.
 
-## Pendiente de validación
+## Decisiones vigentes observables
 
-- si `AsientoContable` seguirá como comportamiento del paquete o migrará a contratos puros;
-- cómo se relacionará formalmente con `MovimientoFinanciero` y `MovimientoCaja` en consumers futuros;
-- si habrá documentación modular adicional para centros de costo y presupuestos.
+- `AsientoContable` permanece hoy como agregado con comportamiento, validación de cuadratura y registro contra `PeriodoFiscal`;
+- `MovimientoCaja` y `MovimientoFinanciero` no sustituyen `AsientoContable`; solo pueden servir como insumo externo para consumers que consoliden contabilidad;
+- centros de costo y presupuestos existen hoy como contratos auxiliares en `ledger-auxiliar.contract.ts`, no como módulo contable rico separado.
 
 ## Referencias
 

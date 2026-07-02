@@ -24,6 +24,36 @@ Este Domain documenta:
 - relación entre identidad organizacional y autorización;
 - direcciones vinculadas a entidades.
 
+## Por qué existe este Domain
+
+`personas` existe para separar actores reales del negocio de cuentas digitales y reglas de acceso.
+
+Su valor está en distinguir:
+
+- cliente, personal y proveedor como actores reales;
+- usuario como identidad digital;
+- rol y permiso como vocabulario de autorización;
+- dirección como dato reusable vinculado a múltiples entidades.
+
+Esa separación evita confundir relación comercial, identidad organizacional y acceso al sistema.
+
+## Cuándo entra en juego
+
+Este Domain entra en juego cuando un consumer necesita:
+
+- modelar clientes, proveedores o personal;
+- asociar usuario a entidades reales;
+- resolver roles, permisos y contexto de sesión;
+- vincular direcciones a actores o estructuras del negocio.
+
+## Qué problema evita
+
+Evita errores conceptuales como:
+
+- usar `cargo` como sustituto de `rol`;
+- usar usuario digital como reemplazo de actor real;
+- mezclar autorización con datos comerciales del cliente o proveedor.
+
 ## Documentos
 
 - [modelo-vigente.md](./modelo-vigente.md): actores, responsabilidades y relaciones principales.

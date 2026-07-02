@@ -117,11 +117,11 @@ El consumer debe decidir por su cuenta:
 - la librería no conoce SQLite, CouchDB, PouchDB ni sincronización concreta;
 - la librería no decide por sí sola si una recurrencia ya fue ejecutada en el dispositivo.
 
-## Pendiente de validación
+## Decisiones vigentes observables
 
-- si el ecosistema volverá a publicar un processor puro reutilizable;
-- qué acciones serán oficiales y cuáles quedarán solo como extensiones de consumer;
-- cómo se homologará la auditoría de ejecuciones entre app local y backend.
+- la librería no publica processor reutilizable para ejecutar recurrencias en frontend;
+- acciones oficiales con payload tipado estable hoy: `CREAR_EGRESO` y `CREAR_CARGO_CLIENTE`; extensiones adicionales usan payload genérico;
+- la auditoría de ejecuciones puede apoyarse en `EjecucionRecurrencia`, pero sincronización y persistencia concreta pertenecen al consumer.
 
 ## Referencias
 

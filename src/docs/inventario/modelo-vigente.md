@@ -172,11 +172,11 @@ El catálogo define `ProductoBase`, `Presentacion` y equivalencias. Inventario o
 - la librería no publica un servicio operativo de aplicación de stock;
 - la validación de disponibilidad previa a venta queda fuera del agregado `Venta`.
 
-## Pendiente de validación
+## Decisiones vigentes observables
 
-- criterio uniforme para uso de `PENDIENTE` frente a `APLICADO` en todos los consumers;
-- política oficial para stock negativo por almacén;
-- uso futuro de `UpdateProducto` como contrato vigente o residual.
+- `MovimientoInventario` distingue `PENDIENTE`, `APLICADO` y `ANULADO` como estados operativos explícitos del documento;
+- la política de stock negativo se parametriza por `Almacen.permitirNegativos`, no por `Venta` ni por un servicio global del paquete;
+- `UpdateProducto` sigue publicado en contratos de inventario como contrato auxiliar de actualización de producto.
 
 ## Referencias
 

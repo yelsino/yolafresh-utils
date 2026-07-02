@@ -156,10 +156,11 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "src/docs"
   ],
   "scripts": {
-    "build": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\" && tsc && tsc-alias",
+    "build": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })\" && tsc && tsc-alias",
     "prepare": "npm run build",
     "generate-exports": "ts-node scripts/generate-exports.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
