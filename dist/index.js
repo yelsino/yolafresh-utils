@@ -17,11 +17,18 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RecurrenciaEntity = exports.VentaSnapshot = exports.VENTA_SNAPSHOT_TYPE = exports.Venta = exports.ProcedenciaVenta = exports.CarritoVenta = void 0;
-// Surface raíz mínima oficial
+// Surface raíz pública para consumo directo de contratos
 __exportStar(require("./domain/shared/base"), exports);
 __exportStar(require("./domain/shared/kernel"), exports);
 __exportStar(require("./domain/shared/utils"), exports);
 __exportStar(require("./domain/shared/value-objects"), exports);
+__exportStar(require("./domain/ventas/contracts"), exports);
+__exportStar(require("./domain/compras/contracts"), exports);
+__exportStar(require("./domain/inventario/contracts"), exports);
+__exportStar(require("./domain/tesoreria/contracts"), exports);
+__exportStar(require("./domain/finanzas/contracts"), exports);
+__exportStar(require("./domain/personas/contracts"), exports);
+__exportStar(require("./domain/contabilidad/contracts"), exports);
 var entities_1 = require("./domain/ventas/entities");
 Object.defineProperty(exports, "CarritoVenta", { enumerable: true, get: function () { return entities_1.CarritoVenta; } });
 Object.defineProperty(exports, "ProcedenciaVenta", { enumerable: true, get: function () { return entities_1.ProcedenciaVenta; } });
