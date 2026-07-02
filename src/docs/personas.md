@@ -534,7 +534,7 @@ Archivo: [rbac.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/u
 ## 5) Personas y finanzas (cuenta corriente)
 
 Para crédito, deuda, saldo disponible y custodia de dinero:
-- `CustomerAccount` / `AccountEntry` / `Allocation`
+- `CuentaCliente` / `MovimientoCuentaCliente` / `ImputacionCuentaCliente`
 - `MovimientoCuentaProveedor` / `CuentaProveedor`
 
 Archivo: [customer-account.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/customer-account.ts)

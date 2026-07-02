@@ -13,17 +13,6 @@ export enum VentaState {
   ANULADA = 'ANULADA',
 }
 
-/**
- * @deprecated Usar `PedidoState` o `VentaState` según agregado.
- */
-export enum OrderState {
-  PENDIENTE = 'PENDIENTE',
-  ATENDIENDO = 'ATENDIENDO',
-  ENTREGADO = 'ENTREGADO',
-  CANCELADO = 'CANCELADO',
-  DESPACHADO = 'DESPACHADO',
-}
-
 
 export enum EstadoStockEnum {
   STOCK_AGOTADO = 'STOCK_AGOTADO',

@@ -1,7 +1,31 @@
 import { capitalizarPrimeraLetra, formatCantidad, formatSolesPeruanos, formatearFecha } from "@/domain/shared/utils/textos";
 import { Cliente, Personal } from "@/domain/shared/interfaces/persons";
 import { IUsuario } from "@/domain/shared/interfaces/usuario";
-import { Carrito, Hora } from "@/domain/shared/interfaces/pedido.legacy";
+import { TipoVentaEnum } from "@/domain/shared/interfaces/producto";
+
+type HoraEntregaInput = {
+  hora: string;
+  minuto: string;
+  periodo: "AM" | "PM";
+};
+
+type CarritoMensajeItem = {
+  producto: {
+    nombre: string;
+    tipoVenta?: TipoVentaEnum;
+  };
+  cantidad: number;
+  monto: number;
+};
+
+type CarritoMensajeInput = {
+  usuario: IUsuario | null;
+  direccion?: { nombre?: string } | string | null;
+  items: CarritoMensajeItem[];
+  total: number;
+  formaEntrega: "tienda" | "ubicación";
+  horaEntrega: HoraEntregaInput;
+};
 
 
 
@@ -30,15 +54,19 @@ function obtenerNombreUsuario(usuario: IUsuario | null): string {
 }
 
 
-export function generarWhatsAppLink(carrito: Carrito): string {
+export function generarWhatsAppLink(carrito: CarritoMensajeInput): string {
   const baseUrl = "https://wa.me/51944844745?text=";
+  const direccionNombre =
+    typeof carrito.direccion === "string"
+      ? carrito.direccion
+      : carrito.direccion?.nombre ?? "No especificada";
 
   const listaDeCompras = carrito.items
     .map((item, index) => {
       const nombreProducto = capitalizarPrimeraLetra(item.producto.nombre);
       const cantidad = formatCantidad({ 
         cantidad: item.cantidad, 
-        tipoVenta: item.producto.tipoVenta, 
+        tipoVenta: item.producto.tipoVenta ?? TipoVentaEnum.Unidad, 
         // mayoreo: item.producto.mayoreo, 
         abreviado: true, 
       });
@@ -54,7 +82,7 @@ export function generarWhatsAppLink(carrito: Carrito): string {
   // Verificar si la forma de entrega es "tienda"
   const direccionORecojo = carrito.formaEntrega === "tienda"
     ? `*Recojo de Pedido:* _Recoger en tienda_`
-    : `*Dirección de Envío:* _${carrito.direccion || 'No especificada'}_`; // Ensure direccion is an object and provide fallback
+    : `*Dirección de Envío:* _${direccionNombre}_`;
 
   const mensaje = `*Lista de Compras de Vegetales*\n\n${listaDeCompras}\n\n` +
     `*Monto Total: ${formatSolesPeruanos(carrito.total)}*\n\n` +
@@ -81,7 +109,7 @@ export function generarCodigoAmigable(): string {
   return codigo.toUpperCase();
 }
 
-export function formatearHora(horaObj: Hora): string {
+export function formatearHora(horaObj: HoraEntregaInput): string {
   const { hora, minuto, periodo } = horaObj;
 
   // Asegurarse de que la hora siempre tenga dos dígitos

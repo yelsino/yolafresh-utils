@@ -7,7 +7,6 @@ export * from './enums';
 export * from './fiscales';
 export * from './icons';
 export * from './listas';
-export * from './mappers';
 export * from './medidas-converter';
 export * from './multimedia';
 export * from './naming-conventions';

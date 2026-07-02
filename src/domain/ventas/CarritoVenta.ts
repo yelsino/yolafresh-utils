@@ -10,13 +10,83 @@ import { generarUlid } from "@/domain/shared/utils/dates";
 import { Cliente } from "@/domain/shared/interfaces/persons";
 import { IUsuario } from "@/domain/shared/interfaces/usuario";
 import { Presentacion, TipoVentaEnum } from "@/domain/shared/interfaces/producto";
-import {
-  VentaClienteSnapshot,
-  VentaDetalleSnapshot,
-  VentaImageSnapshot,
-  VentaPersonalSnapshot,
-  VentaProductSnapshot,
-} from "./snapshots";
+
+interface CarritoVentaImageSnapshot {
+  sizes: {
+    small: string;
+  };
+}
+
+interface CarritoVentaProductSnapshot {
+  id: string;
+  type?: string;
+  productoBaseId?: string;
+  nombre?: string;
+  sku?: string;
+  codigoBarra?: string;
+  tipoVenta?: TipoVentaEnum;
+  contenidoNeto?: number;
+  unidadContenido?: Presentacion["unidadContenido"];
+  tipoEmpaque?: string;
+  fraccionable?: boolean;
+  imagen?: CarritoVentaImageSnapshot;
+}
+
+interface CarritoVentaClienteSnapshot {
+  id: string;
+  nombres?: string;
+  celular?: string;
+  correo?: string;
+  dni?: string;
+  direccion?: string;
+}
+
+interface CarritoVentaPersonalSnapshot {
+  id: string;
+  username?: string;
+  email?: string;
+}
+
+interface CarritoVentaItemSnapshot {
+  id: string;
+  product: CarritoVentaProductSnapshot;
+  quantity: number;
+  precioUnitario: number;
+  montoTotal: number;
+  descuento?: number;
+  montoModificado?: boolean;
+  displayName?: string;
+  productoBaseNombre?: string;
+}
+
+interface CarritoVentaSnapshot {
+  id: string;
+  createdAt: number;
+  updatedAt: number;
+  nombre: string;
+  items: CarritoVentaItemSnapshot[];
+  subtotal: number;
+  descuentoTotal: number;
+  impuesto: number;
+  total: number;
+  cantidadItems: number;
+  cantidadTotal: number;
+  notas?: string;
+  configuracionFiscal?: {
+    tasaImpuesto?: number;
+    aplicaImpuesto?: boolean;
+    nombreImpuesto?: string;
+  };
+  tasaImpuesto: number;
+  cliente?: CarritoVentaClienteSnapshot;
+  personal?: CarritoVentaPersonalSnapshot;
+  clienteColor?: string;
+  clienteId?: string;
+  personalId?: string;
+  metodoPago?: MetodoPago;
+  dineroRecibido?: number;
+  procedencia?: ProcedenciaVenta;
+}
 
 
 
@@ -943,10 +1013,10 @@ export class CarritoVenta implements ICarritoVenta {
     return carrito;
   }
 
-  toVentaSnapshot(): VentaDetalleSnapshot {
+  toVentaSnapshot(): CarritoVentaSnapshot {
     const getImagenSnapshot = (
       product: Partial<Presentacion> | undefined,
-    ): VentaImageSnapshot | undefined => {
+    ): CarritoVentaImageSnapshot | undefined => {
       const img: any = (product as any)?.imagen;
       const small =
         (img?.sizes?.small as string | undefined) ??
@@ -958,7 +1028,7 @@ export class CarritoVenta implements ICarritoVenta {
 
     const cleanProductForVenta = (
       product: Partial<Presentacion> | undefined,
-    ): VentaProductSnapshot | undefined => {
+    ): CarritoVentaProductSnapshot | undefined => {
       if (!product) return undefined;
       if (!product) throw new Error("CarItem.product es requerido");
       const id = (product as any).id;
@@ -982,7 +1052,7 @@ export class CarritoVenta implements ICarritoVenta {
 
     const cleanClienteForVenta = (
       cliente: Cliente | undefined,
-    ): VentaClienteSnapshot | undefined => {
+    ): CarritoVentaClienteSnapshot | undefined => {
       if (!cliente) return undefined;
       return {
         id: cliente.id,
@@ -996,7 +1066,7 @@ export class CarritoVenta implements ICarritoVenta {
 
     const cleanPersonalForVenta = (
       personal: IUsuario | undefined,
-    ): VentaPersonalSnapshot | undefined => {
+    ): CarritoVentaPersonalSnapshot | undefined => {
       if (!personal) return undefined;
       return {
         id: personal.id,

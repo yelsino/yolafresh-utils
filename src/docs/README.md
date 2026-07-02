@@ -3,18 +3,32 @@
 ## Indice principal
 
 - `inventario-tecnico-yolafresh-utils.md`: mapa general de modulos, exports y estructura.
-- `cuentas-clientes.md`: definicion vigente del nuevo modelo de cuenta cliente.
-- `cuentas-clientes-reimplementacion.md`: guia de consumo del modelo nuevo.
-- `cobros-adelantos-clientes.md`: flujos de cobros, adelantos, saldo disponible y FIFO.
-- `auditoria-trazabilidad-reimplementacion.md`: capas de trazabilidad del nuevo modelo.
+- `cuenta-cliente/`: documentacion modular del Domain de cuenta cliente.
+  - `README.md`: indice del dominio.
+  - `modelo-vigente.md`: conceptos, estados, relaciones y reglas vigentes.
+  - `flujos-cobros-y-adelantos.md`: flujos operativos minimos.
+  - `trazabilidad-y-auditoria.md`: separacion entre recepcion, custodia, ledger y resumen.
+  - `guia-de-consumo.md`: interpretacion del modelo para consumers.
+- `ventas/`: documentacion modular del Domain de ventas.
+  - `README.md`: indice del dominio.
+  - `modelo-vigente.md`: conceptos, contratos, estados y reglas vigentes.
+  - `relaciones-interdominio.md`: relacion con cuenta cliente, inventario, almacen, stock, caja y pagos.
+  - `guia-de-consumo.md`: lectura e integracion recomendada para consumers.
 - `personas.md`: contratos de personas, entidades y relaciones con otros contextos.
-- `ventas-implementation-plan.md`: lineamientos de implementacion exterior para ventas.
-- `ventas-pedidos-modelo-negocio.md`: explicacion del nuevo modelado de negocio y contratos de `Venta` y `Pedido`.
 
 ## Nota
 
-La fuente de verdad del modulo de cuenta cliente es el RFC v2 ya aterrizado en:
+La fuente de verdad del modulo de cuenta cliente es el contrato vigente ya aterrizado en:
 
 - `src/domain/shared/interfaces/customer-account.ts`
+
+Los nombres canónicos del modelo actual son:
+
+- `CuentaCliente`
+- `MovimientoCuentaCliente`
+- `ImputacionCuentaCliente`
+- `RecepcionCobroCliente`
+- `TransferenciaCustodiaCobro`
+- `ResumenCuentaCliente`
 
 El modelo legacy de cuenta cliente ya no forma parte de la libreria publica.

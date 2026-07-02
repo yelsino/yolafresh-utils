@@ -92,7 +92,7 @@ Tip: puedes tratar `ejecucion` como un `RecurrenciaDispatch` para pasarlo a tu d
    - si retorna resultado:
      - persistir `EjecucionRecurrencia`
      - encolar o ejecutar un dispatcher local: `switch (ejecucion.accion)` → handler
-     - los handlers crean y persisten documentos (ej: `Egreso`, `AccountEntry`, etc.)
+     - los handlers crean y persisten documentos (ej: `Egreso`, `MovimientoCuentaCliente`, etc.)
      - actualizar la `Recurrencia` con `recurrenciaActualizada`
 
 4) Sync:

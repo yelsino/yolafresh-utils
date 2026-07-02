@@ -21,7 +21,7 @@ La fuente principal vive en `src/`. En particular:
 | `contabilidad` | Asientos, periodos, plan de cuentas y configuracion fiscal | `AsientoContable`, `LineaAsiento`, `PeriodoFiscal`, `PlanCuenta`, `FiscalUtils`, `ConfiguracionFiscalFactory` |
 | `finanzas` | Recurrencias y procesamiento de ejecuciones | `RecurrenciaEntity`, `RecurrenciaProcessor` |
 | `tesoreria` | Caja, turnos y pagos | `Caja`, `TurnoCaja`, `MovimientoCaja`, `Pago`, `EstadoPagoCapturaEnum` |
-| `cuenta-cliente` | Cuenta cliente v2 con ledger, custodia y snapshot | `CustomerAccount`, `AccountEntry`, `Allocation`, `CashReceipt`, `CustodyTransfer`, `CashBox`, `CashShift`, `AccountSnapshot` |
+| `cuenta-cliente` | Cuenta cliente v2 con ledger, custodia y resumen reconstruible | `CuentaCliente`, `MovimientoCuentaCliente`, `ImputacionCuentaCliente`, `RecepcionCobroCliente`, `TransferenciaCustodiaCobro`, `ResumenCuentaCliente` |
 | `usuarios` | Usuarios, personas y validacion de permisos | `Usuario`, `PermisoValidator`, `Personal`, `Cliente`, `Proveedor`, enums de cargos y categorias |
 | `ventas` | Venta agregada, carrito, snapshots y eventos | `Venta`, `CarritoVenta`, `VentaConfirmada`, snapshots de persistencia y helpers de venta |
 | `shared` | Contratos transversales, base DDD, value objects y utilidades | `interfaces`, `utils`, `base`, `value-objects` |

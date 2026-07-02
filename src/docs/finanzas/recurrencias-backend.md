@@ -73,7 +73,7 @@ Luego tu backend aplica:
    - si retorna resultado:
      - persistir `EjecucionRecurrencia`
      - encolar/ejecutar dispatcher → handlers especializados
-     - los handlers crean/persisten documentos (ej: `Egreso`, `AccountEntry`, `MovimientoInventario`, etc.)
+     - los handlers crean/persisten documentos (ej: `Egreso`, `MovimientoCuentaCliente`, `MovimientoInventario`, etc.)
      - persistir `recurrenciaActualizada`
 
 ### Idempotencia (obligatorio)

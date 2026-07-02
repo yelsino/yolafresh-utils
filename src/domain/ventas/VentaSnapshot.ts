@@ -1,24 +1,9 @@
 import type { Cliente } from "@/domain/shared/interfaces/persons";
 import type { IUsuario } from "@/domain/shared/interfaces/usuario";
 import { ProcedenciaVenta } from "./CarritoVenta";
-import type {
-  VentaClienteSnapshot,
-  VentaCouchMinimalSnapshot,
-  VentaDetalleSnapshot,
-  VentaItemSnapshot,
-  VentaPersistenceSnapshot,
-  VentaPersonalSnapshot,
-} from "./snapshots";
 import type { IVenta, VentaItem } from "./Venta";
 
 export const VENTA_SNAPSHOT_TYPE = "venta_snapshot" as const;
-
-type LegacyDetalleVenta =
-  | VentaDetalleSnapshot
-  | VentaPersistenceSnapshot["detalleVenta"]
-  | VentaCouchMinimalSnapshot["detalleVenta"];
-
-type LegacyDetalleVentaItem = LegacyDetalleVenta["items"][number];
 
 type VentaLike = IVenta & {
   productosUnicos?: Array<{
@@ -31,10 +16,16 @@ type VentaLike = IVenta & {
 
 type VentaSnapshotActorSource =
   | VentaSnapshotActor
-  | VentaClienteSnapshot
-  | VentaPersonalSnapshot
   | Cliente
   | IUsuario
+  | {
+      id?: string | null;
+      nombre?: string;
+      nombres?: string;
+      apellidos?: string;
+      username?: string;
+      email?: string;
+    }
   | null
   | undefined;
 
@@ -74,13 +65,11 @@ export interface VentaSnapshotBuildContext {
   id?: string;
   createdAt?: number | Date;
   items?: VentaSnapshotItem[];
-  detalleVenta?: LegacyDetalleVenta;
   cliente?: VentaSnapshotActorSource;
   vendedor?: VentaSnapshotActorSource;
 }
 
-export interface VentaSnapshotCreateInput
-  extends Omit<IVentaSnapshot, "type"> {
+export interface VentaSnapshotCreateInput extends Omit<IVentaSnapshot, "type"> {
   type?: typeof VENTA_SNAPSHOT_TYPE;
 }
 
@@ -171,103 +160,26 @@ export function mapVentaSnapshotActor(
   }
 
   if ("nombres" in source) {
-    return buildActor(source.id, source.nombres);
+    const nombreCompleto = [source.nombres, source.apellidos].filter(Boolean).join(" ");
+    return buildActor(
+      typeof source.id === "string" ? source.id : undefined,
+      nombreCompleto || source.nombres,
+    );
   }
 
   if ("username" in source) {
-    return buildActor(source.id, source.username || source.email);
+    return buildActor(
+      typeof source.id === "string" ? source.id : undefined,
+      source.username || source.email,
+    );
   }
 
   return undefined;
 }
 
-function getLegacyItemPresentacionId(item: LegacyDetalleVentaItem): string {
-  const presentacionId = safeTrim(item.product?.id);
-  if (!presentacionId) {
-    throw new Error(`Venta snapshot legacy sin product.id (${item.id})`);
-  }
-
-  return presentacionId;
-}
-
-function getLegacyItemNombre(item: LegacyDetalleVentaItem): string {
-  const nombre =
-    "displayName" in item
-      ? safeTrim(item.displayName)
-      : undefined;
-
-  const nombreProducto =
-    item.product && "nombre" in item.product
-      ? safeTrim(item.product.nombre)
-      : undefined;
-
-  const productoBaseNombre =
-    "productoBaseNombre" in item
-      ? safeTrim(item.productoBaseNombre)
-      : undefined;
-
-  return nombre ?? nombreProducto ?? productoBaseNombre ?? getLegacyItemPresentacionId(item);
-}
-
-function getLegacyItemTotal(item: LegacyDetalleVentaItem): number {
-  const quantity = Number(item.quantity ?? 0);
-  const precioUnitario = Number(item.precioUnitario ?? 0);
-  const descuento = Number(item.descuento ?? 0);
-  const montoTotal = Number(item.montoTotal ?? Number.NaN);
-
-  if (Number.isFinite(montoTotal)) {
-    return roundMoney(montoTotal);
-  }
-
-  return roundMoney(quantity * precioUnitario - descuento);
-}
-
-function getLegacyImagenUrl(item: LegacyDetalleVentaItem): string | undefined {
-  const imagenSmall = safeTrim(item.product?.imagen?.sizes?.small);
-  return imagenSmall;
-}
-
-function getLegacyUnidadComercial(item: LegacyDetalleVentaItem): string | undefined {
-  const contenidoNeto = item.product?.contenidoNeto;
-  const unidadContenido = item.product?.unidadContenido;
-  const tipoEmpaque = safeTrim(item.product?.tipoEmpaque);
-  const tipoVenta =
-    item.product?.tipoVenta !== undefined
-      ? String(item.product.tipoVenta)
-      : undefined;
-
-  if (typeof contenidoNeto === "number" && unidadContenido !== undefined) {
-    return `${contenidoNeto} ${String(unidadContenido)}`;
-  }
-
-  return tipoEmpaque ?? tipoVenta;
-}
-
-export function mapLegacyVentaItemToSnapshotItem(
-  item: LegacyDetalleVentaItem,
-): VentaSnapshotItem {
-  const presentacionId = getLegacyItemPresentacionId(item);
-  const cantidadVendida = Number(item.quantity ?? 0);
-  const precioUnitario = Number(item.precioUnitario ?? 0);
-  const descuento =
-    typeof item.descuento === "number" ? Number(item.descuento) : undefined;
-
-  return {
-    id: item.id,
-    presentacionId,
-    nombre: getLegacyItemNombre(item),
-    cantidadVendida,
-    precioUnitario,
-    total: getLegacyItemTotal(item),
-    imagenUrl: getLegacyImagenUrl(item),
-    unidadComercial: getLegacyUnidadComercial(item),
-    descuento,
-  };
-}
-
 export function mapVentaItemToSnapshotItem(
   item: VentaItem,
-  options?: { nombre?: string },
+  options?: { nombre?: string; imagenUrl?: string; unidadComercial?: string },
 ): VentaSnapshotItem {
   const descuento =
     typeof item.descuento === "number" ? Number(item.descuento) : undefined;
@@ -285,6 +197,8 @@ export function mapVentaItemToSnapshotItem(
             Number(item.precioUnitario ?? 0) * Number(item.cantidadVendida ?? 0) -
               Number(item.descuento ?? 0),
           ),
+    imagenUrl: safeTrim(options?.imagenUrl),
+    unidadComercial: safeTrim(options?.unidadComercial),
     descuento,
   };
 }
@@ -301,10 +215,6 @@ function mapVentaItemsFromVenta(venta: VentaLike): VentaSnapshotItem[] {
       nombre: nombresPorPresentacion.get(item.presentacionId),
     }),
   );
-}
-
-function mapVentaItemsFromDetalle(detalleVenta: LegacyDetalleVenta): VentaSnapshotItem[] {
-  return detalleVenta.items.map((item) => mapLegacyVentaItemToSnapshotItem(item));
 }
 
 export function isVentaSnapshotImmutableState(
@@ -335,6 +245,9 @@ export class VentaSnapshot implements IVentaSnapshot {
     this.items = Object.freeze(
       data.items.map((item) => ({
         ...item,
+        nombre: safeTrim(item.nombre) ?? item.presentacionId,
+        imagenUrl: safeTrim(item.imagenUrl),
+        unidadComercial: safeTrim(item.unidadComercial),
         cantidadVendida: Number(item.cantidadVendida ?? 0),
         precioUnitario: roundMoney(Number(item.precioUnitario ?? 0)),
         total: roundMoney(Number(item.total ?? 0)),
@@ -379,15 +292,15 @@ export class VentaSnapshot implements IVentaSnapshot {
     return this.toJSON();
   }
 
+  static fromJSON(snapshot: IVentaSnapshot): VentaSnapshot {
+    return new VentaSnapshot(snapshot);
+  }
+
   static fromVenta(
     venta: VentaLike,
     context: VentaSnapshotBuildContext = {},
   ): VentaSnapshot {
-    const items =
-      context.items ??
-      (context.detalleVenta
-        ? mapVentaItemsFromDetalle(context.detalleVenta)
-        : mapVentaItemsFromVenta(venta));
+    const items = context.items ?? mapVentaItemsFromVenta(venta);
 
     return new VentaSnapshot({
       id: safeTrim(context.id) ?? buildVentaSnapshotId(venta.id),
@@ -401,40 +314,6 @@ export class VentaSnapshot implements IVentaSnapshot {
       procedencia: venta.procedencia,
       cliente: mapVentaSnapshotActor(context.cliente),
       vendedor: mapVentaSnapshotActor(context.vendedor),
-    });
-  }
-
-  static fromPersistenceSnapshot(
-    snapshot: VentaPersistenceSnapshot,
-  ): VentaSnapshot {
-    return new VentaSnapshot({
-      id: buildVentaSnapshotId(snapshot.id),
-      ventaId: snapshot.id,
-      createdAt: snapshot.createdAt,
-      items: mapVentaItemsFromDetalle(snapshot.detalleVenta),
-      subtotal: snapshot.subtotal,
-      impuesto: snapshot.impuesto,
-      total: snapshot.total,
-      codigoVenta: snapshot.codigoVenta,
-      procedencia: snapshot.procedencia as ProcedenciaVenta,
-      cliente: mapVentaSnapshotActor(snapshot.detalleVenta.cliente),
-      vendedor: mapVentaSnapshotActor(snapshot.detalleVenta.personal),
-    });
-  }
-
-  static fromCouchSnapshot(snapshot: VentaCouchMinimalSnapshot): VentaSnapshot {
-    return new VentaSnapshot({
-      id: buildVentaSnapshotId(snapshot.id),
-      ventaId: snapshot.id,
-      createdAt: snapshot.createdAt,
-      items: mapVentaItemsFromDetalle(snapshot.detalleVenta),
-      subtotal: snapshot.subtotal,
-      impuesto: snapshot.impuesto,
-      total: snapshot.total,
-      codigoVenta: snapshot.codigoVenta,
-      procedencia: snapshot.procedencia as ProcedenciaVenta,
-      cliente: mapVentaSnapshotActor(snapshot.detalleVenta.cliente),
-      vendedor: mapVentaSnapshotActor(snapshot.detalleVenta.personal),
     });
   }
 
@@ -471,7 +350,10 @@ export class VentaSnapshot implements IVentaSnapshot {
       errores.push("VentaSnapshot.total no puede ser negativo");
     }
 
-    if (roundMoney(Number(data.subtotal ?? 0) + Number(data.impuesto ?? 0)) !== roundMoney(Number(data.total ?? 0))) {
+    if (
+      roundMoney(Number(data.subtotal ?? 0) + Number(data.impuesto ?? 0)) !==
+      roundMoney(Number(data.total ?? 0))
+    ) {
       errores.push("VentaSnapshot.total debe ser consistente con subtotal + impuesto");
     }
 

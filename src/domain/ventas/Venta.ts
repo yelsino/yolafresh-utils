@@ -1,9 +1,10 @@
 import { CarItem, CarritoVenta, ICarritoVenta, ProcedenciaVenta } from "./CarritoVenta";
 import { AggregateRoot } from "@/domain/shared/base/AggregateRoot";
 import { VentaConfirmada } from "./events/VentaConfirmada";
-import { OrderState, VentaState } from "@/domain/shared/utils/enums";
+import { VentaState } from "@/domain/shared/utils/enums";
 import {
   VentaCouchMinimalSnapshot,
+  VentaItemPersistenceSnapshot,
   VentaPersistenceSnapshot,
 } from "./snapshots";
 import {
@@ -43,58 +44,13 @@ export interface IVenta {
   numeroVenta?: string;
 }
 
-interface VentaLegacyCompatibilityFields {
-  detalleVenta?: ICarritoVenta;
-  tipoPago?: string;
-  finanzaId?: string;
-  turnoCajaId?: string;
-  esPedido?: boolean;
-}
-
-export interface VentaCreateInput
-  extends Omit<IVenta, "estado"> {
+export interface VentaCreateInput extends Omit<IVenta, "estado"> {
   estado: VentaState;
-}
-
-interface VentaLegacyInput
-  extends Partial<Omit<IVenta, "estado">>,
-    VentaLegacyCompatibilityFields {
-  id: string;
-  nombre: string;
-  estado: VentaState | OrderState;
-  subtotal: number;
-  impuesto: number;
-  total: number;
-  procedencia: ProcedenciaVenta;
 }
 
 export class Venta extends AggregateRoot<string> implements IVenta {
   static roundMoney(value: number): number {
     return Math.round(value * 100) / 100;
-  }
-
-  private static normalizeLegacyEstado(
-    estado: VentaState | OrderState | string | undefined,
-  ): VentaState {
-    switch (estado) {
-      case VentaState.CONFIRMADA:
-      case "CONFIRMADA":
-        return VentaState.CONFIRMADA;
-      case VentaState.DESPACHADA:
-      case "DESPACHADA":
-      case OrderState.DESPACHADO:
-      case OrderState.ENTREGADO:
-      case "DESPACHADO":
-      case "ENTREGADO":
-        return VentaState.DESPACHADA;
-      case VentaState.ANULADA:
-      case "ANULADA":
-      case OrderState.CANCELADO:
-      case "CANCELADO":
-        return VentaState.ANULADA;
-      default:
-        return VentaState.CONFIRMADA;
-    }
   }
 
   private static mapCarItemToVentaItem(item: CarItem): VentaItem {
@@ -107,67 +63,29 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       id: item.id,
       presentacionId,
       cantidadVendida: Number(item.quantity ?? 0),
-      precioUnitario: Number(
-        item.precioUnitario ?? item.product?.precioVenta ?? 0,
-      ),
+      precioUnitario: Number(item.precioUnitario ?? item.product?.precioVenta ?? 0),
       montoTotal:
         typeof item.montoTotal === "number" ? Venta.roundMoney(item.montoTotal) : undefined,
       montoModificado:
         typeof item.montoModificado === "boolean" ? item.montoModificado : undefined,
-      descuento: typeof item.descuento === "number" ? item.descuento : undefined,
+      descuento: typeof item.descuento === "number" ? Number(item.descuento) : undefined,
     };
   }
 
-  private static mapVentaItemToCarItem(item: VentaItem): CarItem {
-    const montoBase =
-      typeof item.montoTotal === "number"
-        ? Venta.roundMoney(item.montoTotal)
-        : Venta.roundMoney(item.precioUnitario * item.cantidadVendida);
+  private static mapVentaItemToPersistenceSnapshot(
+    item: VentaItem,
+  ): VentaItemPersistenceSnapshot {
     return {
       id: item.id,
-      product: { id: item.presentacionId },
-      quantity: item.cantidadVendida,
-      precioUnitario: item.precioUnitario,
-      montoTotal: montoBase,
+      presentacionId: item.presentacionId,
+      cantidadVendida: Number(item.cantidadVendida ?? 0),
+      precioUnitario: Number(item.precioUnitario ?? 0),
       montoModificado:
         typeof item.montoModificado === "boolean" ? item.montoModificado : undefined,
-      descuento: item.descuento,
+      montoTotal:
+        typeof item.montoTotal === "number" ? Venta.roundMoney(item.montoTotal) : undefined,
+      descuento: typeof item.descuento === "number" ? Number(item.descuento) : undefined,
     };
-  }
-
-  private static buildDetalleVentaCompat(
-    data: IVenta,
-    createdAt: Date,
-    updatedAt: Date,
-  ): ICarritoVenta {
-    const carItems = data.items.map((item) => Venta.mapVentaItemToCarItem(item));
-    const descuentoTotal = data.items.reduce(
-      (sum, item) => sum + Number(item.descuento ?? 0),
-      0,
-    );
-    const cantidadTotal = data.items.reduce(
-      (sum, item) => sum + Number(item.cantidadVendida ?? 0),
-      0,
-    );
-    const detalleTotal = Venta.roundMoney(data.total - (data.montoRedondeo ?? 0));
-
-    return Object.freeze({
-      id: `${data.id}-detalle`,
-      createdAt,
-      updatedAt,
-      nombre: data.nombre,
-      items: carItems,
-      subtotal: data.subtotal,
-      impuesto: data.impuesto,
-      total: detalleTotal,
-      descuentoTotal,
-      cantidadItems: data.items.length,
-      cantidadTotal,
-      tasaImpuesto: 0,
-      clienteId: data.clienteId,
-      personalId: data.vendedorId,
-      procedencia: data.procedencia,
-    });
   }
 
   public readonly nombre: string;
@@ -187,7 +105,6 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   public readonly vendedorId?: string;
   public readonly codigoVenta?: string;
   public readonly numeroVenta?: string;
-  private _detalleVentaCompat: ICarritoVenta;
 
   constructor(data: VentaCreateInput) {
     super(data.id);
@@ -211,9 +128,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
             ? Venta.roundMoney(Number(item.montoTotal))
             : undefined,
         montoModificado:
-          typeof item.montoModificado === "boolean"
-            ? item.montoModificado
-            : undefined,
+          typeof item.montoModificado === "boolean" ? item.montoModificado : undefined,
         descuento:
           typeof item.descuento === "number" ? Number(item.descuento) : undefined,
       })),
@@ -226,18 +141,14 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     this.subtotal = Venta.roundMoney(Number(data.subtotal ?? 0));
     this.impuesto = Venta.roundMoney(Number(data.impuesto ?? 0));
     this.total = Venta.roundMoney(Number(data.total ?? 0));
-    this.montoRedondeo = Number(data.montoRedondeo ?? 0);
+    this.montoRedondeo =
+      data.montoRedondeo === undefined ? undefined : Number(data.montoRedondeo);
     this.procedencia = data.procedencia;
     this.clienteId = data.clienteId;
     this.vendedorId = data.vendedorId;
     this.codigoVenta = data.codigoVenta;
     this.numeroVenta = data.numeroVenta;
     this.costoEnvio = data.costoEnvio;
-    this._detalleVentaCompat = Venta.buildDetalleVentaCompat(
-      this.toJSON(),
-      this.createdAt,
-      this.updatedAt,
-    );
 
     const validation = Venta.validar(data);
     if (!validation.valida) {
@@ -257,10 +168,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   }
 
   get estaProcesada(): boolean {
-    return (
-      this.estado === VentaState.CONFIRMADA ||
-      this.estado === VentaState.DESPACHADA
-    );
+    return this.estado === VentaState.CONFIRMADA || this.estado === VentaState.DESPACHADA;
   }
 
   /**
@@ -304,14 +212,6 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     cantidadTotal: number;
     montoTotal: number;
   }> {
-    const nombres = new Map<string, string>();
-    this._detalleVentaCompat.items.forEach((item) => {
-      const productId = String(item.product?.id || "").trim();
-      if (productId) {
-        nombres.set(productId, item.product?.nombre ?? productId);
-      }
-    });
-
     const productosMap = new Map<
       string,
       { id: string; nombre: string; cantidadTotal: number; montoTotal: number }
@@ -328,13 +228,16 @@ export class Venta extends AggregateRoot<string> implements IVenta {
 
       productosMap.set(item.presentacionId, {
         id: item.presentacionId,
-        nombre: nombres.get(item.presentacionId) ?? item.presentacionId,
+        nombre: item.presentacionId,
         cantidadTotal: item.cantidadVendida,
         montoTotal: montoItem,
       });
     });
 
-    return Array.from(productosMap.values());
+    return Array.from(productosMap.values()).map((producto) => ({
+      ...producto,
+      montoTotal: Venta.roundMoney(producto.montoTotal),
+    }));
   }
 
   confirmar() {
@@ -371,10 +274,6 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   }
 
   toPersistenceSnapshot(): VentaPersistenceSnapshot {
-    const detalleVenta = CarritoVenta.fromJSON(
-      this._detalleVentaCompat,
-    ).toVentaSnapshot();
-
     return {
       id: this.id,
       nombre: this.nombre,
@@ -383,7 +282,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       pedidoId: this.pedidoId,
       createdAt: this.createdAt.getTime(),
       updatedAt: this.updatedAt.getTime(),
-      detalleVenta,
+      items: this.items.map((item) => Venta.mapVentaItemToPersistenceSnapshot(item)),
       costoEnvio: this.costoEnvio,
       subtotal: this.subtotal,
       impuesto: this.impuesto,
@@ -398,145 +297,12 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   }
 
   toVentaSnapshot(context: VentaSnapshotBuildContext = {}): IVentaSnapshot {
-    return VentaSnapshot.fromVenta(this, {
-      ...context,
-      detalleVenta: context.detalleVenta ?? this.toPersistenceSnapshot().detalleVenta,
-    }).toJSON();
+    return VentaSnapshot.fromVenta(this, context).toJSON();
   }
 
   toCouchSnapshotMinimal(): VentaCouchMinimalSnapshot {
-    const getImagenSnapshot = (
-      product: Partial<CarItem["product"]> | undefined,
-    ): { sizes: { small: string } } | undefined => {
-      const img = (
-        product as
-          | { imagen?: { sizes?: { small?: string }; base?: string } }
-          | undefined
-      )?.imagen;
-      const small = img?.sizes?.small ?? img?.base ?? "";
-      const clean = String(small || "").trim();
-      return clean ? { sizes: { small: clean } } : undefined;
-    };
-
-    const compactItemId = (item: CarItem): string => {
-      const rawId = String(item.id || "").trim();
-      const productId = String(item.product?.id || "").trim();
-      if (!rawId) return productId || this.id;
-      const parts = rawId.split("_").filter(Boolean);
-      const base = parts[0] || rawId;
-      const suffix = parts.length > 1 ? parts[parts.length - 1] : "";
-      const baseShort =
-        base.length > 12 ? `${base.slice(0, 8)}${base.slice(-4)}` : base;
-      return suffix ? `${baseShort}_${suffix}` : baseShort;
-    };
-
-    const detalleVenta = this._detalleVentaCompat;
-    const items = detalleVenta.items
-      .map((item) => {
-        const productId = String(item.product?.id || "").trim();
-        if (!productId) return null;
-
-        return {
-          id: compactItemId(item),
-          product: {
-            id: productId,
-            type:
-              typeof (item.product as { type?: unknown })?.type === "string"
-                ? String((item.product as { type?: string }).type)
-                : undefined,
-            productoBaseId:
-              typeof (item.product as { productoBaseId?: unknown })
-                ?.productoBaseId === "string"
-                ? String(
-                    (item.product as { productoBaseId?: string }).productoBaseId,
-                  )
-                : undefined,
-            tipoVenta: item.product?.tipoVenta,
-            contenidoNeto:
-              typeof item.product?.contenidoNeto === "number"
-                ? item.product.contenidoNeto
-                : undefined,
-            unidadContenido: item.product?.unidadContenido,
-            tipoEmpaque:
-              typeof item.product?.tipoEmpaque === "string"
-                ? item.product.tipoEmpaque
-                : undefined,
-            fraccionable:
-              typeof item.product?.fraccionable === "boolean"
-                ? item.product.fraccionable
-                : undefined,
-            imagen: getImagenSnapshot(item.product),
-          },
-          quantity: Number(item.quantity || 0),
-          precioUnitario:
-            typeof item.precioUnitario === "number"
-              ? item.precioUnitario
-              : undefined,
-          montoTotal:
-            typeof item.montoTotal === "number" ? item.montoTotal : undefined,
-          montoModificado:
-            typeof item.montoModificado === "boolean"
-              ? item.montoModificado
-              : undefined,
-          descuento:
-            typeof item.descuento === "number" ? item.descuento : undefined,
-        };
-      })
-      .filter((item): item is NonNullable<typeof item> => Boolean(item));
-
     return {
-      id: this.id,
-      nombre: this.nombre,
-      type: this.type,
-      estado: this.estado,
-      pedidoId: this.pedidoId,
-      createdAt: this.createdAt.getTime(),
-      updatedAt: this.updatedAt.getTime(),
-      detalleVenta: {
-        items,
-        subtotal: detalleVenta.subtotal,
-        impuesto: detalleVenta.impuesto,
-        total: detalleVenta.total,
-        descuentoTotal: detalleVenta.descuentoTotal,
-        cantidadItems: detalleVenta.cantidadItems,
-        cantidadTotal: detalleVenta.cantidadTotal,
-        tasaImpuesto: detalleVenta.tasaImpuesto,
-        notas: detalleVenta.notas,
-        configuracionFiscal: detalleVenta.configuracionFiscal,
-        cliente: detalleVenta.cliente
-          ? {
-              id: detalleVenta.cliente.id,
-              nombres: detalleVenta.cliente.nombres,
-              celular: detalleVenta.cliente.celular,
-              correo: detalleVenta.cliente.correo,
-              dni: detalleVenta.cliente.dni,
-              direccion: detalleVenta.cliente.direccion,
-            }
-          : undefined,
-        personal: detalleVenta.personal
-          ? {
-              id: detalleVenta.personal.id,
-              username: detalleVenta.personal.username,
-              email: detalleVenta.personal.email,
-            }
-          : undefined,
-        clienteColor: detalleVenta.clienteColor,
-        metodoPago: detalleVenta.metodoPago,
-        dineroRecibido: detalleVenta.dineroRecibido,
-        procedencia: detalleVenta.procedencia,
-        clienteId: detalleVenta.clienteId,
-        personalId: detalleVenta.personalId,
-      },
-      costoEnvio: this.costoEnvio,
-      subtotal: this.subtotal,
-      impuesto: this.impuesto,
-      total: this.total,
-      montoRedondeo: this.montoRedondeo,
-      procedencia: this.procedencia,
-      clienteId: this.clienteId,
-      vendedorId: this.vendedorId,
-      codigoVenta: this.codigoVenta,
-      numeroVenta: this.numeroVenta,
+      ...this.toPersistenceSnapshot(),
     };
   }
 
@@ -549,22 +315,19 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     const montoRedondeo = options?.montoRedondeo ?? 0;
     const carritoInstance = CarritoVenta.fromJSON(carritoJSON);
     const detalle = carritoInstance.toJSON();
-    const detalleFinal: ICarritoVenta = {
-      ...detalle,
-      updatedAt: ahora,
-    };
-    const totalFinal = Venta.roundMoney(detalleFinal.total + montoRedondeo);
-    const venta = new Venta({
+    const totalFinal = Venta.roundMoney(detalle.total + montoRedondeo);
+
+    return new Venta({
       id,
       nombre: options?.nombre ?? carritoJSON.nombre ?? "Venta",
       type: "venta",
       estado: VentaState.CONFIRMADA,
       createdAt: ahora,
       updatedAt: ahora,
-      items: detalleFinal.items.map((item) => Venta.mapCarItemToVentaItem(item)),
+      items: detalle.items.map((item) => Venta.mapCarItemToVentaItem(item)),
       pedidoId: options?.pedidoId,
-      subtotal: detalleFinal.subtotal,
-      impuesto: detalleFinal.impuesto,
+      subtotal: detalle.subtotal,
+      impuesto: detalle.impuesto,
       total: totalFinal,
       montoRedondeo,
       procedencia: carritoJSON.procedencia || ProcedenciaVenta.Tienda,
@@ -573,117 +336,6 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       codigoVenta: "",
       numeroVenta: "",
       costoEnvio: 0,
-    });
-    venta._detalleVentaCompat = Object.freeze(
-      CarritoVenta.fromJSON(detalleFinal).toJSON(),
-    );
-    return venta;
-  }
-
-  static fromLegacyInput(data: VentaLegacyInput): Venta {
-    const items =
-      Array.isArray(data.items) && data.items.length > 0
-        ? data.items
-        : data.detalleVenta?.items?.map((item) => Venta.mapCarItemToVentaItem(item)) ?? [];
-
-    const pedidoId =
-      typeof data.pedidoId === "string" && data.pedidoId.trim() !== ""
-        ? data.pedidoId
-        : data.esPedido
-          ? data.id
-          : undefined;
-
-    const venta = new Venta({
-      id: data.id,
-      nombre: data.nombre,
-      type: data.type || "venta",
-      estado: Venta.normalizeLegacyEstado(data.estado),
-      items,
-      pedidoId,
-      createdAt: data.createdAt,
-      updatedAt: data.updatedAt,
-      costoEnvio: data.costoEnvio,
-      subtotal: Number(data.subtotal ?? 0),
-      impuesto: Number(data.impuesto ?? 0),
-      total: Number(data.total ?? 0),
-      montoRedondeo: data.montoRedondeo,
-      procedencia: data.procedencia,
-      clienteId: data.clienteId,
-      vendedorId: data.vendedorId,
-      codigoVenta: data.codigoVenta,
-      numeroVenta: data.numeroVenta,
-    });
-
-    if (data.detalleVenta?.items?.length) {
-      venta._detalleVentaCompat = Object.freeze(
-        CarritoVenta.fromJSON(data.detalleVenta).toJSON(),
-      );
-    }
-
-    return venta;
-  }
-
-  static fromPersistenceSnapshot(snapshot: VentaPersistenceSnapshot): Venta {
-    return Venta.fromLegacyInput({
-      id: snapshot.id,
-      nombre: snapshot.nombre,
-      type: snapshot.type,
-      estado: snapshot.estado as VentaState | OrderState,
-      pedidoId: snapshot.pedidoId,
-      createdAt: new Date(snapshot.createdAt),
-      updatedAt: new Date(snapshot.updatedAt),
-      detalleVenta: CarritoVenta.fromJSON({
-        ...snapshot.detalleVenta,
-        createdAt: new Date(snapshot.detalleVenta.createdAt),
-        updatedAt: new Date(snapshot.detalleVenta.updatedAt),
-      }).toJSON(),
-      costoEnvio: snapshot.costoEnvio,
-      subtotal: snapshot.subtotal,
-      impuesto: snapshot.impuesto,
-      total: snapshot.total,
-      montoRedondeo: snapshot.montoRedondeo,
-      procedencia: snapshot.procedencia as ProcedenciaVenta,
-      clienteId: snapshot.clienteId,
-      vendedorId: snapshot.vendedorId,
-      codigoVenta: snapshot.codigoVenta,
-      numeroVenta: snapshot.numeroVenta,
-      esPedido: snapshot.esPedido,
-      tipoPago: snapshot.tipoPago,
-      finanzaId: snapshot.finanzaId,
-      turnoCajaId: snapshot.turnoCajaId,
-    });
-  }
-
-  static fromCouchSnapshot(snapshot: VentaCouchMinimalSnapshot): Venta {
-    return Venta.fromLegacyInput({
-      id: snapshot.id,
-      nombre: snapshot.nombre,
-      type: snapshot.type,
-      estado: snapshot.estado as VentaState | OrderState,
-      pedidoId: snapshot.pedidoId,
-      createdAt: new Date(snapshot.createdAt),
-      updatedAt: new Date(snapshot.updatedAt),
-      detalleVenta: CarritoVenta.fromJSON({
-        ...snapshot.detalleVenta,
-        id: snapshot.id,
-        nombre: snapshot.nombre,
-        createdAt: new Date(snapshot.createdAt),
-        updatedAt: new Date(snapshot.updatedAt),
-      }).toJSON(),
-      costoEnvio: snapshot.costoEnvio,
-      subtotal: snapshot.subtotal,
-      impuesto: snapshot.impuesto,
-      total: snapshot.total,
-      montoRedondeo: snapshot.montoRedondeo,
-      procedencia: snapshot.procedencia as ProcedenciaVenta,
-      clienteId: snapshot.clienteId,
-      vendedorId: snapshot.vendedorId,
-      codigoVenta: snapshot.codigoVenta,
-      numeroVenta: snapshot.numeroVenta,
-      esPedido: snapshot.esPedido,
-      tipoPago: snapshot.tipoPago,
-      finanzaId: snapshot.finanzaId,
-      turnoCajaId: snapshot.turnoCajaId,
     });
   }
 
@@ -759,7 +411,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       (sum, item) => sum + this.calcularTotalItem(item),
       0,
     );
-    return Venta.roundMoney(totalItems + this.impuesto + (this.montoRedondeo ?? 0));
+    return Venta.roundMoney(totalItems + this.impuesto + Number(this.montoRedondeo ?? 0));
   }
 }
 

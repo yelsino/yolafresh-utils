@@ -2,106 +2,168 @@ import { MetodoPago } from "./finanzas";
 
 export type MonedaCuentaCliente = "PEN" | "USD";
 
-export type EstadoCuentaCliente = "ACTIVE" | "SUSPENDED" | "CLOSED";
+export type EstadoCuentaCliente = "ACTIVA" | "SUSPENDIDA" | "CERRADA";
 
-export interface CustomerAccount {
+export type EstadoMovimientoCuentaCliente =
+  | "CONFIRMADO"
+  | "ANULADO"
+  | "RECHAZADO"
+  | "CONTABILIZADO"
+  | "REVERTIDO";
+
+export type EstadoImputacionCuentaCliente = "APLICADA" | "REVERTIDA";
+
+export type RolRecepcionCobroCliente = "CAJERO" | "VENDEDOR" | "SISTEMA";
+
+export interface CuentaCliente {
   id: string;
   clienteId: string;
   estado: EstadoCuentaCliente;
+  moneda?: MonedaCuentaCliente;
+  aperturaAt?: Date;
+  cierreAt?: Date;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
-export type TipoAccountEntry = "DEPOSIT" | "PAYMENT" | "SALE" | "REFUND" | "REVERSAL";
+export type TipoMovimientoCuentaCliente =
+  | "DEPOSITO"
+  | "COBRO"
+  | "VENTA"
+  | "DEVOLUCION"
+  | "REVERSA"
+  | "AJUSTE";
 
-export type DireccionAccountEntry = "CREDIT" | "DEBIT";
+export type DireccionMovimientoCuentaCliente = "CREDITO" | "DEBITO";
 
-export type OrigenAccountEntry =
-  | "CASH_RECEIPT"
-  | "SALE"
-  | "ORDER"
-  | "REFUND"
-  | "REVERSAL"
-  | "RECURRENCE"
-  | "MANUAL_ADJUSTMENT"
-  | "EXTERNAL";
+export type OrigenMovimientoCuentaCliente =
+  | "RECIBO_COBRO"
+  | "COBRO"
+  | "DEPOSITO"
+  | "VENTA"
+  | "PEDIDO"
+  | "DEVOLUCION"
+  | "REVERSA"
+  | "RECURRENCIA"
+  | "TRANSFERENCIA_CUSTODIA"
+  | "MIGRACION"
+  | "MANUAL"
+  | "AJUSTE_MANUAL"
+  | "EXTERNO";
 
-export interface AccountEntry {
+export interface MovimientoCuentaCliente {
   id: string;
-  accountId: string;
-  entryType: TipoAccountEntry;
-  direction: DireccionAccountEntry;
-  amount: number;
+  cuentaId: string;
+  clienteId?: string;
+  tipo: TipoMovimientoCuentaCliente;
+  direccion: DireccionMovimientoCuentaCliente;
+  monto: number;
   moneda: MonedaCuentaCliente;
-  originType: OrigenAccountEntry;
-  originId: string;
+  tipoOrigen: OrigenMovimientoCuentaCliente;
+  origenId: string;
+  estado?: EstadoMovimientoCuentaCliente;
+  descripcion?: string;
+  recepcionCobroId?: string;
+  cajaId?: string;
+  turnoCajaId?: string;
+  custodioId?: string;
   idempotencyKey?: string;
+  creadoPorId?: string;
+  reversaDeMovimientoId?: string;
+  deltaSaldoFavor?: number;
+  deltaSaldoPorCobrar?: number;
+  occurredAt?: Date;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
-export interface Allocation {
+export interface ImputacionCuentaCliente {
   id: string;
-  sourceEntryId: string;
-  targetEntryId: string;
-  amount: number;
+  cuentaId?: string;
+  clienteId?: string;
+  movimientoOrigenId: string;
+  movimientoDestinoId: string;
+  monto: number;
   moneda: MonedaCuentaCliente;
+  estado?: EstadoImputacionCuentaCliente;
+  estrategia?: "FIFO";
   createdAt: Date;
 }
 
-export type EstadoCashReceipt = "CREATED" | "RECEIVED" | "REJECTED" | "CANCELLED";
+export type EstadoRecepcionCobroCliente =
+  | "CREADO"
+  | "RECIBIDO"
+  | "EN_TRANSFERENCIA_CUSTODIA"
+  | "LIQUIDADO"
+  | "RECHAZADO"
+  | "ANULADO";
 
-export interface CashReceipt {
+export interface RecepcionCobroCliente {
   id: string;
   clienteId: string;
-  amount: number;
+  cuentaId?: string;
+  monto: number;
   moneda: MonedaCuentaCliente;
-  paymentMethod: MetodoPago;
-  createdById: string;
-  estado: EstadoCashReceipt;
+  metodoPago: MetodoPago;
+  creadoPorId: string;
+  recibidoPorUsuarioId?: string;
+  recibidoPorRol?: RolRecepcionCobroCliente;
+  custodioId?: string;
+  cajaId?: string;
+  turnoCajaId?: string;
+  tipoOrigen?: OrigenMovimientoCuentaCliente;
+  origenId?: string;
+  estado: EstadoRecepcionCobroCliente;
   idempotencyKey: string;
+  occurredAt?: Date;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
-export type EstadoCustodyTransfer = "CREATED" | "RECEIVED" | "REJECTED" | "CANCELLED";
+export type EstadoTransferenciaCustodiaCobro =
+  | "CREADA"
+  | "RECIBIDA"
+  | "PENDIENTE"
+  | "ACEPTADA"
+  | "RECHAZADA"
+  | "ANULADA";
 
-export interface CustodyTransfer {
+export interface TransferenciaCustodiaCobro {
   id: string;
-  receiptId: string;
-  fromActorId: string;
-  toActorId: string;
-  fromShiftId: string;
-  toShiftId: string;
-  estado: EstadoCustodyTransfer;
-  receivedById?: string;
-  rejectedById?: string;
-  cancelledById?: string;
-  rejectionReason?: string;
-  cancellationReason?: string;
+  recepcionCobroId: string;
+  custodioOrigenId: string;
+  custodioDestinoId: string;
+  turnoCajaOrigenId: string;
+  turnoCajaDestinoId: string;
+  cajaOrigenId?: string;
+  cajaDestinoId?: string;
+  estado: EstadoTransferenciaCustodiaCobro;
+  idempotencyKey?: string;
+  recibidaPorId?: string;
+  rechazadaPorId?: string;
+  anuladaPorId?: string;
+  motivoRechazo?: string;
+  motivoAnulacion?: string;
+  solicitadaAt?: Date;
+  aceptadaAt?: Date;
   createdAt: Date;
-  resolvedAt?: Date;
+  resueltaAt?: Date;
 }
 
-export type EstadoCashShift = "OPEN" | "CLOSED";
-
-export interface CashShift {
-  id: string;
-  cashBoxId: string;
-  cashierId: string;
-  openedAt: Date;
-  closedAt?: Date;
-  estado: EstadoCashShift;
-}
-
-export type EstadoCashBox = "ACTIVE" | "INACTIVE";
-
-export interface CashBox {
-  id: string;
-  estado: EstadoCashBox;
-}
-
-export interface AccountSnapshot {
-  accountId: string;
-  availableBalance: number;
-  receivableBalance: number;
+export interface ResumenCuentaCliente {
+  id?: string;
+  cuentaId: string;
+  clienteId?: string;
+  saldoFavor: number;
+  saldoPorCobrar: number;
+  saldoCreditoNoAplicado?: number;
   moneda: MonedaCuentaCliente;
+  ultimoAsientoId?: string;
+  ultimoAsientoAt?: Date;
+  cantidadAsientosFuente?: number;
+  cantidadImputacionesFuente?: number;
+  version?: number;
+  reconstruidaAt?: Date;
+  createdAt?: Date;
   updatedAt: Date;
 }
