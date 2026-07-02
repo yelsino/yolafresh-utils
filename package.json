@@ -157,10 +157,94 @@
   },
   "files": [
     "dist",
-    "src/docs"
+    "src/docs",
+    "ventas",
+    "compras",
+    "inventario",
+    "tesoreria",
+    "finanzas",
+    "personas",
+    "contabilidad",
+    "shared"
   ],
+  "typesVersions": {
+    "*": {
+      "ventas": [
+        "ventas/index.d.ts"
+      ],
+      "ventas/contracts": [
+        "ventas/contracts/index.d.ts"
+      ],
+      "ventas/entities": [
+        "ventas/entities/index.d.ts"
+      ],
+      "ventas/events": [
+        "ventas/events/index.d.ts"
+      ],
+      "compras": [
+        "compras/index.d.ts"
+      ],
+      "compras/contracts": [
+        "compras/contracts/index.d.ts"
+      ],
+      "compras/entities": [
+        "compras/entities/index.d.ts"
+      ],
+      "inventario": [
+        "inventario/index.d.ts"
+      ],
+      "inventario/contracts": [
+        "inventario/contracts/index.d.ts"
+      ],
+      "tesoreria": [
+        "tesoreria/index.d.ts"
+      ],
+      "tesoreria/contracts": [
+        "tesoreria/contracts/index.d.ts"
+      ],
+      "finanzas": [
+        "finanzas/index.d.ts"
+      ],
+      "finanzas/contracts": [
+        "finanzas/contracts/index.d.ts"
+      ],
+      "finanzas/entities": [
+        "finanzas/entities/index.d.ts"
+      ],
+      "personas": [
+        "personas/index.d.ts"
+      ],
+      "personas/contracts": [
+        "personas/contracts/index.d.ts"
+      ],
+      "personas/entities": [
+        "personas/entities/index.d.ts"
+      ],
+      "contabilidad": [
+        "contabilidad/index.d.ts"
+      ],
+      "contabilidad/contracts": [
+        "contabilidad/contracts/index.d.ts"
+      ],
+      "contabilidad/entities": [
+        "contabilidad/entities/index.d.ts"
+      ],
+      "shared/base": [
+        "shared/base/index.d.ts"
+      ],
+      "shared/kernel": [
+        "shared/kernel/index.d.ts"
+      ],
+      "shared/utils": [
+        "shared/utils/index.d.ts"
+      ],
+      "shared/value-objects": [
+        "shared/value-objects/index.d.ts"
+      ]
+    }
+  },
   "scripts": {
-    "build": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })\" && tsc && tsc-alias",
+    "build": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })\" && node scripts/generate-public-subpath-stubs.cjs && tsc && tsc-alias && node scripts/generate-public-subpath-stubs.cjs",
     "prepare": "npm run build",
     "generate-exports": "ts-node scripts/generate-exports.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
