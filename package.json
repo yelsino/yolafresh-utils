@@ -153,7 +153,15 @@
       "import": "./dist/domain/shared/value-objects/index.js",
       "require": "./dist/domain/shared/value-objects/index.js",
       "types": "./dist/domain/shared/value-objects/index.d.ts"
-    }
+    },
+    "./dist": null,
+    "./dist/*": null,
+    "./src": null,
+    "./src/*": null,
+    "./scripts": null,
+    "./scripts/*": null,
+    "./domain": null,
+    "./domain/*": null
   },
   "files": [
     "dist",
