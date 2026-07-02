@@ -22,13 +22,7 @@ Responsabilidades observadas:
 - calcular subtotal, impuesto y total
 - mantener trazabilidad operativa de cliente y personal
 - conservar configuración fiscal durante captura
-
-Puede contener todavía por compatibilidad:
-
-- `metodoPago`
-- `dineroRecibido`
-
-Esos campos no forman parte canónica del agregado `Venta`.
+- conservar `procedencia` del flujo comercial
 
 ### `Venta`
 
@@ -150,22 +144,10 @@ Campos canónicos observados:
 - `total` de `Venta` debe ser mayor a cero
 - `subtotal` e `impuesto` no pueden ser negativos
 - `Venta.confirmar()` no permite confirmar venta vacía
+- `CarritoVenta` ya no captura `metodoPago` ni `dineroRecibido` como parte de su contrato vigente
 - `VentaSnapshot` debe tener al menos un item
 - `VentaSnapshot.total` debe ser consistente con `subtotal + impuesto`
 - `VentaSnapshot` no admite montos negativos
-
-## Compatibilidad temporal observada
-
-El modelo todavía conserva compatibilidad de persistencia con documentos antiguos mediante:
-
-- `detalleVenta`
-- `tipoPago`
-- `finanzaId`
-- `turnoCajaId`
-- `esPedido`
-- `OrderState`
-
-Esa compatibilidad vive en factories, snapshots técnicos y normalización legacy. No define el contrato objetivo nuevo.
 
 ## Separación canónica
 

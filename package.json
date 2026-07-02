@@ -1,34 +1,29 @@
 {
   "name": "yola-fresh-utils",
   "version": "1.0.2",
-  "description": "🛒 Sistema POS completo y reutilizable con soporte fiscal para múltiples países. Incluye carrito de compras, gestión de ventas y configuraciones fiscales predefinidas.",
+  "description": "Biblioteca TypeScript de contratos de negocio, primitivas de dominio y entidades ricas del ecosistema YolaFresh.",
   "keywords": [
+    "yolafresh",
+    "domain",
+    "contracts",
+    "ddd",
+    "retail",
     "pos",
-    "punto-de-venta",
-    "carrito-compras",
-    "ecommerce",
     "typescript",
     "fiscal",
-    "igv",
-    "iva",
-    "peru",
-    "mexico",
-    "colombia",
-    "restaurant",
-    "retail"
+    "ventas",
+    "finanzas",
+    "inventario"
   ],
-  "homepage": "https://github.com/tu-usuario/yola-fresh-utils#readme",
+  "homepage": "https://github.com/yelsino/yola-fresh-utils#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tu-usuario/yola-fresh-utils.git"
+    "url": "git+https://github.com/yelsino/yola-fresh-utils.git"
   },
   "bugs": {
-    "url": "https://github.com/tu-usuario/yola-fresh-utils/issues"
+    "url": "https://github.com/yelsino/yola-fresh-utils/issues"
   },
-  "author": {
-    "name": "Tu Nombre",
-    "email": "tu-email@ejemplo.com"
-  },
+  "author": "yelsino",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -39,147 +34,134 @@
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./domain/*": {
-      "import": "./domain/*.js",
-      "require": "./domain/*.js",
-      "types": "./domain/*.d.ts"
+    "./ventas": {
+      "import": "./dist/domain/ventas/index.js",
+      "require": "./dist/domain/ventas/index.js",
+      "types": "./dist/domain/ventas/index.d.ts"
     },
-    "./domain/ventas/*": {
-      "import": "./domain/ventas/*.js",
-      "require": "./domain/ventas/*.js",
-      "types": "./domain/ventas/*.d.ts"
+    "./ventas/contracts": {
+      "import": "./dist/domain/ventas/contracts/index.js",
+      "require": "./dist/domain/ventas/contracts/index.js",
+      "types": "./dist/domain/ventas/contracts/index.d.ts"
     },
-    "./domain/ventas/events/*": {
-      "import": "./domain/ventas/events/*.js",
-      "require": "./domain/ventas/events/*.js",
-      "types": "./domain/ventas/events/*.d.ts"
+    "./ventas/entities": {
+      "import": "./dist/domain/ventas/entities/index.js",
+      "require": "./dist/domain/ventas/entities/index.js",
+      "types": "./dist/domain/ventas/entities/index.d.ts"
     },
-    "./domain/compras/*": {
-      "import": "./domain/compras/*.js",
-      "require": "./domain/compras/*.js",
-      "types": "./domain/compras/*.d.ts"
+    "./ventas/events": {
+      "import": "./dist/domain/ventas/events/index.js",
+      "require": "./dist/domain/ventas/events/index.js",
+      "types": "./dist/domain/ventas/events/index.d.ts"
     },
-    "./domain/inventario/*": {
-      "import": "./domain/inventario/*.js",
-      "require": "./domain/inventario/*.js",
-      "types": "./domain/inventario/*.d.ts"
+    "./compras": {
+      "import": "./dist/domain/compras/index.js",
+      "require": "./dist/domain/compras/index.js",
+      "types": "./dist/domain/compras/index.d.ts"
     },
-    "./domain/contabilidad/*": {
-      "import": "./domain/contabilidad/*.js",
-      "require": "./domain/contabilidad/*.js",
-      "types": "./domain/contabilidad/*.d.ts"
+    "./compras/contracts": {
+      "import": "./dist/domain/compras/contracts/index.js",
+      "require": "./dist/domain/compras/contracts/index.js",
+      "types": "./dist/domain/compras/contracts/index.d.ts"
     },
-    "./domain/tesoreria/*": {
-      "import": "./domain/tesoreria/*.js",
-      "require": "./domain/tesoreria/*.js",
-      "types": "./domain/tesoreria/*.d.ts"
+    "./compras/entities": {
+      "import": "./dist/domain/compras/entities/index.js",
+      "require": "./dist/domain/compras/entities/index.js",
+      "types": "./dist/domain/compras/entities/index.d.ts"
     },
-    "./domain/finanzas/*": {
-      "import": "./domain/finanzas/*.js",
-      "require": "./domain/finanzas/*.js",
-      "types": "./domain/finanzas/*.d.ts"
+    "./inventario": {
+      "import": "./dist/domain/inventario/index.js",
+      "require": "./dist/domain/inventario/index.js",
+      "types": "./dist/domain/inventario/index.d.ts"
     },
-    "./domain/usuarios/*": {
-      "import": "./domain/usuarios/*.js",
-      "require": "./domain/usuarios/*.js",
-      "types": "./domain/usuarios/*.d.ts"
+    "./inventario/contracts": {
+      "import": "./dist/domain/inventario/contracts/index.js",
+      "require": "./dist/domain/inventario/contracts/index.js",
+      "types": "./dist/domain/inventario/contracts/index.d.ts"
     },
-    "./domain/shared/*": {
-      "import": "./domain/shared/*.js",
-      "require": "./domain/shared/*.js",
-      "types": "./domain/shared/*.d.ts"
+    "./tesoreria": {
+      "import": "./dist/domain/tesoreria/index.js",
+      "require": "./dist/domain/tesoreria/index.js",
+      "types": "./dist/domain/tesoreria/index.d.ts"
     },
-    "./domain/shared/interfaces/*": {
-      "import": "./domain/shared/interfaces/*.js",
-      "require": "./domain/shared/interfaces/*.js",
-      "types": "./domain/shared/interfaces/*.d.ts"
+    "./tesoreria/contracts": {
+      "import": "./dist/domain/tesoreria/contracts/index.js",
+      "require": "./dist/domain/tesoreria/contracts/index.js",
+      "types": "./dist/domain/tesoreria/contracts/index.d.ts"
     },
-    "./domain/shared/utils/*": {
-      "import": "./domain/shared/utils/*.js",
-      "require": "./domain/shared/utils/*.js",
-      "types": "./domain/shared/utils/*.d.ts"
+    "./finanzas": {
+      "import": "./dist/domain/finanzas/index.js",
+      "require": "./dist/domain/finanzas/index.js",
+      "types": "./dist/domain/finanzas/index.d.ts"
     },
-    "./domain/shared/base/*": {
-      "import": "./domain/shared/base/*.js",
-      "require": "./domain/shared/base/*.js",
-      "types": "./domain/shared/base/*.d.ts"
+    "./finanzas/contracts": {
+      "import": "./dist/domain/finanzas/contracts/index.js",
+      "require": "./dist/domain/finanzas/contracts/index.js",
+      "types": "./dist/domain/finanzas/contracts/index.d.ts"
     },
-    "./domain/shared/value-objects/*": {
-      "import": "./domain/shared/value-objects/*.js",
-      "require": "./domain/shared/value-objects/*.js",
-      "types": "./domain/shared/value-objects/*.d.ts"
+    "./finanzas/entities": {
+      "import": "./dist/domain/finanzas/entities/index.js",
+      "require": "./dist/domain/finanzas/entities/index.js",
+      "types": "./dist/domain/finanzas/entities/index.d.ts"
     },
-    "./interfaces": {
-      "import": "./dist/domain/shared/interfaces/index.js",
-      "require": "./dist/domain/shared/interfaces/index.js",
-      "types": "./dist/domain/shared/interfaces/index.d.ts"
+    "./personas": {
+      "import": "./dist/domain/personas/index.js",
+      "require": "./dist/domain/personas/index.js",
+      "types": "./dist/domain/personas/index.d.ts"
     },
-    "./utils": {
+    "./personas/contracts": {
+      "import": "./dist/domain/personas/contracts/index.js",
+      "require": "./dist/domain/personas/contracts/index.js",
+      "types": "./dist/domain/personas/contracts/index.d.ts"
+    },
+    "./personas/entities": {
+      "import": "./dist/domain/personas/entities/index.js",
+      "require": "./dist/domain/personas/entities/index.js",
+      "types": "./dist/domain/personas/entities/index.d.ts"
+    },
+    "./contabilidad": {
+      "import": "./dist/domain/contabilidad/index.js",
+      "require": "./dist/domain/contabilidad/index.js",
+      "types": "./dist/domain/contabilidad/index.d.ts"
+    },
+    "./contabilidad/contracts": {
+      "import": "./dist/domain/contabilidad/contracts/index.js",
+      "require": "./dist/domain/contabilidad/contracts/index.js",
+      "types": "./dist/domain/contabilidad/contracts/index.d.ts"
+    },
+    "./contabilidad/entities": {
+      "import": "./dist/domain/contabilidad/entities/index.js",
+      "require": "./dist/domain/contabilidad/entities/index.js",
+      "types": "./dist/domain/contabilidad/entities/index.d.ts"
+    },
+    "./shared/base": {
+      "import": "./dist/domain/shared/base/index.js",
+      "require": "./dist/domain/shared/base/index.js",
+      "types": "./dist/domain/shared/base/index.d.ts"
+    },
+    "./shared/kernel": {
+      "import": "./dist/domain/shared/kernel/index.js",
+      "require": "./dist/domain/shared/kernel/index.js",
+      "types": "./dist/domain/shared/kernel/index.d.ts"
+    },
+    "./shared/utils": {
       "import": "./dist/domain/shared/utils/index.js",
       "require": "./dist/domain/shared/utils/index.js",
       "types": "./dist/domain/shared/utils/index.d.ts"
     },
-    "./class": {
-      "import": "./dist/domain/shared/base/index.js",
-      "require": "./dist/domain/shared/base/index.js",
-      "types": "./dist/domain/shared/base/index.d.ts"
+    "./shared/value-objects": {
+      "import": "./dist/domain/shared/value-objects/index.js",
+      "require": "./dist/domain/shared/value-objects/index.js",
+      "types": "./dist/domain/shared/value-objects/index.d.ts"
     }
-
   },
   "files": [
-    "dist",
-    "domain"
+    "dist"
   ],
-  "typesVersions": {
-    "*": {
-      "domain/*": [
-        "domain/*"
-      ],
-      "domain/ventas/*": [
-        "domain/ventas/*"
-      ],
-      "domain/ventas/events/*": [
-        "domain/ventas/events/*"
-      ],
-      "domain/compras/*": [
-        "domain/compras/*"
-      ],
-      "domain/inventario/*": [
-        "domain/inventario/*"
-      ],
-      "domain/contabilidad/*": [
-        "domain/contabilidad/*"
-      ],
-      "domain/tesoreria/*": [
-        "domain/tesoreria/*"
-      ],
-      "domain/finanzas/*": [
-        "domain/finanzas/*"
-      ],
-      "domain/usuarios/*": [
-        "domain/usuarios/*"
-      ],
-      "domain/shared/*": [
-        "domain/shared/*"
-      ],
-      "domain/shared/interfaces/*": [
-        "domain/shared/interfaces/*"
-      ],
-      "domain/shared/utils/*": [
-        "domain/shared/utils/*"
-      ],
-      "domain/shared/base/*": [
-        "domain/shared/base/*"
-      ],
-      "domain/shared/value-objects/*": [
-        "domain/shared/value-objects/*"
-      ]
-    }
-  },
   "scripts": {
-    "build": "tsc && tsc-alias && node scripts/generate-subpath-stubs.cjs",
+    "build": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\" && tsc && tsc-alias",
     "prepare": "npm run build",
-    "generate-exports": "cd scripts && npx ts-node generate-exports.ts && cd ..",
+    "generate-exports": "ts-node scripts/generate-exports.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {

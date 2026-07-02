@@ -1,166 +1,125 @@
-# Documentación de Tipos - Yola Fresh Utils
+# Tipos y contratos del paquete
 
-Esta librería proporciona tipos y clases completamente documentadas para sistemas de punto de venta.
+> Documento histórico de apoyo.
+> La referencia oficial de contratos vigentes debe leerse en [core/contratos-compartidos.md](./core/contratos-compartidos.md).
+> Este archivo ya no documenta helpers eliminados ni artefactos legacy como `ShoppingCart`.
 
-## 🛒 Carrito de Compras (ShoppingCart)
+## Propósito
 
-### Interfaces Principales
+Este documento resume cómo debe leerse hoy la capa tipada de `yolafresh-utils`.
 
-#### `IShoppingCart`
+## Principio central
 
-Interfaz principal que define la estructura completa de un carrito de compras.
+El paquete ya no se documenta como colección amplia de tipos de frontend, transforms o utilidades genéricas.
 
-**Propósito**: Estandarizar la estructura de datos para carritos de compra reutilizables.
+Su responsabilidad actual es publicar:
 
-**Casos de uso**:
+- contratos de negocio;
+- enums y clasificaciones canónicas;
+- primitivas DDD;
+- algunos agregados o entidades con invariantes.
 
-- Sistemas POS de restaurants
-- E-commerce
-- Aplicaciones de venta móvil
-- Sistemas de inventario
+## Áreas tipadas principales
 
-#### `CarItem`
+### Comercial
 
-Representa un producto individual dentro del carrito.
+Contratos y modelos relacionados con:
 
-**Propósito**: Encapsular toda la información necesaria de un producto en el carrito.
+- `Pedido`
+- `ICompra`
+- `Venta`
+- `CarritoVenta`
+- `VentaSnapshot`
 
-**Campos importantes**:
+Lectura correcta:
 
-- `quantity`: Para productos normales es unidades, para pesables es el peso
-- `peso`: Solo se usa cuando `tipoVenta` es por peso (kg, litros)
-- `montoModificado`: Cuando es `true`, el precio no se recalcula automáticamente
+- `Pedido` modela reserva comercial;
+- `Venta` modela hecho comercial confirmado;
+- `CarritoVenta` modela captura mutable;
+- `VentaSnapshot` preserva representación histórica visible.
 
-### Configuración Fiscal
+### Producto e inventario
 
-#### `ConfiguracionFiscal`
+Contratos compartidos observados:
 
-Define la configuración de impuestos para diferentes países.
+- `ProductoBase`
+- `Presentacion`
+- `ProductoPrecio`
+- `MovimientoInventario`
+- `StockPresentacionAlmacen`
+- `Almacen`
 
-**Configuraciones predefinidas**:
+### Finanzas, pagos y caja
 
-- `PERU`: IGV 18%
-- `MEXICO`: IVA 16%
-- `COLOMBIA`: IVA 19%
-- `ARGENTINA`: IVA 21%
-- `SIN_IMPUESTOS`: Para servicios locales
+Contratos compartidos observados:
 
-## 💰 Interfaces Financieras
+- `Ingreso`
+- `Egreso`
+- `Cambio`
+- `Anulacion`
+- `Pago`
+- `MovimientoCaja`
 
-#### `Ingreso`
+### Cuenta cliente
 
-Registro completo de un ingreso financiero en el sistema.
+Contratos observados:
 
-**Campos de trazabilidad**:
+- `CuentaCliente`
+- `MovimientoCuentaCliente`
+- `ImputacionCuentaCliente`
+- `RecepcionCobroCliente`
+- `TransferenciaCustodiaCobro`
+- `ResumenCuentaCliente`
 
-- `quienRegistroId`: ID del usuario que registró
-- `fechaRegistro`: Timestamp de creación
-- `fechaActualizacion`: Timestamp de última modificación
+### Organización y actores
 
-**Campos de negocio**:
+Contratos observados:
 
-- `monto`: Valor monetario del ingreso
-- `tipoIngreso`: Contado vs Crédito
-- `metodoPago`: Efectivo, tarjeta, digital, etc.
+- `Cliente`
+- `Personal`
+- `Proveedor`
+- `IUsuario`
+- `Entidad`
+- `Rol`
+- `Permisos`
 
-## 📦 Compras y logística (ERP)
+## Dónde vive la verdad tipada
 
-En el módulo de compras, el modelo separa claramente lo económico de lo físico:
+La evidencia primaria actual está en:
 
-- `EventoCompra`: macro proceso logístico (viaje/campaña/abastecimiento).
-- `Compra`: documento económico individual por proveedor (siempre dentro de un `EventoCompra`).
-- `RecepcionMercaderia`: evento físico de ingreso ligado al proceso.
-- `MovimientoInventario`: impacto real en stock (kardex).
+- `src/domain/shared/interfaces/`
+- `src/domain/shared/base/`
+- `src/domain/shared/value-objects/`
+- `src/domain/ventas/`
+- `src/domain/finanzas/Recurrencia.ts`
 
-Regla de dominio clave:
+## Qué ya no debe esperarse en esta capa
 
-- `ICompra.eventoCompraId` es obligatorio: no puede existir una `Compra` fuera de un `EventoCompra`.
+La auditoría actual confirma que este paquete ya no debe presentarse como fuente de:
 
-Motores stateless del flujo:
+- `ShoppingCart` legacy;
+- transforms camel/snake case;
+- mappers de persistencia;
+- adaptadores a SQLite o CouchDB;
+- helpers de DOM o UI;
+- procesadores operativos de compra o inventario.
 
-- `EventoCompraBuilder`: crea y ajusta el evento y sus ítems vinculados a proveedor.
-- `CompraGenerator`: agrupa ítems por proveedor y genera compras en borrador.
-- `RecepcionProcessor`: valida recepciones, genera movimiento y determina completitud.
+## Recomendaciones de consumo
 
-## 👥 Gestión de Personas
+- usar imports de valor solo para símbolos realmente publicados en runtime;
+- usar `import type` para contratos e interfaces cuando corresponda;
+- resolver adaptaciones de persistencia en el consumer, no en el core compartido;
+- leer la documentación modular por Domain antes de asumir semántica de negocio.
 
-#### `Cliente`
+## Preguntas abiertas
 
-Información completa de un cliente del sistema.
+- si esta guía seguirá existiendo como resumen liviano o será absorbida por la documentación modular del core;
+- qué contratos históricos todavía requieren depuración adicional para quedar completamente alineados.
 
-#### `Personal`
+## Referencias
 
-Datos de empleados que pueden realizar ventas.
-
-**Campos específicos**:
-
-- `cargo`: Rol del empleado (VENDEDOR, CAJERO, etc.)
-- `username`/`password`: Para autenticación
-
-## 🔧 Uso en IDEs
-
-### Visual Studio Code
-
-```json
-// settings.json
-{
-  "typescript.suggest.includeCompletions": "on",
-  "typescript.suggest.jsdoc.generateReturns": true
-}
-```
-
-### IntelliJ/WebStorm
-
-Las anotaciones JSDoc se muestran automáticamente en:
-
-- Autocompletado (Ctrl+Space)
-- Hover sobre tipos
-- Documentación rápida (Ctrl+Q)
-
-### Otros IDEs
-
-Cualquier IDE con soporte TypeScript mostrará la documentación JSDoc automáticamente.
-
-## 📝 Ejemplos de Documentación en Tiempo Real
-
-Cuando uses la librería, verás algo como esto:
-
-```typescript
-// Al escribir "carrito." el IDE muestra:
-carrito.
-  ├── id: string                    // Identificador único del carrito
-  ├── items: CarItem[]             // Lista de productos en el carrito
-  ├── subtotal: number             // Subtotal sin impuestos ni descuentos
-  ├── total: number                // Total final a pagar
-  ├── configurarTrazabilidad()     // Configurar información de trazabilidad
-  └── agregarProducto()            // Agregar o actualizar un CarItem en la venta
-```
-
-## 🎯 Beneficios para Desarrolladores
-
-1. **Autocompletado inteligente**: El IDE sugiere solo propiedades válidas
-2. **Documentación en línea**: Sin necesidad de consultar documentación externa
-3. **Validación de tipos**: Errores detectados en tiempo de desarrollo
-4. **Ejemplos integrados**: Cada interfaz incluye ejemplos de uso
-5. **Restricciones claras**: Valores mínimos/máximos documentados
-
-## 🚀 Configuración Recomendada
-
-Para obtener la mejor experiencia de desarrollo:
-
-```bash
-# Instalar tipos adicionales
-npm install --save-dev @types/node
-
-# Configurar TypeScript estricto
-# tsconfig.json
-{
-  "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true
-  }
-}
-```
-
-Esta configuración garantiza que aproveches al máximo la documentación integrada.
+- [README.md](./README.md)
+- [core/README.md](./core/README.md)
+- [core/contratos-compartidos.md](./core/contratos-compartidos.md)
+- [ventas/README.md](./ventas/README.md)
+- [cuenta-cliente/README.md](./cuenta-cliente/README.md)

@@ -1,5 +1,11 @@
 # Recursos Expuestos de RBAC para Apps Consumidoras
 
+> Documento histórico de implementación.
+> El paquete ya no publica helpers RBAC en `shared/utils`; la fuente vigente debe leerse desde los contratos de `roles`, `permisos`, `usuario`, `entidades` y `persons`.
+> Para el estado vigente, leer primero [personas/README.md](./personas/README.md) y [personas/autorizacion-y-sesion.md](./personas/autorizacion-y-sesion.md).
+> Las listas de recursos y utilidades aquí descritas pueden corresponder a una etapa histórica y no a la surface pública actual.
+> Si este documento contradice el core actual, prevalece [core/README.md](./core/README.md).
+
 Este documento describe exclusivamente qué expone `yola-fresh-utils` en el subdominio de roles, permisos y cargos.
 
 La librería no define cómo debe programarse el frontend ni el backend. Su responsabilidad aquí es exponer contratos, catálogos, relaciones sugeridas y utilidades de negocio reutilizables.
@@ -182,7 +188,7 @@ Catálogo organizacional de cargos:
 
 ### 4.1 `CONFIGURACIONES_ROLES`
 
-Fuente: [rbac.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/utils/rbac.ts)
+Referencia histórica: el paquete antes exponía helpers RBAC; en el core vigente solo permanecen contratos y catálogos.
 
 Mapa oficial de configuración para roles predefinidos.
 
@@ -200,7 +206,7 @@ Su objetivo es ofrecer una base lista para:
 
 ### 4.2 `CARGOS_ROLES_SUGERIDOS`
 
-Fuente: [rbac.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/utils/rbac.ts)
+Referencia histórica: relación sugerida preservada como contexto, no como helper vigente del paquete.
 
 Mapa de relación sugerida entre:
 
@@ -217,7 +223,7 @@ Importante:
 
 ### 4.3 `PERMISOS_CRITICOS`
 
-Fuente: [rbac.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/utils/rbac.ts)
+Referencia histórica: clasificación crítica conservada como criterio documental, no como export activo de utilidades.
 
 Lista oficial de permisos considerados sensibles o críticos.
 
@@ -230,7 +236,7 @@ Su objetivo es identificar acciones que normalmente requieren:
 
 ## 5. Utilidades expuestas
 
-Fuente: [rbac.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/utils/rbac.ts)
+Referencia histórica: utilidades RBAC ya no forman parte de la surface actual.
 
 La librería expone utilidades puras para trabajar con el modelo RBAC:
 
@@ -298,4 +304,4 @@ Su responsabilidad es exponer el lenguaje y las estructuras de negocio para que 
 - [persons.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/persons.ts)
 - [entidades.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/entidades.ts)
 - [usuario.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/usuario.ts)
-- [rbac.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/utils/rbac.ts)
+- contratos vigentes en `roles.ts`, `permisos.ts`, `usuario.ts`, `entidades.ts` y `persons.ts`

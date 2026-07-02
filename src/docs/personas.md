@@ -1,5 +1,10 @@
 # Dominio de Personas (Usuarios, Entidades y RBAC)
 
+> Documento histórico en proceso de alineación.
+> Para el estado vigente del paquete, leer primero [personas/README.md](./personas/README.md), [personas/modelo-vigente.md](./personas/modelo-vigente.md) y [personas/autorizacion-y-sesion.md](./personas/autorizacion-y-sesion.md).
+> Los ejemplos o recomendaciones antiguas de este archivo no deben interpretarse como surface pública vigente del paquete.
+> Si este documento contradice la surface actual del paquete, prevalece la documentación modular vigente.
+
 Este documento describe el dominio de “personas” dentro de `yola-fresh-utils`: cómo se modela la identidad digital (usuario), cómo se modela el “actor real” (entidad: cliente/personal/proveedor), y cómo se controla el acceso (roles/permisos).
 
 La librería define contratos y utilidades/entidades de negocio. La app consumidora define persistencia, sincronización y endpoints.
@@ -45,8 +50,9 @@ Contratos:
 - [entidades.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/entidades.ts#L39-L157)
 - [permisos.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/permisos.ts)
 
-Utilidades:
-- [rbac.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/utils/rbac.ts)
+Referencia histórica:
+
+- utilidades RBAC removidas del core actual; hoy prevalecen los contratos `roles`, `permisos`, `usuario`, `entidades` y `persons`
 
 ## 2) Contratos del dominio
 
@@ -529,7 +535,7 @@ Utilidades recomendadas para consumers:
 - `puedeAccederEntidad(usuario, entidadId)` valida que el usuario tenga esa entidad vinculada
 - `crearSesionContexto(usuario, entidadActivaId?)` construye una `SesionContexto`
 
-Archivo: [rbac.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/utils/rbac.ts#L25-L207)
+Referencia histórica: las utilidades RBAC antes publicadas ya no forman parte de la surface vigente; hoy solo permanecen los contratos del subdominio.
 
 ## 5) Personas y finanzas (cuenta corriente)
 

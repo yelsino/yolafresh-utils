@@ -1,5 +1,9 @@
 # Guía de consumo — Tarjetas Virtuales
 
+> Documento histórico.
+> `Tarjetas Virtuales` ya no forma parte de la surface pública vigente del core de `yolafresh-utils`.
+> Se conserva como referencia de un alcance anterior del paquete.
+
 ## Propósito
 
 Las **Tarjetas Virtuales** representan “tarjetas visuales” del negocio guardadas como **una imagen** (por ejemplo: QR de pago, QR de WiFi, datos bancarios, horarios, promociones, etc.).
@@ -18,8 +22,9 @@ Incluye:
 - `TipoTarjetaVirtual`: enum de tipos permitidos para clasificación.
 - `EstadoTarjetaVirtual`: estado permitido para publicación (`activo` | `inactivo`).
 
-Fuente:
-- [tarjetaVirtual.ts](file:///D:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/tarjetaVirtual.ts)
+Fuente histórica:
+
+- contrato `tarjetaVirtual.ts` retirado de la surface pública vigente
 
 ## Qué garantiza el contrato (para el consumer)
 
@@ -50,5 +55,4 @@ Puedes consumir los contratos desde:
 
 Archivos relevantes:
 - Export: [shared/interfaces/index.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/index.ts)
-- Contrato: [tarjetaVirtual.ts](file:///D:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/tarjetaVirtual.ts)
-
+- Contrato histórico retirado del core actual

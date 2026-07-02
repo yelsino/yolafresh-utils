@@ -1,5 +1,9 @@
 # Roles, Cargos y Permisos — YolaFresh POS
 
+> Documento histórico de diseño funcional.
+> Para el estado vigente del paquete, leer primero [../personas/README.md](../personas/README.md) y [../personas/autorizacion-y-sesion.md](../personas/autorizacion-y-sesion.md).
+> Este archivo conserva una propuesta amplia de negocio y permisos, pero no debe leerse como catálogo exportado literal del paquete actual.
+
 ## 1. Objetivo
 
 Este documento define la estructura funcional de cargos laborales, roles de aplicación y permisos para YolaFresh POS.

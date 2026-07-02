@@ -1,34 +1,99 @@
-# Documentacion de `yolafresh-utils`
+# Documentación de `yolafresh-utils`
 
-## Indice principal
+## Propósito
 
-- `inventario-tecnico-yolafresh-utils.md`: mapa general de modulos, exports y estructura.
-- `cuenta-cliente/`: documentacion modular del Domain de cuenta cliente.
-  - `README.md`: indice del dominio.
-  - `modelo-vigente.md`: conceptos, estados, relaciones y reglas vigentes.
-  - `flujos-cobros-y-adelantos.md`: flujos operativos minimos.
-  - `trazabilidad-y-auditoria.md`: separacion entre recepcion, custodia, ledger y resumen.
-  - `guia-de-consumo.md`: interpretacion del modelo para consumers.
-- `ventas/`: documentacion modular del Domain de ventas.
-  - `README.md`: indice del dominio.
-  - `modelo-vigente.md`: conceptos, contratos, estados y reglas vigentes.
-  - `relaciones-interdominio.md`: relacion con cuenta cliente, inventario, almacen, stock, caja y pagos.
-  - `guia-de-consumo.md`: lectura e integracion recomendada para consumers.
-- `personas.md`: contratos de personas, entidades y relaciones con otros contextos.
+Esta carpeta concentra documentación oficial del paquete después de la migración completa a estructura por dominios.
+
+La lectura recomendada va de:
+
+- core;
+- dominios activos;
+- documentos históricos solo como contexto.
+
+## Documentación oficial
+
+### Core
+
+- [core/README.md](./core/README.md): índice del núcleo vigente.
+- [core/arquitectura-vigente.md](./core/arquitectura-vigente.md): arquitectura actual, límites y surface pública.
+- [core/contratos-compartidos.md](./core/contratos-compartidos.md): mapa de ownership contractual por dominio.
+- [core/primitivas-y-publicacion.md](./core/primitivas-y-publicacion.md): primitivas base, eventos y root mínimo.
+- [core/rfc-evolucion-estructura-libreria.md](./core/rfc-evolucion-estructura-libreria.md): RFC cerrado con estructura implementada.
+
+### Ventas
+
+- [ventas/README.md](./ventas/README.md)
+- [ventas/modelo-vigente.md](./ventas/modelo-vigente.md)
+- [ventas/relaciones-interdominio.md](./ventas/relaciones-interdominio.md)
+- [ventas/guia-de-consumo.md](./ventas/guia-de-consumo.md)
+
+### Finanzas
+
+- [finanzas/README.md](./finanzas/README.md)
+- [finanzas/modelo-vigente.md](./finanzas/modelo-vigente.md)
+- [finanzas/cuenta-cliente-modelo-vigente.md](./finanzas/cuenta-cliente-modelo-vigente.md)
+- [finanzas/cuenta-cliente-operacion-y-auditoria.md](./finanzas/cuenta-cliente-operacion-y-auditoria.md)
+- [finanzas/recurrencias-backend.md](./finanzas/recurrencias-backend.md)
+- [finanzas/recurrencias-frontend.md](./finanzas/recurrencias-frontend.md)
+
+### Compras
+
+- [compras/README.md](./compras/README.md)
+- [compras/modelo-vigente.md](./compras/modelo-vigente.md)
+
+### Inventario
+
+- [inventario/README.md](./inventario/README.md)
+- [inventario/modelo-vigente.md](./inventario/modelo-vigente.md)
+
+### Tesoreria
+
+- [tesoreria/README.md](./tesoreria/README.md)
+- [tesoreria/modelo-vigente.md](./tesoreria/modelo-vigente.md)
+
+### Personas y acceso
+
+- [personas/README.md](./personas/README.md)
+- [personas/modelo-vigente.md](./personas/modelo-vigente.md)
+- [personas/autorizacion-y-sesion.md](./personas/autorizacion-y-sesion.md)
+
+### Contabilidad
+
+- [contabilidad/README.md](./contabilidad/README.md)
+- [contabilidad/modelo-vigente.md](./contabilidad/modelo-vigente.md)
+
+## Criterio de verdad
+
+La evidencia primaria actual vive en:
+
+- `src/index.ts`
+- `src/domain/shared/base/`
+- `src/domain/shared/kernel/`
+- `src/domain/shared/utils/`
+- `src/domain/shared/value-objects/`
+- `src/domain/ventas/`
+- `src/domain/compras/`
+- `src/domain/inventario/`
+- `src/domain/tesoreria/`
+- `src/domain/finanzas/`
+- `src/domain/personas/`
+- `src/domain/contabilidad/`
+
+## Documentos históricos
+
+Los siguientes archivos pueden conservar valor contextual, pero no son fuente primaria del modelo vigente:
+
+- [inventario-tecnico-yolafresh-utils.md](./inventario-tecnico-yolafresh-utils.md)
+- [types.md](./types.md)
+- [interface-extension-pattern.md](./interface-extension-pattern.md)
+- [personas.md](./personas.md)
+- [finanzas/recurrentes.md](./finanzas/recurrentes.md)
+- [roles y cargos/rbac-implementacion-final.md](./roles%20y%20cargos/rbac-implementacion-final.md)
+- [roles y cargos/roles-cargos-permisos-yolafresh-limpio.md](./roles%20y%20cargos/roles-cargos-permisos-yolafresh-limpio.md)
+- [rbac-frontend-implementation.md](./rbac-frontend-implementation.md)
+- [notificaciones-implementation-plan.md](./notificaciones-implementation-plan.md)
+- [tarjetas-virtuales-consumo.md](./tarjetas-virtuales-consumo.md)
 
 ## Nota
 
-La fuente de verdad del modulo de cuenta cliente es el contrato vigente ya aterrizado en:
-
-- `src/domain/shared/interfaces/customer-account.ts`
-
-Los nombres canónicos del modelo actual son:
-
-- `CuentaCliente`
-- `MovimientoCuentaCliente`
-- `ImputacionCuentaCliente`
-- `RecepcionCobroCliente`
-- `TransferenciaCustodiaCobro`
-- `ResumenCuentaCliente`
-
-El modelo legacy de cuenta cliente ya no forma parte de la libreria publica.
+`CuentaCliente` ya no se documenta como dominio separado. Su lenguaje queda absorbido dentro de `finanzas`.

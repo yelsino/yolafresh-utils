@@ -1,5 +1,11 @@
 # Implementación Final de RBAC
 
+> Documento histórico de implementación.
+> El paquete mantiene contratos de roles, permisos, usuarios y entidades, pero ya no publica utilidades RBAC en `shared/utils`.
+> Para el estado vigente del dominio, leer primero [../personas/README.md](../personas/README.md) y [../personas/autorizacion-y-sesion.md](../personas/autorizacion-y-sesion.md).
+> Las listas de helpers, seeds o matrices de este archivo pueden reflejar una etapa anterior del paquete y no deben asumirse como exports vigentes.
+> Si este documento contradice el core vigente, prevalece [../core/README.md](../core/README.md).
+
 Documento oficial de implementación del sistema de roles, permisos y cargos de `yola-fresh-utils`.
 
 Este documento está pensado para los proyectos que consumen la librería y necesitan implementar:
@@ -46,7 +52,7 @@ El cargo sirve para operación organizacional, UI, RRHH y sugerencias de configu
 - [persons.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/persons.ts)
 - [entidades.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/entidades.ts)
 - [usuario.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/usuario.ts)
-- [rbac.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/utils/rbac.ts)
+- referencia histórica: utilidades RBAC removidas del core actual
 
 ### 2.2 Recursos exportados por la librería
 

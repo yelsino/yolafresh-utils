@@ -1,0 +1,186 @@
+# Cuenta Cliente dentro de Finanzas
+
+## Propósito
+
+Este documento describe subdominio de cuenta cliente como parte de `finanzas`.
+
+La evidencia vigente está en [cuenta-cliente.contract.ts](../../domain/finanzas/contracts/cuenta-cliente.contract.ts).
+
+## Visión general
+
+`CuentaCliente` modela relación financiera entre negocio y cliente cuando existe saldo a favor, deuda, cobros, adelantos o aplicaciones entre movimientos.
+
+## Entidades y contratos principales
+
+### `CuentaCliente`
+
+Representa cuenta comercial asociada a un cliente.
+
+Responsabilidades observadas:
+
+- vincular cuenta con `clienteId`;
+- expresar estado general;
+- registrar apertura y cierre cuando aplica.
+
+No expresa por sí sola:
+
+- saldo actual;
+- deuda acumulada;
+- detalle histórico de movimientos.
+
+### `MovimientoCuentaCliente`
+
+Representa impacto financiero individual sobre cuenta.
+
+Responsabilidades observadas:
+
+- registrar crédito o débito;
+- indicar tipo de movimiento;
+- enlazar origen del hecho que produjo el movimiento;
+- reflejar vínculos con recepción, caja, turno o custodio cuando aplica.
+
+### `ImputacionCuentaCliente`
+
+Representa aplicación explícita entre movimiento origen y movimiento destino.
+
+Responsabilidades observadas:
+
+- dejar rastro entre crédito y débito;
+- soportar aplicación parcial;
+- declarar estrategia de consumo.
+
+El contrato observado declara `FIFO` como estrategia explícita.
+
+### `RecepcionCobroCliente`
+
+Representa evento de recepción de dinero del cliente.
+
+Responsabilidades observadas:
+
+- registrar monto, moneda y método de pago;
+- identificar quién creó o recibió recepción;
+- expresar estado operativo del cobro recibido;
+- asociar caja, turno y custodio cuando existen.
+
+No equivale por sí sola a impacto financiero confirmado.
+
+### `TransferenciaCustodiaCobro`
+
+Representa traspaso de custodia de una recepción entre responsables y turnos.
+
+Responsabilidades observadas:
+
+- separar recepción de custodia efectiva;
+- expresar origen y destino de custodia;
+- dejar rastro de aceptación, rechazo o anulación.
+
+### `ResumenCuentaCliente`
+
+Representa lectura resumida de cuenta.
+
+Responsabilidades observadas:
+
+- exponer `saldoFavor`;
+- exponer `saldoPorCobrar`;
+- conservar metadatos de reconstrucción.
+
+No reemplaza a movimientos ni imputaciones como fuente primaria.
+
+## Estados y clasificaciones
+
+### Estado de la cuenta
+
+| Valor | Significado observado |
+| --- | --- |
+| `ACTIVA` | Cuenta disponible para operación |
+| `SUSPENDIDA` | Cuenta restringida |
+| `CERRADA` | Cuenta cerrada |
+
+### Tipo de movimiento
+
+| Valor | Lectura de negocio observada |
+| --- | --- |
+| `DEPOSITO` | Incrementa saldo a favor |
+| `COBRO` | Reduce saldo por cobrar |
+| `VENTA` | Genera cargo o consume saldo |
+| `DEVOLUCION` | Devuelve valor a relación financiera |
+| `REVERSA` | Revierte movimiento previo |
+| `AJUSTE` | Ajuste manual o administrativo |
+
+### Dirección del movimiento
+
+- `CREDITO`
+- `DEBITO`
+
+### Estado de movimiento
+
+- `CONFIRMADO`
+- `ANULADO`
+- `RECHAZADO`
+- `CONTABILIZADO`
+- `REVERTIDO`
+
+### Estado de imputación
+
+- `APLICADA`
+- `REVERTIDA`
+
+### Estado de recepción de cobro
+
+- `CREADO`
+- `RECIBIDO`
+- `EN_TRANSFERENCIA_CUSTODIA`
+- `LIQUIDADO`
+- `RECHAZADO`
+- `ANULADO`
+
+### Estado de transferencia de custodia
+
+- `CREADA`
+- `RECIBIDA`
+- `PENDIENTE`
+- `ACEPTADA`
+- `RECHAZADA`
+- `ANULADA`
+
+## Relaciones de negocio
+
+### Con `Venta`
+
+`Venta` sigue siendo hecho comercial. `CuentaCliente` expresa deuda, adelanto, cobro aplicado o saldo, pero no reemplaza venta.
+
+### Con `Pago`
+
+`Pago` mantiene captura y conciliación del medio de pago. No sustituye a `RecepcionCobroCliente` ni a `MovimientoCuentaCliente`.
+
+### Con `MovimientoCaja`
+
+`MovimientoCaja` expresa tesorería operativa. `CuentaCliente` expresa relación financiera con cliente.
+
+## Reglas de negocio respaldadas por evidencia
+
+- no usar `CuentaCliente` como saldo mutable;
+- no usar `ResumenCuentaCliente` como ledger oficial;
+- no registrar impacto financiero sin `tipoOrigen` y `origenId`;
+- separar recepción, custodia, ledger e imputación;
+- modelar consumo de créditos mediante `ImputacionCuentaCliente`;
+- no borrar historia para anular; usar reversa o anulación auditable.
+
+## Restricciones observadas
+
+- el contrato actual declara monedas `PEN` y `USD`;
+- la estrategia explícita de imputación observada es `FIFO`;
+- recepción y movimiento exponen vínculos a caja, turno y custodio.
+
+## Pendiente de validación
+
+- criterio exacto para `AJUSTE`;
+- transición funcional completa de `RecepcionCobroCliente`;
+- transición funcional completa de `TransferenciaCustodiaCobro`;
+- criterio funcional entre `CONFIRMADO` y `CONTABILIZADO`.
+
+## Referencias
+
+- [README.md](./README.md)
+- [cuenta-cliente-operacion-y-auditoria.md](./cuenta-cliente-operacion-y-auditoria.md)
+- [../ventas/relaciones-interdominio.md](../ventas/relaciones-interdominio.md)

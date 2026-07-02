@@ -1,7 +1,10 @@
 # Plan de Implementación — Subsistema de Notificaciones (ERP/SaaS)
 
-Este documento describe un plan práctico para implementar el subsistema de notificaciones en proyectos consumidores de `yola-fresh-utils`, usando los contratos definidos en:
-- [notificaciones.ts](file:///d:/Proyectos/WEB/yola-fresh-utils/src/domain/shared/interfaces/notificaciones.ts)
+> Documento histórico.
+> El contrato `notificaciones.ts` ya no forma parte de la surface pública vigente del paquete.
+> Este contenido se conserva como referencia de implementación pasada, no como fuente actual del core.
+
+Este documento describe un plan práctico para implementar un subsistema de notificaciones en proyectos consumidores de `yola-fresh-utils`, tomando como referencia un alcance histórico del paquete ya retirado de la surface pública.
 
 El objetivo es soportar el flujo: Evento → Regla/Plantilla → Destinatarios → Canal → Estado, con trazabilidad por usuario, reintentos, agrupación y preferencias.
 
@@ -180,4 +183,3 @@ Eventos recomendados:
 ### Fase 4 — Observabilidad
 - Métricas: entregas, fallas, tiempos
 - Auditoría: correlación con `NotificationEvent.id`
-

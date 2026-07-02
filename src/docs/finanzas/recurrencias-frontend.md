@@ -1,108 +1,130 @@
-# Recurrencias (contratos y procesadores disponibles)
+# Recurrencias para frontend o app offline-first
 
-Este documento describe lo que la librería expone para que un frontend/consumer pueda:
-- registrar recurrencias
-- listar y mostrar próximas ejecuciones
-- ejecutar un scheduler local (offline-first)
-- generar documentos (sin I/O) y persistirlos en su propia app
+> Documento histórico de apoyo.
+> La evidencia vigente del paquete debe leerse en `src/domain/finanzas/contracts/recurrencia.contract.ts` y `src/domain/finanzas/entities/RecurrenciaEntity.ts`.
+> Este documento ya no puede asumirse como guía literal de consumo porque el repositorio actual no publica `RecurrenciaProcessor`.
 
-## Importaciones
+## Propósito
 
-Desde la librería puedes usar:
-- Contratos: `Recurrencia`, `ReglaRecurrencia`, `TipoAccionRecurrencia`, `EjecucionRecurrencia`
-- Entidad: `RecurrenciaEntity`
-- Procesador: `RecurrenciaProcessor`
+Este documento describe cómo un consumer frontend o app offline-first puede apoyarse en los contratos de recurrencias que aún existen en `yolafresh-utils`.
 
-Rutas habituales:
-- `import { RecurrenciaEntity, RecurrenciaProcessor } from "yola-fresh-utils";`
-- `import type { Recurrencia } from "yola-fresh-utils";`
+## Qué expone hoy la librería
 
-## Contrato principal: `Recurrencia`
+### Contratos
 
-Una recurrencia define:
-- `regla`: cuándo debe ejecutarse (frecuencia + horario UTC)
-- `accion`: qué acción debe despachar cuando se ejecuta (ej: `CREAR_EGRESO`)
-- `payload`: datos para que un handler (en tu app) ejecute la acción
-- `siguienteEjecucionAt`: timestamp (UnixMillis) que el scheduler usa para decidir si corresponde ejecutar
+Disponibles desde `src/domain/finanzas/contracts/recurrencia.contract.ts`:
 
-Archivo: `src/domain/shared/interfaces/recurrencias.ts`
+- `Recurrencia`
+- `ReglaRecurrencia`
+- `TipoAccionRecurrencia`
+- `EjecucionRecurrencia`
+- `RecurrenciaDispatch`
 
-## Reglas soportadas (scheduler)
+### Entidad
 
-`ReglaRecurrencia` soporta:
-- `frecuencia`: `DIARIA | SEMANAL | MENSUAL | ANUAL`
-- `intervalo`: cada cuántas unidades (default 1)
-- `horarioUTC`: `{ hora, minuto }` (se interpreta en UTC)
-- `diasSemana`: (solo semanal) array de `0..6` (Domingo=0)
-- `diaMes`: (mensual/anual) `1..31` (si el mes no tiene ese día, se usa el último día del mes)
-- `mes`: (anual) `1..12`
+Disponible como comportamiento de dominio:
 
-## Acciones soportadas (despacho)
+- `RecurrenciaEntity`
 
-La recurrencia es un motor genérico: agenda y despacha acciones.
+Responsabilidades observadas:
 
-La librería expone `TipoAccionRecurrencia` con acciones base (y permite extenderlo):
-- `CREAR_EGRESO`
-- `CREAR_CARGO_CLIENTE`
-- `CREAR_MERMA`
-- `CREAR_COMPRA`
-- `CREAR_RECORDATORIO`
-- `ENVIAR_WHATSAPP`
-- `GENERAR_REPORTE`
-- `CREAR_VENTA`
+- crear recurrencias activas;
+- pausar, activar y anular;
+- reprogramar regla;
+- calcular `siguienteEjecucionAt`.
 
-El contenido de `payload` depende de la acción. Para acciones base, existe un mapa de payloads (`RecurrenciaAccionPayloadMap`) que puedes usar/expandir.
+## Qué ya no expone el repositorio actual
 
-## Entidad: `RecurrenciaEntity`
+Durante la auditoría no se encontró `RecurrenciaProcessor`.
 
-La entidad te ayuda a crear y administrar una recurrencia:
-- `RecurrenciaEntity.crear(...)` crea una recurrencia activa con `siguienteEjecucionAt` calculado
-- `activar() / pausar() / anular()`
-- `reprogramarRegla(regla)`
-- `toJSON()` para persistir el contrato `Recurrencia` en tu DB local
+Por eso la librería actual no entrega:
 
-## Procesador: `RecurrenciaProcessor`
+- scheduler local listo para usar;
+- función canónica `ejecutarSiCorresponde`;
+- dispatcher local de acciones;
+- handlers concretos para egresos, cargos, compras o recordatorios.
 
-### `ejecutarSiCorresponde({ recurrencia, now })`
+## Importación recomendada
 
-Entrada:
-- `recurrencia`: contrato `Recurrencia`
-- `now`: UnixMillis opcional (default `Date.now()`)
+Valores publicados en raíz:
 
-Salida:
-- `null` si no corresponde (no está activa, fuera de rango, o aún no llega `siguienteEjecucionAt`)
-- si corresponde, retorna:
-  - `recurrenciaActualizada` (con `ultimaEjecucionAt`, `siguienteEjecucionAt` y `updatedAt`)
-  - `ejecucion` (`EjecucionRecurrencia`) en estado `DESPACHADA` con `{ accion, payload }`
+```ts
+import { RecurrenciaEntity } from "yola-fresh-utils";
+```
 
-Tip: puedes tratar `ejecucion` como un `RecurrenciaDispatch` para pasarlo a tu dispatcher/handlers.
+Contratos compartidos:
 
-## Flujo recomendado (frontend / consumer)
+```ts
+import type {
+  EjecucionRecurrencia,
+  Recurrencia,
+  ReglaRecurrencia,
+  TipoAccionRecurrencia,
+} from "yola-fresh-utils";
+```
 
-1) El usuario crea una recurrencia desde UI (form):
-   - frecuencia, horario, intervalo
-   - acción (egreso o cargo cliente)
+## Lectura correcta del modelo
 
-2) Persistir localmente:
-   - guardar `Recurrencia` en SQLite (vía PouchDB adapter sqlite)
+### `Recurrencia`
 
-3) Scheduler local (offline-first):
-   - en background o al abrir la app, obtener recurrencias activas
-   - para cada una, llamar `RecurrenciaProcessor.ejecutarSiCorresponde`
-   - si retorna resultado:
-     - persistir `EjecucionRecurrencia`
-     - encolar o ejecutar un dispatcher local: `switch (ejecucion.accion)` → handler
-     - los handlers crean y persisten documentos (ej: `Egreso`, `MovimientoCuentaCliente`, etc.)
-     - actualizar la `Recurrencia` con `recurrenciaActualizada`
+Declara:
 
-4) Sync:
-   - sincronizar documentos hacia CouchDB cuando haya conexión
-   - tratar ejecuciones como idempotentes (no re-ejecutar si ya existe una `EjecucionRecurrencia` para el mismo `scheduledFor`)
+- regla temporal;
+- acción a despachar;
+- payload;
+- rango de vigencia;
+- próxima ejecución calculada.
 
-## UI mínima sugerida
+### `ReglaRecurrencia`
 
-- Lista de recurrencias (ACTIVA/PAUSADA/ANULADA)
-- Detalle de recurrencia (regla + acción)
-- Historial de ejecuciones (DESPACHADA/COMPLETADA/FALLIDA)
-- Acciones: pausar, reanudar, anular, editar regla
-- Vista “próximas ejecuciones” (calculada a partir de `siguienteEjecucionAt` y la regla)
+Define:
+
+- frecuencia `DIARIA | SEMANAL | MENSUAL | ANUAL`;
+- intervalo;
+- horario UTC;
+- días de semana o día de mes cuando aplica.
+
+### `EjecucionRecurrencia`
+
+Representa un rastro contractual posible de despacho o resultado, pero no implica que la librería lo genere automáticamente.
+
+## Flujo recomendado para consumer offline-first
+
+### 1. Captura
+
+- crear o reconstruir `RecurrenciaEntity`;
+- persistir `Recurrencia` en almacenamiento local del consumer;
+- añadir metadata local fuera del contrato base cuando haga falta.
+
+### 2. Evaluación
+
+El consumer debe decidir por su cuenta:
+
+- cuándo revisar recurrencias activas;
+- cómo comparar `siguienteEjecucionAt` con reloj local;
+- cómo registrar una `EjecucionRecurrencia`;
+- cómo recalcular el siguiente disparo.
+
+### 3. Despacho local
+
+- traducir `accion` y `payload` a casos de uso propios;
+- crear documentos locales según política del producto;
+- mantener idempotencia para no duplicar ejecuciones cuando reaparece conectividad.
+
+## Restricciones observadas
+
+- varias acciones del mapa contractual siguen con `payload` tipado como `unknown`;
+- la librería no conoce SQLite, CouchDB, PouchDB ni sincronización concreta;
+- la librería no decide por sí sola si una recurrencia ya fue ejecutada en el dispositivo.
+
+## Pendiente de validación
+
+- si el ecosistema volverá a publicar un processor puro reutilizable;
+- qué acciones serán oficiales y cuáles quedarán solo como extensiones de consumer;
+- cómo se homologará la auditoría de ejecuciones entre app local y backend.
+
+## Referencias
+
+- [../README.md](../README.md)
+- [../core/README.md](../core/README.md)
+- [../core/contratos-compartidos.md](../core/contratos-compartidos.md)

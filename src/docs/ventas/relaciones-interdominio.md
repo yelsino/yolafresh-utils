@@ -2,7 +2,7 @@
 
 ## Propósito
 
-Este documento explica cómo se relaciona `Venta` con otros Domains relevantes del ecosistema YolaFresh, especialmente `CuentaCliente`, `Inventario`, `Almacén`, `Stock`, `Caja` y `Pago`.
+Este documento explica cómo se relaciona `Venta` con otros Domains relevantes del ecosistema YolaFresh, especialmente subdominio de cuenta cliente dentro de `finanzas`, `Inventario`, `Almacén`, `Stock`, `Caja` y `Pago`.
 
 ## Regla general
 
@@ -52,7 +52,7 @@ Otros Domains responden preguntas distintas:
 
 No guardar deuda, saldo o adelanto dentro de `Venta`.
 
-Esos conceptos viven en [cuenta-cliente](../cuenta-cliente/README.md).
+Esos conceptos viven en [finanzas](../finanzas/README.md) y en [cuenta-cliente-modelo-vigente.md](../finanzas/cuenta-cliente-modelo-vigente.md).
 
 ## Relación con `Pago`
 
@@ -98,15 +98,9 @@ Para una venta, la relación observada es:
 - `origenDocumento = VENTA`
 - `documentoReferenciaId = ventaId`
 
-`MovimientoInventarioService` valida:
-
-- estado `APLICADO`
-- items no vacíos
-- almacén origen para `SALIDA`
-
 ### Regla canónica
 
-La venta no modifica stock directamente. El stock cambia a través de `MovimientoInventario`.
+La venta no modifica stock directamente. El stock cambia a través de `MovimientoInventario` y de la orquestación que implemente el consumer.
 
 ## Relación con `Almacen`
 
@@ -193,4 +187,4 @@ Eso se resuelve mediante integración entre Domains.
 
 - [modelo-vigente.md](./modelo-vigente.md)
 - [guia-de-consumo.md](./guia-de-consumo.md)
-- [../cuenta-cliente/README.md](../cuenta-cliente/README.md)
+- [../finanzas/cuenta-cliente-modelo-vigente.md](../finanzas/cuenta-cliente-modelo-vigente.md)

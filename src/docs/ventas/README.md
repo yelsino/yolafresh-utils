@@ -6,14 +6,14 @@ Este directorio agrupa la documentación vigente del Domain de ventas en `yolafr
 
 La evidencia principal vive en:
 
-- [Venta.ts](../../domain/ventas/Venta.ts)
-- [CarritoVenta.ts](../../domain/ventas/CarritoVenta.ts)
-- [VentaSnapshot.ts](../../domain/ventas/VentaSnapshot.ts)
-- [snapshots.ts](../../domain/ventas/snapshots.ts)
-- [customer-account.ts](../../domain/shared/interfaces/customer-account.ts)
-- [Inventario.ts](../../domain/shared/interfaces/Inventario.ts)
-- [caja.ts](../../domain/shared/interfaces/caja.ts)
-- [pagos.ts](../../domain/shared/interfaces/pagos.ts)
+- [Venta.ts](../../domain/ventas/entities/Venta.ts)
+- [CarritoVenta.ts](../../domain/ventas/entities/CarritoVenta.ts)
+- [VentaSnapshot.ts](../../domain/ventas/entities/VentaSnapshot.ts)
+- [pedido.contract.ts](../../domain/ventas/contracts/pedido.contract.ts)
+- [cuenta-cliente.contract.ts](../../domain/finanzas/contracts/cuenta-cliente.contract.ts)
+- [inventario.contract.ts](../../domain/inventario/contracts/inventario.contract.ts)
+- [caja.contract.ts](../../domain/tesoreria/contracts/caja.contract.ts)
+- [pago.contract.ts](../../domain/tesoreria/contracts/pago.contract.ts)
 
 ## Alcance
 
@@ -26,6 +26,8 @@ Este Domain documenta:
 - integración con caja y pagos
 - relación con cuenta cliente
 - impacto sobre inventario, almacén y stock
+
+La librería ya no publica snapshots técnicos de persistencia ni helpers operativos de integración.
 
 ## Documentos
 
@@ -53,4 +55,4 @@ Este Domain documenta:
 ## Referencias
 
 - [../README.md](../README.md)
-- [../cuenta-cliente/README.md](../cuenta-cliente/README.md)
+- [../finanzas/README.md](../finanzas/README.md)

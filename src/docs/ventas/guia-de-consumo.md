@@ -64,7 +64,7 @@ Si venta impacta stock:
 
 - generar `MovimientoInventario`
 - usar `origenDocumento = VENTA`
-- aplicar con `MovimientoInventarioService`
+- resolver aplicación de stock en la capa consumidora o módulo operativo correspondiente
 
 ## Lectura recomendada por caso
 
