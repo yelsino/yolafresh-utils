@@ -188,7 +188,7 @@ Catálogo organizacional de cargos:
 
 ### 4.1 `CONFIGURACIONES_ROLES`
 
-Referencia histórica: el paquete antes exponía helpers RBAC; en el core vigente solo permanecen contratos y catálogos.
+En el core vigente permanecen contratos y catálogos seed RBAC. Los helpers externos históricos ya no forman parte de la surface pública.
 
 Mapa oficial de configuración para roles predefinidos.
 
@@ -206,7 +206,7 @@ Su objetivo es ofrecer una base lista para:
 
 ### 4.2 `CARGOS_ROLES_SUGERIDOS`
 
-Referencia histórica: relación sugerida preservada como contexto, no como helper vigente del paquete.
+Relación sugerida vigente publicada como catálogo seed del paquete.
 
 Mapa de relación sugerida entre:
 
@@ -223,7 +223,7 @@ Importante:
 
 ### 4.3 `PERMISOS_CRITICOS`
 
-Referencia histórica: clasificación crítica conservada como criterio documental, no como export activo de utilidades.
+Clasificación crítica vigente publicada como catálogo seed oficial.
 
 Lista oficial de permisos considerados sensibles o críticos.
 
@@ -236,27 +236,15 @@ Su objetivo es identificar acciones que normalmente requieren:
 
 ## 5. Utilidades expuestas
 
-Referencia histórica: utilidades RBAC ya no forman parte de la surface actual.
+Referencia histórica: utilidades RBAC externas ya no forman parte de la surface actual.
 
-La librería expone utilidades puras para trabajar con el modelo RBAC:
+El paquete vigente conserva:
 
-- `puede(usuario, permiso)`
-- `tieneRol(usuario, nombreRol)`
-- `puedeAccederEntidad(usuario, entidadId)`
-- `obtenerPermisos(usuario)`
-- `puedeMultiple(usuario, permisos, requiereTodos?)`
-- `crearSesionContexto(usuario, entidadActivaId?)`
-- `requierePermiso(permisoRequerido)`
-- `requiereRol(rolRequerido)`
-- `puedeEnEntidad(usuario, permiso, entidadId)`
-- `obtenerEntidadesAccesibles(usuario, tipo?)`
-- `crearRolPredefinido(tipo, id)`
+- contratos (`Permisos`, `RolesPredefinidos`, `Rol`, `SesionContexto`, `IUsuario`);
+- comportamiento interno en `Usuario`;
+- catálogos seed (`CONFIGURACIONES_ROLES`, `CARGOS_ROLES_SUGERIDOS`, `PERMISOS_CRITICOS`).
 
-Estas utilidades:
-
-- operan sobre contratos del dominio
-- no dependen de infraestructura
-- no imponen un framework de UI o backend
+Los helpers externos documentados en etapas anteriores deben tratarse como referencia histórica, no como imports actuales del paquete.
 
 ## 6. Semántica funcional expuesta
 

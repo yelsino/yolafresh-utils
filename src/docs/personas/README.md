@@ -71,6 +71,9 @@ Evita errores conceptuales como:
 - `SesionContexto`
 - `Permisos`
 - `RolesPredefinidos`
+- `CONFIGURACIONES_ROLES`
+- `CARGOS_ROLES_SUGERIDOS`
+- `PERMISOS_CRITICOS`
 - `Direccion`
 - `DireccionRelacion`
 

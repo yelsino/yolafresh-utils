@@ -53,6 +53,21 @@ Lectura correcta:
 - no impiden crear roles propios en consumers;
 - no sustituyen la validación por permiso.
 
+### Catálogos seed RBAC
+
+Además del vocabulario base, el paquete vuelve a publicar catálogos seed oficiales para consumers:
+
+- `CONFIGURACIONES_ROLES`: composición base de permisos por rol predefinido;
+- `CARGOS_ROLES_SUGERIDOS`: relación sugerida entre `CargosPersonal` y `RolesPredefinidos`;
+- `PERMISOS_CRITICOS`: clasificación oficial de acciones sensibles.
+
+Lectura correcta:
+
+- pertenecen al Domain `personas`;
+- sirven como seeds y configuración compartida;
+- no sustituyen la validación por `Permisos`;
+- no implican que hayan vuelto los helpers externos de autorización.
+
 ### `SesionContexto`
 
 Representa contexto operativo de un usuario autenticado.
@@ -114,12 +129,14 @@ El catálogo actual cubre, entre otras áreas:
 ## Restricciones observadas
 
 - el paquete actual no publica helpers RBAC externos como fuente oficial del core;
+- el paquete sí publica catálogos seed RBAC reutilizables para configuración y bootstrap de consumers;
 - la librería no define autenticación HTTP, tokens, middleware ni persistencia de sesión;
 - los permisos deprecados deben tratarse como compatibilidad, no como vocabulario recomendado.
 
 ## Decisiones vigentes observables
 
 - el paquete no publica helpers externos de autorización; el vocabulario canónico vive en `Usuario`, `Rol`, `Permisos` y `SesionContexto`;
+- el paquete vuelve a publicar `CONFIGURACIONES_ROLES`, `CARGOS_ROLES_SUGERIDOS` y `PERMISOS_CRITICOS` como catálogos seed oficiales del dominio;
 - `IUsuario` separa `activo` de `emailVerificado`, por lo que ambos estados conviven sin equivalencia automática;
 - `RolesPredefinidos` publica seeds oficiales iniciales sin impedir roles personalizados en consumers.
 

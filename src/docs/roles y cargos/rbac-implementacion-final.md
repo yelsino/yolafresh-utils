@@ -56,7 +56,7 @@ El cargo sirve para operación organizacional, UI, RRHH y sugerencias de configu
 
 ### 2.2 Recursos exportados por la librería
 
-La librería ya expone:
+La librería hoy expone:
 
 - `Permisos`
 - `RolesPredefinidos`
@@ -65,16 +65,11 @@ La librería ya expone:
 - `Entidad`
 - `SesionContexto`
 - `IUsuario`
-- `puede()`
-- `puedeMultiple()`
-- `tieneRol()`
-- `puedeAccederEntidad()`
-- `obtenerPermisos()`
-- `obtenerEntidadesAccesibles()`
-- `crearSesionContexto()`
 - `CONFIGURACIONES_ROLES`
 - `CARGOS_ROLES_SUGERIDOS`
 - `PERMISOS_CRITICOS`
+
+Los helpers externos históricos de autorización (`puede`, `tieneRol`, `puedeMultiple`, `obtenerPermisos`, etc.) ya no forman parte de la surface pública vigente del paquete.
 
 ## 3. Catálogo oficial de roles predefinidos
 
