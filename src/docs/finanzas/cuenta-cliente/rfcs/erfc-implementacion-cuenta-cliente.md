@@ -71,146 +71,219 @@ Consumo no válido:
 
 ## Contratos publicados
 
-### `CuentaCliente`
+Esta sección muestra todos los tipos y contratos publicados hoy por `CuentaCliente`, respetando exactamente la definición vigente del paquete.
 
-Responsabilidad:
+### Tipos y contratos completos
+
+```ts
+import { MetodoPago } from "./finanzas.contract";
+
+export type MonedaCuentaCliente = "PEN" | "USD";
+
+export type EstadoCuentaCliente = "ACTIVA" | "SUSPENDIDA" | "CERRADA";
+
+export type EstadoMovimientoCuentaCliente =
+  | "CONFIRMADO"
+  | "ANULADO"
+  | "RECHAZADO"
+  | "CONTABILIZADO"
+  | "REVERTIDO";
+
+export type EstadoImputacionCuentaCliente = "APLICADA" | "REVERTIDA";
+
+export type RolRecepcionCobroCliente = "CAJERO" | "VENDEDOR" | "SISTEMA";
+
+export interface CuentaCliente {
+  id: string;
+  clienteId: string;
+  estado: EstadoCuentaCliente;
+  moneda?: MonedaCuentaCliente;
+  aperturaAt?: Date;
+  cierreAt?: Date;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+export type TipoMovimientoCuentaCliente =
+  | "DEPOSITO"
+  | "COBRO"
+  | "VENTA"
+  | "DEVOLUCION"
+  | "REVERSA"
+  | "AJUSTE";
+
+export type DireccionMovimientoCuentaCliente = "CREDITO" | "DEBITO";
+
+export type OrigenMovimientoCuentaCliente =
+  | "RECIBO_COBRO"
+  | "COBRO"
+  | "DEPOSITO"
+  | "VENTA"
+  | "PEDIDO"
+  | "DEVOLUCION"
+  | "REVERSA"
+  | "RECURRENCIA"
+  | "TRANSFERENCIA_CUSTODIA"
+  | "MIGRACION"
+  | "MANUAL"
+  | "AJUSTE_MANUAL"
+  | "EXTERNO";
+
+export interface MovimientoCuentaCliente {
+  id: string;
+  cuentaId: string;
+  clienteId?: string;
+  tipo: TipoMovimientoCuentaCliente;
+  direccion: DireccionMovimientoCuentaCliente;
+  monto: number;
+  moneda: MonedaCuentaCliente;
+  tipoOrigen: OrigenMovimientoCuentaCliente;
+  origenId: string;
+  estado?: EstadoMovimientoCuentaCliente;
+  descripcion?: string;
+  recepcionCobroId?: string;
+  cajaId?: string;
+  turnoCajaId?: string;
+  custodioId?: string;
+  idempotencyKey?: string;
+  creadoPorId?: string;
+  reversaDeMovimientoId?: string;
+  deltaSaldoFavor?: number;
+  deltaSaldoPorCobrar?: number;
+  occurredAt?: Date;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+export interface ImputacionCuentaCliente {
+  id: string;
+  cuentaId?: string;
+  clienteId?: string;
+  movimientoOrigenId: string;
+  movimientoDestinoId: string;
+  monto: number;
+  moneda: MonedaCuentaCliente;
+  estado?: EstadoImputacionCuentaCliente;
+  estrategia?: "FIFO";
+  createdAt: Date;
+}
+
+export type EstadoRecepcionCobroCliente =
+  | "CREADO"
+  | "RECIBIDO"
+  | "EN_TRANSFERENCIA_CUSTODIA"
+  | "LIQUIDADO"
+  | "RECHAZADO"
+  | "ANULADO";
+
+export interface RecepcionCobroCliente {
+  id: string;
+  clienteId: string;
+  cuentaId?: string;
+  monto: number;
+  moneda: MonedaCuentaCliente;
+  metodoPago: MetodoPago;
+  creadoPorId: string;
+  recibidoPorUsuarioId?: string;
+  recibidoPorRol?: RolRecepcionCobroCliente;
+  custodioId?: string;
+  cajaId?: string;
+  turnoCajaId?: string;
+  tipoOrigen?: OrigenMovimientoCuentaCliente;
+  origenId?: string;
+  estado: EstadoRecepcionCobroCliente;
+  idempotencyKey: string;
+  occurredAt?: Date;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+export type EstadoTransferenciaCustodiaCobro =
+  | "CREADA"
+  | "RECIBIDA"
+  | "PENDIENTE"
+  | "ACEPTADA"
+  | "RECHAZADA"
+  | "ANULADA";
+
+export interface TransferenciaCustodiaCobro {
+  id: string;
+  recepcionCobroId: string;
+  custodioOrigenId: string;
+  custodioDestinoId: string;
+  turnoCajaOrigenId: string;
+  turnoCajaDestinoId: string;
+  cajaOrigenId?: string;
+  cajaDestinoId?: string;
+  estado: EstadoTransferenciaCustodiaCobro;
+  idempotencyKey?: string;
+  recibidaPorId?: string;
+  rechazadaPorId?: string;
+  anuladaPorId?: string;
+  motivoRechazo?: string;
+  motivoAnulacion?: string;
+  solicitadaAt?: Date;
+  aceptadaAt?: Date;
+  createdAt: Date;
+  resueltaAt?: Date;
+}
+
+export interface ResumenCuentaCliente {
+  id?: string;
+  cuentaId: string;
+  clienteId?: string;
+  saldoFavor: number;
+  saldoPorCobrar: number;
+  saldoCreditoNoAplicado?: number;
+  moneda: MonedaCuentaCliente;
+  ultimoAsientoId?: string;
+  ultimoAsientoAt?: Date;
+  cantidadAsientosFuente?: number;
+  cantidadImputacionesFuente?: number;
+  version?: number;
+  reconstruidaAt?: Date;
+  createdAt?: Date;
+  updatedAt: Date;
+}
+```
+
+### Lectura de los contratos
+
+#### `CuentaCliente`
 
 - identidad de cuenta comercial del cliente;
 - estado de vida de la cuenta;
-- apertura y cierre.
-
-Campos principales observables:
-
-- `id`
-- `clienteId`
-- `estado`
-- `moneda`
-- `aperturaAt`
-- `cierreAt`
-
-Lectura correcta:
-
+- apertura y cierre;
 - no guarda ledger;
-- no guarda saldo histórico;
 - no reemplaza `ResumenCuentaCliente`.
 
-### `MovimientoCuentaCliente`
+#### `MovimientoCuentaCliente`
 
-Responsabilidad:
+- ledger oficial de impacto financiero individual;
+- exige `tipoOrigen` y `origenId`;
+- soporta reversa, auditoría y trazabilidad operativa.
 
-- ledger oficial de impacto financiero individual.
+#### `ImputacionCuentaCliente`
 
-Campos principales observables:
+- enlaza crédito con débito;
+- soporta aplicación parcial;
+- hoy publica `FIFO` como estrategia explícita.
 
-- `tipo`
-- `direccion`
-- `monto`
-- `moneda`
-- `tipoOrigen`
-- `origenId`
-- `recepcionCobroId`
-- `cajaId`
-- `turnoCajaId`
-- `custodioId`
-- `reversaDeMovimientoId`
-- `deltaSaldoFavor`
-- `deltaSaldoPorCobrar`
+#### `RecepcionCobroCliente`
 
-Lectura correcta:
+- registra recepción operativa del dinero;
+- no equivale por sí sola a impacto financiero confirmado;
+- no debe colapsarse con `MovimientoCuentaCliente`.
 
-- es documento central para débitos y créditos;
-- exige origen explícito;
-- soporta auditoría, reversa y trazabilidad operativa.
+#### `TransferenciaCustodiaCobro`
 
-### `ImputacionCuentaCliente`
+- modela traspaso de custodia;
+- separa recepción de custodia efectiva;
+- no reemplaza ledger.
 
-Responsabilidad:
+#### `ResumenCuentaCliente`
 
-- enlazar crédito con débito;
-- soportar consumo parcial;
-- dejar rastro de aplicación.
-
-Campos principales observables:
-
-- `movimientoOrigenId`
-- `movimientoDestinoId`
-- `monto`
-- `moneda`
-- `estado`
-- `estrategia`
-
-Lectura correcta:
-
-- hoy la estrategia explícita observada es `FIFO`.
-
-### `RecepcionCobroCliente`
-
-Responsabilidad:
-
-- recepción operativa del dinero del cliente.
-
-Campos principales observables:
-
-- `monto`
-- `moneda`
-- `metodoPago`
-- `creadoPorId`
-- `recibidoPorUsuarioId`
-- `recibidoPorRol`
-- `custodioId`
-- `cajaId`
-- `turnoCajaId`
-- `tipoOrigen`
-- `origenId`
-- `estado`
-- `idempotencyKey`
-
-Lectura correcta:
-
-- no equivale por sí sola a ledger financiero;
-- recepción y movimiento no se deben colapsar.
-
-### `TransferenciaCustodiaCobro`
-
-Responsabilidad:
-
-- traspaso de custodia entre responsables y turnos.
-
-Campos principales observables:
-
-- `recepcionCobroId`
-- `custodioOrigenId`
-- `custodioDestinoId`
-- `turnoCajaOrigenId`
-- `turnoCajaDestinoId`
-- `cajaOrigenId`
-- `cajaDestinoId`
-- `estado`
-
-Lectura correcta:
-
-- custodia no reemplaza recepción;
-- custodia no reemplaza ledger.
-
-### `ResumenCuentaCliente`
-
-Responsabilidad:
-
-- lectura reconstruible de saldos.
-
-Campos principales observables:
-
-- `saldoFavor`
-- `saldoPorCobrar`
-- `saldoCreditoNoAplicado`
-- `ultimoAsientoId`
-- `cantidadAsientosFuente`
-- `cantidadImputacionesFuente`
-- `version`
-- `reconstruidaAt`
-
-Lectura correcta:
-
+- expone lectura reconstruible de saldo;
 - sirve para consulta rápida;
 - no reemplaza movimientos ni imputaciones como fuente primaria.
 
