@@ -20,6 +20,7 @@ La evidencia vigente principal está en [cuenta-cliente.contract.ts](../../../do
 - [casos-de-uso.md](./casos-de-uso.md): casuísticas que cubre hoy el subdominio.
 - [operacion-y-auditoria.md](./operacion-y-auditoria.md): flujos mínimos, custodia y trazabilidad.
 - [rfcs/erfc-implementacion-cuenta-cliente.md](./rfcs/erfc-implementacion-cuenta-cliente.md): guía de implementación respetando contratos oficiales.
+- [rfcs/rfc-reestructuracion-cuenta-cliente-opcion-a.md](./rfcs/rfc-reestructuracion-cuenta-cliente-opcion-a.md): decisión implementada para modelo ERP sin deltas embebidos.
 - [rfcs/migracion-ingles-espanol.md](./rfcs/migracion-ingles-espanol.md): RFC de transición para consumers legacy.
 
 ## Conceptos principales

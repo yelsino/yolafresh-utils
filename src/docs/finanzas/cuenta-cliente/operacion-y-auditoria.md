@@ -30,27 +30,29 @@ La custodia del dinero recibido se expresa con `TransferenciaCustodiaCobro`.
 
 1. Crear `RecepcionCobroCliente`.
 2. Cuando custodia quede resuelta según política operativa, crear `MovimientoCuentaCliente` tipo `DEPOSITO`.
-3. Actualizar `ResumenCuentaCliente.saldoFavor`.
+3. Reconstruir `ResumenCuentaCliente` desde movimientos + imputaciones vigentes.
 
 ### Cobro parcial de deuda
 
 1. Crear `RecepcionCobroCliente`.
 2. Registrar `MovimientoCuentaCliente` tipo `COBRO`.
-3. Actualizar `ResumenCuentaCliente.saldoPorCobrar`.
+3. Crear `ImputacionCuentaCliente` contra débitos abiertos según estrategia vigente.
+4. Reconstruir `ResumenCuentaCliente`.
 
 ### Sobrepago
 
 Si cliente paga más de lo necesario:
 
 - parte aplicada a deuda o cargo se registra con movimiento correspondiente;
-- excedente puede expresarse como `DEPOSITO`;
-- si un débito consume crédito previo, crear `ImputacionCuentaCliente`.
+- excedente permanece como crédito abierto del `COBRO` o puede modelarse como `DEPOSITO` explícito según caso de negocio;
+- si un débito consume crédito previo, crear `ImputacionCuentaCliente`;
+- reconstruir `ResumenCuentaCliente` desde abiertos e imputados.
 
 ### Uso de saldo a favor
 
 1. Registrar `MovimientoCuentaCliente` tipo `VENTA`.
 2. Aplicar créditos previos mediante `ImputacionCuentaCliente`.
-3. Reducir `saldoFavor` del resumen o aumentar `saldoPorCobrar` según efecto neto.
+3. Reconstruir `ResumenCuentaCliente` según débitos abiertos y créditos no aplicados.
 
 ### Devolución
 
@@ -92,6 +94,8 @@ Si cliente paga más de lo necesario:
 - monto;
 - reversa.
 
+No deja deltas acumulados de resumen.
+
 ### Aplicación entre movimientos
 
 `ImputacionCuentaCliente` deja rastro de:
@@ -115,7 +119,7 @@ Por eso:
 
 - `RecepcionCobroCliente` no reemplaza ledger financiero;
 - `TransferenciaCustodiaCobro` no reemplaza recepción original;
-- `MovimientoCuentaCliente` no guarda saldo acumulado final como única verdad;
+- `MovimientoCuentaCliente` no guarda saldo acumulado ni deltas embebidos de resumen;
 - `ResumenCuentaCliente` no reemplaza ledger.
 
 ## Regla de anulación
@@ -153,7 +157,8 @@ No corresponde:
 - `LIQUIDADO` pertenece al ciclo de `RecepcionCobroCliente` y representa cierre operativo de una recepción ya resuelta;
 - `MovimientoCuentaCliente` y `TransferenciaCustodiaCobro` son contratos separados, por lo que custodia y movimiento financiero pueden auditarse sin colapsar en un único documento;
 - `AJUSTE` existe como movimiento explícito y debe tratarse como corrección manual, no como sustituto de `REVERSA`;
-- `RECHAZADO`, `ANULADO` y `REVERTIDO` expresan decisiones distintas: rechazo operativo, anulación del documento y reversa de movimiento ya registrado.
+- `RECHAZADO`, `ANULADO` y `REVERTIDO` expresan decisiones distintas: rechazo operativo, anulación del documento y reversa de movimiento ya registrado;
+- `ResumenCuentaCliente` debe reconstruirse desde movimientos vigentes e imputaciones vigentes, no desde deltas guardados por movimiento.
 
 ## Referencias
 

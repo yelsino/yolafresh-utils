@@ -40,6 +40,7 @@ La lectura recomendada va de:
 - [finanzas/cuenta-cliente/operacion-y-auditoria.md](./finanzas/cuenta-cliente/operacion-y-auditoria.md)
 - [finanzas/cuenta-cliente/casos-de-uso.md](./finanzas/cuenta-cliente/casos-de-uso.md)
 - [finanzas/cuenta-cliente/rfcs/erfc-implementacion-cuenta-cliente.md](./finanzas/cuenta-cliente/rfcs/erfc-implementacion-cuenta-cliente.md)
+- [finanzas/cuenta-cliente/rfcs/rfc-reestructuracion-cuenta-cliente-opcion-a.md](./finanzas/cuenta-cliente/rfcs/rfc-reestructuracion-cuenta-cliente-opcion-a.md)
 - [finanzas/recurrencias/README.md](./finanzas/recurrencias/README.md)
 - [finanzas/recurrencias/backend.md](./finanzas/recurrencias/backend.md)
 - [finanzas/recurrencias/frontend.md](./finanzas/recurrencias/frontend.md)

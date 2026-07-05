@@ -70,8 +70,6 @@ export interface MovimientoCuentaCliente {
   idempotencyKey?: string;
   creadoPorId?: string;
   reversaDeMovimientoId?: string;
-  deltaSaldoFavor?: number;
-  deltaSaldoPorCobrar?: number;
   occurredAt?: Date;
   createdAt: Date;
   updatedAt?: Date;

@@ -41,6 +41,12 @@ Responsabilidades observadas:
 - enlazar origen del hecho que produjo el movimiento;
 - reflejar vínculos con recepción, caja, turno o custodio cuando aplica.
 
+Con `Opción A` vigente:
+
+- ya no publica deltas acumulados de resumen;
+- publica solo hecho de ledger;
+- deja a `ImputacionCuentaCliente` la aplicación explícita entre créditos y débitos.
+
 ### `ImputacionCuentaCliente`
 
 Representa aplicación explícita entre movimiento origen y movimiento destino.
@@ -102,12 +108,12 @@ No reemplaza a movimientos ni imputaciones como fuente primaria.
 
 | Valor | Lectura de negocio observada |
 | --- | --- |
-| `DEPOSITO` | Incrementa saldo a favor |
-| `COBRO` | Reduce saldo por cobrar |
-| `VENTA` | Genera cargo o consume saldo |
-| `DEVOLUCION` | Devuelve valor a relación financiera |
-| `REVERSA` | Revierte movimiento previo |
-| `AJUSTE` | Ajuste manual o administrativo |
+| `DEPOSITO` | Genera crédito disponible a favor del cliente |
+| `COBRO` | Genera crédito aplicable a débitos abiertos |
+| `VENTA` | Genera débito y abre saldo por cobrar |
+| `DEVOLUCION` | Genera crédito disponible a favor del cliente |
+| `REVERSA` | Neutraliza efecto económico de movimiento previo |
+| `AJUSTE` | Corrección administrativa explícita y auditable |
 
 ### Dirección del movimiento
 
@@ -172,6 +178,8 @@ Lectura importante:
 - no registrar impacto financiero sin `tipoOrigen` y `origenId`;
 - separar recepción, custodia, ledger e imputación;
 - modelar consumo de créditos mediante `ImputacionCuentaCliente`;
+- no reconstruir saldo desde deltas embebidos en `MovimientoCuentaCliente`;
+- tratar todo `DEBITO` como exposición abierta y todo `CREDITO` como crédito abierto, salvo neutralización explícita por reversa;
 - no borrar historia para anular; usar reversa o anulación auditable.
 
 ## Regla de implementación para consumers
@@ -189,6 +197,7 @@ Por eso:
 
 - el contrato actual declara monedas `PEN` y `USD`;
 - la estrategia explícita de imputación observada es `FIFO`;
+- una imputación válida debe unir crédito y débito de misma moneda;
 - recepción y movimiento exponen vínculos a caja, turno y custodio.
 
 ## Decisiones vigentes observables
@@ -196,7 +205,9 @@ Por eso:
 - `AJUSTE` existe como tipo explícito de `MovimientoCuentaCliente` para correcciones manuales auditablemente separadas de `VENTA`, `COBRO`, `DEPOSITO`, `DEVOLUCION` y `REVERSA`;
 - `RecepcionCobroCliente` publica ciclo observable `CREADO`, `RECIBIDO`, `EN_TRANSFERENCIA_CUSTODIA`, `LIQUIDADO`, `RECHAZADO` y `ANULADO`;
 - `TransferenciaCustodiaCobro` publica ciclo observable `CREADA`, `RECIBIDA`, `PENDIENTE`, `ACEPTADA`, `RECHAZADA` y `ANULADA`;
-- `MovimientoCuentaCliente` diferencia `CONFIRMADO` de `CONTABILIZADO`, por lo que confirmación operativa y reflejo contable no son el mismo estado.
+- `MovimientoCuentaCliente` diferencia `CONFIRMADO` de `CONTABILIZADO`, por lo que confirmación operativa y reflejo contable no son el mismo estado;
+- `ResumenCuentaCliente` se interpreta como proyección reconstruible desde movimientos vigentes e imputaciones vigentes;
+- `MovimientoCuentaCliente` ya no publica `deltaSaldoFavor` ni `deltaSaldoPorCobrar`.
 
 ## Referencias
 

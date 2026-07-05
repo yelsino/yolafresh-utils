@@ -43,6 +43,7 @@ Resultado esperado:
 
 - aumenta `saldoFavor`;
 - queda trazabilidad de recepción y eventual custodia;
+- no depende de deltas embebidos en movimiento;
 - no se necesita inventar contrato local de “anticipo”.
 
 ### 2. Venta al crédito
@@ -68,11 +69,13 @@ Contratos implicados:
 
 - `RecepcionCobroCliente`
 - `MovimientoCuentaCliente` tipo `COBRO`
+- `ImputacionCuentaCliente`
 - `ResumenCuentaCliente`
 
 Resultado esperado:
 
 - baja `saldoPorCobrar`;
+- aplicación contra débitos queda explícita en imputaciones;
 - recepción operativa y movimiento financiero no se colapsan en un único documento.
 
 ### 4. Cobro total de deuda
@@ -83,11 +86,13 @@ Contratos implicados:
 
 - `RecepcionCobroCliente`
 - `MovimientoCuentaCliente` tipo `COBRO`
+- `ImputacionCuentaCliente`
 - `ResumenCuentaCliente`
 
 Resultado esperado:
 
 - `saldoPorCobrar` queda en cero cuando no exista residuo;
+- cancelación queda demostrada por imputaciones;
 - auditoría conserva origen, monto y momento de cobro.
 
 ### 5. Sobrepago
@@ -104,7 +109,7 @@ Contratos implicados:
 Resultado esperado:
 
 - parte del dinero cancela deuda;
-- excedente queda como saldo a favor;
+- excedente queda como crédito no aplicado o saldo a favor;
 - aplicación exacta entre movimientos queda trazable.
 
 ### 6. Consumo de saldo a favor
@@ -135,7 +140,8 @@ Contratos implicados:
 Resultado esperado:
 
 - relación financiera se ajusta sin borrar historia previa;
-- efecto puede terminar como saldo a favor según política del consumer.
+- efecto genera crédito disponible a favor del cliente;
+- saldo final se obtiene por reconstrucción e imputación, no por deltas embebidos.
 
 ### 8. Ajuste manual auditable
 
@@ -148,6 +154,7 @@ Contratos implicados:
 Resultado esperado:
 
 - corrección queda separada de `VENTA`, `COBRO`, `DEPOSITO`, `DEVOLUCION` y `REVERSA`;
+- puede ser `CREDITO` o `DEBITO` según corrección;
 - consumer no usa cambios silenciosos sobre históricos.
 
 ### 9. Reversa o anulación de movimiento

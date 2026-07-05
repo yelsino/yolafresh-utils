@@ -2,7 +2,7 @@
 
 ## Estado
 
-Vigente como guía de implementación para consumers que integran `CuentaCliente` desde `yola-fresh-utils`.
+Vigente e implementado para consumers que integran `CuentaCliente` desde `yola-fresh-utils`.
 
 ## Propósito
 
@@ -71,7 +71,7 @@ Consumo no válido:
 
 ## Contratos publicados
 
-Esta sección muestra todos los tipos y contratos publicados hoy por `CuentaCliente`, respetando exactamente la definición vigente del paquete.
+Esta sección muestra todos los tipos y contratos publicados hoy por `CuentaCliente`, respetando exactamente la definición vigente del paquete y la implementación de `Opción A`.
 
 ### Tipos y contratos completos
 
@@ -148,8 +148,6 @@ export interface MovimientoCuentaCliente {
   idempotencyKey?: string;
   creadoPorId?: string;
   reversaDeMovimientoId?: string;
-  deltaSaldoFavor?: number;
-  deltaSaldoPorCobrar?: number;
   occurredAt?: Date;
   createdAt: Date;
   updatedAt?: Date;
@@ -261,13 +259,15 @@ export interface ResumenCuentaCliente {
 
 - ledger oficial de impacto financiero individual;
 - exige `tipoOrigen` y `origenId`;
+- no publica deltas acumulados de resumen;
 - soporta reversa, auditoría y trazabilidad operativa.
 
 #### `ImputacionCuentaCliente`
 
 - enlaza crédito con débito;
 - soporta aplicación parcial;
-- hoy publica `FIFO` como estrategia explícita.
+- hoy publica `FIFO` como estrategia explícita;
+- explica aplicación sin depender de deltas en movimiento.
 
 #### `RecepcionCobroCliente`
 
@@ -310,6 +310,7 @@ Detalle operativo y ejemplos en [casos-de-uso.md](../casos-de-uso.md).
 - `ResumenCuentaCliente` no es ledger oficial;
 - todo impacto financiero debe llevar `tipoOrigen` y `origenId`;
 - recepción, custodia, ledger e imputación son capas separadas;
+- `MovimientoCuentaCliente` ya no publica `deltaSaldoFavor` ni `deltaSaldoPorCobrar`;
 - la anulación debe preservar historia;
 - `AJUSTE` no sustituye a `REVERSA`;
 - `Pago` externo no debe generar por sí solo movimiento financiero en cuenta cliente;
