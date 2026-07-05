@@ -59,7 +59,7 @@ Lee en este orden:
 2. [mapa-del-dominio.md](./mapa-del-dominio.md)
 3. [../ventas/README.md](../ventas/README.md)
 4. [../ventas/modelo-vigente.md](../ventas/modelo-vigente.md)
-5. [../finanzas/cuenta-cliente-modelo-vigente.md](../finanzas/cuenta-cliente-modelo-vigente.md)
+5. [../finanzas/cuenta-cliente/modelo-vigente.md](../finanzas/cuenta-cliente/modelo-vigente.md)
 6. [../tesoreria/modelo-vigente.md](../tesoreria/modelo-vigente.md)
 
 Razón:

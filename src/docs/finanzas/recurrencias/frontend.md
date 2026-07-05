@@ -125,6 +125,7 @@ El consumer debe decidir por su cuenta:
 
 ## Referencias
 
+- [README.md](./README.md)
 - [../README.md](../README.md)
-- [../core/README.md](../core/README.md)
-- [../core/contratos-compartidos.md](../core/contratos-compartidos.md)
+- [../../core/README.md](../../core/README.md)
+- [../../core/contratos-compartidos.md](../../core/contratos-compartidos.md)

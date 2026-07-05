@@ -52,7 +52,7 @@ Otros Domains responden preguntas distintas:
 
 No guardar deuda, saldo o adelanto dentro de `Venta`.
 
-Esos conceptos viven en [finanzas](../finanzas/README.md) y en [cuenta-cliente-modelo-vigente.md](../finanzas/cuenta-cliente-modelo-vigente.md).
+Esos conceptos viven en [finanzas](../finanzas/README.md) y en [cuenta-cliente/modelo-vigente.md](../finanzas/cuenta-cliente/modelo-vigente.md).
 
 ## Relación con `Pago`
 
@@ -190,4 +190,4 @@ Eso se resuelve mediante integración entre Domains.
 
 - [modelo-vigente.md](./modelo-vigente.md)
 - [guia-de-consumo.md](./guia-de-consumo.md)
-- [../finanzas/cuenta-cliente-modelo-vigente.md](../finanzas/cuenta-cliente-modelo-vigente.md)
+- [../finanzas/cuenta-cliente/modelo-vigente.md](../finanzas/cuenta-cliente/modelo-vigente.md)

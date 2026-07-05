@@ -149,4 +149,4 @@ Tesoreria expresa operación diaria del dinero. Finanzas consolida egresos, ingr
 - [README.md](./README.md)
 - [../ventas/README.md](../ventas/README.md)
 - [../finanzas/README.md](../finanzas/README.md)
-- [../finanzas/cuenta-cliente-modelo-vigente.md](../finanzas/cuenta-cliente-modelo-vigente.md)
+- [../finanzas/cuenta-cliente/modelo-vigente.md](../finanzas/cuenta-cliente/modelo-vigente.md)

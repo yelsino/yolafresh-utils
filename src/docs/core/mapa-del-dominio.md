@@ -9,7 +9,7 @@ La evidencia principal vive en:
 - [../ventas/relaciones-interdominio.md](../ventas/relaciones-interdominio.md)
 - [../ventas/modelo-vigente.md](../ventas/modelo-vigente.md)
 - [../finanzas/modelo-vigente.md](../finanzas/modelo-vigente.md)
-- [../finanzas/cuenta-cliente-modelo-vigente.md](../finanzas/cuenta-cliente-modelo-vigente.md)
+- [../finanzas/cuenta-cliente/modelo-vigente.md](../finanzas/cuenta-cliente/modelo-vigente.md)
 - [../tesoreria/modelo-vigente.md](../tesoreria/modelo-vigente.md)
 - [../inventario/modelo-vigente.md](../inventario/modelo-vigente.md)
 - [../compras/modelo-vigente.md](../compras/modelo-vigente.md)

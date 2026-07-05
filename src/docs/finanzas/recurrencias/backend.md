@@ -112,6 +112,7 @@ Lectura recomendada:
 
 ## Referencias
 
+- [README.md](./README.md)
 - [../README.md](../README.md)
-- [../core/README.md](../core/README.md)
-- [../core/contratos-compartidos.md](../core/contratos-compartidos.md)
+- [../../core/README.md](../../core/README.md)
+- [../../core/contratos-compartidos.md](../../core/contratos-compartidos.md)

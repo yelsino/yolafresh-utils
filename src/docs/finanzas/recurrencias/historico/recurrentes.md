@@ -53,6 +53,6 @@ El consumer resuelve:
 
 ## Referencias
 
-- [recurrencias-backend.md](./recurrencias-backend.md)
-- [recurrencias-frontend.md](./recurrencias-frontend.md)
-- [../core/contratos-compartidos.md](../core/contratos-compartidos.md)
+- [../backend.md](../backend.md)
+- [../frontend.md](../frontend.md)
+- [../../../core/contratos-compartidos.md](../../../core/contratos-compartidos.md)

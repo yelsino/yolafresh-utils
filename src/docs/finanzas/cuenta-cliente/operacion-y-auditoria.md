@@ -4,7 +4,7 @@
 
 Este documento concentra flujos mínimos, custodia y trazabilidad del subdominio de cuenta cliente dentro de `finanzas`.
 
-La evidencia vigente está en [cuenta-cliente.contract.ts](../../domain/finanzas/contracts/cuenta-cliente.contract.ts).
+La evidencia vigente está en [cuenta-cliente.contract.ts](../../../domain/finanzas/contracts/cuenta-cliente.contract.ts).
 
 ## Regla funcional central
 
@@ -135,6 +135,19 @@ Por eso:
 - auditoría financiera: `MovimientoCuentaCliente` + `ImputacionCuentaCliente`;
 - lectura rápida: `ResumenCuentaCliente`.
 
+Casos de uso detallados en [casos-de-uso.md](./casos-de-uso.md).
+
+## Regla de consumo de contratos
+
+Toda implementación debe consumir contratos oficiales de `yola-fresh-utils`.
+
+No corresponde:
+
+- redefinir modelos locales equivalentes;
+- colapsar recepción y ledger en un solo documento “por comodidad”;
+- usar imports internos del paquete;
+- usar `ResumenCuentaCliente` como si fuera documento fuente.
+
 ## Decisiones vigentes observables
 
 - `LIQUIDADO` pertenece al ciclo de `RecepcionCobroCliente` y representa cierre operativo de una recepción ya resuelta;
@@ -144,5 +157,7 @@ Por eso:
 
 ## Referencias
 
-- [cuenta-cliente-modelo-vigente.md](./cuenta-cliente-modelo-vigente.md)
 - [modelo-vigente.md](./modelo-vigente.md)
+- [casos-de-uso.md](./casos-de-uso.md)
+- [rfcs/erfc-implementacion-cuenta-cliente.md](./rfcs/erfc-implementacion-cuenta-cliente.md)
+- [../modelo-vigente.md](../modelo-vigente.md)

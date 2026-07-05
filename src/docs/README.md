@@ -35,10 +35,14 @@ La lectura recomendada va de:
 
 - [finanzas/README.md](./finanzas/README.md)
 - [finanzas/modelo-vigente.md](./finanzas/modelo-vigente.md)
-- [finanzas/cuenta-cliente-modelo-vigente.md](./finanzas/cuenta-cliente-modelo-vigente.md)
-- [finanzas/cuenta-cliente-operacion-y-auditoria.md](./finanzas/cuenta-cliente-operacion-y-auditoria.md)
-- [finanzas/recurrencias-backend.md](./finanzas/recurrencias-backend.md)
-- [finanzas/recurrencias-frontend.md](./finanzas/recurrencias-frontend.md)
+- [finanzas/cuenta-cliente/README.md](./finanzas/cuenta-cliente/README.md)
+- [finanzas/cuenta-cliente/modelo-vigente.md](./finanzas/cuenta-cliente/modelo-vigente.md)
+- [finanzas/cuenta-cliente/operacion-y-auditoria.md](./finanzas/cuenta-cliente/operacion-y-auditoria.md)
+- [finanzas/cuenta-cliente/casos-de-uso.md](./finanzas/cuenta-cliente/casos-de-uso.md)
+- [finanzas/cuenta-cliente/rfcs/erfc-implementacion-cuenta-cliente.md](./finanzas/cuenta-cliente/rfcs/erfc-implementacion-cuenta-cliente.md)
+- [finanzas/recurrencias/README.md](./finanzas/recurrencias/README.md)
+- [finanzas/recurrencias/backend.md](./finanzas/recurrencias/backend.md)
+- [finanzas/recurrencias/frontend.md](./finanzas/recurrencias/frontend.md)
 
 ### Compras
 
@@ -91,7 +95,7 @@ Los siguientes archivos pueden conservar valor contextual, pero no son fuente pr
 - [types.md](./types.md)
 - [interface-extension-pattern.md](./interface-extension-pattern.md)
 - [personas.md](./personas.md)
-- [finanzas/recurrentes.md](./finanzas/recurrentes.md)
+- [finanzas/recurrencias/historico/recurrentes.md](./finanzas/recurrencias/historico/recurrentes.md)
 - [roles y cargos/rbac-implementacion-final.md](./roles%20y%20cargos/rbac-implementacion-final.md)
 - [roles y cargos/roles-cargos-permisos-yolafresh-limpio.md](./roles%20y%20cargos/roles-cargos-permisos-yolafresh-limpio.md)
 - [rbac-frontend-implementation.md](./rbac-frontend-implementation.md)

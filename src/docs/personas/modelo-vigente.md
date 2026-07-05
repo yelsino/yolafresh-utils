@@ -44,7 +44,7 @@ Responsabilidades observadas:
 Lectura importante:
 
 - crédito, deuda y saldo del cliente no se resuelven aquí de manera canónica;
-- esos conceptos se documentan en `finanzas/cuenta-cliente-modelo-vigente.md`.
+- esos conceptos se documentan en `finanzas/cuenta-cliente/modelo-vigente.md`.
 
 ### `Personal`
 
@@ -177,4 +177,4 @@ Los datos maestros del cliente viven aquí. La deuda y el saldo se resuelven en 
 
 - [README.md](./README.md)
 - [autorizacion-y-sesion.md](./autorizacion-y-sesion.md)
-- [../finanzas/cuenta-cliente-modelo-vigente.md](../finanzas/cuenta-cliente-modelo-vigente.md)
+- [../finanzas/cuenta-cliente/modelo-vigente.md](../finanzas/cuenta-cliente/modelo-vigente.md)

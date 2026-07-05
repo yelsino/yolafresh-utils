@@ -81,4 +81,4 @@ Evita errores conceptuales como:
 
 - [../README.md](../README.md)
 - [../compras/README.md](../compras/README.md)
-- [../finanzas/cuenta-cliente-modelo-vigente.md](../finanzas/cuenta-cliente-modelo-vigente.md)
+- [../finanzas/cuenta-cliente/modelo-vigente.md](../finanzas/cuenta-cliente/modelo-vigente.md)

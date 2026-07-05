@@ -61,14 +61,21 @@ Evita errores conceptuales como:
 - usar `ResumenCuentaCliente` como ledger oficial;
 - usar contabilidad formal para resolver operación financiera diaria.
 
-## Documentos
+## Subdominios y documentos
 
-- [modelo-vigente.md](./modelo-vigente.md): conceptos, responsabilidades, relaciones y restricciones vigentes.
-- [cuenta-cliente-modelo-vigente.md](./cuenta-cliente-modelo-vigente.md): relación financiera con cliente, saldo, cobros e imputaciones.
-- [cuenta-cliente-operacion-y-auditoria.md](./cuenta-cliente-operacion-y-auditoria.md): flujos mínimos, custodia y trazabilidad.
-- [recurrencias-backend.md](./recurrencias-backend.md): guía histórica de consumo backend para recurrencias.
-- [recurrencias-frontend.md](./recurrencias-frontend.md): guía histórica de consumo frontend y offline-first.
-- [recurrentes.md](./recurrentes.md): contexto histórico de casos de uso potenciales.
+- [modelo-vigente.md](./modelo-vigente.md): conceptos, responsabilidades, relaciones y restricciones vigentes del Domain completo.
+- [cuenta-cliente/README.md](./cuenta-cliente/README.md): subdominio de relación financiera con cliente, saldo, cobros, custodia e imputaciones.
+- [recurrencias/README.md](./recurrencias/README.md): contratos vigentes y material histórico de recurrencias.
+
+### Casos de uso destacados dentro de `CuentaCliente`
+
+- adelanto sin venta;
+- venta al crédito;
+- cobro parcial o total;
+- uso de saldo a favor;
+- devolución con efecto financiero;
+- reversa o ajuste auditable;
+- transferencia de custodia del dinero recibido.
 
 ## Terminología canónica
 

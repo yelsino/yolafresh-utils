@@ -4,11 +4,13 @@
 
 Este documento describe subdominio de cuenta cliente como parte de `finanzas`.
 
-La evidencia vigente está en [cuenta-cliente.contract.ts](../../domain/finanzas/contracts/cuenta-cliente.contract.ts).
+La evidencia vigente está en [cuenta-cliente.contract.ts](../../../domain/finanzas/contracts/cuenta-cliente.contract.ts).
 
 ## Visión general
 
 `CuentaCliente` modela relación financiera entre negocio y cliente cuando existe saldo a favor, deuda, cobros, adelantos o aplicaciones entre movimientos.
+
+Casos de uso detallados en [casos-de-uso.md](./casos-de-uso.md).
 
 ## Entidades y contratos principales
 
@@ -172,6 +174,17 @@ Lectura importante:
 - modelar consumo de créditos mediante `ImputacionCuentaCliente`;
 - no borrar historia para anular; usar reversa o anulación auditable.
 
+## Regla de implementación para consumers
+
+La implementación en frontend y backend debe respetar completamente `yola-fresh-utils` como fuente contractual oficial.
+
+Por eso:
+
+- no crear interfaces paralelas para `CuentaCliente` y contratos derivados;
+- no copiar tipos a código local como “modelo propio”;
+- no importar desde rutas privadas del paquete;
+- si hace falta una evolución, primero se cambia el contrato compartido.
+
 ## Restricciones observadas
 
 - el contrato actual declara monedas `PEN` y `USD`;
@@ -188,5 +201,8 @@ Lectura importante:
 ## Referencias
 
 - [README.md](./README.md)
-- [cuenta-cliente-operacion-y-auditoria.md](./cuenta-cliente-operacion-y-auditoria.md)
-- [../ventas/relaciones-interdominio.md](../ventas/relaciones-interdominio.md)
+- [casos-de-uso.md](./casos-de-uso.md)
+- [operacion-y-auditoria.md](./operacion-y-auditoria.md)
+- [rfcs/erfc-implementacion-cuenta-cliente.md](./rfcs/erfc-implementacion-cuenta-cliente.md)
+- [../README.md](../README.md)
+- [../../ventas/relaciones-interdominio.md](../../ventas/relaciones-interdominio.md)

@@ -176,7 +176,7 @@ El Domain financiero registra hechos monetarios. La contabilidad formal balancea
 
 ### Con `Cuenta cliente`
 
-La relación financiera específica con cliente ahora se documenta dentro del mismo Domain en [cuenta-cliente-modelo-vigente.md](./cuenta-cliente-modelo-vigente.md).
+La relación financiera específica con cliente ahora se documenta dentro del mismo Domain en [cuenta-cliente/modelo-vigente.md](./cuenta-cliente/modelo-vigente.md).
 
 ## Reglas de negocio respaldadas por evidencia
 
@@ -202,7 +202,9 @@ La relación financiera específica con cliente ahora se documenta dentro del mi
 ## Referencias
 
 - [README.md](./README.md)
-- [cuenta-cliente-modelo-vigente.md](./cuenta-cliente-modelo-vigente.md)
+- [cuenta-cliente/README.md](./cuenta-cliente/README.md)
+- [cuenta-cliente/modelo-vigente.md](./cuenta-cliente/modelo-vigente.md)
+- [recurrencias/README.md](./recurrencias/README.md)
 - [../tesoreria/README.md](../tesoreria/README.md)
 - [../compras/README.md](../compras/README.md)
 - [../contabilidad/README.md](../contabilidad/README.md)
