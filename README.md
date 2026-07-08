@@ -150,6 +150,7 @@ Más detalle:
 
 - [CHANGELOG.md](./CHANGELOG.md)
 - [src/docs/core/versionado-del-paquete.md](./src/docs/core/versionado-del-paquete.md)
+- [src/docs/core/implementacion-para-clientes.md](./src/docs/core/implementacion-para-clientes.md)
 
 ## Uso
 

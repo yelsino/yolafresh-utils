@@ -23,6 +23,7 @@ La lectura recomendada va de:
 - [core/contratos-compartidos.md](./core/contratos-compartidos.md): mapa de ownership contractual por dominio.
 - [core/primitivas-y-publicacion.md](./core/primitivas-y-publicacion.md): primitivas base, eventos y root mínimo.
 - [core/versionado-del-paquete.md](./core/versionado-del-paquete.md): semver, instalación por versión y flujo de release.
+- [core/implementacion-para-clientes.md](./core/implementacion-para-clientes.md): playbook operativo para repos consumidores.
 - [core/rfc-evolucion-estructura-libreria.md](./core/rfc-evolucion-estructura-libreria.md): RFC cerrado con estructura implementada.
 
 ### Ventas
