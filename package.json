@@ -1,6 +1,6 @@
 {
   "name": "yola-fresh-utils",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "Biblioteca TypeScript de contratos de negocio, primitivas de dominio y entidades ricas del ecosistema YolaFresh.",
   "keywords": [
     "yolafresh",
@@ -104,6 +104,36 @@
       "require": "./dist/domain/finanzas/entities/index.js",
       "types": "./dist/domain/finanzas/entities/index.d.ts"
     },
+    "./auth": {
+      "import": "./dist/domain/auth/index.js",
+      "require": "./dist/domain/auth/index.js",
+      "types": "./dist/domain/auth/index.d.ts"
+    },
+    "./auth/contracts": {
+      "import": "./dist/domain/auth/contracts/index.js",
+      "require": "./dist/domain/auth/contracts/index.js",
+      "types": "./dist/domain/auth/contracts/index.d.ts"
+    },
+    "./auth/catalogs": {
+      "import": "./dist/domain/auth/catalogs/index.js",
+      "require": "./dist/domain/auth/catalogs/index.js",
+      "types": "./dist/domain/auth/catalogs/index.d.ts"
+    },
+    "./auth/helpers": {
+      "import": "./dist/domain/auth/helpers/index.js",
+      "require": "./dist/domain/auth/helpers/index.js",
+      "types": "./dist/domain/auth/helpers/index.d.ts"
+    },
+    "./auth/metadata": {
+      "import": "./dist/domain/auth/metadata/index.js",
+      "require": "./dist/domain/auth/metadata/index.js",
+      "types": "./dist/domain/auth/metadata/index.d.ts"
+    },
+    "./auth/version": {
+      "import": "./dist/domain/auth/version/index.js",
+      "require": "./dist/domain/auth/version/index.js",
+      "types": "./dist/domain/auth/version/index.d.ts"
+    },
     "./personas": {
       "import": "./dist/domain/personas/index.js",
       "require": "./dist/domain/personas/index.js",
@@ -171,6 +201,7 @@
     "inventario",
     "tesoreria",
     "finanzas",
+    "auth",
     "personas",
     "contabilidad",
     "shared"
@@ -219,6 +250,24 @@
       "finanzas/entities": [
         "finanzas/entities/index.d.ts"
       ],
+      "auth": [
+        "auth/index.d.ts"
+      ],
+      "auth/contracts": [
+        "auth/contracts/index.d.ts"
+      ],
+      "auth/catalogs": [
+        "auth/catalogs/index.d.ts"
+      ],
+      "auth/helpers": [
+        "auth/helpers/index.d.ts"
+      ],
+      "auth/metadata": [
+        "auth/metadata/index.d.ts"
+      ],
+      "auth/version": [
+        "auth/version/index.d.ts"
+      ],
       "personas": [
         "personas/index.d.ts"
       ],
@@ -255,7 +304,15 @@
     "build": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })\" && node scripts/generate-public-subpath-stubs.cjs && tsc && tsc-alias && node scripts/generate-public-subpath-stubs.cjs",
     "prepare": "npm run build",
     "generate-exports": "ts-node scripts/generate-exports.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test:build": "node -e \"require('fs').rmSync('dist-test', { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })\" && tsc -p tsconfig.test.json && tsc-alias -p tsconfig.test.json",
+    "test": "npm run build && npm run test:build && node --test dist-test/domain/auth/tests/catalog-integrity.test.js dist-test/domain/auth/tests/helpers.test.js dist-test/domain/auth/tests/public-exports.test.js",
+    "preversion": "npm test",
+    "version": "npm run build",
+    "postversion": "node -e \"const v=require('./package.json').version; console.log('Version creada: v' + v); console.log('Siguiente paso: git push --follow-tags');\"",
+    "release:patch": "npm version patch",
+    "release:minor": "npm version minor",
+    "release:major": "npm version major",
+    "release:prerelease": "npm version prerelease --preid=rc"
   },
   "devDependencies": {
     "ts-node": "^10.9.2",

@@ -1,4 +1,5 @@
-import { Entidad, Rol, SesionContexto } from "./entidad.contract";
+import { Entidad } from "./entidad.contract";
+import { Rol, SesionContexto } from "../../auth/contracts/auth-role.contract";
 
 /**
  * Interfaz para el Usuario del sistema

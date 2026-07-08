@@ -14,6 +14,7 @@ La raíz exporta hoy:
 - `shared/kernel`
 - `shared/utils`
 - `shared/value-objects`
+- `auth`
 - `Venta`
 - `CarritoVenta`
 - `VentaSnapshot`
@@ -70,6 +71,7 @@ Ahora se distribuyen en:
 - `inventario/contracts`
 - `tesoreria/contracts`
 - `finanzas/contracts`
+- `auth`
 - `personas/contracts`
 - `contabilidad/contracts`
 
@@ -82,6 +84,7 @@ El paquete todavía conserva comportamiento de dominio en:
 - [VentaSnapshot](../../domain/ventas/entities/VentaSnapshot.ts)
 - [Compra](../../domain/compras/entities/Compra.ts)
 - [RecurrenciaEntity](../../domain/finanzas/entities/RecurrenciaEntity.ts)
+- [catálogo auth](../../domain/auth/index.ts)
 - [Usuario](../../domain/personas/entities/Usuario.ts)
 - [AsientoContable](../../domain/contabilidad/entities/AsientoContable.ts)
 
@@ -124,9 +127,11 @@ flowchart TD
   Root --> Kernel[shared/kernel]
   Root --> Utils[shared/utils]
   Root --> ValueObjects[shared/value-objects]
+  Root --> Auth[auth]
   Root --> Ventas[Venta / CarritoVenta / VentaSnapshot]
   Root --> Recurrencia[RecurrenciaEntity]
 
+  Auth --> AuthContracts[auth/contracts + catalogs + helpers]
   Ventas --> VentasContracts[ventas/contracts]
   Recurrencia --> FinanzasContracts[finanzas/contracts]
 ```

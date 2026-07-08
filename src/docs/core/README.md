@@ -58,6 +58,7 @@ Este módulo entra en juego cuando una persona necesita:
 - [arquitectura-vigente.md](./arquitectura-vigente.md): arquitectura actual, capas y límites.
 - [contratos-compartidos.md](./contratos-compartidos.md): mapa de contratos por dominio propietario.
 - [primitivas-y-publicacion.md](./primitivas-y-publicacion.md): primitivas base, eventos y publicación raíz.
+- [versionado-del-paquete.md](./versionado-del-paquete.md): semver, instalación por versión y flujo de release.
 - [rfc-evolucion-estructura-libreria.md](./rfc-evolucion-estructura-libreria.md): RFC aceptado e implementado.
 
 ## Regla central

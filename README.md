@@ -40,7 +40,8 @@ La raíz exporta solo:
 - `inventario`: contratos de catálogo, stock, movimientos y recepción.
 - `tesoreria`: contratos de caja, turnos, movimientos y pagos.
 - `finanzas`: contratos monetarios, cuenta cliente, ledger auxiliar y recurrencias.
-- `personas`: contratos de actores, usuarios, roles, permisos y direcciones.
+- `auth`: permisos, grants, roles base, metadata, snapshot auth y helpers puros.
+- `personas`: contratos de actores, usuarios y direcciones.
 - `contabilidad`: contratos y entidades contables publicadas por subpath.
 
 ## Principios
@@ -55,9 +56,56 @@ La raíz exporta solo:
 
 ## Instalación
 
+Consumers de YolaFresh jalan directo desde GitHub.
+
+Recomendación oficial:
+
+- no usar rama flotante `github:yelsino/yolafresh-utils`;
+- fijar siempre tag real `vX.Y.Z`;
+- usar nueva `major` solo cuando migración esté aprobada.
+
+Instalar desde GitHub por tag exacto:
+
 ```bash
-pnpm add yola-fresh-utils
+npm install github:yelsino/yolafresh-utils#v2.0.0
 ```
+
+En `package.json`:
+
+```json
+{
+  "dependencies": {
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v2.0.0"
+  }
+}
+```
+
+Si un consumer necesita seguir en línea estable vieja:
+
+```bash
+npm install github:yelsino/yolafresh-utils#v1.0.2
+```
+
+En `package.json`:
+
+```json
+{
+  "dependencies": {
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.2"
+  }
+}
+```
+
+Regla de lectura:
+
+- `major`: rompe compatibilidad;
+- `minor`: agrega sin romper;
+- `patch`: corrige sin romper.
+
+Por eso:
+
+- `v1.0.2` = línea vieja estable;
+- `v2.0.0` = línea nueva con dominio `auth` y nueva gobernanza de contratos.
 
 ## Desarrollo local
 
@@ -65,6 +113,43 @@ pnpm add yola-fresh-utils
 pnpm run generate-exports
 pnpm run build
 ```
+
+## Releases
+
+Crear nueva versión patch:
+
+```bash
+npm run release:patch
+```
+
+Crear nueva versión minor:
+
+```bash
+npm run release:minor
+```
+
+Crear nueva versión major:
+
+```bash
+npm run release:major
+```
+
+Crear prerelease:
+
+```bash
+npm run release:prerelease
+```
+
+Flujo configurado:
+
+- `preversion`: corre tests;
+- `version`: reconstruye paquete;
+- `postversion`: deja lista versión y recuerda `git push --follow-tags`.
+
+Más detalle:
+
+- [CHANGELOG.md](./CHANGELOG.md)
+- [src/docs/core/versionado-del-paquete.md](./src/docs/core/versionado-del-paquete.md)
 
 ## Uso
 

@@ -2,62 +2,43 @@
 
 ## Propósito
 
-Este directorio agrupa la documentación vigente del Domain de personas y acceso en `yolafresh-utils`.
+Este directorio agrupa documentación vigente del Domain `personas`.
 
-La evidencia principal vive en:
+`personas` es dueño de:
+
+- actores reales del negocio;
+- identidad digital de usuario;
+- relación entre usuario y entidades;
+- direcciones;
+- contratos de cliente, personal y proveedor.
+
+## Evidencia principal
 
 - [persons.contract.ts](../../domain/personas/contracts/persons.contract.ts)
 - [entidad.contract.ts](../../domain/personas/contracts/entidad.contract.ts)
 - [usuario.contract.ts](../../domain/personas/contracts/usuario.contract.ts)
-- [roles.contract.ts](../../domain/personas/contracts/roles.contract.ts)
-- [permisos.contract.ts](../../domain/personas/contracts/permisos.contract.ts)
 - [direccion.contract.ts](../../domain/personas/contracts/direccion.contract.ts)
 - [Usuario.ts](../../domain/personas/entities/Usuario.ts)
 
-## Alcance
+## Frontera con `auth`
 
-Este Domain documenta:
+`personas` ya no es dueño del catálogo maestro de autorización.
 
-- actores reales del negocio;
-- cuentas digitales de usuario;
-- roles, permisos y sesión;
-- relación entre identidad organizacional y autorización;
-- direcciones vinculadas a entidades.
+`auth` es dueño de:
 
-## Por qué existe este Domain
+- permisos;
+- grants;
+- roles base;
+- metadata auth;
+- snapshots y scopes;
+- helpers puros de validación y expansión.
 
-`personas` existe para separar actores reales del negocio de cuentas digitales y reglas de acceso.
-
-Su valor está en distinguir:
-
-- cliente, personal y proveedor como actores reales;
-- usuario como identidad digital;
-- rol y permiso como vocabulario de autorización;
-- dirección como dato reusable vinculado a múltiples entidades.
-
-Esa separación evita confundir relación comercial, identidad organizacional y acceso al sistema.
-
-## Cuándo entra en juego
-
-Este Domain entra en juego cuando un consumer necesita:
-
-- modelar clientes, proveedores o personal;
-- asociar usuario a entidades reales;
-- resolver roles, permisos y contexto de sesión;
-- vincular direcciones a actores o estructuras del negocio.
-
-## Qué problema evita
-
-Evita errores conceptuales como:
-
-- usar `cargo` como sustituto de `rol`;
-- usar usuario digital como reemplazo de actor real;
-- mezclar autorización con datos comerciales del cliente o proveedor.
+`personas` consume shapes auth compartidos para `IUsuario` y `Usuario`, pero no define vocabulario auth canónico.
 
 ## Documentos
 
 - [modelo-vigente.md](./modelo-vigente.md): actores, responsabilidades y relaciones principales.
-- [autorizacion-y-sesion.md](./autorizacion-y-sesion.md): RBAC, sesión y reglas de acceso observadas.
+- [autorizacion-y-sesion.md](./autorizacion-y-sesion.md): frontera actual entre identidad en `personas` y autorización en `auth`.
 
 ## Terminología canónica
 
@@ -67,18 +48,12 @@ Evita errores conceptuales como:
 - `Proveedor`
 - `IUsuario`
 - `Usuario`
-- `Rol`
-- `SesionContexto`
-- `Permisos`
-- `RolesPredefinidos`
-- `CONFIGURACIONES_ROLES`
-- `CARGOS_ROLES_SUGERIDOS`
-- `PERMISOS_CRITICOS`
 - `Direccion`
 - `DireccionRelacion`
 
 ## Referencias
 
+- [../auth/README.md](../auth/README.md)
 - [../README.md](../README.md)
 - [../compras/README.md](../compras/README.md)
 - [../finanzas/cuenta-cliente/modelo-vigente.md](../finanzas/cuenta-cliente/modelo-vigente.md)

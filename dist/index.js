@@ -27,6 +27,7 @@ __exportStar(require("./domain/compras/contracts"), exports);
 __exportStar(require("./domain/inventario/contracts"), exports);
 __exportStar(require("./domain/tesoreria/contracts"), exports);
 __exportStar(require("./domain/finanzas/contracts"), exports);
+__exportStar(require("./domain/auth"), exports);
 __exportStar(require("./domain/personas/contracts"), exports);
 __exportStar(require("./domain/contabilidad/contracts"), exports);
 var entities_1 = require("./domain/ventas/entities");

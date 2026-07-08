@@ -2,146 +2,94 @@
 
 ## Propósito
 
-Este documento explica el modelo vigente de autorización y sesión observado en `yolafresh-utils`.
+Este documento aclara frontera vigente entre `personas` y `auth`.
 
-La evidencia principal vive en:
+Lectura correcta:
 
-- [entidad.contract.ts](../../domain/personas/contracts/entidad.contract.ts)
+- `personas` modela identidad digital y actores reales;
+- `auth` modela permisos, grants, roles base, scopes y snapshot auth;
+- `IUsuario` y `Usuario` consumen shapes auth compartidos, pero no son dueños del catálogo maestro.
+
+## Evidencia principal
+
 - [usuario.contract.ts](../../domain/personas/contracts/usuario.contract.ts)
-- [roles.contract.ts](../../domain/personas/contracts/roles.contract.ts)
-- [permisos.contract.ts](../../domain/personas/contracts/permisos.contract.ts)
 - [Usuario.ts](../../domain/personas/entities/Usuario.ts)
+- [auth-role.contract.ts](../../domain/auth/contracts/auth-role.contract.ts)
+- [auth-snapshot.contract.ts](../../domain/auth/contracts/auth-snapshot.contract.ts)
+- [role.catalog.ts](../../domain/auth/catalogs/role.catalog.ts)
+- [permission.catalog.ts](../../domain/auth/catalogs/permission.catalog.ts)
 
-## Modelo conceptual
+## Modelo conceptual vigente
 
-La autorización observada sigue este eje:
+Flujo lógico:
 
-`Usuario -> Rol -> Permisos`
+`Entidad -> IUsuario -> Rol -> AuthGrant -> AuthPermission`
 
-El actor real del negocio se modela aparte como `Entidad`.
+El actor real del negocio sigue modelado aparte como `Entidad`.
 
-## Conceptos principales
+## Qué vive en `personas`
 
-### `Rol`
+- `Entidad`
+- `Cliente`
+- `Personal`
+- `Proveedor`
+- `IUsuario`
+- `Usuario`
+- direcciones
 
-Representa agrupación de permisos.
+## Qué vive en `auth`
 
-Responsabilidades observadas:
+- `AuthPermission`
+- `AuthGrant`
+- `RoleDefinition`
+- `Rol`
+- `SesionContexto`
+- `AuthScope`
+- `AuthSnapshot`
+- `PERMISSION_METADATA`
 
-- identificar un rol;
-- declarar permisos otorgados;
-- conservar estado activo e historial básico.
-
-### `Permisos`
-
-Representa catálogo atómico de autorizaciones.
-
-Reglas observadas en el contrato:
-
-- formato `recurso:accion`;
-- minúsculas;
-- granularidad atómica;
-- sin lógica implícita por rol.
-
-### `RolesPredefinidos`
-
-Representa catálogo base de seeds de autorización.
-
-Lectura correcta:
-
-- son referencias iniciales;
-- no impiden crear roles propios en consumers;
-- no sustituyen la validación por permiso.
-
-### Catálogos seed RBAC
-
-Además del vocabulario base, el paquete vuelve a publicar catálogos seed oficiales para consumers:
-
-- `CONFIGURACIONES_ROLES`: composición base de permisos por rol predefinido;
-- `CARGOS_ROLES_SUGERIDOS`: relación sugerida entre `CargosPersonal` y `RolesPredefinidos`;
-- `PERMISOS_CRITICOS`: clasificación oficial de acciones sensibles.
-
-Lectura correcta:
-
-- pertenecen al Domain `personas`;
-- sirven como seeds y configuración compartida;
-- no sustituyen la validación por `Permisos`;
-- no implican que hayan vuelto los helpers externos de autorización.
-
-### `SesionContexto`
-
-Representa contexto operativo de un usuario autenticado.
-
-Responsabilidades observadas:
-
-- identificar usuario;
-- declarar entidad activa;
-- conservar roles activos;
-- registrar inicio y última actividad.
-
-## Áreas funcionales cubiertas por permisos
-
-El catálogo actual cubre, entre otras áreas:
-
-- dashboard;
-- punto de venta;
-- ventas;
-- caja;
-- cuentas;
-- productos;
-- inventario;
-- compras;
-- finanzas;
-- usuarios;
-- roles;
-- reportes;
-- pagos;
-- configuración;
-- auditoría;
-- perfil.
-
-## Reglas de negocio respaldadas por evidencia
+## Reglas de negocio vigentes
 
 - autorización se resuelve por permisos, no por cargo laboral;
 - un usuario puede tener múltiples roles;
 - un usuario puede estar asociado a múltiples entidades;
-- la sesión puede operar sobre una entidad activa;
-- un usuario administrador obtiene acceso total en el comportamiento observado de `Usuario`;
-- el estado operacional del usuario exige activo, no bloqueado y email verificado.
+- sesión puede operar con roles y scopes resueltos;
+- admin global se detecta por wildcard total o flag explícito;
+- estado operacional de `Usuario` sigue exigiendo activo, no bloqueado y email verificado.
 
 ## Separaciones obligatorias
 
 ### Cargo != Rol
 
 - `cargo` describe función organizacional;
-- `rol` describe acceso dentro del sistema.
+- `rol` describe acceso del sistema.
 
 ### Entidad != Usuario
 
 - `Entidad` representa actor real;
 - `IUsuario` representa cuenta digital.
 
-### Sesión != Identidad permanente
+### Scope != Permiso
 
-- `SesionContexto` modela contexto operativo;
-- no reemplaza la identidad maestra del usuario ni de la entidad.
+- permiso describe capacidad;
+- scope describe contexto;
+- no se mezclan en misma string.
 
-## Restricciones observadas
+## Contratos legacy
 
-- el paquete actual no publica helpers RBAC externos como fuente oficial del core;
-- el paquete sí publica catálogos seed RBAC reutilizables para configuración y bootstrap de consumers;
-- la librería no define autenticación HTTP, tokens, middleware ni persistencia de sesión;
-- los permisos deprecados deben tratarse como compatibilidad, no como vocabulario recomendado.
+Archivos RBAC viejos dentro de `personas/contracts/` deben tratarse como legado no canónico.
 
-## Decisiones vigentes observables
+No deben usarse como fuente maestra para:
 
-- el paquete no publica helpers externos de autorización; el vocabulario canónico vive en `Usuario`, `Rol`, `Permisos` y `SesionContexto`;
-- el paquete vuelve a publicar `CONFIGURACIONES_ROLES`, `CARGOS_ROLES_SUGERIDOS` y `PERMISOS_CRITICOS` como catálogos seed oficiales del dominio;
-- `IUsuario` separa `activo` de `emailVerificado`, por lo que ambos estados conviven sin equivalencia automática;
-- `RolesPredefinidos` publica seeds oficiales iniciales sin impedir roles personalizados en consumers.
+- catálogo de permisos;
+- catálogo de roles base;
+- expansión de aliases;
+- snapshot auth compartido.
 
 ## Referencias
 
 - [README.md](./README.md)
 - [modelo-vigente.md](./modelo-vigente.md)
+- [../auth/README.md](../auth/README.md)
+- [../auth/modelo-vigente.md](../auth/modelo-vigente.md)
 - [../core/contratos-compartidos.md](../core/contratos-compartidos.md)

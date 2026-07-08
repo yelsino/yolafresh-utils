@@ -22,6 +22,7 @@ La lectura recomendada va de:
 - [core/arquitectura-vigente.md](./core/arquitectura-vigente.md): arquitectura actual, límites y surface pública.
 - [core/contratos-compartidos.md](./core/contratos-compartidos.md): mapa de ownership contractual por dominio.
 - [core/primitivas-y-publicacion.md](./core/primitivas-y-publicacion.md): primitivas base, eventos y root mínimo.
+- [core/versionado-del-paquete.md](./core/versionado-del-paquete.md): semver, instalación por versión y flujo de release.
 - [core/rfc-evolucion-estructura-libreria.md](./core/rfc-evolucion-estructura-libreria.md): RFC cerrado con estructura implementada.
 
 ### Ventas
@@ -60,7 +61,18 @@ La lectura recomendada va de:
 - [tesoreria/README.md](./tesoreria/README.md)
 - [tesoreria/modelo-vigente.md](./tesoreria/modelo-vigente.md)
 
-### Personas y acceso
+### Auth
+
+- [auth/README.md](./auth/README.md)
+- [auth/modelo-vigente.md](./auth/modelo-vigente.md)
+- [auth/catalogo-de-permisos.md](./auth/catalogo-de-permisos.md)
+- [auth/roles-y-grants.md](./auth/roles-y-grants.md)
+- [auth/snapshot-offline.md](./auth/snapshot-offline.md)
+- [auth/helpers-puros.md](./auth/helpers-puros.md)
+- [auth/versionado-y-gobernanza.md](./auth/versionado-y-gobernanza.md)
+- [auth/rfcs/rfc-ssot-auth-shared.md](./auth/rfcs/rfc-ssot-auth-shared.md)
+
+### Personas
 
 - [personas/README.md](./personas/README.md)
 - [personas/modelo-vigente.md](./personas/modelo-vigente.md)
@@ -85,6 +97,7 @@ La evidencia primaria actual vive en:
 - `src/domain/inventario/`
 - `src/domain/tesoreria/`
 - `src/domain/finanzas/`
+- `src/domain/auth/`
 - `src/domain/personas/`
 - `src/domain/contabilidad/`
 

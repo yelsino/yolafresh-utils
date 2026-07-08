@@ -113,6 +113,31 @@ Lectura importante:
 - `CuentaCliente` queda absorbido dentro de `finanzas`;
 - `MovimientoFinanciero` en `ledger-auxiliar.contract.ts` se trata como contrato auxiliar, no como ledger oficial.
 
+### Auth
+
+Evidencia principal:
+
+- [auth/index.ts](../../domain/auth/index.ts)
+- [contracts/index.ts](../../domain/auth/contracts/index.ts)
+- [permission.catalog.ts](../../domain/auth/catalogs/permission.catalog.ts)
+- [permission-alias.catalog.ts](../../domain/auth/catalogs/permission-alias.catalog.ts)
+- [role.catalog.ts](../../domain/auth/catalogs/role.catalog.ts)
+- [permission-metadata.catalog.ts](../../domain/auth/metadata/permission-metadata.catalog.ts)
+
+Lenguaje observado:
+
+- `AuthPermission`
+- `AuthGrant`
+- `RoleDefinition`
+- `Rol`
+- `SesionContexto`
+- `AuthScope`
+- `AuthSnapshot`
+- `CatalogVersion`
+- `AUTH_PERMISSIONS`
+- `AUTH_ROLE_DEFINITIONS`
+- `PERMISSION_METADATA`
+
 ### Personas
 
 Evidencia principal:
@@ -121,8 +146,6 @@ Evidencia principal:
 - [persons.contract.ts](../../domain/personas/contracts/persons.contract.ts)
 - [usuario.contract.ts](../../domain/personas/contracts/usuario.contract.ts)
 - [entidad.contract.ts](../../domain/personas/contracts/entidad.contract.ts)
-- [roles.contract.ts](../../domain/personas/contracts/roles.contract.ts)
-- [permisos.contract.ts](../../domain/personas/contracts/permisos.contract.ts)
 - [direccion.contract.ts](../../domain/personas/contracts/direccion.contract.ts)
 
 Lenguaje observado:
@@ -132,10 +155,13 @@ Lenguaje observado:
 - `Proveedor`
 - `IUsuario`
 - `Entidad`
-- `Rol`
-- `SesionContexto`
-- `Permisos`
-- `RolesPredefinidos`
+- `Direccion`
+
+Lectura importante:
+
+- `personas` modela actores reales e identidad digital;
+- `auth` modela autorización compartida;
+- contratos RBAC viejos de `personas` deben tratarse como legado no canónico.
 
 ### Contabilidad
 

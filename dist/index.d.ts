@@ -7,6 +7,7 @@ export * from "./domain/compras/contracts";
 export * from "./domain/inventario/contracts";
 export * from "./domain/tesoreria/contracts";
 export * from "./domain/finanzas/contracts";
+export * from "./domain/auth";
 export * from "./domain/personas/contracts";
 export * from "./domain/contabilidad/contracts";
 export { CarritoVenta, ProcedenciaVenta, Venta, VENTA_SNAPSHOT_TYPE, VentaSnapshot, } from "./domain/ventas/entities";

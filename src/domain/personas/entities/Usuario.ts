@@ -1,8 +1,10 @@
 
 import { IUsuario, ConfiguracionUsuario } from "../contracts/usuario.contract";
-import { Entidad, Rol, SesionContexto } from "../contracts/entidad.contract";
-import { RolesPredefinidos } from "../contracts/roles.contract";
-import { Permisos } from "../contracts/permisos.contract";
+import { Entidad } from "../contracts/entidad.contract";
+import { Rol, SesionContexto } from "../../auth/contracts/auth-role.contract";
+import type { AuthPermission } from "../../auth/contracts/auth-permission.contract";
+import { expandGrants } from "../../auth/helpers/expand-grants";
+import { isSystemAdminRole } from "../../auth/helpers/is-system-admin-role";
 
 type UsuarioJSONInput = Omit<
   IUsuario,
@@ -63,23 +65,33 @@ export class Usuario implements IUsuario {
   /**
    * Verifica si el usuario tiene un rol específico
    */
-  public tieneRol(nombreRol: RolesPredefinidos | string): boolean {
-    return this.roles.some(rol => rol.activo && rol.nombre === nombreRol);
+  public tieneRol(roleId: string): boolean {
+    return this.roles.some((rol) => rol.activo && rol.id === roleId);
   }
 
   /**
    * Verifica si el usuario es administrador
    */
   public esAdmin(): boolean {
-    return this.tieneRol(RolesPredefinidos.ADMIN);
+    return (
+      isSystemAdminRole(this.roles.filter((rol) => rol.activo).map((rol) => rol.id)) ||
+      this.roles.some((rol) => rol.activo && rol.flags?.isSystemAdmin)
+    );
   }
 
   /**
    * Verifica si el usuario tiene un permiso específico
    */
-  public puede(permiso: Permisos): boolean {
+  public puede(permiso: AuthPermission): boolean {
     if (this.esAdmin()) return true;
-    return this.roles.some(rol => rol.activo && rol.permisos.includes(permiso));
+    return this.roles.some((rol) => {
+      if (!rol.activo) {
+        return false;
+      }
+
+      const permissionsExpanded = rol.permissionsExpanded ?? expandGrants(rol.grants);
+      return permissionsExpanded.includes(permiso);
+    });
   }
 
   /**
