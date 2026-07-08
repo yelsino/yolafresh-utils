@@ -17,7 +17,7 @@ test("AuthSnapshot permite dbName y wildcard total en permissionsExpanded", () =
     scopes: {
       tenantIds: ["tenant_1"],
     },
-    catalogVersion: "2.0.0",
+    catalogVersion: "1.0.3",
     policyVersion: "1",
     sessionId: "session_1",
     deviceId: "device_a",

@@ -44,11 +44,12 @@ Recomendación oficial:
 - usar tags reales;
 - no apuntar a rama flotante `main`;
 - no dejar dependencia como `github:yelsino/yolafresh-utils` sin tag.
+- seguir línea secuencial `v1.x`.
 
 ### Desde GitHub por tag exacto
 
 ```bash
-npm install github:yelsino/yolafresh-utils#v2.1.0
+npm install github:yelsino/yolafresh-utils#v1.0.3
 ```
 
 En `package.json`:
@@ -56,12 +57,12 @@ En `package.json`:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v2.1.0"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.3"
   }
 }
 ```
 
-### Línea vieja estable
+### Release anterior exacta
 
 ```bash
 npm install github:yelsino/yolafresh-utils#v1.0.2

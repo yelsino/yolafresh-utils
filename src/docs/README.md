@@ -69,7 +69,7 @@ La lectura recomendada va de:
 - [auth/roles-y-grants.md](./auth/roles-y-grants.md)
 - [auth/snapshot-offline.md](./auth/snapshot-offline.md)
 - [auth/helpers-puros.md](./auth/helpers-puros.md)
-- [auth/migracion-v1-a-v2.md](./auth/migracion-v1-a-v2.md)
+- [auth/migracion-v1-0-2-a-v1-0-3.md](./auth/migracion-v1-0-2-a-v1-0-3.md)
 - [auth/versionado-y-gobernanza.md](./auth/versionado-y-gobernanza.md)
 - [auth/rfcs/rfc-ssot-auth-shared.md](./auth/rfcs/rfc-ssot-auth-shared.md)
 

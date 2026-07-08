@@ -12,31 +12,20 @@ Este proyecto adopta versionado semántico:
 
 - Sin publicar todavía.
 
-## [2.1.0] - 2026-07-08
+## [1.0.3] - 2026-07-08
 
 ### Added
 
+- Se completa línea `v1.x` sin abrir nueva major.
+- Se consolida `auth` como dominio compartido dentro de misma línea `v1`.
 - `resolveRoleGrants()` como helper público oficial.
 - `getPermissionDefinition()`, `listAllPermissions()` y `listAllRoles()`.
 - documentación de migración `v1 -> v2`.
 - soporte documental y contractual para `dbName` en `AuthSnapshot`.
 - test de contrato de snapshot y ampliación de cobertura de exports públicos.
-
-## [2.0.0] - 2026-07-08
-
-### Breaking
-
-- `auth` pasa a ser dueño canónico del vocabulario RBAC compartido.
-- `personas` deja de ser owner canónico de permisos, grants y roles base.
-- consumers que instalaban desde rama sin fijar tag deben migrar a dependencia por tag GitHub.
-
-### Added
-
-- dominio `auth` con contratos, catálogos, metadata, helpers y snapshot offline.
+- contratos `auth`, catálogos, metadata, snapshot offline y helpers puros.
 - subpaths públicos `auth/*`.
-- documentación oficial de `auth`.
-- infraestructura de tests y validación de exports públicos.
-- guía formal de versionado del paquete.
+- guía de instalación por tags GitHub y versionado secuencial.
 
 ## [1.0.2] - 2026-07-08
 

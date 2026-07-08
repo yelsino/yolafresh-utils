@@ -62,12 +62,12 @@ Recomendación oficial:
 
 - no usar rama flotante `github:yelsino/yolafresh-utils`;
 - fijar siempre tag real `vX.Y.Z`;
-- usar nueva `major` solo cuando migración esté aprobada.
+- seguir línea secuencial `v1.x`.
 
 Instalar desde GitHub por tag exacto:
 
 ```bash
-npm install github:yelsino/yolafresh-utils#v2.1.0
+npm install github:yelsino/yolafresh-utils#v1.0.3
 ```
 
 En `package.json`:
@@ -75,12 +75,12 @@ En `package.json`:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v2.1.0"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.3"
   }
 }
 ```
 
-Si un consumer necesita seguir en línea estable vieja:
+Si un consumer necesita congelarse exactamente en release anterior:
 
 ```bash
 npm install github:yelsino/yolafresh-utils#v1.0.2
@@ -104,8 +104,8 @@ Regla de lectura:
 
 Por eso:
 
-- `v1.0.2` = línea vieja estable;
-- `v2.1.0` = línea actual recomendada con dominio `auth`, helpers completos y migración documentada.
+- `v1.0.2` = release anterior;
+- `v1.0.3` = release actual recomendada con dominio `auth`, helpers completos y migración documentada.
 
 ## Desarrollo local
 
