@@ -44,6 +44,7 @@ Snapshot compartido incluye:
 
 - usuario;
 - tenant;
+- nombre de base local derivada cuando aplique;
 - roles;
 - grants;
 - permisos expandidos;
@@ -61,11 +62,12 @@ export type AuthSnapshot = {
   userId: string;
   username: string;
   tenantId: string;
+  dbName?: string;
   roleIds: RoleId[];
   roleNames: string[];
   isSystemAdmin: boolean;
   grants: AuthGrant[];
-  permissionsExpanded: AuthPermission[];
+  permissionsExpanded: AuthPermission[] | ["*"];
   scopes: AuthSnapshotScopes;
   catalogVersion: string;
   policyVersion: string;
@@ -91,6 +93,7 @@ export type AuthSnapshot = {
 
 - consume snapshot;
 - guarda localmente en SQLite;
+- puede usar `dbName` como referencia de base local derivada del tenant/dispositivo;
 - usa snapshot para guards UI y menús;
 - no redefine catálogo maestro.
 

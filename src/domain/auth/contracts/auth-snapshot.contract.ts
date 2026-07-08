@@ -10,15 +10,18 @@ export type AuthSnapshotScopes = {
   organizacionIds?: string[];
 };
 
+export type AuthSnapshotPermissionsExpanded = AuthPermission[] | ["*"];
+
 export type AuthSnapshot = {
   userId: string;
   username: string;
   tenantId: string;
+  dbName?: string;
   roleIds: RoleId[];
   roleNames: string[];
   isSystemAdmin: boolean;
   grants: AuthGrant[];
-  permissionsExpanded: AuthPermission[];
+  permissionsExpanded: AuthSnapshotPermissionsExpanded;
   scopes: AuthSnapshotScopes;
   catalogVersion: string;
   policyVersion: string;

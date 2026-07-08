@@ -42,6 +42,14 @@ Fuente:
 
 - [expand-role-grants.ts](../../domain/auth/helpers/expand-role-grants.ts)
 
+### `resolveRoleGrants(roleIds)`
+
+Alias oficial semántico para resolver grants desde `roleIds`.
+
+Fuente:
+
+- [resolve-role-grants.ts](../../domain/auth/helpers/resolve-role-grants.ts)
+
 ### `resolveRolePermissions(roleIds)`
 
 Convierte roles a permisos finos expandidos.
@@ -82,13 +90,41 @@ Fuente:
 
 - [get-catalog-version.ts](../../domain/auth/helpers/get-catalog-version.ts)
 
+### `getPermissionDefinition(permission)`
+
+Devuelve metadata oficial de permiso.
+
+Fuente:
+
+- [get-permission-definition.ts](../../domain/auth/helpers/get-permission-definition.ts)
+
+### `listAllPermissions()`
+
+Lista catálogo completo de permisos canónicos.
+
+Fuente:
+
+- [list-all-permissions.ts](../../domain/auth/helpers/list-all-permissions.ts)
+
+### `listAllRoles()`
+
+Lista catálogo base de roles.
+
+Fuente:
+
+- [list-all-roles.ts](../../domain/auth/helpers/list-all-roles.ts)
+
 ## Uso recomendado
 
 ```ts
 import {
   expandGrants,
   getCatalogVersion,
+  getPermissionDefinition,
   isValidGrant,
+  listAllPermissions,
+  listAllRoles,
+  resolveRoleGrants,
   resolveRolePermissions,
 } from "yola-fresh-utils/auth";
 
@@ -96,7 +132,11 @@ const grants = ["ventas:*", "iam:usuario:ver"] as const;
 
 const validos = grants.every((grant) => isValidGrant(grant));
 const permisos = expandGrants(validos ? [...grants] : []);
+const grantsSupervisor = resolveRoleGrants(["supervisor"]);
 const permisosSupervisor = resolveRolePermissions(["supervisor"]);
+const definicion = getPermissionDefinition("ventas:venta:ver");
+const allPermissions = listAllPermissions();
+const allRoles = listAllRoles();
 const version = getCatalogVersion();
 ```
 

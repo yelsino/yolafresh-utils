@@ -10,8 +10,12 @@ test("root export publica surface auth esperada", () => {
   assert.ok(typeof pkg.PERMISSION_METADATA === "object");
   assert.equal(typeof pkg.expandGrant, "function");
   assert.equal(typeof pkg.expandGrants, "function");
+  assert.equal(typeof pkg.resolveRoleGrants, "function");
   assert.equal(typeof pkg.resolveRolePermissions, "function");
+  assert.equal(typeof pkg.getPermissionDefinition, "function");
   assert.equal(typeof pkg.getCatalogVersion, "function");
+  assert.equal(typeof pkg.listAllPermissions, "function");
+  assert.equal(typeof pkg.listAllRoles, "function");
 });
 
 test("subpath auth publica misma surface base", () => {
@@ -22,8 +26,12 @@ test("subpath auth publica misma surface base", () => {
   assert.ok(typeof authPkg.PERMISSION_METADATA === "object");
   assert.equal(typeof authPkg.expandGrant, "function");
   assert.equal(typeof authPkg.expandGrants, "function");
+  assert.equal(typeof authPkg.resolveRoleGrants, "function");
   assert.equal(typeof authPkg.resolveRolePermissions, "function");
+  assert.equal(typeof authPkg.getPermissionDefinition, "function");
   assert.equal(typeof authPkg.getCatalogVersion, "function");
+  assert.equal(typeof authPkg.listAllPermissions, "function");
+  assert.equal(typeof authPkg.listAllRoles, "function");
 });
 
 test("root y subpath auth comparten versión de catálogo", () => {

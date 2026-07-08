@@ -12,6 +12,16 @@ Este proyecto adopta versionado semántico:
 
 - Sin publicar todavía.
 
+## [2.1.0] - 2026-07-08
+
+### Added
+
+- `resolveRoleGrants()` como helper público oficial.
+- `getPermissionDefinition()`, `listAllPermissions()` y `listAllRoles()`.
+- documentación de migración `v1 -> v2`.
+- soporte documental y contractual para `dbName` en `AuthSnapshot`.
+- test de contrato de snapshot y ampliación de cobertura de exports públicos.
+
 ## [2.0.0] - 2026-07-08
 
 ### Breaking

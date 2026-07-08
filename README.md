@@ -67,7 +67,7 @@ Recomendación oficial:
 Instalar desde GitHub por tag exacto:
 
 ```bash
-npm install github:yelsino/yolafresh-utils#v2.0.0
+npm install github:yelsino/yolafresh-utils#v2.1.0
 ```
 
 En `package.json`:
@@ -75,7 +75,7 @@ En `package.json`:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v2.0.0"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v2.1.0"
   }
 }
 ```
@@ -105,7 +105,7 @@ Regla de lectura:
 Por eso:
 
 - `v1.0.2` = línea vieja estable;
-- `v2.0.0` = línea nueva con dominio `auth` y nueva gobernanza de contratos.
+- `v2.1.0` = línea actual recomendada con dominio `auth`, helpers completos y migración documentada.
 
 ## Desarrollo local
 

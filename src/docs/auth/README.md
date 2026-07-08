@@ -29,6 +29,7 @@ Si pregunta es:
 - [roles-y-grants.md](./roles-y-grants.md): roles base y resolución de grants.
 - [snapshot-offline.md](./snapshot-offline.md): contrato compartido de snapshot auth.
 - [helpers-puros.md](./helpers-puros.md): helpers oficiales para expansión y validación.
+- [migracion-v1-a-v2.md](./migracion-v1-a-v2.md): transición desde catálogo legacy hacia `auth`.
 - [versionado-y-gobernanza.md](./versionado-y-gobernanza.md): semver y proceso de cambio.
 - [rfcs/rfc-ssot-auth-shared.md](./rfcs/rfc-ssot-auth-shared.md): RFC implementado del dominio.
 

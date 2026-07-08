@@ -48,7 +48,7 @@ Recomendación oficial:
 ### Desde GitHub por tag exacto
 
 ```bash
-npm install github:yelsino/yolafresh-utils#v2.0.0
+npm install github:yelsino/yolafresh-utils#v2.1.0
 ```
 
 En `package.json`:
@@ -56,7 +56,7 @@ En `package.json`:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v2.0.0"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v2.1.0"
   }
 }
 ```
