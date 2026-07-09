@@ -32,6 +32,7 @@ Responsabilidades observadas:
 
 - identificar la venta
 - expresar estado comercial
+- expresar condición de pago de cierre
 - congelar `items`, `totales`, `clienteId` y `vendedorId`
 - relacionar un `pedidoId` opcional
 - emitir `VentaConfirmada` al confirmar
@@ -68,14 +69,22 @@ Si una venta nace desde un pedido, la relación correcta es `pedidoId`.
 ### `VentaState`
 
 - `CONFIRMADA`
-- `DESPACHADA`
 - `ANULADA`
 
 Lectura de negocio observada:
 
 - `CONFIRMADA`: venta cerrada comercialmente
-- `DESPACHADA`: venta cumplida o entregada
 - `ANULADA`: venta revertida por flujo explícito
+
+### `CondicionPagoVenta`
+
+- `CONTADO`
+- `CREDITO`
+
+Lectura de negocio observada:
+
+- `CONTADO`: la venta nace con cancelación total en el mismo cierre comercial
+- `CREDITO`: la venta nace como hecho comercial confirmado y además debe reflejar deuda en `CuentaCliente`
 
 ### `CarritoVenta`
 
@@ -95,6 +104,7 @@ Campos canónicos observados:
 - `nombre`
 - `type`
 - `estado`
+- `condicionPago`
 - `items`
 - `pedidoId`
 - `subtotal`
@@ -143,6 +153,7 @@ Campos canónicos observados:
 - `Venta` debe tener al menos un item
 - `total` de `Venta` debe ser mayor a cero
 - `subtotal` e `impuesto` no pueden ser negativos
+- `condicionPago` es obligatoria y no debe modelarse como estado
 - `Venta.confirmar()` no permite confirmar venta vacía
 - `CarritoVenta` ya no captura `metodoPago` ni `dineroRecibido` como parte de su contrato vigente
 - `VentaSnapshot` debe tener al menos un item
@@ -176,7 +187,7 @@ Lectura correcta:
 
 - `Venta` publica estado `ANULADA`, pero la librería no orquesta cascadas automáticas sobre caja, cuenta cliente o inventario;
 - `VentaSnapshot` existe como representación histórica disponible desde la propia entidad `Venta`, pero cada consumer decide momento exacto de persistencia;
-- `DESPACHADA` existe como estado canónico, aunque la librería no modela logística completa de entrega física.
+- logística o despacho físico no viven como estado canónico dentro de `Venta`; si el consumer necesita esa dimensión, debe modelarla aparte.
 
 ## Referencias
 

@@ -1,5 +1,6 @@
 import type { Cliente } from "../../personas/contracts/persons.contract";
 import type { IUsuario } from "../../personas/contracts/usuario.contract";
+import { VentaState } from "../../shared/kernel/enums";
 import { ProcedenciaVenta } from "./CarritoVenta";
 import type { IVenta, VentaItem } from "./Venta";
 
@@ -220,7 +221,7 @@ function mapVentaItemsFromVenta(venta: VentaLike): VentaSnapshotItem[] {
 export function isVentaSnapshotImmutableState(
   estado: string | undefined,
 ): boolean {
-  return estado === "CONFIRMADA" || estado === "DESPACHADA";
+  return estado === VentaState.CONFIRMADA || estado === VentaState.ANULADA;
 }
 
 export class VentaSnapshot implements IVentaSnapshot {

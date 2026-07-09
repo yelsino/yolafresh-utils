@@ -32,6 +32,7 @@ Otros Domains responden preguntas distintas:
 #### Venta de contado sin deuda
 
 - existe `Venta`
+- `Venta.condicionPago = CONTADO`
 - puede existir `Pago`
 - puede existir `MovimientoCaja`
 - no necesariamente existe `MovimientoCuentaCliente`
@@ -39,6 +40,7 @@ Otros Domains responden preguntas distintas:
 #### Venta a crédito
 
 - existe `Venta`
+- `Venta.condicionPago = CREDITO`
 - existe impacto en `CuentaCliente`
 - el cobro puede ocurrir después
 
@@ -67,7 +69,7 @@ Evidencia observada:
 
 ### Regla canónica
 
-`Venta` no debe cargar `tipoPago` como propiedad primaria.
+`Venta` no debe cargar evidencia de cobro ni estado de cobranza como propiedad primaria.
 
 Tampoco debe asumirse que toda venta tendrá un `Pago` asociado ni que todo `Pago` terminará asociado a una venta o movimiento.
 
@@ -153,7 +155,7 @@ Relación vigente:
 - cliente visible
 - vendedor visible
 
-`Venta` sigue resolviendo identidad, estado y montos canónicos.
+`Venta` sigue resolviendo identidad, estado, condición de pago y montos canónicos.
 
 ## Mapa general
 
@@ -183,7 +185,7 @@ Eso se resuelve mediante integración entre Domains.
 ## Límites vigentes del paquete
 
 - la relación entre `Venta` y `MovimientoInventario` es explícita pero no automática;
-- `VentaState.DESPACHADA` no equivale por contrato a stock ya descontado;
+- el despacho físico o estado logístico no forman parte del estado canónico de `Venta`;
 - el almacén origen y la política multi-almacén permanecen como decisión del consumer usando contratos de inventario.
 
 ## Referencias

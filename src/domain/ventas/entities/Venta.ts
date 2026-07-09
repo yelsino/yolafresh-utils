@@ -1,7 +1,7 @@
 import { CarItem, CarritoVenta, ICarritoVenta, ProcedenciaVenta } from "./CarritoVenta";
 import { AggregateRoot } from "../../shared/base/AggregateRoot";
 import { VentaConfirmada } from "../events/VentaConfirmada";
-import { VentaState } from "../../shared/kernel/enums";
+import { CondicionPagoVenta, VentaState } from "../../shared/kernel/enums";
 import {
   IVentaSnapshot,
   VentaSnapshot,
@@ -23,6 +23,7 @@ export interface IVenta {
   nombre: string;
   type: string;
   estado: VentaState;
+  condicionPago: CondicionPagoVenta;
   items: VentaItem[];
   pedidoId?: string;
   createdAt?: Date;
@@ -39,8 +40,9 @@ export interface IVenta {
   numeroVenta?: string;
 }
 
-export interface VentaCreateInput extends Omit<IVenta, "estado"> {
+export interface VentaCreateInput extends Omit<IVenta, "estado" | "condicionPago"> {
   estado: VentaState;
+  condicionPago: CondicionPagoVenta;
 }
 
 export class Venta extends AggregateRoot<string> implements IVenta {
@@ -70,6 +72,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   public readonly nombre: string;
   public readonly type: string;
   public estado: VentaState;
+  public readonly condicionPago: CondicionPagoVenta;
   public readonly items: VentaItem[];
   public readonly pedidoId?: string;
   public readonly createdAt: Date;
@@ -113,6 +116,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       })),
     ) as VentaItem[];
     this.estado = data.estado;
+    this.condicionPago = data.condicionPago;
     this.pedidoId =
       typeof data.pedidoId === "string" && data.pedidoId.trim() !== ""
         ? data.pedidoId
@@ -147,7 +151,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   }
 
   get estaProcesada(): boolean {
-    return this.estado === VentaState.CONFIRMADA || this.estado === VentaState.DESPACHADA;
+    return this.estado === VentaState.CONFIRMADA;
   }
 
   get esUnPedido(): boolean {
@@ -228,6 +232,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       nombre: this.nombre,
       type: this.type,
       estado: this.estado,
+      condicionPago: this.condicionPago,
       items: this.items.map((item) => ({ ...item })),
       pedidoId: this.pedidoId,
       createdAt: this.createdAt,
@@ -252,7 +257,12 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   static fromCarritoVenta(
     carritoJSON: ICarritoVenta,
     id: string,
-    options?: { nombre?: string; montoRedondeo?: number; pedidoId?: string },
+    options?: {
+      nombre?: string;
+      montoRedondeo?: number;
+      pedidoId?: string;
+      condicionPago?: CondicionPagoVenta;
+    },
   ): Venta {
     const ahora = new Date();
     const montoRedondeo = options?.montoRedondeo ?? 0;
@@ -265,6 +275,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       nombre: options?.nombre ?? carritoJSON.nombre ?? "Venta",
       type: "venta",
       estado: VentaState.CONFIRMADA,
+      condicionPago: options?.condicionPago ?? CondicionPagoVenta.CONTADO,
       createdAt: ahora,
       updatedAt: ahora,
       items: detalle.items.map((item) => Venta.mapCarItemToVentaItem(item)),
@@ -288,6 +299,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     if (!data.id) errores.push("ID es requerido");
     if (!data.nombre) errores.push("Nombre es requerido");
     if (!data.procedencia) errores.push("Procedencia es requerida");
+    if (!data.condicionPago) errores.push("CondicionPago es requerida");
 
     if (!Array.isArray(data.items) || data.items.length === 0) {
       errores.push("La venta debe tener al menos un item");
@@ -295,6 +307,20 @@ export class Venta extends AggregateRoot<string> implements IVenta {
 
     if ((data.total || 0) <= 0) {
       errores.push("El total debe ser mayor a 0");
+    }
+
+    if (
+      data.estado !== undefined &&
+      !Object.values(VentaState).includes(data.estado)
+    ) {
+      errores.push("Estado de venta inválido");
+    }
+
+    if (
+      data.condicionPago !== undefined &&
+      !Object.values(CondicionPagoVenta).includes(data.condicionPago)
+    ) {
+      errores.push("CondicionPago de venta inválida");
     }
 
     if ((data.subtotal || 0) < 0) errores.push("El subtotal no puede ser negativo");

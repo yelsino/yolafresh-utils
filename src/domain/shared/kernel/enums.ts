@@ -9,8 +9,12 @@ export enum PedidoState {
 
 export enum VentaState {
   CONFIRMADA = 'CONFIRMADA',
-  DESPACHADA = 'DESPACHADA',
   ANULADA = 'ANULADA',
+}
+
+export enum CondicionPagoVenta {
+  CONTADO = 'CONTADO',
+  CREDITO = 'CREDITO',
 }
 
 export enum EstadoStockEnum {

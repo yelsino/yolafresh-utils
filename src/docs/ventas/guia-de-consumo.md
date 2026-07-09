@@ -21,6 +21,7 @@ Cuando operación se confirma comercialmente:
 
 - crear `Venta`
 - usar `VentaState`
+- definir `CondicionPagoVenta`
 - congelar items y totales
 
 Si operación proviene de reserva:
@@ -106,11 +107,12 @@ Si venta impacta stock:
 - `Venta` != `MovimientoCuentaCliente`
 - `Venta` != `MovimientoInventario`
 - `Venta` != `VentaSnapshot`
+- `CondicionPagoVenta` != estado de cobranza
 - `Pago` huérfano != error de dominio
 
 ## Errores de modelado a evitar
 
-- meter `tipoPago` en contrato primario de `Venta`
+- meter `estadoCobranza` en contrato primario de `Venta`
 - meter `turnoCajaId` en contrato primario de `Venta`
 - meter `finanzaId` en contrato primario de `Venta`
 - usar `esPedido` en vez de `pedidoId`

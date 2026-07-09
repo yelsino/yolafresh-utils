@@ -73,6 +73,7 @@ Evita errores conceptuales como:
 - `Venta`: hecho comercial confirmado
 - `VentaSnapshot`: representación histórica mostrable
 - `Pedido`: reserva comercial
+- `CondicionPagoVenta`: modalidad de cierre comercial (`CONTADO` o `CREDITO`)
 - `Pago`: evidencia externa de pago validable y relacionable manualmente
 - `MovimientoCaja`: impacto operativo en tesorería
 - `MovimientoCuentaCliente`: impacto financiero sobre cuenta cliente
@@ -80,7 +81,7 @@ Evita errores conceptuales como:
 
 ## Límites vigentes del paquete
 
-- el paquete distingue estados `CONFIRMADA`, `DESPACHADA` y `ANULADA`, pero no impone workflow operativo completo entre ellos;
+- el paquete distingue estados `CONFIRMADA` y `ANULADA`, y deja forma de pago en `CondicionPagoVenta`;
 - el paquete separa `Venta` de `MovimientoInventario`, por lo que no obliga momento único de descuento de stock;
 - el paquete no define orquestación automática de reversas entre ventas, tesorería, finanzas e inventario.
 
