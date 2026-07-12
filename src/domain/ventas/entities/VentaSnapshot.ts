@@ -44,6 +44,7 @@ export interface VentaSnapshotItem {
   total: number;
   imagenUrl?: string;
   unidadComercial?: string;
+  montoModificado?: boolean;
   descuento?: number;
 }
 
@@ -184,6 +185,8 @@ export function mapVentaItemToSnapshotItem(
 ): VentaSnapshotItem {
   const descuento =
     typeof item.descuento === "number" ? Number(item.descuento) : undefined;
+  const montoModificado =
+    typeof item.montoModificado === "boolean" ? item.montoModificado : undefined;
 
   return {
     id: item.id,
@@ -200,6 +203,7 @@ export function mapVentaItemToSnapshotItem(
           ),
     imagenUrl: safeTrim(options?.imagenUrl),
     unidadComercial: safeTrim(options?.unidadComercial),
+    montoModificado,
     descuento,
   };
 }
@@ -252,6 +256,8 @@ export class VentaSnapshot implements IVentaSnapshot {
         cantidadVendida: Number(item.cantidadVendida ?? 0),
         precioUnitario: roundMoney(Number(item.precioUnitario ?? 0)),
         total: roundMoney(Number(item.total ?? 0)),
+        montoModificado:
+          typeof item.montoModificado === "boolean" ? item.montoModificado : undefined,
         descuento:
           typeof item.descuento === "number"
             ? roundMoney(Number(item.descuento))
@@ -388,6 +394,15 @@ export class VentaSnapshot implements IVentaSnapshot {
       if (Number(item.descuento ?? 0) < 0) {
         errores.push(
           `VentaSnapshot.items[${index}].descuento no puede ser negativo`,
+        );
+      }
+
+      if (
+        item.montoModificado !== undefined &&
+        typeof item.montoModificado !== "boolean"
+      ) {
+        errores.push(
+          `VentaSnapshot.items[${index}].montoModificado debe ser booleano`,
         );
       }
     });

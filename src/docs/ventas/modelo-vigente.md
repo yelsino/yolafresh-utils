@@ -148,6 +148,21 @@ Campos canónicos observados:
 - `cliente`
 - `vendedor`
 
+### `VentaSnapshotItem`
+
+Campos observados:
+
+- `id`
+- `presentacionId`
+- `nombre`
+- `cantidadVendida`
+- `precioUnitario`
+- `total`
+- `imagenUrl`
+- `unidadComercial`
+- `montoModificado`
+- `descuento`
+
 ## Reglas de negocio respaldadas por contrato
 
 - `Venta` debe tener al menos un item

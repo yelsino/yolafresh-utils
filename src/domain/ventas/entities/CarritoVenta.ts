@@ -84,17 +84,13 @@ interface CarritoVentaSnapshot {
   total: number;
   cantidadItems: number;
   cantidadTotal: number;
-  notas?: string;
   configuracionFiscal?: {
     tasaImpuesto?: number;
     aplicaImpuesto?: boolean;
     nombreImpuesto?: string;
   };
-  tasaImpuesto: number;
   cliente?: CarritoVentaClienteSnapshot;
   personal?: CarritoVentaPersonalSnapshot;
-  clienteId?: string;
-  personalId?: string;
   procedencia?: ProcedenciaVenta;
 }
 
@@ -213,7 +209,7 @@ export enum ProcedenciaVenta {
  *   descuentoTotal: 0,
  *   cantidadItems: 2,
  *   cantidadTotal: 5,
- *   tasaImpuesto: 0.18
+ *   configuracionFiscal: { tasaImpuesto: 0.18, aplicaImpuesto: true, nombreImpuesto: 'IGV' }
  * };
  * ```
  */
@@ -286,20 +282,6 @@ export interface ICarritoVenta {
    */
   cantidadTotal: number;
   
-  /** 
-   * Notas adicionales del carrito (opcional)
-   * @description Comentarios o instrucciones especiales
-   */
-  notas?: string;
-  
-  /** 
-   * Tasa de impuesto aplicada
-   * @description Valor entre 0 y 1 (ej: 0.18 para 18%)
-   * @minimum 0
-   * @maximum 1
-   */
-  tasaImpuesto: number;
-  
   // === CAMPOS DE TRAZABILIDAD ===
   
   /** 
@@ -325,22 +307,6 @@ export interface ICarritoVenta {
    * @description Settings de impuestos y cálculos fiscales
    */
   configuracionFiscal?: ConfiguracionFiscal;
-
-  // === IDS DE COMPATIBILIDAD ===
-  
-  /** 
-   * ID del cliente (solo lectura)
-   * @description Se obtiene automáticamente del objeto cliente
-   * @readonly
-   */
-  readonly clienteId?: string;
-  
-  /** 
-   * ID del personal (solo lectura)
-   * @description Se obtiene automáticamente del objeto personal
-   * @readonly
-   */
-  readonly personalId?: string;
 }
 /**
  * Clase CarritoVenta - Maneja toda la lógica de una venta en curso
@@ -352,7 +318,6 @@ export class CarritoVenta implements ICarritoVenta {
   public readonly createdAt: Date;
   public readonly nombre: string;
   private _items: CarItem[] = [];
-  private _notas?: string;
   public updatedAt: Date = new Date(); 
   private _configuracionFiscal: ConfiguracionFiscal;
   
@@ -710,7 +675,6 @@ export class CarritoVenta implements ICarritoVenta {
    */
   limpiar(): void {
     this._items = [];
-    this._notas = undefined;
   }
 
   // **MÉTODOS DE CÁLCULO**
@@ -775,22 +739,6 @@ export class CarritoVenta implements ICarritoVenta {
     return this._items.length === 0;
   }
 
-  get notas(): string | undefined {
-    return this._notas;
-  }
-
-  set notas(value: string | undefined) {
-    this._notas = value;
-  }
-
-  get tasaImpuesto(): number {
-    return this._configuracionFiscal.tasaImpuesto || 0;
-  }
-
-  set tasaImpuesto(tasa: number) {
-    this._configuracionFiscal.tasaImpuesto = Math.max(0, Math.min(1, tasa)); // Entre 0 y 1
-  }
-
   // **GETTERS Y SETTERS DE TRAZABILIDAD**
 
   get cliente(): Cliente | undefined {
@@ -807,16 +755,6 @@ export class CarritoVenta implements ICarritoVenta {
 
   set personal(value: IUsuario | undefined) {
     this._personal = value;
-  }
-
-  // **GETTERS DE COMPATIBILIDAD (para IDs)**
-  
-  get clienteId(): string | undefined {
-    return this._cliente?.id;
-  }
-
-  get personalId(): string | undefined {
-    return this._personal?.id;
   }
 
   /**
@@ -907,13 +845,9 @@ export class CarritoVenta implements ICarritoVenta {
       total: this.total,
       cantidadItems: this.cantidadItems,
       cantidadTotal: this.cantidadTotal,
-      notas: this._notas,
       configuracionFiscal: { ...this._configuracionFiscal },
-      tasaImpuesto: this._configuracionFiscal.tasaImpuesto || 0,
       cliente: this._cliente ? { ...this._cliente } : undefined,
       personal: this._personal ? { ...this._personal } : undefined,
-      clienteId: this._cliente?.id,
-      personalId: this._personal?.id,
       procedencia: this._procedencia,
       updatedAt: this.updatedAt,
     };
@@ -1017,22 +951,16 @@ export class CarritoVenta implements ICarritoVenta {
       total: this.total,
       cantidadItems: this.cantidadItems,
       cantidadTotal: this.cantidadTotal,
-      notas: this._notas,
       configuracionFiscal: { ...this._configuracionFiscal },
-      tasaImpuesto: this._configuracionFiscal.tasaImpuesto || 0,
       cliente: cleanClienteForVenta(this._cliente),
       personal: cleanPersonalForVenta(this._personal),
-      clienteId: this._cliente?.id,
-      personalId: this._personal?.id,
       procedencia: this._procedencia,
     };
   }
 
   static fromJSON(data: ICarritoVenta): CarritoVenta {
     const configuracionFiscal = data.configuracionFiscal ?? {
-      tasaImpuesto: data.tasaImpuesto,
-      aplicaImpuesto: false,
-      nombreImpuesto: 'Impuesto'
+      ...CONFIGURACIONES_FISCALES.SIN_IMPUESTOS,
     };
 
     const createdAt = data.createdAt ? new Date(data.createdAt) : undefined;
@@ -1051,8 +979,6 @@ export class CarritoVenta implements ICarritoVenta {
         item.montoTotal !== undefined ? Number(item.montoTotal) || 0 : undefined,
       descuento: item.descuento !== undefined ? Number(item.descuento) || 0 : undefined,
     }));
-
-    carrito._notas = data.notas;
     carrito._cliente = data.cliente
     carrito._personal = data.personal
     carrito._procedencia = data.procedencia;
