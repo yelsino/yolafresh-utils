@@ -24,6 +24,13 @@ Responsabilidades observadas:
 - conservar configuración fiscal durante captura
 - conservar `procedencia` del flujo comercial
 
+No modela como propiedad pública primaria:
+
+- `notas`
+- `tasaImpuesto` paralela a `configuracionFiscal`
+- `clienteId` derivado
+- `personalId` derivado
+
 ### `Venta`
 
 `Venta` representa el hecho comercial confirmado.
@@ -141,7 +148,9 @@ Campos canónicos observados:
 - `createdAt`
 - `items`
 - `subtotal`
+- `descuentoTotal`
 - `impuesto`
+- `montoRedondeo`
 - `total`
 - `codigoVenta`
 - `procedencia`
@@ -171,9 +180,13 @@ Campos observados:
 - `condicionPago` es obligatoria y no debe modelarse como estado
 - `Venta.confirmar()` no permite confirmar venta vacía
 - `CarritoVenta` ya no captura `metodoPago` ni `dineroRecibido` como parte de su contrato vigente
+- `CarritoVenta` ya no publica `notas`, `tasaImpuesto`, `clienteId` ni `personalId` como parte de su contrato compartido vigente
+- `montoModificado` preserva un total manual de línea, pero no autoriza reinterpretar `precioUnitario`
+- si cambia `quantity` en un ítem con `montoModificado`, el override manual previo deja de aplicar y la línea vuelve a cálculo normal
 - `VentaSnapshot` debe tener al menos un item
-- `VentaSnapshot.total` debe ser consistente con `subtotal + impuesto`
+- `VentaSnapshot.total` debe ser consistente con `subtotal - descuentoTotal + impuesto + montoRedondeo`
 - `VentaSnapshot` no admite montos negativos
+- `VentaSnapshot` es proyección histórica de `Venta`; no debe bloquear persistencia operativa de la venta en POS
 
 ## Separación canónica
 

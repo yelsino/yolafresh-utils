@@ -66,6 +66,7 @@ Evita errores conceptuales como:
 - [modelo-vigente.md](./modelo-vigente.md): conceptos, contratos, estados y reglas vigentes.
 - [relaciones-interdominio.md](./relaciones-interdominio.md): relación de ventas con cuenta cliente, inventario, almacén, stock, caja y pagos.
 - [guia-de-consumo.md](./guia-de-consumo.md): lectura recomendada para consumers y flujos operativos mínimos.
+- [migracion-v1-0-4-a-v1-0-5.md](./migracion-v1-0-4-a-v1-0-5.md): cambios requeridos para consumers que usan `CarritoVenta`.
 
 ## Terminología canónica
 
@@ -84,6 +85,7 @@ Evita errores conceptuales como:
 - el paquete distingue estados `CONFIRMADA` y `ANULADA`, y deja forma de pago en `CondicionPagoVenta`;
 - el paquete separa `Venta` de `MovimientoInventario`, por lo que no obliga momento único de descuento de stock;
 - el paquete no define orquestación automática de reversas entre ventas, tesorería, finanzas e inventario.
+- `CarritoVenta` ya no publica `notas`, `tasaImpuesto`, `clienteId` ni `personalId` como parte de su contrato público; consumers deben migrar hacia `configuracionFiscal`, `cliente` y `personal`.
 
 ## Referencias
 

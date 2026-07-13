@@ -144,13 +144,13 @@ export interface CarItem {
   
   /** 
    * Indica si el monto fue modificado manualmente
-   * @description Cuando es true, el precio unitario se ajusta para coincidir con el total
+   * @description Cuando es true, se preserva un monto total manual sin reinterpretar el precio unitario
    */
   montoModificado?: boolean;
   
   /** 
    * Monto total a pagar por este ítem
-   * @description Siempre debe ser coherente con quantity y precioUnitario
+   * @description Se calcula desde quantity y precioUnitario, salvo override manual cuando montoModificado es true
    * @minimum 0
    */
   montoTotal?: number;
@@ -469,14 +469,9 @@ export class CarritoVenta implements ICarritoVenta {
       descuento: carItem.descuento ?? itemExistente.descuento
     } as CarItem;
 
-    // Calcular total y consistencia
+    // Si el monto fue forzado manualmente, preservamos el total sin reinterpretar el precio unitario.
     if (prepared.montoModificado && carItem.montoTotal != null) {
-      // Si el monto fue forzado manualmente
       prepared.montoTotal = this.redondearMoneda(carItem.montoTotal);
-      // Recalcular unitario implícito: Unitario = Total / Cantidad
-      if (prepared.quantity > 0) {
-        prepared.precioUnitario = prepared.montoTotal / prepared.quantity;
-      }
     } else {
       // Cálculo estándar: Total = Unitario * Cantidad
       const montoCalculado = this.calcularTotalLinea(prepared);
@@ -506,9 +501,6 @@ export class CarritoVenta implements ICarritoVenta {
 
     if (prepared.montoModificado && carItem.montoTotal != null) {
       prepared.montoTotal = this.redondearMoneda(carItem.montoTotal);
-      if (prepared.quantity > 0) {
-        prepared.precioUnitario = prepared.montoTotal / prepared.quantity;
-      }
     } else {
       const montoCalculado = this.calcularTotalLinea(prepared);
       prepared.montoTotal = this.redondearMoneda(montoCalculado);
@@ -517,7 +509,6 @@ export class CarritoVenta implements ICarritoVenta {
     // Actualizar el ítem pasado por referencia
     if (carItem !== prepared) {
         carItem.montoTotal = prepared.montoTotal;
-        carItem.precioUnitario = prepared.precioUnitario;
     }
 
     this._items.push(prepared);
@@ -618,25 +609,13 @@ export class CarritoVenta implements ICarritoVenta {
   private actualizarCantidadItem(index: number, nuevaCantidad: number): void {
     const item = this._items[index];
     const updated: CarItem = { ...item, quantity: nuevaCantidad };
-    
-    // Si tiene monto modificado, NO recalculamos el total, pero ajustamos el unitario para mantener coherencia
-    // OJO: Decisión de diseño: ¿Si cambio cantidad manualmente, debo mantener el TOTAL fijo o el UNITARIO fijo?
-    // Regla estándar: El Unitario es la verdad si no está modificado. 
-    // Pero si montoModificado es true...
-    
+
     if (updated.montoModificado) {
-        // Opción A: Mantener TOTAL fijo => unitario cambia (Raro si aumento cantidad)
-        // Opción B: Mantener UNITARIO (que fue derivado) fijo => total cambia.
-        
-        // En lógica de POS, si subo cantidad de 1 coca a 2 cocas, espero pagar el doble.
-        // Así que usamos el precioUnitario actual (que puede ser custom) para recalcular el total.
-        updated.montoTotal = this.redondearMoneda((updated.precioUnitario || 0) * nuevaCantidad);
-        
-        // Pero si quisiéramos mantener el total fijo y solo cambiar cantidad (ej: "te doy 2kg por el precio de 1kg")
-        // eso sería otra operación. Asumiremos consistencia unitaria por defecto al cambiar cantidades con +/-.
-    } else {
-        updated.montoTotal = this.calcularTotalLinea(updated);
+        // Cambiar cantidad invalida override manual previo. Se vuelve a cálculo normal.
+        updated.montoModificado = false;
     }
+
+    updated.montoTotal = this.calcularTotalLinea(updated);
 
     this._items[index] = updated;
   }

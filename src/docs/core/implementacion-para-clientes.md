@@ -28,7 +28,7 @@ Forma correcta:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.3"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.6"
   }
 }
 ```
@@ -38,10 +38,10 @@ Forma correcta:
 Desde hoy, versión recomendada para consumidores es:
 
 ```txt
-v1.0.3
+v1.0.6
 ```
 
-`v1.0.2` queda solo como rollback exacto si un proyecto necesita congelarse en release anterior.
+`v1.0.5` queda como release previo al fix de snapshot y ruta segura de persistencia histórica publicado en `v1.0.6`.
 
 ## Paso 1. Actualizar dependencia
 
@@ -50,7 +50,7 @@ En `package.json` del cliente:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.3"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.6"
   }
 }
 ```
@@ -58,7 +58,7 @@ En `package.json` del cliente:
 O por comando:
 
 ```bash
-npm install github:yelsino/yolafresh-utils#v1.0.3
+npm install github:yelsino/yolafresh-utils#v1.0.6
 ```
 
 ## Paso 2. Reinstalación limpia
@@ -79,7 +79,7 @@ npm install
 
 ## Paso 3. Verificar versión instalada
 
-Validar que cliente realmente quedó fijado en `v1.0.3`.
+Validar que cliente realmente quedó fijado en `v1.0.6`.
 
 Revisar:
 
@@ -91,9 +91,33 @@ Valor esperado:
 
 ```json
 {
-  "version": "1.0.3"
+  "version": "1.0.6"
 }
 ```
+
+## Paso 3.1. Migración específica de ventas
+
+Si consumer usa `CarritoVenta`, debe adaptar integración antes de asumir compatibilidad total.
+
+Cambio observado desde `v1.0.5` y consolidado en `v1.0.6`:
+
+- `CarritoVenta` ya no expone `notas`
+- `CarritoVenta` ya no expone `tasaImpuesto`
+- `CarritoVenta` ya no expone `clienteId`
+- `CarritoVenta` ya no expone `personalId`
+- `VentaSnapshotItem` ahora expone `montoModificado`
+
+Mapa de reemplazo:
+
+- `carrito.tasaImpuesto` -> `carrito.configuracionFiscal?.tasaImpuesto`
+- `carrito.clienteId` -> `carrito.cliente?.id`
+- `carrito.personalId` -> `carrito.personal?.id`
+- `carrito.notas` -> estado local del consumer si sigue siendo necesario
+- `snapshot.items[].montoModificado` -> nueva fuente para detectar override manual de línea
+
+Referencia obligatoria:
+
+- [../ventas/migracion-v1-0-4-a-v1-0-5.md](../ventas/migracion-v1-0-4-a-v1-0-5.md)
 
 ## Paso 4. Validar imports oficiales
 
@@ -167,7 +191,7 @@ Si consumer necesita volver al estado anterior:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.2"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.4"
   }
 }
 ```
@@ -181,10 +205,11 @@ npm install
 
 ## Checklist corto para PR de cliente
 
-- dependencia fijada a `#v1.0.3`
+- dependencia fijada a `#v1.0.6`
 - lockfile actualizado
 - imports internos eliminados
 - compilación verde
+- si usa ventas, migración de `CarritoVenta` aplicada
 - guards auth alineados a `yola-fresh-utils/auth`
 - documentación local del repo actualizada si referencia versión vieja
 
@@ -194,3 +219,4 @@ npm install
 - [versionado-del-paquete.md](./versionado-del-paquete.md)
 - [../auth/README.md](../auth/README.md)
 - [../auth/migracion-v1-0-2-a-v1-0-3.md](../auth/migracion-v1-0-2-a-v1-0-3.md)
+- [../ventas/migracion-v1-0-4-a-v1-0-5.md](../ventas/migracion-v1-0-4-a-v1-0-5.md)

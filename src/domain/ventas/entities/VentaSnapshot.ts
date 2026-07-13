@@ -55,7 +55,9 @@ export interface IVentaSnapshot {
   createdAt: number;
   items: VentaSnapshotItem[];
   subtotal: number;
+  descuentoTotal?: number;
   impuesto: number;
+  montoRedondeo?: number;
   total: number;
   codigoVenta?: string;
   procedencia?: ProcedenciaVenta;
@@ -75,8 +77,22 @@ export interface VentaSnapshotCreateInput extends Omit<IVentaSnapshot, "type"> {
   type?: typeof VENTA_SNAPSHOT_TYPE;
 }
 
+export interface VentaSnapshotBuildResult {
+  snapshot?: VentaSnapshot;
+  error?: Error;
+}
+
 function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function sumItemDiscounts(items?: Array<Partial<VentaSnapshotItem>>): number {
+  return roundMoney(
+    (items ?? []).reduce(
+      (sum, item) => sum + Number(item.descuento ?? 0),
+      0,
+    ),
+  );
 }
 
 function normalizeDate(value?: number | Date): number {
@@ -235,7 +251,9 @@ export class VentaSnapshot implements IVentaSnapshot {
   public readonly createdAt: number;
   public readonly items: VentaSnapshotItem[];
   public readonly subtotal: number;
+  public readonly descuentoTotal?: number;
   public readonly impuesto: number;
+  public readonly montoRedondeo?: number;
   public readonly total: number;
   public readonly codigoVenta?: string;
   public readonly procedencia?: ProcedenciaVenta;
@@ -265,7 +283,15 @@ export class VentaSnapshot implements IVentaSnapshot {
       })),
     ) as VentaSnapshotItem[];
     this.subtotal = roundMoney(Number(data.subtotal ?? 0));
+    this.descuentoTotal =
+      data.descuentoTotal === undefined
+        ? undefined
+        : roundMoney(Number(data.descuentoTotal ?? 0));
     this.impuesto = roundMoney(Number(data.impuesto ?? 0));
+    this.montoRedondeo =
+      data.montoRedondeo === undefined
+        ? undefined
+        : roundMoney(Number(data.montoRedondeo ?? 0));
     this.total = roundMoney(Number(data.total ?? 0));
     this.codigoVenta = safeTrim(data.codigoVenta);
     this.procedencia = data.procedencia;
@@ -286,7 +312,9 @@ export class VentaSnapshot implements IVentaSnapshot {
       createdAt: this.createdAt,
       items: this.items.map((item) => ({ ...item })),
       subtotal: this.subtotal,
+      descuentoTotal: this.descuentoTotal,
       impuesto: this.impuesto,
+      montoRedondeo: this.montoRedondeo,
       total: this.total,
       codigoVenta: this.codigoVenta,
       procedencia: this.procedencia,
@@ -304,6 +332,7 @@ export class VentaSnapshot implements IVentaSnapshot {
     context: VentaSnapshotBuildContext = {},
   ): VentaSnapshot {
     const items = context.items ?? mapVentaItemsFromVenta(venta);
+    const descuentoTotal = sumItemDiscounts(items);
 
     return new VentaSnapshot({
       id: safeTrim(context.id) ?? buildVentaSnapshotId(venta.id),
@@ -311,13 +340,31 @@ export class VentaSnapshot implements IVentaSnapshot {
       createdAt: normalizeDate(context.createdAt ?? venta.createdAt ?? Date.now()),
       items,
       subtotal: venta.subtotal,
+      descuentoTotal,
       impuesto: venta.impuesto,
+      montoRedondeo:
+        typeof venta.montoRedondeo === "number"
+          ? roundMoney(Number(venta.montoRedondeo))
+          : undefined,
       total: venta.total,
       codigoVenta: venta.codigoVenta,
       procedencia: venta.procedencia,
       cliente: mapVentaSnapshotActor(context.cliente),
       vendedor: mapVentaSnapshotActor(context.vendedor),
     });
+  }
+
+  static tryFromVenta(
+    venta: VentaLike,
+    context: VentaSnapshotBuildContext = {},
+  ): VentaSnapshotBuildResult {
+    try {
+      return { snapshot: VentaSnapshot.fromVenta(venta, context) };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error : new Error(String(error)),
+      };
+    }
   }
 
   static validar(
@@ -345,19 +392,35 @@ export class VentaSnapshot implements IVentaSnapshot {
       errores.push("VentaSnapshot.subtotal no puede ser negativo");
     }
 
+    if (Number(data.descuentoTotal ?? sumItemDiscounts(data.items)) < 0) {
+      errores.push("VentaSnapshot.descuentoTotal no puede ser negativo");
+    }
+
     if (Number(data.impuesto ?? 0) < 0) {
       errores.push("VentaSnapshot.impuesto no puede ser negativo");
+    }
+
+    if (Number(data.montoRedondeo ?? 0) < 0) {
+      errores.push("VentaSnapshot.montoRedondeo no puede ser negativo");
     }
 
     if (Number(data.total ?? 0) < 0) {
       errores.push("VentaSnapshot.total no puede ser negativo");
     }
 
+    const descuentoTotal = roundMoney(
+      Number(data.descuentoTotal ?? sumItemDiscounts(data.items)),
+    );
+    const montoRedondeo = roundMoney(Number(data.montoRedondeo ?? 0));
     if (
-      roundMoney(Number(data.subtotal ?? 0) + Number(data.impuesto ?? 0)) !==
+      roundMoney(
+        Number(data.subtotal ?? 0) - descuentoTotal + Number(data.impuesto ?? 0) + montoRedondeo,
+      ) !==
       roundMoney(Number(data.total ?? 0))
     ) {
-      errores.push("VentaSnapshot.total debe ser consistente con subtotal + impuesto");
+      errores.push(
+        "VentaSnapshot.total debe ser consistente con subtotal - descuentoTotal + impuesto + montoRedondeo",
+      );
     }
 
     data.items?.forEach((item, index) => {

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { CondicionPagoVenta, VentaState } from "../../shared/kernel/enums";
-import { ICarritoVenta, ProcedenciaVenta } from "../entities/CarritoVenta";
+import { CarritoVenta, ICarritoVenta, ProcedenciaVenta } from "../entities/CarritoVenta";
 import { Venta, VentaCreateInput } from "../entities/Venta";
 import { isVentaSnapshotImmutableState } from "../entities/VentaSnapshot";
 import { CategoriaCliente, Cliente } from "../../personas/contracts/persons.contract";
@@ -152,4 +152,112 @@ test("VentaSnapshot preserva montoModificado por item", () => {
   const snapshot = venta.toVentaSnapshot();
 
   assert.equal(snapshot.items[0]?.montoModificado, true);
+});
+
+test("VentaSnapshot acepta descuentoTotal y montoRedondeo al reflejar Venta real", () => {
+  const venta = new Venta(
+    buildVentaInput({
+      items: [
+        {
+          id: "item_001",
+          presentacionId: "pres_001",
+          cantidadVendida: 1,
+          precioUnitario: 10,
+          montoTotal: 10,
+          descuento: 2,
+        },
+      ],
+      subtotal: 10,
+      impuesto: 0,
+      total: 8.1,
+      montoRedondeo: 0.1,
+    }),
+  );
+
+  const snapshot = venta.toVentaSnapshot();
+
+  assert.equal(snapshot.subtotal, 10);
+  assert.equal(snapshot.descuentoTotal, 2);
+  assert.equal(snapshot.impuesto, 0);
+  assert.equal(snapshot.montoRedondeo, 0.1);
+  assert.equal(snapshot.total, 8.1);
+});
+
+test("Venta.tryToVentaSnapshot no lanza excepción si snapshot estricto falla", () => {
+  const venta = new Venta(
+    buildVentaInput({
+      items: [
+        {
+          id: "item_001",
+          presentacionId: "pres_001",
+          cantidadVendida: 1,
+          precioUnitario: 10,
+          montoTotal: 10,
+        },
+      ],
+      subtotal: 10,
+      impuesto: 0,
+      total: 999,
+    }),
+  );
+
+  const result = venta.tryToVentaSnapshot();
+
+  assert.equal(result.snapshot, undefined);
+  assert.ok(result.error instanceof Error);
+  assert.match(
+    result.error.message,
+    /VentaSnapshot\.total debe ser consistente con subtotal - descuentoTotal \+ impuesto \+ montoRedondeo/,
+  );
+});
+
+test("CarritoVenta preserva precioUnitario cuando montoTotal es manual", () => {
+  const carrito = new CarritoVenta("cart_override");
+
+  carrito.agregarProducto({
+    id: "item_001",
+    product: {
+      id: "pres_001",
+      nombre: "Zanahoria",
+      precioVenta: 1.8,
+    },
+    quantity: 1,
+    precioUnitario: 1.8,
+    montoTotal: 1.4,
+    montoModificado: true,
+  });
+
+  const item = carrito.items[0];
+
+  assert.ok(item);
+  assert.equal(item.precioUnitario, 1.8);
+  assert.equal(item.montoTotal, 1.4);
+  assert.equal(item.montoModificado, true);
+});
+
+test("CarritoVenta invalida montoModificado al cambiar cantidad", () => {
+  const carrito = new CarritoVenta("cart_quantity_reset");
+
+  carrito.agregarProducto({
+    id: "item_001",
+    product: {
+      id: "pres_001",
+      nombre: "Zanahoria",
+      precioVenta: 1.8,
+    },
+    quantity: 1,
+    precioUnitario: 1.8,
+    montoTotal: 1.4,
+    montoModificado: true,
+  });
+
+  carrito.incrementarCantidad("item_001");
+
+  const item = carrito.items[0];
+
+  assert.ok(item);
+  assert.equal(item.quantity, 2);
+  assert.equal(item.precioUnitario, 1.8);
+  assert.equal(item.montoModificado, false);
+  assert.equal(item.montoTotal, 3.6);
 });

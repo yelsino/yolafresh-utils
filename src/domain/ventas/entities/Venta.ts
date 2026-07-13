@@ -5,6 +5,7 @@ import { CondicionPagoVenta, VentaState } from "../../shared/kernel/enums";
 import {
   IVentaSnapshot,
   VentaSnapshot,
+  VentaSnapshotBuildResult,
   VentaSnapshotBuildContext,
 } from "./VentaSnapshot";
 
@@ -252,6 +253,18 @@ export class Venta extends AggregateRoot<string> implements IVenta {
 
   toVentaSnapshot(context: VentaSnapshotBuildContext = {}): IVentaSnapshot {
     return VentaSnapshot.fromVenta(this, context).toJSON();
+  }
+
+  tryToVentaSnapshot(
+    context: VentaSnapshotBuildContext = {},
+  ): { snapshot?: IVentaSnapshot; error?: Error } {
+    const result: VentaSnapshotBuildResult = VentaSnapshot.tryFromVenta(this, context);
+
+    if (!result.snapshot) {
+      return { error: result.error ?? new Error("No se pudo construir VentaSnapshot") };
+    }
+
+    return { snapshot: result.snapshot.toJSON() };
   }
 
   static fromCarritoVenta(

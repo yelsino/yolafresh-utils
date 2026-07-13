@@ -62,6 +62,10 @@ Este módulo entra en juego cuando una persona necesita:
 - [implementacion-para-clientes.md](./implementacion-para-clientes.md): pasos exactos para que repos clientes instalen, validen y actualicen la librería.
 - [rfc-evolucion-estructura-libreria.md](./rfc-evolucion-estructura-libreria.md): RFC aceptado e implementado.
 
+Para migraciones de dominio con impacto en consumers, leer además documentos específicos del dominio afectado, por ejemplo:
+
+- [../ventas/migracion-v1-0-4-a-v1-0-5.md](../ventas/migracion-v1-0-4-a-v1-0-5.md)
+
 ## Regla central
 
 `yolafresh-utils` preserva lenguaje compartido de negocio.

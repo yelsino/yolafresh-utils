@@ -15,6 +15,12 @@ Usar `CarritoVenta` para:
 - capturar cliente y personal
 - mantener configuración fiscal
 
+No usar `CarritoVenta` para:
+
+- persistir metadata efímera ajena a `Venta` o `VentaSnapshot`
+- duplicar fiscalidad con `tasaImpuesto` paralela
+- publicar IDs derivados como `clienteId` o `personalId` dentro del contrato compartido
+
 ### 2. Conversión a venta
 
 Cuando operación se confirma comercialmente:
@@ -33,13 +39,22 @@ Si operación proviene de reserva:
 Para historial humano durable:
 
 - crear `VentaSnapshot`
-- usar `venta.toVentaSnapshot()` o factory equivalente
+- usar `venta.toVentaSnapshot()` cuando flujo necesite snapshot estricto
+- usar `venta.tryToVentaSnapshot()` en POS o flujos críticos donde la venta no debe abortarse por fallo de proyección histórica
 
 `VentaSnapshot` sirve para:
 
 - historial visible
 - ticket interno o voucher histórico
 - reconstrucción duradera sin depender de catálogo vivo
+- preservar `montoModificado` por item cuando línea fue ajustada manualmente
+- reflejar `descuentoTotal` y `montoRedondeo` cuando forman parte de `Venta`
+
+Lectura correcta:
+
+- `Venta` es transacción operativa crítica
+- `VentaSnapshot` es representación histórica derivada
+- si snapshot falla en flujo crítico, se registra y se continúa con persistencia de `Venta`
 
 ### 4. Cobro y tesorería
 
@@ -116,6 +131,9 @@ Si venta impacta stock:
 - meter `turnoCajaId` en contrato primario de `Venta`
 - meter `finanzaId` en contrato primario de `Venta`
 - usar `esPedido` en vez de `pedidoId`
+- usar `notas` como si siguiera siendo parte contractual de `CarritoVenta`
+- leer `carrito.tasaImpuesto` en vez de `carrito.configuracionFiscal`
+- reconstruir actor desde `clienteId` o `personalId` del carrito compartido
 - usar `Venta` como si fuera documento de stock
 - usar `Venta` como si fuera documento de deuda
 - asumir que todo `Pago` debe asociarse a una venta
@@ -131,3 +149,4 @@ Si venta impacta stock:
 - [README.md](./README.md)
 - [modelo-vigente.md](./modelo-vigente.md)
 - [relaciones-interdominio.md](./relaciones-interdominio.md)
+- [migracion-v1-0-4-a-v1-0-5.md](./migracion-v1-0-4-a-v1-0-5.md)

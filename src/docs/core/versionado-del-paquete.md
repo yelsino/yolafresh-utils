@@ -49,7 +49,7 @@ Recomendación oficial:
 ### Desde GitHub por tag exacto
 
 ```bash
-npm install github:yelsino/yolafresh-utils#v1.0.3
+npm install github:yelsino/yolafresh-utils#v1.0.6
 ```
 
 En `package.json`:
@@ -57,7 +57,7 @@ En `package.json`:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.3"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.6"
   }
 }
 ```
@@ -128,6 +128,21 @@ npm run release:prerelease
 - si corriges bug sin romper imports ni shapes, sube `patch`;
 - no elimines exports públicos en `patch` ni `minor`;
 - si una API debe morir, primero deprecar, luego remover en siguiente `major`.
+
+## Excepción documentada vigente
+
+`v1.0.5` publica corte coordinado sobre `CarritoVenta` aun dentro de línea `v1.0.x`.
+
+Cambio documentado:
+
+- se removieron `notas`, `tasaImpuesto`, `clienteId` y `personalId` de `ICarritoVenta`;
+- se agregó guía de migración explícita para consumers de ventas.
+
+Por eso, `v1.0.5` no debe asumirse como patch transparente para cualquier consumer que serialice `CarritoVenta`.
+
+Referencia obligatoria:
+
+- [../ventas/migracion-v1-0-4-a-v1-0-5.md](../ventas/migracion-v1-0-4-a-v1-0-5.md)
 
 ## Recomendación por tipo de consumer
 
