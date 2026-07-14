@@ -182,10 +182,13 @@ Campos observados:
 - `CarritoVenta` ya no captura `metodoPago` ni `dineroRecibido` como parte de su contrato vigente
 - `CarritoVenta` ya no publica `notas`, `tasaImpuesto`, `clienteId` ni `personalId` como parte de su contrato compartido vigente
 - `montoModificado` preserva un total manual de línea, pero no autoriza reinterpretar `precioUnitario`
+- `montoTotal` de item representa monto bruto de línea antes de aplicar `descuento`
 - si cambia `quantity` en un ítem con `montoModificado`, el override manual previo deja de aplicar y la línea vuelve a cálculo normal
+- `CarritoVenta` redondea dinero a 2 decimales; cualquier ajuste por sencillo o cierre físico debe modelarse en `Venta.montoRedondeo`
 - `VentaSnapshot` debe tener al menos un item
 - `VentaSnapshot.total` debe ser consistente con `subtotal - descuentoTotal + impuesto + montoRedondeo`
 - `VentaSnapshot` no admite montos negativos
+- `VentaSnapshot.montoRedondeo` admite valor firmado: negativo, cero o positivo
 - `VentaSnapshot` es proyección histórica de `Venta`; no debe bloquear persistencia operativa de la venta en POS
 
 ## Separación canónica

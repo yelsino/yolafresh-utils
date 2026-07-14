@@ -33,6 +33,7 @@ La lectura recomendada va de:
 - [ventas/relaciones-interdominio.md](./ventas/relaciones-interdominio.md)
 - [ventas/guia-de-consumo.md](./ventas/guia-de-consumo.md)
 - [ventas/migracion-v1-0-4-a-v1-0-5.md](./ventas/migracion-v1-0-4-a-v1-0-5.md)
+- [ventas/rfc-pos-manual-override-y-snapshot-no-bloqueante.md](./ventas/rfc-pos-manual-override-y-snapshot-no-bloqueante.md)
 
 ### Finanzas
 

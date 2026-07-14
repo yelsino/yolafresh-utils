@@ -400,10 +400,6 @@ export class VentaSnapshot implements IVentaSnapshot {
       errores.push("VentaSnapshot.impuesto no puede ser negativo");
     }
 
-    if (Number(data.montoRedondeo ?? 0) < 0) {
-      errores.push("VentaSnapshot.montoRedondeo no puede ser negativo");
-    }
-
     if (Number(data.total ?? 0) < 0) {
       errores.push("VentaSnapshot.total no puede ser negativo");
     }

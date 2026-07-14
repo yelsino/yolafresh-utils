@@ -10,7 +10,7 @@ Este documento guía migración de consumers que usan `CarritoVenta` hacia `v1.0
 - `Venta` como hecho comercial;
 - `VentaSnapshot` como representación histórica.
 
-> Nota: `v1.0.6` conserva este mismo corte y además corrige semántica de snapshot para que no choque con descuentos, redondeos y flujos POS críticos.
+> Nota: `v1.0.6` conserva este mismo corte y corrige semántica de snapshot; `v1.0.7` endurece aritmética monetaria y validación temprana del módulo ventas para evitar roturas silenciosas en POS.
 
 ## Cambio central
 

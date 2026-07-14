@@ -66,8 +66,26 @@ export class Venta extends AggregateRoot<string> implements IVenta {
         typeof item.montoTotal === "number" ? Venta.roundMoney(item.montoTotal) : undefined,
       montoModificado:
         typeof item.montoModificado === "boolean" ? item.montoModificado : undefined,
-      descuento: typeof item.descuento === "number" ? Number(item.descuento) : undefined,
+      descuento:
+        typeof item.descuento === "number"
+          ? Venta.roundMoney(Number(item.descuento))
+          : undefined,
     };
+  }
+
+  private static calcularMontoBrutoItemData(item: Partial<VentaItem>): number {
+    if (typeof item.montoTotal === "number" && Number.isFinite(item.montoTotal)) {
+      return Venta.roundMoney(item.montoTotal);
+    }
+
+    return Venta.roundMoney(
+      Number(item.precioUnitario ?? 0) * Number(item.cantidadVendida ?? 0),
+    );
+  }
+
+  static calcularTotalNetoItemData(item: Partial<VentaItem>): number {
+    const bruto = Venta.calcularMontoBrutoItemData(item);
+    return Venta.roundMoney(bruto - Number(item.descuento ?? 0));
   }
 
   public readonly nombre: string;
@@ -338,6 +356,9 @@ export class Venta extends AggregateRoot<string> implements IVenta {
 
     if ((data.subtotal || 0) < 0) errores.push("El subtotal no puede ser negativo");
     if ((data.impuesto || 0) < 0) errores.push("El impuesto no puede ser negativo");
+    if (data.montoRedondeo !== undefined && !Number.isFinite(data.montoRedondeo)) {
+      errores.push("montoRedondeo debe ser un número finito");
+    }
     if (data.costoEnvio !== undefined && data.costoEnvio < 0) {
       errores.push("El costo de envío no puede ser negativo");
     }
@@ -353,6 +374,9 @@ export class Venta extends AggregateRoot<string> implements IVenta {
         }
         if ((item.precioUnitario || 0) < 0) {
           errores.push(`Item ${index + 1}: precioUnitario no puede ser negativo`);
+        }
+        if (item.descuento !== undefined && (!Number.isFinite(item.descuento) || item.descuento < 0)) {
+          errores.push(`Item ${index + 1}: descuento no puede ser negativo`);
         }
         if (
           item.montoTotal !== undefined &&
@@ -370,16 +394,11 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   }
 
   calcularSubtotalItem(item: VentaItem): number {
-    return Venta.roundMoney(item.precioUnitario * item.cantidadVendida);
+    return Venta.calcularMontoBrutoItemData(item);
   }
 
   calcularTotalItem(item: VentaItem): number {
-    if (typeof item.montoTotal === "number" && Number.isFinite(item.montoTotal)) {
-      return Venta.roundMoney(item.montoTotal);
-    }
-    return Venta.roundMoney(
-      this.calcularSubtotalItem(item) - Number(item.descuento ?? 0),
-    );
+    return Venta.calcularTotalNetoItemData(item);
   }
 
   calcularSubtotal(): number {
@@ -421,8 +440,6 @@ export function getVentaItemsResumen(
     id: item.id,
     nombre: detailNames.get(item.presentacionId) ?? item.presentacionId,
     cantidad: item.cantidadVendida,
-    total: Venta.roundMoney(
-      item.precioUnitario * item.cantidadVendida - Number(item.descuento ?? 0),
-    ),
+    total: Venta.calcularTotalNetoItemData(item),
   }));
 }

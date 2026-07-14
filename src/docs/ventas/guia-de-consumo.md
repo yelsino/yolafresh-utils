@@ -49,12 +49,15 @@ Para historial humano durable:
 - reconstrucción duradera sin depender de catálogo vivo
 - preservar `montoModificado` por item cuando línea fue ajustada manualmente
 - reflejar `descuentoTotal` y `montoRedondeo` cuando forman parte de `Venta`
+- aceptar `montoRedondeo` firmado cuando POS cierre con ajuste a favor o en contra
 
 Lectura correcta:
 
 - `Venta` es transacción operativa crítica
 - `VentaSnapshot` es representación histórica derivada
 - si snapshot falla en flujo crítico, se registra y se continúa con persistencia de `Venta`
+- `montoTotal` de item es bruto antes de descuento
+- ajustes de sencillo o cierre físico deben entrar por `montoRedondeo`, no por redondeo implícito del carrito
 
 ### 4. Cobro y tesorería
 

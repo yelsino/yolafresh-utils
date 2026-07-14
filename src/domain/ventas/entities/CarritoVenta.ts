@@ -339,6 +339,82 @@ export class CarritoVenta implements ICarritoVenta {
     };
   }
 
+  private touch(): void {
+    this.updatedAt = new Date();
+  }
+
+  private static assertFiniteNumber(value: unknown, fieldName: string): number {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+      throw new Error(`${fieldName} debe ser un número finito`);
+    }
+    return parsed;
+  }
+
+  private static assertNonNegativeMoney(value: unknown, fieldName: string): number {
+    const parsed = CarritoVenta.assertFiniteNumber(value, fieldName);
+    if (parsed < 0) {
+      throw new Error(`${fieldName} no puede ser negativo`);
+    }
+    return parsed;
+  }
+
+  private static assertPositiveQuantity(value: unknown, fieldName: string): number {
+    const parsed = CarritoVenta.assertFiniteNumber(value, fieldName);
+    if (parsed <= 0) {
+      throw new Error(`${fieldName} debe ser mayor a 0`);
+    }
+    return parsed;
+  }
+
+  private normalizeInputItem(carItem: CarItem): {
+    product: Partial<Presentacion>;
+    quantity: number;
+    precioUnitario: number;
+    montoTotal?: number;
+    montoModificado: boolean;
+    descuento?: number;
+  } {
+    const product = this.cleanProduct(carItem.product);
+    if (!product.id) {
+      throw new Error("CarItem.product.id es requerido");
+    }
+
+    const quantity = CarritoVenta.assertPositiveQuantity(
+      carItem.quantity ?? 1,
+      "CarItem.quantity",
+    );
+    const precioBase = carItem.precioUnitario ?? product.precioVenta ?? 0;
+    const precioUnitario = CarritoVenta.assertNonNegativeMoney(
+      precioBase,
+      "CarItem.precioUnitario",
+    );
+    const montoModificado = Boolean(carItem.montoModificado);
+    const montoTotal =
+      carItem.montoTotal === undefined
+        ? undefined
+        : CarritoVenta.assertNonNegativeMoney(
+            carItem.montoTotal,
+            "CarItem.montoTotal",
+          );
+    const descuento =
+      carItem.descuento === undefined
+        ? undefined
+        : CarritoVenta.assertNonNegativeMoney(
+            carItem.descuento,
+            "CarItem.descuento",
+          );
+
+    return {
+      product,
+      quantity,
+      precioUnitario,
+      montoTotal,
+      montoModificado,
+      descuento,
+    };
+  }
+
   // **MÉTODOS DE CONFIGURACIÓN FISCAL**
 
   /**
@@ -349,6 +425,7 @@ export class CarritoVenta implements ICarritoVenta {
       ...this._configuracionFiscal,
       ...configuracion
     };
+    this.touch();
   }
 
   /**
@@ -361,6 +438,7 @@ export class CarritoVenta implements ICarritoVenta {
       aplicaImpuesto: true,
       nombreImpuesto: nombre
     };
+    this.touch();
   }
 
   /**
@@ -372,6 +450,7 @@ export class CarritoVenta implements ICarritoVenta {
       tasaImpuesto: 0,
       aplicaImpuesto: false
     };
+    this.touch();
   }
 
   // **MÉTODOS PRINCIPALES DE GESTIÓN**
@@ -409,6 +488,8 @@ export class CarritoVenta implements ICarritoVenta {
     } else {
       this.agregarNuevoItem(carItem, nuevoItemId);
     }
+
+    this.touch();
   }
 
   /**
@@ -420,58 +501,38 @@ export class CarritoVenta implements ICarritoVenta {
   }
 
   /**
-   * Redondear monto monetario a 2 decimales con regla de 0.10 (Perú)
+   * Redondear monto monetario a 2 decimales.
+   * Ajustes operativos de sencillo viven en `montoRedondeo`, no en el carrito.
    */
   private redondearMoneda(monto: number): number {
-    // Primero redondear a 2 decimales estándar para evitar errores de punto flotante
-    const base = Math.round(monto * 100) / 100;
-    
-    // Obtener la parte decimal
-    const decimales = Math.round((base % 1) * 100);
-    const ultimoDigito = decimales % 10;
-    
-    // Si termina en 0 o 5, ya está redondeado
-    if (ultimoDigito === 0) return base;
-    
-    // Lógica de redondeo al 0.10 más cercano (o 0.05 si prefieres esa granularidad)
-    // Aquí implementamos al 0.10 más cercano que es común en POS físicos
-    // Ojo: Si quieres mantener el 0.05 (18.45 -> 18.50 es implícito si redondeas al 0.10 superior o 0.05)
-    
-    // Para el caso específico que pides: 18.45 -> 18.50
-    // Esto sugiere redondeo al 0.10 superior si termina en 5?
-    // O simplemente redondeo estándar matemático al 0.10?
-    // 18.44 -> 18.40
-    // 18.46 -> 18.50
-    // 18.45 -> 18.50 (Round half up)
-    
-    return Math.round(base * 10) / 10;
+    return Math.round(monto * 100) / 100;
   }
 
   /**
    * Actualizar un ítem existente
    */
   private actualizarItemExistente(itemExistente: CarItem, carItem: CarItem): void {
-    const unit = Number(carItem.precioUnitario ?? carItem.product.precioVenta) || 0;
+    const normalized = this.normalizeInputItem(carItem);
 
     // Calcular nueva cantidad base
-    const nuevaCantidad = Number(carItem.quantity ?? 0) + Number(itemExistente.quantity ?? 0);
+    const nuevaCantidad = normalized.quantity + Number(itemExistente.quantity ?? 0);
 
     const prepared: CarItem = {
       ...itemExistente,
       id: itemExistente.id,
       // Actualizar info del producto si viene nueva, pero limpia
-      product: this.cleanProduct(carItem.product || itemExistente.product), 
+      product: normalized.product || itemExistente.product, 
       
       quantity: nuevaCantidad,
-      precioUnitario: unit,
-      montoModificado: !!carItem.montoModificado,
+      precioUnitario: normalized.precioUnitario,
+      montoModificado: normalized.montoModificado,
       
-      descuento: carItem.descuento ?? itemExistente.descuento
+      descuento: normalized.descuento ?? itemExistente.descuento
     } as CarItem;
 
     // Si el monto fue forzado manualmente, preservamos el total sin reinterpretar el precio unitario.
-    if (prepared.montoModificado && carItem.montoTotal != null) {
-      prepared.montoTotal = this.redondearMoneda(carItem.montoTotal);
+    if (prepared.montoModificado && normalized.montoTotal != null) {
+      prepared.montoTotal = this.redondearMoneda(normalized.montoTotal);
     } else {
       // Cálculo estándar: Total = Unitario * Cantidad
       const montoCalculado = this.calcularTotalLinea(prepared);
@@ -488,27 +549,22 @@ export class CarritoVenta implements ICarritoVenta {
    * Agregar nuevo ítem
    */
   private agregarNuevoItem(carItem: CarItem, itemId: string): void {
-    const unit = Number(carItem.precioUnitario ?? carItem.product.precioVenta) || 0;
+    const normalized = this.normalizeInputItem(carItem);
 
     const prepared: CarItem = {
       id: itemId,
-      product: this.cleanProduct(carItem.product), // Limpiar producto al agregar
-      quantity: Number(carItem.quantity ?? 1),
-      precioUnitario: unit,
-      montoModificado: !!carItem.montoModificado,
-      descuento: carItem.descuento
+      product: normalized.product,
+      quantity: normalized.quantity,
+      precioUnitario: normalized.precioUnitario,
+      montoModificado: normalized.montoModificado,
+      descuento: normalized.descuento
     } as CarItem;
 
-    if (prepared.montoModificado && carItem.montoTotal != null) {
-      prepared.montoTotal = this.redondearMoneda(carItem.montoTotal);
+    if (prepared.montoModificado && normalized.montoTotal != null) {
+      prepared.montoTotal = this.redondearMoneda(normalized.montoTotal);
     } else {
       const montoCalculado = this.calcularTotalLinea(prepared);
       prepared.montoTotal = this.redondearMoneda(montoCalculado);
-    }
-
-    // Actualizar el ítem pasado por referencia
-    if (carItem !== prepared) {
-        carItem.montoTotal = prepared.montoTotal;
     }
 
     this._items.push(prepared);
@@ -618,6 +674,7 @@ export class CarritoVenta implements ICarritoVenta {
     updated.montoTotal = this.calcularTotalLinea(updated);
 
     this._items[index] = updated;
+    this.touch();
   }
 
   /**
@@ -628,6 +685,7 @@ export class CarritoVenta implements ICarritoVenta {
     if (index === -1) return false;
 
     this._items.splice(index, 1);
+    this.touch();
     return true;
   }
 
@@ -642,9 +700,9 @@ export class CarritoVenta implements ICarritoVenta {
     const item = this._items[index];
     this._items[index] = {
       ...item,
-      descuento: Math.max(0, descuento)
+      descuento: Math.max(0, CarritoVenta.assertNonNegativeMoney(descuento, "descuento"))
     };
-    
+    this.touch();
     return true;
   }
 
@@ -654,6 +712,7 @@ export class CarritoVenta implements ICarritoVenta {
    */
   limpiar(): void {
     this._items = [];
+    this.touch();
   }
 
   // **MÉTODOS DE CÁLCULO**
@@ -662,17 +721,19 @@ export class CarritoVenta implements ICarritoVenta {
    * Calcular subtotal (suma de todos los montos)
    */
   get subtotal(): number {
-    return this._items.reduce((sum, item) => sum + (item.montoTotal || 0), 0);
+    return this.redondearMoneda(
+      this._items.reduce((sum, item) => sum + (item.montoTotal || 0), 0),
+    );
   }
 
   /**
    * Calcular descuento total
    */
   get descuentoTotal(): number {
-    return this._items.reduce((sum, item) => {
+    return this.redondearMoneda(this._items.reduce((sum, item) => {
       const descuento = item.descuento || 0;
       return sum + descuento;
-    }, 0);
+    }, 0));
   }
 
   /**
@@ -726,6 +787,7 @@ export class CarritoVenta implements ICarritoVenta {
 
   set cliente(value: Cliente | undefined) {
     this._cliente = value;
+    this.touch();
   }
 
   get personal(): IUsuario | undefined {
@@ -734,6 +796,7 @@ export class CarritoVenta implements ICarritoVenta {
 
   set personal(value: IUsuario | undefined) {
     this._personal = value;
+    this.touch();
   }
 
   /**
@@ -745,6 +808,7 @@ export class CarritoVenta implements ICarritoVenta {
   }): void {
     this._cliente = datos.cliente;
     this._personal = datos.personal;
+    this.touch();
   }
 
   get procedencia(): ProcedenciaVenta | undefined {
@@ -753,6 +817,7 @@ export class CarritoVenta implements ICarritoVenta {
 
   set procedencia(value: ProcedenciaVenta | undefined) {
     this._procedencia = value;
+    this.touch();
   }
 
   /**
@@ -947,17 +1012,46 @@ export class CarritoVenta implements ICarritoVenta {
     const carrito = new CarritoVenta(data.id, configuracionFiscal, data.nombre, createdAt);
     carrito.updatedAt = data.updatedAt ? new Date(data.updatedAt) : new Date();
 
-    carrito._items = (data.items ?? []).map((item): CarItem => ({
-      id: item.id,
-      product: carrito.cleanProduct(item.product ?? {}),
-      quantity: Number(item.quantity) || 0,
-      precioUnitario:
-        item.precioUnitario !== undefined ? Number(item.precioUnitario) || 0 : undefined,
-      montoModificado: Boolean(item.montoModificado),
-      montoTotal:
-        item.montoTotal !== undefined ? Number(item.montoTotal) || 0 : undefined,
-      descuento: item.descuento !== undefined ? Number(item.descuento) || 0 : undefined,
-    }));
+    carrito._items = (data.items ?? []).map((item, index): CarItem => {
+      const product = carrito.cleanProduct(item.product ?? {});
+      if (!item.id) {
+        throw new Error(`CarritoVenta.items[${index}].id es requerido`);
+      }
+      if (!product.id) {
+        throw new Error(`CarritoVenta.items[${index}].product.id es requerido`);
+      }
+
+      return {
+        id: item.id,
+        product,
+        quantity: CarritoVenta.assertPositiveQuantity(
+          item.quantity,
+          `CarritoVenta.items[${index}].quantity`,
+        ),
+        precioUnitario:
+          item.precioUnitario !== undefined
+            ? CarritoVenta.assertNonNegativeMoney(
+                item.precioUnitario,
+                `CarritoVenta.items[${index}].precioUnitario`,
+              )
+            : undefined,
+        montoModificado: Boolean(item.montoModificado),
+        montoTotal:
+          item.montoTotal !== undefined
+            ? CarritoVenta.assertNonNegativeMoney(
+                item.montoTotal,
+                `CarritoVenta.items[${index}].montoTotal`,
+              )
+            : undefined,
+        descuento:
+          item.descuento !== undefined
+            ? CarritoVenta.assertNonNegativeMoney(
+                item.descuento,
+                `CarritoVenta.items[${index}].descuento`,
+              )
+            : undefined,
+      };
+    });
     carrito._cliente = data.cliente
     carrito._personal = data.personal
     carrito._procedencia = data.procedencia;

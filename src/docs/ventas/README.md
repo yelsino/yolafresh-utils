@@ -67,6 +67,7 @@ Evita errores conceptuales como:
 - [relaciones-interdominio.md](./relaciones-interdominio.md): relación de ventas con cuenta cliente, inventario, almacén, stock, caja y pagos.
 - [guia-de-consumo.md](./guia-de-consumo.md): lectura recomendada para consumers y flujos operativos mínimos.
 - [migracion-v1-0-4-a-v1-0-5.md](./migracion-v1-0-4-a-v1-0-5.md): cambios requeridos para consumers que usan `CarritoVenta`.
+- [rfc-pos-manual-override-y-snapshot-no-bloqueante.md](./rfc-pos-manual-override-y-snapshot-no-bloqueante.md): RFC implementado para override manual y snapshot no bloqueante en POS.
 
 ## Terminología canónica
 

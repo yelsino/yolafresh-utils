@@ -38,10 +38,10 @@ Forma correcta:
 Desde hoy, versión recomendada para consumidores es:
 
 ```txt
-v1.0.6
+v1.0.7
 ```
 
-`v1.0.5` queda como release previo al fix de snapshot y ruta segura de persistencia histórica publicado en `v1.0.6`.
+`v1.0.6` queda como release previo al endurecimiento monetario del módulo ventas publicado en `v1.0.7`.
 
 ## Paso 1. Actualizar dependencia
 
@@ -50,7 +50,7 @@ En `package.json` del cliente:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.6"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.7"
   }
 }
 ```
@@ -58,7 +58,7 @@ En `package.json` del cliente:
 O por comando:
 
 ```bash
-npm install github:yelsino/yolafresh-utils#v1.0.6
+npm install github:yelsino/yolafresh-utils#v1.0.7
 ```
 
 ## Paso 2. Reinstalación limpia
@@ -79,7 +79,7 @@ npm install
 
 ## Paso 3. Verificar versión instalada
 
-Validar que cliente realmente quedó fijado en `v1.0.6`.
+Validar que cliente realmente quedó fijado en `v1.0.7`.
 
 Revisar:
 
@@ -91,7 +91,7 @@ Valor esperado:
 
 ```json
 {
-  "version": "1.0.6"
+  "version": "1.0.7"
 }
 ```
 
@@ -99,7 +99,7 @@ Valor esperado:
 
 Si consumer usa `CarritoVenta`, debe adaptar integración antes de asumir compatibilidad total.
 
-Cambio observado desde `v1.0.5` y consolidado en `v1.0.6`:
+Cambio observado desde `v1.0.6` y consolidado en `v1.0.7`:
 
 - `CarritoVenta` ya no expone `notas`
 - `CarritoVenta` ya no expone `tasaImpuesto`
@@ -205,7 +205,7 @@ npm install
 
 ## Checklist corto para PR de cliente
 
-- dependencia fijada a `#v1.0.6`
+- dependencia fijada a `#v1.0.7`
 - lockfile actualizado
 - imports internos eliminados
 - compilación verde
