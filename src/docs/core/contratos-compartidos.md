@@ -19,7 +19,6 @@ El paquete distingue tres grupos:
 Evidencia principal:
 
 - [ventas/contracts/index.ts](../../domain/ventas/contracts/index.ts)
-- [pedido.contract.ts](../../domain/ventas/contracts/pedido.contract.ts)
 - [venta.contract.ts](../../domain/ventas/contracts/venta.contract.ts)
 - [carrito-venta.contract.ts](../../domain/ventas/contracts/carrito-venta.contract.ts)
 - [venta-snapshot.contract.ts](../../domain/ventas/contracts/venta-snapshot.contract.ts)
@@ -32,6 +31,21 @@ Lenguaje observado:
 - `VentaItem`
 - `ICarritoVenta`
 - `IVentaSnapshot`
+
+### Pedido
+
+Evidencia principal:
+
+- [pedido/contracts/index.ts](../../domain/pedido/contracts/index.ts)
+- [pedido.contract.ts](../../domain/pedido/contracts/pedido.contract.ts)
+- [pedido-entrega.contract.ts](../../domain/pedido/contracts/pedido-entrega.contract.ts)
+
+Lenguaje observado:
+
+- `Pedido`
+- `PedidoItem`
+- `PedidoEntrega`
+- `PedidoEntregaSeguimiento`
 
 ### Compras
 

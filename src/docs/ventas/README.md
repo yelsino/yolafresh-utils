@@ -9,7 +9,6 @@ La evidencia principal vive en:
 - [Venta.ts](../../domain/ventas/entities/Venta.ts)
 - [CarritoVenta.ts](../../domain/ventas/entities/CarritoVenta.ts)
 - [VentaSnapshot.ts](../../domain/ventas/entities/VentaSnapshot.ts)
-- [pedido.contract.ts](../../domain/ventas/contracts/pedido.contract.ts)
 - [cuenta-cliente.contract.ts](../../domain/finanzas/contracts/cuenta-cliente.contract.ts)
 - [inventario.contract.ts](../../domain/inventario/contracts/inventario.contract.ts)
 - [caja.contract.ts](../../domain/tesoreria/contracts/caja.contract.ts)
@@ -68,13 +67,15 @@ Evita errores conceptuales como:
 - [guia-de-consumo.md](./guia-de-consumo.md): lectura recomendada para consumers y flujos operativos mínimos.
 - [migracion-v1-0-4-a-v1-0-5.md](./migracion-v1-0-4-a-v1-0-5.md): cambios requeridos para consumers que usan `CarritoVenta`.
 - [rfc-pos-manual-override-y-snapshot-no-bloqueante.md](./rfc-pos-manual-override-y-snapshot-no-bloqueante.md): RFC implementado para override manual y snapshot no bloqueante en POS.
+- [rfc-backend-despacho-voucher-credito-por-dependencias.md](./rfc-backend-despacho-voucher-credito-por-dependencias.md): RFC propuesto para backend consumidor sobre envío de voucher de crédito por estado de dependencias, sin polling bruto.
+- [../pedido/README.md](../pedido/README.md): documentación propietaria de reserva comercial y seguimiento de pedido.
 
 ## Terminología canónica
 
 - `CarritoVenta`: captura mutable
 - `Venta`: hecho comercial confirmado
 - `VentaSnapshot`: representación histórica mostrable
-- `Pedido`: reserva comercial
+- `Pedido`: relación documental externa; ver Domain [pedido](../pedido/README.md)
 - `CondicionPagoVenta`: modalidad de cierre comercial (`CONTADO` o `CREDITO`)
 - `Pago`: evidencia externa de pago validable y relacionable manualmente
 - `MovimientoCaja`: impacto operativo en tesorería

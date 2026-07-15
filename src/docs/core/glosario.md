@@ -19,7 +19,11 @@ No representa:
 
 ### `Pedido`
 
-Reserva o intención comercial previa a la venta. Puede convertirse en `Venta`, pero no equivale a hecho comercial confirmado.
+Reserva comercial previa a la venta. Puede convertirse en `Venta`, pero no equivale a hecho comercial confirmado ni a seguimiento logístico.
+
+### `PedidoEntrega`
+
+Seguimiento operativo o logístico de un `Pedido`. Expresa preparación, recojo, despacho, ruta o entrega sin reemplazar a `Pedido` ni a `Venta`.
 
 ### `VentaSnapshot`
 

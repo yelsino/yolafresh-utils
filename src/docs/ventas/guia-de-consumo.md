@@ -33,6 +33,7 @@ Cuando operación se confirma comercialmente:
 Si operación proviene de reserva:
 
 - relacionar con `pedidoId`
+- leer `Pedido` desde su Domain propietario en [../pedido/guia-de-consumo.md](../pedido/guia-de-consumo.md)
 
 ### 3. Snapshot histórico
 

@@ -67,9 +67,20 @@ No reemplaza a `Venta`.
 
 ### `Pedido`
 
-`Pedido` representa reserva comercial pendiente de atención o conversión.
+`Pedido` ya no se documenta como contrato propietario de `ventas`.
 
-Si una venta nace desde un pedido, la relación correcta es `pedidoId`.
+Lectura vigente:
+
+- `ventas` solo mantiene relación documental con `Pedido`;
+- si una venta nace desde un pedido, la relación correcta es `pedidoId`;
+- el ownership de `Pedido` y `PedidoEntrega` vive en [../pedido/modelo-vigente.md](../pedido/modelo-vigente.md).
+
+Lectura contractual observada:
+
+- `Pedido` se mantiene como contrato liviano de reserva comercial;
+- cada item expone `cantidadSolicitada` y `cantidadAtendida`;
+- la cantidad pendiente se deriva como `cantidadSolicitada - cantidadAtendida`;
+- `Pedido` ya no expone `cantidadCancelada` como parte del contrato vigente.
 
 ## Estados y lifecycle
 

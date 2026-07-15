@@ -35,6 +35,14 @@ La lectura recomendada va de:
 - [ventas/migracion-v1-0-4-a-v1-0-5.md](./ventas/migracion-v1-0-4-a-v1-0-5.md)
 - [ventas/rfc-pos-manual-override-y-snapshot-no-bloqueante.md](./ventas/rfc-pos-manual-override-y-snapshot-no-bloqueante.md)
 
+### Pedido
+
+- [pedido/README.md](./pedido/README.md)
+- [pedido/modelo-vigente.md](./pedido/modelo-vigente.md)
+- [pedido/relaciones-interdominio.md](./pedido/relaciones-interdominio.md)
+- [pedido/guia-de-consumo.md](./pedido/guia-de-consumo.md)
+- [pedido/migracion-v1-0-7-a-v2-0-0.md](./pedido/migracion-v1-0-7-a-v2-0-0.md)
+
 ### Finanzas
 
 - [finanzas/README.md](./finanzas/README.md)
@@ -121,6 +129,11 @@ Los siguientes archivos pueden conservar valor contextual, pero no son fuente pr
 - [tarjetas-virtuales-consumo.md](./tarjetas-virtuales-consumo.md)
 
 Nunca usar documentos históricos para redefinir semántica vigente de contratos activos cuando exista documentación oficial más reciente dentro de `core/` o de cada Domain.
+
+## RFCs operativos recientes
+
+- [ventas/rfc-pos-manual-override-y-snapshot-no-bloqueante.md](./ventas/rfc-pos-manual-override-y-snapshot-no-bloqueante.md)
+- [ventas/rfc-backend-despacho-voucher-credito-por-dependencias.md](./ventas/rfc-backend-despacho-voucher-credito-por-dependencias.md)
 
 ## Nota
 

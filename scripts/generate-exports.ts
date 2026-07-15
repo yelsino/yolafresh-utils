@@ -11,6 +11,7 @@ export * from "./domain/shared/base";
 export * from "./domain/shared/kernel";
 export * from "./domain/shared/utils";
 export * from "./domain/shared/value-objects";
+export * from "./domain/pedido/contracts";
 export * from "./domain/ventas/contracts";
 export * from "./domain/compras/contracts";
 export * from "./domain/inventario/contracts";

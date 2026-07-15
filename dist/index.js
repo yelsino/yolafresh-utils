@@ -22,6 +22,7 @@ __exportStar(require("./domain/shared/base"), exports);
 __exportStar(require("./domain/shared/kernel"), exports);
 __exportStar(require("./domain/shared/utils"), exports);
 __exportStar(require("./domain/shared/value-objects"), exports);
+__exportStar(require("./domain/pedido/contracts"), exports);
 __exportStar(require("./domain/ventas/contracts"), exports);
 __exportStar(require("./domain/compras/contracts"), exports);
 __exportStar(require("./domain/inventario/contracts"), exports);

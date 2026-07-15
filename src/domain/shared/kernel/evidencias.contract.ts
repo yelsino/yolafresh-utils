@@ -37,6 +37,8 @@ export interface Evidencia {
 
   // 🔗 Relación flexible
   entidadReferencia: 
+    | "PEDIDO"
+    | "PEDIDO_ENTREGA"
     | "COMPRA"
     | "PAGO"
     | "VENTA"

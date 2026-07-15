@@ -2,9 +2,41 @@
 export enum PedidoState {
   ABIERTO = 'ABIERTO',
   PARCIALMENTE_ATENDIDO = 'PARCIALMENTE_ATENDIDO',
+  ATENDIDO = 'ATENDIDO',
   CONVERTIDO = 'CONVERTIDO',
   CANCELADO = 'CANCELADO',
   VENCIDO = 'VENCIDO',
+}
+
+export enum PedidoEntregaState {
+  PENDIENTE = 'PENDIENTE',
+  EN_PREPARACION = 'EN_PREPARACION',
+  LISTO_PARA_RECOJO = 'LISTO_PARA_RECOJO',
+  DESPACHADO = 'DESPACHADO',
+  EN_RUTA = 'EN_RUTA',
+  ENTREGADO = 'ENTREGADO',
+  NO_ENTREGADO = 'NO_ENTREGADO',
+  CANCELADO = 'CANCELADO',
+}
+
+export enum PedidoPrioridadEnum {
+  NORMAL = 'NORMAL',
+  ALTA = 'ALTA',
+  URGENTE = 'URGENTE',
+}
+
+export enum PedidoProcedenciaEnum {
+  TIENDA = 'TIENDA',
+  WEB = 'WEB',
+  WHATSAPP = 'WHATSAPP',
+  INSTAGRAM = 'INSTAGRAM',
+  FACEBOOK = 'FACEBOOK',
+  OTRO = 'OTRO',
+}
+
+export enum PedidoEntregaModalidadEnum {
+  RECOJO = 'RECOJO',
+  DESPACHO = 'DESPACHO',
 }
 
 export enum VentaState {

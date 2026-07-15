@@ -141,9 +141,14 @@ Una venta puede requerir validación previa de disponibilidad, pero esa validaci
 
 Relación vigente:
 
-- `Pedido` representa reserva comercial
+- `Pedido` representa reserva comercial en su Domain propietario
 - `Venta` representa hecho comercial
 - unión correcta: `pedidoId`
+
+Lectura importante:
+
+- detalles de estados, programación y seguimiento viven en [../pedido/modelo-vigente.md](../pedido/modelo-vigente.md);
+- `ventas` solo necesita la referencia documental para trazabilidad.
 
 ## Relación con `VentaSnapshot`
 

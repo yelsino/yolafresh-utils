@@ -4,6 +4,8 @@ const path = require("path");
 const repoRoot = path.resolve(__dirname, "..");
 
 const stubs = [
+  { subpath: "pedido", target: "dist/domain/pedido/index" },
+  { subpath: "pedido/contracts", target: "dist/domain/pedido/contracts/index" },
   { subpath: "ventas", target: "dist/domain/ventas/index" },
   { subpath: "ventas/contracts", target: "dist/domain/ventas/contracts/index" },
   { subpath: "ventas/entities", target: "dist/domain/ventas/entities/index" },
@@ -37,6 +39,7 @@ const stubs = [
 ];
 
 const rootDirs = [
+  "pedido",
   "ventas",
   "compras",
   "inventario",
@@ -52,9 +55,27 @@ function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
 }
 
+function removeDirWithRetry(dirPath, attempts = 5) {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      fs.rmSync(dirPath, {
+        recursive: true,
+        force: true,
+        maxRetries: 10,
+        retryDelay: 100,
+      });
+      return;
+    } catch (error) {
+      if (attempt === attempts || error.code !== "ENOTEMPTY") {
+        throw error;
+      }
+    }
+  }
+}
+
 function cleanRootStubs() {
   for (const dir of rootDirs) {
-    fs.rmSync(path.join(repoRoot, dir), { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    removeDirWithRetry(path.join(repoRoot, dir));
   }
 }
 

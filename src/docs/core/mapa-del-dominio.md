@@ -6,6 +6,8 @@ Este documento ofrece vista de alto nivel del dominio modelado por `yolafresh-ut
 
 La evidencia principal vive en:
 
+- [../pedido/modelo-vigente.md](../pedido/modelo-vigente.md)
+- [../pedido/relaciones-interdominio.md](../pedido/relaciones-interdominio.md)
 - [../ventas/relaciones-interdominio.md](../ventas/relaciones-interdominio.md)
 - [../ventas/modelo-vigente.md](../ventas/modelo-vigente.md)
 - [../finanzas/modelo-vigente.md](../finanzas/modelo-vigente.md)
@@ -25,6 +27,7 @@ El paquete modela dominio comercial y operativo mediante módulos que representa
 ```mermaid
 flowchart LR
   Personas[Personas]
+  Pedido[Pedido]
   Ventas[Ventas]
   Tesoreria[Tesoreria]
   Finanzas[Finanzas]
@@ -32,7 +35,10 @@ flowchart LR
   Compras[Compras]
   Contabilidad[Contabilidad]
 
+  Personas --> Pedido
   Personas --> Ventas
+  Pedido --> Ventas
+  Pedido --> Inventario
   Personas --> Compras
   Personas --> Finanzas
   Ventas --> Tesoreria
@@ -63,8 +69,16 @@ Representa operación comercial de venta:
 
 - captura previa con `CarritoVenta`;
 - hecho comercial con `Venta`;
-- representación histórica con `VentaSnapshot`;
-- reserva comercial con `Pedido`.
+- representación histórica con `VentaSnapshot`.
+
+### `pedido`
+
+Representa reserva comercial y seguimiento operativo previo o paralelo a la venta:
+
+- reserva comercial con `Pedido`;
+- seguimiento logístico con `PedidoEntrega`;
+- programación, prioridad y procedencia del pedido;
+- conversión eventual hacia `Venta`.
 
 ### `tesoreria`
 
