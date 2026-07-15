@@ -41,7 +41,7 @@ Este Domain documenta:
 - [modelo-vigente.md](./modelo-vigente.md): conceptos, estados y contratos vigentes.
 - [relaciones-interdominio.md](./relaciones-interdominio.md): límites con ventas, tesorería, finanzas, inventario y personas.
 - [guia-de-consumo.md](./guia-de-consumo.md): lectura recomendada para consumers.
-- [migracion-v1-0-7-a-v2-0-0.md](./migracion-v1-0-7-a-v2-0-0.md): migración desde `ventas/contracts`.
+- [migracion-v1-0-7-a-v1-0-8.md](./migracion-v1-0-7-a-v1-0-8.md): migración desde `ventas/contracts`.
 
 ## Terminología canónica
 

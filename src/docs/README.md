@@ -41,7 +41,7 @@ La lectura recomendada va de:
 - [pedido/modelo-vigente.md](./pedido/modelo-vigente.md)
 - [pedido/relaciones-interdominio.md](./pedido/relaciones-interdominio.md)
 - [pedido/guia-de-consumo.md](./pedido/guia-de-consumo.md)
-- [pedido/migracion-v1-0-7-a-v2-0-0.md](./pedido/migracion-v1-0-7-a-v2-0-0.md)
+- [pedido/migracion-v1-0-7-a-v1-0-8.md](./pedido/migracion-v1-0-7-a-v1-0-8.md)
 
 ### Finanzas
 
