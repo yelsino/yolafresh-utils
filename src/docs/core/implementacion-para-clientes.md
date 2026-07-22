@@ -28,7 +28,7 @@ Forma correcta:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v2.0.0"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.9"
   }
 }
 ```
@@ -38,12 +38,11 @@ Forma correcta:
 Versión recomendada para consumidores:
 
 ```txt
-v2.0.0
+v1.0.9
 ```
 
-`v1.0.8` queda como release anterior de la línea `v1`. `v2.0.0` incorpora la
-migración incompatible del modelo de ventas y los contratos adicionales de pedido
-y cobros.
+`v1.0.8` queda como release anterior. `v1.0.9` incorpora la migración del modelo
+de ventas y los contratos adicionales de pedido y cobros.
 
 ## Paso 1. Actualizar dependencia
 
@@ -52,7 +51,7 @@ En `package.json` del cliente:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v2.0.0"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.9"
   }
 }
 ```
@@ -60,7 +59,7 @@ En `package.json` del cliente:
 O por comando:
 
 ```bash
-npm install github:yelsino/yolafresh-utils#v2.0.0
+npm install github:yelsino/yolafresh-utils#v1.0.9
 ```
 
 ## Paso 2. Reinstalación limpia
@@ -81,7 +80,7 @@ npm install
 
 ## Paso 3. Verificar versión instalada
 
-Validar que cliente realmente quedó fijado en `v2.0.0`.
+Validar que cliente realmente quedó fijado en `v1.0.9`.
 
 Revisar:
 
@@ -93,7 +92,7 @@ Valor esperado:
 
 ```json
 {
-  "version": "2.0.0"
+  "version": "1.0.9"
 }
 ```
 
@@ -109,7 +108,7 @@ Cambios históricos de `v1.0.7` y `v1.0.8`:
 - `CarritoVenta` ya no expone `personalId`
 - `VentaSnapshotItem` ahora expone `montoModificado`
 
-Cambios incompatibles publicados en `v2.0.0`:
+Cambios contractuales publicados en `v1.0.9`:
 
 - `Venta.items` es un conteo numérico;
 - `VentaItem` dejó de ser contrato público;
@@ -215,7 +214,7 @@ npm install
 
 ## Checklist corto para PR de cliente
 
-- dependencia fijada a `#v2.0.0`
+- dependencia fijada a `#v1.0.9`
 - lockfile actualizado
 - imports internos eliminados
 - compilación verde

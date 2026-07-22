@@ -4,7 +4,7 @@
 
 El core vigente de `yolafresh-utils` queda orientado a contratos de negocio, primitivas de dominio y pocas entidades ricas de alto valor transversal.
 
-La versión publicada de referencia es `2.0.0` (`v2.0.0`).
+La versión publicada de referencia es `1.0.9` (`v1.0.9`).
 
 La evidencia principal está en [src/index.ts](../../index.ts).
 

@@ -10,7 +10,7 @@ Este proyecto adopta versionado semántico:
 
 ## [Unreleased]
 
-## [2.0.0] - 2026-07-22
+## [1.0.9] - 2026-07-22
 
 ### Changed
 

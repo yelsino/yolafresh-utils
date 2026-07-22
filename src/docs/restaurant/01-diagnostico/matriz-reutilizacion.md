@@ -52,7 +52,7 @@
 
 ## Límites de compatibilidad
 
-1. Un consumidor que no habilita gastronomía debe observar el mismo comportamiento retail de `2.0.0`.
+1. Un consumidor que no habilita gastronomía debe observar el mismo comportamiento retail de `1.0.9`.
 2. Los nuevos contratos deben publicarse por subpath gastronómico, sin ampliar el root innecesariamente.
 3. Los enums existentes no deben recibir valores gastronómicos hasta comprobar que todos los consumidores toleran extensiones.
 4. Las traducciones hacia Venta, Pago e Inventario deben ocurrir en adaptadores/casos de uso, no dentro de entidades de esos dominios.

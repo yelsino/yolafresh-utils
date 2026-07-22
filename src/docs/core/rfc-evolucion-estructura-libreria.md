@@ -5,7 +5,7 @@
 Implementado con ajustes posteriores.
 
 > Nota de vigencia: este RFC conserva la decisión histórica de organizar el paquete
-> por dominios. Para conocer la surface exacta publicada en `v2.0.0`, usar
+> por dominios. Para conocer la surface exacta publicada en `v1.0.9`, usar
 > [src/index.ts](../../index.ts) y `package.json`. La raíz actual reexporta también
 > contratos públicos de dominio; los subpaths siguen siendo la forma recomendada
 > para hacer explícito el límite consumido.

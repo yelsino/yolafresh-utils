@@ -4,7 +4,7 @@
 
 Este documento fija política de versionado de `yola-fresh-utils` para preservar compatibilidad entre proyectos consumidores.
 
-Versión publicada vigente al momento de esta documentación: `2.0.0` (`v2.0.0`).
+Versión publicada vigente al momento de esta documentación: `1.0.9` (`v1.0.9`).
 
 ## Regla base
 
@@ -46,12 +46,12 @@ Recomendación oficial:
 - usar tags reales;
 - no apuntar a rama flotante `main`;
 - no dejar dependencia como `github:yelsino/yolafresh-utils` sin tag.
-- seguir línea secuencial `v2.x`.
+- seguir línea secuencial `v1.x`.
 
 ### Desde GitHub por tag exacto
 
 ```bash
-npm install github:yelsino/yolafresh-utils#v2.0.0
+npm install github:yelsino/yolafresh-utils#v1.0.9
 ```
 
 En `package.json`:
@@ -59,7 +59,7 @@ En `package.json`:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v2.0.0"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.9"
   }
 }
 ```

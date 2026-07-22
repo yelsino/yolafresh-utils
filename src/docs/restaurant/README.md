@@ -5,7 +5,7 @@
 - Estado: propuesta de dominio y plan de evolución.
 - Fecha de corte: 2026-07-21.
 - Aplicación inspeccionada: `D:\Proyectos\MOVILE\FINANZAS-YOLA-FRESH`.
-- Contratos compartidos inspeccionados: `yola-fresh-utils` `2.0.0`.
+- Contratos compartidos inspeccionados: `yola-fresh-utils` `1.0.9`.
 - Alcance técnico: aplicación móvil, dominio compartido y persistencia local SQLite/CouchDB.
 - Fuera de alcance: implementación de código y diseño de servicios externos.
 
@@ -64,7 +64,7 @@ Cada afirmación importante usa una de estas marcas:
 
 ## Regla de no contradicción
 
-1. Los documentos de dominios vigentes describen los contratos publicados en `2.0.0`.
+1. Los documentos de dominios vigentes describen los contratos publicados en `1.0.9`.
 2. Este árbol describe la evolución gastronómica propuesta.
 3. Ante una diferencia, el código y la documentación de dominio vigente prevalecen para comportamiento actual.
 4. Ningún nombre o campo propuesto debe publicarse antes de aprobar su RFC y pruebas de contrato.

@@ -4,7 +4,7 @@
 
 Esta carpeta concentra documentación oficial del paquete después de la migración completa a estructura por dominios.
 
-Versión de referencia vigente: `2.0.0` (`v2.0.0`). Las migraciones y RFCs pueden
+Versión de referencia vigente: `1.0.9` (`v1.0.9`). Las migraciones y RFCs pueden
 mencionar versiones anteriores, pero no sustituyen el modelo vigente descrito en
 los documentos marcados como actuales.
 
@@ -107,7 +107,7 @@ La lectura recomendada va de:
 - [restaurant/03-dominio/lenguaje-y-contextos.md](./restaurant/03-dominio/lenguaje-y-contextos.md): lenguaje ubicuo y mapa de contextos.
 - [restaurant/07-plan/fases-de-implementacion.md](./restaurant/07-plan/fases-de-implementacion.md): secuencia recomendada de ejecución.
 
-Este árbol es una propuesta y no amplía por sí solo la API pública de `2.0.0`.
+Este árbol es una propuesta y no amplía por sí solo la API pública de `1.0.9`.
 
 ## Criterio de verdad
 

@@ -4,7 +4,7 @@
 
 `yolafresh-utils` es biblioteca TypeScript del ecosistema YolaFresh orientada al lenguaje compartido del negocio.
 
-Versión publicada vigente: `2.0.0` (`v2.0.0`). La versión del paquete se define en
+Versión publicada vigente: `1.0.9` (`v1.0.9`). La versión del paquete se define en
 `package.json`; las guías de instalación deben usar ese tag o una versión anterior
 explícita cuando se esté realizando una migración.
 
@@ -69,12 +69,12 @@ Recomendación oficial:
 
 - no usar rama flotante `github:yelsino/yolafresh-utils`;
 - fijar siempre tag real `vX.Y.Z`;
-- seguir línea secuencial `v2.x`.
+- seguir línea secuencial `v1.x`.
 
 Instalar desde GitHub por tag exacto:
 
 ```bash
-npm install github:yelsino/yolafresh-utils#v2.0.0
+npm install github:yelsino/yolafresh-utils#v1.0.9
 ```
 
 En `package.json`:
@@ -82,7 +82,7 @@ En `package.json`:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v2.0.0"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.9"
   }
 }
 ```
@@ -112,7 +112,7 @@ Regla de lectura:
 Por eso:
 
 - `v1.0.7` = release anterior inmediata;
-- `v2.0.0` = release vigente, con la migración incompatible de ventas y los contratos actualizados.
+- `v1.0.9` = release vigente, con la migración de ventas y los contratos actualizados.
 
 ## Desarrollo local
 
