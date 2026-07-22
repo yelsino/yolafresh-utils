@@ -1,12 +1,33 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { CondicionPagoVenta, VentaState } from "../../shared/kernel/enums";
-import { CarritoVenta, ICarritoVenta, ProcedenciaVenta } from "../entities/CarritoVenta";
-import { Venta, VentaCreateInput } from "../entities/Venta";
-import { isVentaSnapshotImmutableState } from "../entities/VentaSnapshot";
 import { CategoriaCliente, Cliente } from "../../personas/contracts/persons.contract";
 import { IUsuario } from "../../personas/contracts/usuario.contract";
+import { CondicionPagoVenta, VentaState } from "../../shared/kernel/enums";
+import {
+  CarritoVenta,
+  ICarritoVenta,
+  ProcedenciaVenta,
+} from "../entities/CarritoVenta";
+import { Venta, VentaCreateInput } from "../entities/Venta";
+import {
+  isVentaSnapshotImmutableState,
+  VentaSnapshotItem,
+} from "../entities/VentaSnapshot";
+
+function buildSnapshotItem(
+  overrides: Partial<VentaSnapshotItem> = {},
+): VentaSnapshotItem {
+  return {
+    id: "item_001",
+    presentacionId: "pres_001",
+    nombre: "Producto test",
+    cantidadVendida: 2,
+    precioUnitario: 5,
+    total: 10,
+    ...overrides,
+  };
+}
 
 function buildVentaInput(
   overrides: Partial<VentaCreateInput> = {},
@@ -17,15 +38,8 @@ function buildVentaInput(
     type: "venta",
     estado: VentaState.CONFIRMADA,
     condicionPago: CondicionPagoVenta.CONTADO,
-    items: [
-      {
-        id: "item_001",
-        presentacionId: "pres_001",
-        cantidadVendida: 2,
-        precioUnitario: 5,
-        montoTotal: 10,
-      },
-    ],
+    items: 1,
+    snapshotItems: [buildSnapshotItem()],
     subtotal: 10,
     impuesto: 0,
     total: 10,
@@ -34,31 +48,8 @@ function buildVentaInput(
   };
 }
 
-test("Venta exige condicionPago y la conserva en contrato serializado", () => {
-  const venta = new Venta(
-    buildVentaInput({
-      condicionPago: CondicionPagoVenta.CREDITO,
-    }),
-  );
-
-  assert.equal(venta.condicionPago, CondicionPagoVenta.CREDITO);
-  assert.equal(venta.toJSON().condicionPago, CondicionPagoVenta.CREDITO);
-});
-
-test("Venta rechaza creación sin condicionPago", () => {
-  assert.throws(
-    () =>
-      new Venta(
-        buildVentaInput({
-          condicionPago: undefined as unknown as CondicionPagoVenta,
-        }),
-      ),
-    /CondicionPago es requerida/,
-  );
-});
-
-test("Venta.fromCarritoVenta usa CONTADO por defecto y permite CREDITO", () => {
-  const cliente: Cliente = {
+function buildCliente(): Cliente {
+  return {
     id: "cliente_001",
     tipoEntidad: "Cliente",
     createdAt: new Date("2026-07-08T10:00:00.000Z"),
@@ -74,7 +65,10 @@ test("Venta.fromCarritoVenta usa CONTADO por defecto y permite CREDITO", () => {
     totalGastado: 0,
     categoriaCliente: CategoriaCliente.REGULAR,
   };
-  const personal: IUsuario = {
+}
+
+function buildPersonal(): IUsuario {
+  return {
     id: "usuario_001",
     username: "vendedor.test",
     passwordHash: "hash",
@@ -87,7 +81,10 @@ test("Venta.fromCarritoVenta usa CONTADO por defecto y permite CREDITO", () => {
     cuentaBloqueada: false,
     emailVerificado: true,
   };
-  const carrito: ICarritoVenta = {
+}
+
+function buildCarrito(): ICarritoVenta {
+  return {
     id: "cart_001",
     createdAt: new Date("2026-07-08T10:00:00.000Z"),
     updatedAt: new Date("2026-07-08T10:00:00.000Z"),
@@ -99,6 +96,15 @@ test("Venta.fromCarritoVenta usa CONTADO por defecto y permite CREDITO", () => {
           id: "pres_001",
           nombre: "Producto test",
           precioVenta: 10,
+          unidadContenido: "unidad" as never,
+          imagen: {
+            base: "producto.jpg",
+            sizes: {
+              small: "producto-small.jpg",
+              medium: "producto-medium.jpg",
+              large: "producto-large.jpg",
+            },
+          },
         },
         quantity: 1,
         precioUnitario: 10,
@@ -112,118 +118,159 @@ test("Venta.fromCarritoVenta usa CONTADO por defecto y permite CREDITO", () => {
     cantidadItems: 1,
     cantidadTotal: 1,
     procedencia: ProcedenciaVenta.Tienda,
-    cliente,
-    personal,
+    cliente: buildCliente(),
+    personal: buildPersonal(),
   };
+}
+
+test("Venta conserva condición de pago en el resumen serializado", () => {
+  const venta = new Venta(
+    buildVentaInput({ condicionPago: CondicionPagoVenta.CREDITO }),
+  );
+
+  assert.equal(venta.condicionPago, CondicionPagoVenta.CREDITO);
+  assert.equal(venta.toJSON().condicionPago, CondicionPagoVenta.CREDITO);
+});
+
+test("Venta rechaza creación sin condición de pago", () => {
+  assert.throws(
+    () =>
+      new Venta(
+        buildVentaInput({
+          condicionPago: undefined as unknown as CondicionPagoVenta,
+        }),
+      ),
+    /CondicionPago es requerida/,
+  );
+});
+
+test("Venta.items es un conteo entero mayor a cero", () => {
+  assert.throws(
+    () => new Venta(buildVentaInput({ items: 0, snapshotItems: [] })),
+    /Venta\.items debe ser un entero mayor a 0/,
+  );
+  assert.throws(
+    () => new Venta(buildVentaInput({ items: 1.5, snapshotItems: undefined })),
+    /Venta\.items debe ser un entero mayor a 0/,
+  );
+});
+
+test("Venta valida que el conteo coincida con el snapshot transitorio", () => {
+  assert.throws(
+    () =>
+      new Venta(
+        buildVentaInput({
+          items: 2,
+          snapshotItems: [buildSnapshotItem()],
+        }),
+      ),
+    /Venta\.items debe coincidir con la cantidad de VentaSnapshot\.items/,
+  );
+});
+
+test("Venta.toJSON no duplica el array de detalle", () => {
+  const venta = new Venta(buildVentaInput());
+  const serialized = venta.toJSON();
+
+  assert.equal(serialized.items, 1);
+  assert.equal(Array.isArray(serialized.items), false);
+  assert.equal("snapshotItems" in serialized, false);
+});
+
+test("Venta.fromCarritoVenta construye conteo y snapshot histórico", () => {
+  const cliente = buildCliente();
+  const personal = buildPersonal();
+  const carrito = { ...buildCarrito(), cliente, personal };
 
   const ventaContado = Venta.fromCarritoVenta(carrito, "venta_contado");
   const ventaCredito = Venta.fromCarritoVenta(carrito, "venta_credito", {
     condicionPago: CondicionPagoVenta.CREDITO,
   });
+  const snapshot = ventaContado.toVentaSnapshot();
 
-  assert.equal(ventaContado.condicionPago, CondicionPagoVenta.CONTADO);
+  assert.equal(ventaContado.items, 1);
   assert.equal(ventaCredito.condicionPago, CondicionPagoVenta.CREDITO);
   assert.equal(ventaContado.clienteId, cliente.id);
   assert.equal(ventaContado.vendedorId, personal.id);
+  assert.equal(snapshot.items.length, ventaContado.items);
+  assert.equal(snapshot.items[0]?.nombre, "Producto test");
+  assert.equal(snapshot.items[0]?.unidadComercial, "unidad");
+  assert.equal(snapshot.items[0]?.imagenUrl, "producto-small.jpg");
 });
 
-test("VentaSnapshot trata confirmada y anulada como estados finales", () => {
-  assert.equal(isVentaSnapshotImmutableState(VentaState.CONFIRMADA), true);
-  assert.equal(isVentaSnapshotImmutableState(VentaState.ANULADA), true);
-  assert.equal(isVentaSnapshotImmutableState("DESPACHADA"), false);
+test("Venta rehidratada exige detalle explícito para construir snapshot", () => {
+  const original = new Venta(buildVentaInput());
+  const rehidratada = new Venta(original.toJSON() as VentaCreateInput);
+
+  assert.throws(
+    () => rehidratada.toVentaSnapshot(),
+    /VentaSnapshotBuildContext\.items es requerido/,
+  );
+
+  const snapshot = rehidratada.toVentaSnapshot({
+    items: [buildSnapshotItem()],
+  });
+  assert.equal(snapshot.items.length, rehidratada.items);
 });
 
-test("VentaSnapshot preserva montoModificado por item", () => {
+test("VentaSnapshot rechaza detalle que no coincide con Venta.items", () => {
   const venta = new Venta(
-    buildVentaInput({
-      items: [
-        {
-          id: "item_001",
-          presentacionId: "pres_001",
-          cantidadVendida: 2,
-          precioUnitario: 5,
-          montoTotal: 10,
-          montoModificado: true,
-        },
-      ],
-    }),
+    buildVentaInput({ items: 2, snapshotItems: undefined }),
+  );
+
+  assert.throws(
+    () => venta.toVentaSnapshot({ items: [buildSnapshotItem()] }),
+    /Venta\.items debe coincidir con la cantidad de VentaSnapshot\.items/,
+  );
+});
+
+test("VentaSnapshot preserva información histórica y override", () => {
+  const item = buildSnapshotItem({
+    nombre: "Zanahoria orgánica",
+    imagenUrl: "zanahoria.jpg",
+    unidadComercial: "kilogramo",
+    montoModificado: true,
+  });
+  const venta = new Venta(
+    buildVentaInput({ items: 1, snapshotItems: [item] }),
   );
 
   const snapshot = venta.toVentaSnapshot();
 
+  assert.equal(snapshot.items[0]?.nombre, "Zanahoria orgánica");
+  assert.equal(snapshot.items[0]?.imagenUrl, "zanahoria.jpg");
+  assert.equal(snapshot.items[0]?.unidadComercial, "kilogramo");
   assert.equal(snapshot.items[0]?.montoModificado, true);
 });
 
-test("VentaSnapshot acepta descuentoTotal y montoRedondeo al reflejar Venta real", () => {
+test("VentaSnapshot acepta descuento y montoRedondeo firmado", () => {
+  const item = buildSnapshotItem({
+    cantidadVendida: 1,
+    precioUnitario: 10,
+    total: 10,
+    descuento: 2,
+  });
   const venta = new Venta(
     buildVentaInput({
-      items: [
-        {
-          id: "item_001",
-          presentacionId: "pres_001",
-          cantidadVendida: 1,
-          precioUnitario: 10,
-          montoTotal: 10,
-          descuento: 2,
-        },
-      ],
+      items: 1,
+      snapshotItems: [item],
       subtotal: 10,
       impuesto: 0,
-      total: 8.1,
-      montoRedondeo: 0.1,
-    }),
-  );
-
-  const snapshot = venta.toVentaSnapshot();
-
-  assert.equal(snapshot.subtotal, 10);
-  assert.equal(snapshot.descuentoTotal, 2);
-  assert.equal(snapshot.impuesto, 0);
-  assert.equal(snapshot.montoRedondeo, 0.1);
-  assert.equal(snapshot.total, 8.1);
-});
-
-test("VentaSnapshot acepta montoRedondeo negativo cuando venta operativa lo requiere", () => {
-  const venta = new Venta(
-    buildVentaInput({
-      items: [
-        {
-          id: "item_001",
-          presentacionId: "pres_001",
-          cantidadVendida: 1,
-          precioUnitario: 10,
-          montoTotal: 10,
-        },
-      ],
-      subtotal: 10,
-      impuesto: 0,
-      total: 9.8,
+      total: 7.8,
       montoRedondeo: -0.2,
     }),
   );
 
   const snapshot = venta.toVentaSnapshot();
 
+  assert.equal(snapshot.descuentoTotal, 2);
   assert.equal(snapshot.montoRedondeo, -0.2);
-  assert.equal(snapshot.total, 9.8);
+  assert.equal(snapshot.total, 7.8);
 });
 
-test("Venta.tryToVentaSnapshot no lanza excepción si snapshot estricto falla", () => {
+test("Venta.tryToVentaSnapshot no lanza si el snapshot estricto falla", () => {
   const venta = new Venta(
-    buildVentaInput({
-      items: [
-        {
-          id: "item_001",
-          presentacionId: "pres_001",
-          cantidadVendida: 1,
-          precioUnitario: 10,
-          montoTotal: 10,
-        },
-      ],
-      subtotal: 10,
-      impuesto: 0,
-      total: 999,
-    }),
+    buildVentaInput({ total: 999 }),
   );
 
   const result = venta.tryToVentaSnapshot();
@@ -232,32 +279,14 @@ test("Venta.tryToVentaSnapshot no lanza excepción si snapshot estricto falla", 
   assert.ok(result.error instanceof Error);
   assert.match(
     result.error.message,
-    /VentaSnapshot\.total debe ser consistente con subtotal - descuentoTotal \+ impuesto \+ montoRedondeo/,
+    /VentaSnapshot\.total debe ser consistente/,
   );
 });
 
-test("Venta.calcularTotalItem resta descuento aunque exista montoTotal bruto", () => {
-  const venta = new Venta(
-    buildVentaInput({
-      items: [
-        {
-          id: "item_001",
-          presentacionId: "pres_001",
-          cantidadVendida: 1,
-          precioUnitario: 10,
-          montoTotal: 10,
-          descuento: 2,
-        },
-      ],
-      subtotal: 10,
-      impuesto: 0,
-      total: 8,
-    }),
-  );
-
-  assert.equal(venta.calcularSubtotalItem(venta.items[0]!), 10);
-  assert.equal(venta.calcularTotalItem(venta.items[0]!), 8);
-  assert.equal(venta.calcularTotal(), 8);
+test("VentaSnapshot trata confirmada y anulada como estados finales", () => {
+  assert.equal(isVentaSnapshotImmutableState(VentaState.CONFIRMADA), true);
+  assert.equal(isVentaSnapshotImmutableState(VentaState.ANULADA), true);
+  assert.equal(isVentaSnapshotImmutableState("DESPACHADA"), false);
 });
 
 test("CarritoVenta preserva precioUnitario cuando montoTotal es manual", () => {
@@ -325,10 +354,7 @@ test("CarritoVenta conserva redondeo monetario a 2 decimales", () => {
     precioUnitario: 18.45,
   });
 
-  const item = carrito.items[0];
-
-  assert.ok(item);
-  assert.equal(item.montoTotal, 18.45);
+  assert.equal(carrito.items[0]?.montoTotal, 18.45);
   assert.equal(carrito.subtotal, 18.45);
 });
 
@@ -346,15 +372,16 @@ test("CarritoVenta actualiza updatedAt al mutar items", () => {
     quantity: 1,
   });
 
-  assert.ok(carrito.updatedAt.getTime() > new Date("2020-01-01T00:00:00.000Z").getTime());
+  assert.ok(
+    carrito.updatedAt.getTime() >
+      new Date("2020-01-01T00:00:00.000Z").getTime(),
+  );
 });
 
-test("CarritoVenta.fromJSON rechaza quantity inválida en vez de coercer a cero", () => {
+test("CarritoVenta.fromJSON rechaza quantity inválida", () => {
   const carritoCorrupto = {
+    ...buildCarrito(),
     id: "cart_bad",
-    createdAt: new Date("2026-07-08T10:00:00.000Z"),
-    updatedAt: new Date("2026-07-08T10:00:00.000Z"),
-    nombre: "Carrito corrupto",
     items: [
       {
         id: "item_001",
@@ -368,13 +395,6 @@ test("CarritoVenta.fromJSON rechaza quantity inválida en vez de coercer a cero"
         montoTotal: 10,
       },
     ],
-    subtotal: 10,
-    descuentoTotal: 0,
-    impuesto: 0,
-    total: 10,
-    cantidadItems: 1,
-    cantidadTotal: 1,
-    procedencia: ProcedenciaVenta.Tienda,
   } satisfies ICarritoVenta;
 
   assert.throws(

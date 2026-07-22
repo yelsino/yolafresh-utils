@@ -123,15 +123,22 @@ Campos canónicos observados:
 
 - `id`
 - `presentacionId`
+- `nombre`
 - `cantidadSolicitada`
 - `cantidadAtendida`
 - `precioUnitario`
 - `subtotal`
+- `montoModificado`
+- `unidadComercial`
+- `imagenUrl`
 
 Lectura importante:
 
 - pendiente por item = `cantidadSolicitada - cantidadAtendida`;
 - `subtotal` de item congela monto de línea en el pedido;
+- `nombre` es obligatorio y congela la descripción visible;
+- `montoModificado` indica que el monto de línea fue ajustado manualmente;
+- `unidadComercial` e `imagenUrl` conservan contexto visual sin consultar catálogo vivo;
 - `Pedido` no modela cancelación por línea como campo propio.
 
 ### `PedidoEntrega`
@@ -206,18 +213,26 @@ El siguiente ejemplo muestra una vista de lectura compuesta de un caso finalizad
       {
         "id": "pedido-item-001",
         "presentacionId": "presentacion-ajo-1kg",
+        "nombre": "Ajo 1 kg",
         "cantidadSolicitada": 10,
         "cantidadAtendida": 10,
         "precioUnitario": 8.5,
-        "subtotal": 85
+        "subtotal": 85,
+        "montoModificado": false,
+        "unidadComercial": "kilogramo",
+        "imagenUrl": "https://files.yola.local/productos/ajo-1kg-small.jpg"
       },
       {
         "id": "pedido-item-002",
         "presentacionId": "presentacion-cebolla-roja-1kg",
+        "nombre": "Cebolla roja 1 kg",
         "cantidadSolicitada": 5,
         "cantidadAtendida": 5,
         "precioUnitario": 4.2,
-        "subtotal": 21
+        "subtotal": 21,
+        "montoModificado": true,
+        "unidadComercial": "kilogramo",
+        "imagenUrl": "https://files.yola.local/productos/cebolla-roja-1kg-small.jpg"
       }
     ],
     "subtotal": 106,
@@ -282,22 +297,7 @@ El siguiente ejemplo muestra una vista de lectura compuesta de un caso finalizad
     "type": "venta",
     "estado": "CONFIRMADA",
     "condicionPago": "CONTADO",
-    "items": [
-      {
-        "id": "pedido-item-001",
-        "presentacionId": "presentacion-ajo-1kg",
-        "cantidadVendida": 10,
-        "precioUnitario": 8.5,
-        "montoTotal": 85
-      },
-      {
-        "id": "pedido-item-002",
-        "presentacionId": "presentacion-cebolla-roja-1kg",
-        "cantidadVendida": 5,
-        "precioUnitario": 4.2,
-        "montoTotal": 21
-      }
-    ],
+    "items": 2,
     "pedidoId": "pedido-20260715-0001",
     "createdAt": "2026-07-15T18:48:00.000Z",
     "updatedAt": "2026-07-15T18:48:00.000Z",
@@ -311,6 +311,49 @@ El siguiente ejemplo muestra una vista de lectura compuesta de un caso finalizad
     "vendedorId": "personal-ventas-007",
     "codigoVenta": "VTA-0091",
     "numeroVenta": "91"
+  },
+  "ventaSnapshotRelacionada": {
+    "id": "venta-20260715-0091:snapshot",
+    "type": "venta_snapshot",
+    "ventaId": "venta-20260715-0091",
+    "createdAt": 1784141280000,
+    "items": [
+      {
+        "id": "pedido-item-001",
+        "presentacionId": "presentacion-ajo-1kg",
+        "nombre": "Ajo 1 kg",
+        "cantidadVendida": 10,
+        "precioUnitario": 8.5,
+        "total": 85,
+        "unidadComercial": "kilogramo",
+        "montoModificado": false
+      },
+      {
+        "id": "pedido-item-002",
+        "presentacionId": "presentacion-cebolla-roja-1kg",
+        "nombre": "Cebolla roja 1 kg",
+        "cantidadVendida": 5,
+        "precioUnitario": 4.2,
+        "total": 21,
+        "unidadComercial": "kilogramo",
+        "montoModificado": true
+      }
+    ],
+    "subtotal": 106,
+    "descuentoTotal": 0,
+    "impuesto": 0,
+    "total": 106,
+    "montoRedondeo": 0,
+    "procedencia": "WhatsApp",
+    "codigoVenta": "VTA-0091",
+    "cliente": {
+      "id": "cliente-001",
+      "nombre": "Cliente ejemplo"
+    },
+    "vendedor": {
+      "id": "personal-ventas-007",
+      "nombre": "Vendedor ejemplo"
+    }
   },
   "evidencias": [
     {

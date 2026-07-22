@@ -2,7 +2,13 @@
 
 ## Estado
 
-Implementado.
+Implementado con ajustes posteriores.
+
+> Nota de vigencia: este RFC conserva la decisión histórica de organizar el paquete
+> por dominios. Para conocer la surface exacta publicada en `v2.0.0`, usar
+> [src/index.ts](../../index.ts) y `package.json`. La raíz actual reexporta también
+> contratos públicos de dominio; los subpaths siguen siendo la forma recomendada
+> para hacer explícito el límite consumido.
 
 ## Fecha
 
@@ -12,9 +18,9 @@ Implementado.
 
 `yolafresh-utils` evoluciono desde una libreria heterogenea hacia un paquete enfocado en contratos de negocio, primitivas de dominio y algunos agregados con invariantes.
 
-La evidencia actual muestra que:
+La evidencia estructural muestra que:
 
-- la raiz publica una surface minima desde [src/index.ts](../../index.ts);
+- la raíz publica shared, contratos públicos de dominio y símbolos ricos seleccionados desde [src/index.ts](../../index.ts);
 - el lenguaje contractual ya fue redistribuido a `contracts/` por dominio;
 - el paquete conserva modulos con comportamiento de dominio como [Venta.ts](../../domain/ventas/entities/Venta.ts), [CarritoVenta.ts](../../domain/ventas/entities/CarritoVenta.ts), [VentaSnapshot.ts](../../domain/ventas/entities/VentaSnapshot.ts), [Compra.ts](../../domain/compras/entities/Compra.ts) y [RecurrenciaEntity.ts](../../domain/finanzas/entities/RecurrenciaEntity.ts);
 - la documentacion vigente espeja esta topologia en `src/docs/`.
@@ -88,9 +94,9 @@ No deben entrar al paquete:
 - errores o tipos de kernel verdaderamente compartidos;
 - utilidades minimas puras como fechas o ULIDs.
 
-### Root pequeno
+### Root pequeño y subpaths
 
-La raiz del paquete no debe volver a reexportar todo el dominio. Su responsabilidad es ofrecer:
+La raíz del paquete ofrece los contratos canónicos y símbolos ricos de uso transversal. Los consumidores avanzados deben preferir subpaths para expresar el límite del dominio:
 
 - entrada corta para primitives y piezas top del paquete;
 - surface publica estable y pequena;
@@ -106,6 +112,9 @@ src/
       value-objects/
       kernel/
       utils/
+
+    pedido/
+      contracts/
 
     ventas/
       contracts/
@@ -136,6 +145,7 @@ src/
 
   docs/
     core/
+    pedido/
     ventas/
     compras/
     inventario/
@@ -158,7 +168,7 @@ Usar cuando el artefacto:
 
 Ejemplos esperados:
 
-- `Pedido`
+- `Pedido` y `PedidoEntrega`
 - `ICompra`
 - `MovimientoCaja`
 - `CuentaCliente`
@@ -222,7 +232,7 @@ La mayor parte del consumo de negocio migro hacia subpaths por Domain.
 Ejemplo conceptual:
 
 ```ts
-import type { Pedido } from "yola-fresh-utils/ventas/contracts";
+import type { Pedido } from "yola-fresh-utils/pedido/contracts";
 import { Venta } from "yola-fresh-utils/ventas";
 import type { CuentaCliente } from "yola-fresh-utils/finanzas/contracts";
 ```
@@ -242,7 +252,7 @@ import type { CuentaCliente } from "yola-fresh-utils/finanzas/contracts";
 
 ### Endurecimiento de publication surface
 
-- la raiz quedo reducida a pocos simbolos transversales;
+- la raíz expone contratos públicos de dominio y símbolos transversales;
 - la publicacion oficial ahora usa subpaths por dominio;
 - el build publico solo `dist`.
 
@@ -329,7 +339,7 @@ La estructura vigente del paquete pasa a ser referencia arquitectonica oficial p
 - `Compra`, `Usuario` y `AsientoContable` permanecen como entidades con comportamiento en estructura vigente;
 - `ledger-auxiliar.contract.ts` queda como contrato auxiliar histórico explícitamente separado del núcleo canónico;
 - la convención `*.contract.ts` se adopta como patrón vigente para contratos de dominio;
-- la raíz mantiene publicación mínima con símbolos estratégicos y resto del consumo por subpaths.
+- la raíz mantiene una publicación explícita; el consumo detallado puede realizarse por subpaths de dominio.
 
 ## Referencias
 

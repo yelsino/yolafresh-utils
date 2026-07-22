@@ -25,12 +25,11 @@ Evidencia principal:
 
 Lenguaje observado:
 
-- `Pedido`
-- `PedidoItem`
 - `IVenta`
-- `VentaItem`
+- `VentaCreateInput`
 - `ICarritoVenta`
 - `IVentaSnapshot`
+- `VentaSnapshotItem`
 
 ### Pedido
 

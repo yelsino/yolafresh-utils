@@ -4,6 +4,8 @@
 
 Este documento fija política de versionado de `yola-fresh-utils` para preservar compatibilidad entre proyectos consumidores.
 
+Versión publicada vigente al momento de esta documentación: `2.0.0` (`v2.0.0`).
+
 ## Regla base
 
 `yola-fresh-utils` usa SemVer:
@@ -44,9 +46,25 @@ Recomendación oficial:
 - usar tags reales;
 - no apuntar a rama flotante `main`;
 - no dejar dependencia como `github:yelsino/yolafresh-utils` sin tag.
-- seguir línea secuencial `v1.x`.
+- seguir línea secuencial `v2.x`.
 
 ### Desde GitHub por tag exacto
+
+```bash
+npm install github:yelsino/yolafresh-utils#v2.0.0
+```
+
+En `package.json`:
+
+```json
+{
+  "dependencies": {
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v2.0.0"
+  }
+}
+```
+
+### Release anterior exacta
 
 ```bash
 npm install github:yelsino/yolafresh-utils#v1.0.7
@@ -58,22 +76,6 @@ En `package.json`:
 {
   "dependencies": {
     "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.7"
-  }
-}
-```
-
-### Release anterior exacta
-
-```bash
-npm install github:yelsino/yolafresh-utils#v1.0.2
-```
-
-En `package.json`:
-
-```json
-{
-  "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.2"
   }
 }
 ```
@@ -129,7 +131,19 @@ npm run release:prerelease
 - no elimines exports públicos en `patch` ni `minor`;
 - si una API debe morir, primero deprecar, luego remover en siguiente `major`.
 
-## Excepción documentada vigente
+## Excepciones documentadas vigentes
+
+### `v1.0.8`
+
+`v1.0.8` publica un corte coordinado sobre `Pedido` aun dentro de la línea
+`v1.0.x`: el contrato deja de salir por `ventas/contracts` y pasa a
+`pedido/contracts`, sin bridge de compatibilidad.
+
+Referencia obligatoria:
+
+- [../pedido/migracion-v1-0-7-a-v1-0-8.md](../pedido/migracion-v1-0-7-a-v1-0-8.md)
+
+### `v1.0.5`
 
 `v1.0.5` publica corte coordinado sobre `CarritoVenta` aun dentro de línea `v1.0.x`.
 

@@ -66,6 +66,7 @@ Representa evento de recepción de dinero del cliente.
 Responsabilidades observadas:
 
 - registrar monto, moneda y método de pago;
+- conservar `codigoConstancia` cuando el medio o la operación emite una constancia identificable;
 - identificar quién creó o recibió recepción;
 - expresar estado operativo del cobro recibido;
 - asociar caja, turno y custodio cuando existen.
@@ -199,6 +200,7 @@ Por eso:
 - la estrategia explícita de imputación observada es `FIFO`;
 - una imputación válida debe unir crédito y débito de misma moneda;
 - recepción y movimiento exponen vínculos a caja, turno y custodio.
+- `codigoConstancia` es opcional para mantener compatibilidad con recepciones históricas y medios sin constancia.
 
 ## Decisiones vigentes observables
 

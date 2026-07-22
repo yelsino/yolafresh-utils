@@ -7,10 +7,14 @@ import {
 export interface PedidoItem {
   id: string;
   presentacionId: string;
+  nombre: string;
   cantidadSolicitada: number;
   cantidadAtendida: number;
   precioUnitario: number;
   subtotal: number;
+  montoModificado?: boolean;
+  unidadComercial?: string;
+  imagenUrl?: string;
 }
 
 export interface Pedido {

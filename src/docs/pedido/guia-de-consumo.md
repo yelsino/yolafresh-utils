@@ -16,6 +16,10 @@ Usar `Pedido` para:
 - fijar `fechaPedido`, `fechaProgramada` y `fechaVencimiento` cuando aplique;
 - congelar items y montos del pedido.
 
+Cada `PedidoItem` debe conservar `nombre`. Puede conservar además
+`montoModificado`, `unidadComercial` e `imagenUrl` para renderizar el histórico
+sin depender del catálogo vivo.
+
 ### 2. Atender pedido
 
 Usar `PedidoState` para lectura comercial:
@@ -60,6 +64,9 @@ Cuando operación se confirma comercialmente:
 - opcionalmente completar `Pedido.ventaId`;
 - mover pedido a `CONVERTIDO` cuando corresponda.
 
+Al crear la venta, `Venta.items` recibe el número de líneas y el detalle pasa al
+`VentaSnapshot` asociado.
+
 ## Errores de modelado a evitar
 
 - meter `DESPACHADO`, `EN_RUTA` o `ENTREGADO` dentro de `PedidoState`;
@@ -67,6 +74,8 @@ Cuando operación se confirma comercialmente:
 - usar `Pedido` como reemplazo de `Venta`;
 - usar `PedidoEntrega` como reemplazo de `MovimientoInventario`;
 - duplicar evidencias embebiendo arrays propios cuando ya existe `Evidencia`.
+- omitir `PedidoItem.nombre` o reconstruirlo posteriormente desde catálogo vivo;
+- copiar `PedidoItem[]` dentro de `Venta`, cuyo campo `items` ahora es un conteo.
 
 ## Referencias
 

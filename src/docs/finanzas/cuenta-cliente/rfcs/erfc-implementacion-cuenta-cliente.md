@@ -20,7 +20,7 @@ Su objetivo es:
 
 ## Fuente oficial
 
-La fuente canónica del subdominio vive en [cuenta-cliente.contract.ts](../../../domain/finanzas/contracts/cuenta-cliente.contract.ts).
+La fuente canónica del subdominio vive en [cuenta-cliente.contract.ts](../../../../domain/finanzas/contracts/cuenta-cliente.contract.ts).
 
 Toda implementación debe partir de ese archivo y de los documentos vigentes de esta carpeta.
 
@@ -176,6 +176,7 @@ export type EstadoRecepcionCobroCliente =
 
 export interface RecepcionCobroCliente {
   id: string;
+  codigoConstancia?: string;
   clienteId: string;
   cuentaId?: string;
   monto: number;

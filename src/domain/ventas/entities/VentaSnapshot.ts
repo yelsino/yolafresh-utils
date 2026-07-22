@@ -2,18 +2,9 @@ import type { Cliente } from "../../personas/contracts/persons.contract";
 import type { IUsuario } from "../../personas/contracts/usuario.contract";
 import { VentaState } from "../../shared/kernel/enums";
 import { ProcedenciaVenta } from "./CarritoVenta";
-import type { IVenta, VentaItem } from "./Venta";
+import type { IVenta } from "./Venta";
 
 export const VENTA_SNAPSHOT_TYPE = "venta_snapshot" as const;
-
-type VentaLike = IVenta & {
-  productosUnicos?: Array<{
-    id: string;
-    nombre: string;
-    cantidadTotal: number;
-    montoTotal: number;
-  }>;
-};
 
 type VentaSnapshotActorSource =
   | VentaSnapshotActor
@@ -195,49 +186,6 @@ export function mapVentaSnapshotActor(
   return undefined;
 }
 
-export function mapVentaItemToSnapshotItem(
-  item: VentaItem,
-  options?: { nombre?: string; imagenUrl?: string; unidadComercial?: string },
-): VentaSnapshotItem {
-  const descuento =
-    typeof item.descuento === "number" ? Number(item.descuento) : undefined;
-  const montoModificado =
-    typeof item.montoModificado === "boolean" ? item.montoModificado : undefined;
-
-  return {
-    id: item.id,
-    presentacionId: item.presentacionId,
-    nombre: safeTrim(options?.nombre) ?? item.presentacionId,
-    cantidadVendida: Number(item.cantidadVendida ?? 0),
-    precioUnitario: Number(item.precioUnitario ?? 0),
-    total:
-      typeof item.montoTotal === "number" && Number.isFinite(item.montoTotal)
-        ? roundMoney(item.montoTotal)
-        : roundMoney(
-            Number(item.precioUnitario ?? 0) * Number(item.cantidadVendida ?? 0) -
-              Number(item.descuento ?? 0),
-          ),
-    imagenUrl: safeTrim(options?.imagenUrl),
-    unidadComercial: safeTrim(options?.unidadComercial),
-    montoModificado,
-    descuento,
-  };
-}
-
-function mapVentaItemsFromVenta(venta: VentaLike): VentaSnapshotItem[] {
-  const nombresPorPresentacion = new Map<string, string>();
-
-  venta.productosUnicos?.forEach((producto) => {
-    nombresPorPresentacion.set(producto.id, producto.nombre);
-  });
-
-  return venta.items.map((item) =>
-    mapVentaItemToSnapshotItem(item, {
-      nombre: nombresPorPresentacion.get(item.presentacionId),
-    }),
-  );
-}
-
 export function isVentaSnapshotImmutableState(
   estado: string | undefined,
 ): boolean {
@@ -328,10 +276,20 @@ export class VentaSnapshot implements IVentaSnapshot {
   }
 
   static fromVenta(
-    venta: VentaLike,
+    venta: IVenta,
     context: VentaSnapshotBuildContext = {},
   ): VentaSnapshot {
-    const items = context.items ?? mapVentaItemsFromVenta(venta);
+    const items = context.items;
+    if (!items) {
+      throw new Error(
+        "VentaSnapshotBuildContext.items es requerido porque Venta.items solo contiene el conteo",
+      );
+    }
+    if (items.length !== venta.items) {
+      throw new Error(
+        "Venta.items debe coincidir con la cantidad de VentaSnapshot.items",
+      );
+    }
     const descuentoTotal = sumItemDiscounts(items);
 
     return new VentaSnapshot({
@@ -355,7 +313,7 @@ export class VentaSnapshot implements IVentaSnapshot {
   }
 
   static tryFromVenta(
-    venta: VentaLike,
+    venta: IVenta,
     context: VentaSnapshotBuildContext = {},
   ): VentaSnapshotBuildResult {
     try {

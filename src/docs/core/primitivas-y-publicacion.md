@@ -79,6 +79,7 @@ La publicación raíz actual se organiza en:
 - `shared/kernel`
 - `shared/utils`
 - `shared/value-objects`
+- contratos de `pedido`, `ventas`, `compras`, `inventario`, `tesoreria`, `finanzas`, `auth`, `personas` y `contabilidad`;
 - `Venta`
 - `CarritoVenta`
 - `VentaSnapshot`

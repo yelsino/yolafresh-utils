@@ -4,6 +4,10 @@
 
 `yolafresh-utils` es biblioteca TypeScript del ecosistema YolaFresh orientada al lenguaje compartido del negocio.
 
+Versión publicada vigente: `2.0.0` (`v2.0.0`). La versión del paquete se define en
+`package.json`; las guías de instalación deben usar ese tag o una versión anterior
+explícita cuando se esté realizando una migración.
+
 El paquete modela:
 
 - contratos de negocio;
@@ -22,12 +26,14 @@ La surface oficial sigue regla:
 - subpaths por dominio;
 - `shared/` reducido a `base`, `kernel`, `utils`, `value-objects`.
 
-La raíz exporta solo:
+La raíz publica los contratos compartidos y los contratos de dominio, además de las
+entidades ricas seleccionadas:
 
 - `shared/base`
 - `shared/kernel`
 - `shared/utils`
 - `shared/value-objects`
+- contratos de `pedido`, `ventas`, `compras`, `inventario`, `tesoreria`, `finanzas`, `auth`, `personas` y `contabilidad`;
 - `Venta`
 - `CarritoVenta`
 - `VentaSnapshot`
@@ -36,6 +42,7 @@ La raíz exporta solo:
 ## Dominios publicados
 
 - `ventas`: contratos, entidades y eventos de venta.
+- `pedido`: contratos de pedido y entrega logística.
 - `compras`: contratos y entidad rica `Compra`.
 - `inventario`: contratos de catálogo, stock, movimientos y recepción.
 - `tesoreria`: contratos de caja, turnos, movimientos y pagos.
@@ -62,12 +69,12 @@ Recomendación oficial:
 
 - no usar rama flotante `github:yelsino/yolafresh-utils`;
 - fijar siempre tag real `vX.Y.Z`;
-- seguir línea secuencial `v1.x`.
+- seguir línea secuencial `v2.x`.
 
 Instalar desde GitHub por tag exacto:
 
 ```bash
-npm install github:yelsino/yolafresh-utils#v1.0.3
+npm install github:yelsino/yolafresh-utils#v2.0.0
 ```
 
 En `package.json`:
@@ -75,7 +82,7 @@ En `package.json`:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.3"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v2.0.0"
   }
 }
 ```
@@ -83,7 +90,7 @@ En `package.json`:
 Si un consumer necesita congelarse exactamente en release anterior:
 
 ```bash
-npm install github:yelsino/yolafresh-utils#v1.0.2
+npm install github:yelsino/yolafresh-utils#v1.0.7
 ```
 
 En `package.json`:
@@ -91,7 +98,7 @@ En `package.json`:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.2"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.7"
   }
 }
 ```
@@ -104,8 +111,8 @@ Regla de lectura:
 
 Por eso:
 
-- `v1.0.2` = release anterior;
-- `v1.0.3` = release actual recomendada con dominio `auth`, helpers completos y migración documentada.
+- `v1.0.7` = release anterior inmediata;
+- `v2.0.0` = release vigente, con la migración incompatible de ventas y los contratos actualizados.
 
 ## Desarrollo local
 
@@ -169,7 +176,7 @@ import {
 Consumo por dominio:
 
 ```ts
-import type { Pedido } from "yola-fresh-utils/ventas/contracts";
+import type { Pedido } from "yola-fresh-utils/pedido/contracts";
 import type {
   CuentaCliente,
   MovimientoCuentaCliente,
@@ -193,6 +200,7 @@ Fuente principal:
 - [src/docs/core/vision-general-del-paquete.md](./src/docs/core/vision-general-del-paquete.md)
 - [src/docs/core/guia-de-onboarding.md](./src/docs/core/guia-de-onboarding.md)
 - [src/docs/core/mapa-del-dominio.md](./src/docs/core/mapa-del-dominio.md)
+- [src/docs/pedido/README.md](./src/docs/pedido/README.md)
 - [src/docs/ventas/README.md](./src/docs/ventas/README.md)
 - [src/docs/finanzas/README.md](./src/docs/finanzas/README.md)
 - [src/docs/compras/README.md](./src/docs/compras/README.md)
@@ -200,8 +208,18 @@ Fuente principal:
 - [src/docs/tesoreria/README.md](./src/docs/tesoreria/README.md)
 - [src/docs/personas/README.md](./src/docs/personas/README.md)
 - [src/docs/contabilidad/README.md](./src/docs/contabilidad/README.md)
+- [src/docs/auth/README.md](./src/docs/auth/README.md)
 
 Cuando paquete se instala desde npm o GitHub, carpeta `src/docs/` también viaja dentro del paquete publicado.
+
+## Jerarquía documental
+
+En caso de discrepancia, aplicar este orden:
+
+1. código publicado y `package.json`;
+2. documentación vigente dentro de `src/docs/core/` y `src/docs/<dominio>/`;
+3. migraciones y RFCs, únicamente para entender cambios históricos;
+4. `.trae/`, que contiene planes y especificaciones de trabajo, no la API publicada.
 
 Ruta esperada en consumer:
 

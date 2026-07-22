@@ -51,6 +51,7 @@ Este Domain documenta:
 - `PedidoEntregaState`: estado logístico del pedido.
 - `PedidoPrioridadEnum`: urgencia operativa del pedido.
 - `PedidoProcedenciaEnum`: canal u origen comercial del pedido.
+- `PedidoItem`: línea con cantidades, precio y snapshot visual mínimo (`nombre`, unidad e imagen opcionales).
 
 ## Límites vigentes del paquete
 

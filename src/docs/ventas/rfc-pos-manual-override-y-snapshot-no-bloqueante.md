@@ -1,5 +1,9 @@
 # RFC: POS Manual Override y Snapshot No Bloqueante
 
+> RFC implementado históricamente. Su semántica de override sigue vigente, pero
+> cualquier referencia a detalle dentro de `Venta` queda sustituida por el modelo
+> de [snapshot canónico](./migracion-venta-items-conteo.md).
+
 ## Estado
 
 Aceptado e implementado entre `v1.0.6` y `v1.0.7`.

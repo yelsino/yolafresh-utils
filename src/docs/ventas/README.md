@@ -66,6 +66,7 @@ Evita errores conceptuales como:
 - [relaciones-interdominio.md](./relaciones-interdominio.md): relación de ventas con cuenta cliente, inventario, almacén, stock, caja y pagos.
 - [guia-de-consumo.md](./guia-de-consumo.md): lectura recomendada para consumers y flujos operativos mínimos.
 - [migracion-v1-0-4-a-v1-0-5.md](./migracion-v1-0-4-a-v1-0-5.md): cambios requeridos para consumers que usan `CarritoVenta`.
+- [migracion-venta-items-conteo.md](./migracion-venta-items-conteo.md): migración incompatible que elimina `VentaItem[]` de `Venta`.
 - [rfc-pos-manual-override-y-snapshot-no-bloqueante.md](./rfc-pos-manual-override-y-snapshot-no-bloqueante.md): RFC implementado para override manual y snapshot no bloqueante en POS.
 - [rfc-backend-despacho-voucher-credito-por-dependencias.md](./rfc-backend-despacho-voucher-credito-por-dependencias.md): RFC propuesto para backend consumidor sobre envío de voucher de crédito por estado de dependencias, sin polling bruto.
 - [../pedido/README.md](../pedido/README.md): documentación propietaria de reserva comercial y seguimiento de pedido.
@@ -73,8 +74,8 @@ Evita errores conceptuales como:
 ## Terminología canónica
 
 - `CarritoVenta`: captura mutable
-- `Venta`: hecho comercial confirmado
-- `VentaSnapshot`: representación histórica mostrable
+- `Venta`: raíz y resumen compacto del hecho comercial confirmado
+- `VentaSnapshot`: detalle histórico único asociado a la venta
 - `Pedido`: relación documental externa; ver Domain [pedido](../pedido/README.md)
 - `CondicionPagoVenta`: modalidad de cierre comercial (`CONTADO` o `CREDITO`)
 - `Pago`: evidencia externa de pago validable y relacionable manualmente
@@ -85,6 +86,8 @@ Evita errores conceptuales como:
 ## Límites vigentes del paquete
 
 - el paquete distingue estados `CONFIRMADA` y `ANULADA`, y deja forma de pago en `CondicionPagoVenta`;
+- `Venta.items` es la cantidad de líneas de `VentaSnapshot.items`; no es un array ni cantidad física vendida;
+- `VentaItem` dejó de ser contrato público y `VentaSnapshotItem` es el único detalle de línea confirmado;
 - el paquete separa `Venta` de `MovimientoInventario`, por lo que no obliga momento único de descuento de stock;
 - el paquete no define orquestación automática de reversas entre ventas, tesorería, finanzas e inventario.
 - `CarritoVenta` ya no publica `notas`, `tasaImpuesto`, `clienteId` ni `personalId` como parte de su contrato público; consumers deben migrar hacia `configuracionFiscal`, `cliente` y `personal`.

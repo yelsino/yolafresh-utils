@@ -28,20 +28,22 @@ Forma correcta:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.6"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v2.0.0"
   }
 }
 ```
 
 ## Versión oficial actual
 
-Desde hoy, versión recomendada para consumidores es:
+Versión recomendada para consumidores:
 
 ```txt
-v1.0.7
+v2.0.0
 ```
 
-`v1.0.6` queda como release previo al endurecimiento monetario del módulo ventas publicado en `v1.0.7`.
+`v1.0.8` queda como release anterior de la línea `v1`. `v2.0.0` incorpora la
+migración incompatible del modelo de ventas y los contratos adicionales de pedido
+y cobros.
 
 ## Paso 1. Actualizar dependencia
 
@@ -50,7 +52,7 @@ En `package.json` del cliente:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.7"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v2.0.0"
   }
 }
 ```
@@ -58,7 +60,7 @@ En `package.json` del cliente:
 O por comando:
 
 ```bash
-npm install github:yelsino/yolafresh-utils#v1.0.7
+npm install github:yelsino/yolafresh-utils#v2.0.0
 ```
 
 ## Paso 2. Reinstalación limpia
@@ -79,7 +81,7 @@ npm install
 
 ## Paso 3. Verificar versión instalada
 
-Validar que cliente realmente quedó fijado en `v1.0.7`.
+Validar que cliente realmente quedó fijado en `v2.0.0`.
 
 Revisar:
 
@@ -91,7 +93,7 @@ Valor esperado:
 
 ```json
 {
-  "version": "1.0.7"
+  "version": "2.0.0"
 }
 ```
 
@@ -99,13 +101,21 @@ Valor esperado:
 
 Si consumer usa `CarritoVenta`, debe adaptar integración antes de asumir compatibilidad total.
 
-Cambio observado desde `v1.0.6` y consolidado en `v1.0.7`:
+Cambios históricos de `v1.0.7` y `v1.0.8`:
 
 - `CarritoVenta` ya no expone `notas`
 - `CarritoVenta` ya no expone `tasaImpuesto`
 - `CarritoVenta` ya no expone `clienteId`
 - `CarritoVenta` ya no expone `personalId`
 - `VentaSnapshotItem` ahora expone `montoModificado`
+
+Cambios incompatibles publicados en `v2.0.0`:
+
+- `Venta.items` es un conteo numérico;
+- `VentaItem` dejó de ser contrato público;
+- el detalle se lee desde `VentaSnapshot.items`;
+- `PedidoItem` incorpora nombre, imagen, unidad comercial y override de monto;
+- `RecepcionCobroCliente` incorpora `codigoConstancia` opcional.
 
 Mapa de reemplazo:
 
@@ -191,7 +201,7 @@ Si consumer necesita volver al estado anterior:
 ```json
 {
   "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.4"
+    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.7"
   }
 }
 ```
@@ -205,7 +215,7 @@ npm install
 
 ## Checklist corto para PR de cliente
 
-- dependencia fijada a `#v1.0.7`
+- dependencia fijada a `#v2.0.0`
 - lockfile actualizado
 - imports internos eliminados
 - compilación verde

@@ -98,6 +98,7 @@ export type EstadoRecepcionCobroCliente =
 
 export interface RecepcionCobroCliente {
   id: string;
+  codigoConstancia?: string;
   clienteId: string;
   cuentaId?: string;
   monto: number;

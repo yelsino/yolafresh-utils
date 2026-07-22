@@ -4,6 +4,10 @@
 
 Esta carpeta concentra documentación oficial del paquete después de la migración completa a estructura por dominios.
 
+Versión de referencia vigente: `2.0.0` (`v2.0.0`). Las migraciones y RFCs pueden
+mencionar versiones anteriores, pero no sustituyen el modelo vigente descrito en
+los documentos marcados como actuales.
+
 La lectura recomendada va de:
 
 - core;
@@ -95,6 +99,16 @@ La lectura recomendada va de:
 - [contabilidad/README.md](./contabilidad/README.md)
 - [contabilidad/modelo-vigente.md](./contabilidad/modelo-vigente.md)
 
+### Restaurante (propuesta de evolución)
+
+- [restaurant/README.md](./restaurant/README.md): índice maestro del análisis gastronómico.
+- [restaurant/01-diagnostico/estado-actual-y-brechas.md](./restaurant/01-diagnostico/estado-actual-y-brechas.md): diagnóstico del producto móvil y brechas.
+- [restaurant/02-investigacion/patrones-profesionales.md](./restaurant/02-investigacion/patrones-profesionales.md): investigación oficial y fuentes.
+- [restaurant/03-dominio/lenguaje-y-contextos.md](./restaurant/03-dominio/lenguaje-y-contextos.md): lenguaje ubicuo y mapa de contextos.
+- [restaurant/07-plan/fases-de-implementacion.md](./restaurant/07-plan/fases-de-implementacion.md): secuencia recomendada de ejecución.
+
+Este árbol es una propuesta y no amplía por sí solo la API pública de `2.0.0`.
+
 ## Criterio de verdad
 
 La evidencia primaria actual vive en:
@@ -104,6 +118,7 @@ La evidencia primaria actual vive en:
 - `src/domain/shared/kernel/`
 - `src/domain/shared/utils/`
 - `src/domain/shared/value-objects/`
+- `src/domain/pedido/`
 - `src/domain/ventas/`
 - `src/domain/compras/`
 - `src/domain/inventario/`
@@ -129,6 +144,11 @@ Los siguientes archivos pueden conservar valor contextual, pero no son fuente pr
 - [tarjetas-virtuales-consumo.md](./tarjetas-virtuales-consumo.md)
 
 Nunca usar documentos históricos para redefinir semántica vigente de contratos activos cuando exista documentación oficial más reciente dentro de `core/` o de cada Domain.
+
+Los documentos Markdown antiguos que estaban en la raíz del repositorio fueron
+retirados de la superficie de lectura porque describían APIs eliminadas (`ShoppingCart`,
+`UsuarioManager`, `SesionManager` y `PermisoValidator`). El historial Git conserva
+esas versiones para consulta arqueológica; no deben copiarse a consumidores nuevos.
 
 ## RFCs operativos recientes
 

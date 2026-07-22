@@ -1,1 +1,1 @@
-export type { IVenta, VentaCreateInput, VentaItem } from "../entities/Venta";
+export type { IVenta, VentaCreateInput } from "../entities/Venta";

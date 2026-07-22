@@ -1,130 +1,98 @@
-# Modelo Vigente de Ventas
+# Modelo vigente de Ventas
 
 ## Visión general
 
-El Domain de ventas modela tres capas distintas:
+El Domain de ventas separa tres momentos:
 
-- `CarritoVenta`: captura mutable en curso
-- `Venta`: hecho comercial confirmado
-- `VentaSnapshot`: representación histórica visible y durable
+- `CarritoVenta`: captura mutable en curso;
+- `Venta`: raíz y resumen del hecho comercial confirmado;
+- `VentaSnapshot`: detalle histórico inmutable asociado a la venta.
 
-El objetivo del modelo vigente es evitar que `Venta` mezcle cobro, caja, deuda y snapshot UI como parte primaria de su contrato.
+Desde esta revisión, `Venta` ya no duplica el array detallado de líneas. El campo `Venta.items` es un número entero que representa cuántas líneas contiene `VentaSnapshot.items`.
+
+## Decisión de almacenamiento
+
+Antes existían dos contratos de detalle:
+
+- `VentaItem[]` dentro de `Venta`;
+- `VentaSnapshotItem[]` dentro de `VentaSnapshot`.
+
+Ambos repetían identificador, presentación, cantidades, precios y ajustes. El modelo vigente elimina `VentaItem` y conserva un único detalle canónico: `VentaSnapshotItem`.
+
+Consecuencias:
+
+- `IVenta.items` es `number`;
+- `VentaItem` deja de exportarse;
+- `VentaSnapshot.items` conserva el detalle transaccional e histórico;
+- el conteo debe coincidir con `VentaSnapshot.items.length`;
+- `Venta.toJSON()` nunca serializa el detalle transitorio;
+- `Venta` y su snapshot deben guardarse como una misma unidad operativa local.
 
 ## Conceptos principales
 
 ### `CarritoVenta`
 
-`CarritoVenta` representa el estado mutable de captura operativa.
+Representa captura mutable antes de confirmar:
 
-Responsabilidades observadas:
+- agrega y quita productos;
+- calcula subtotal, impuesto, descuento y total;
+- conserva producto, cliente, personal y configuración fiscal necesarios durante captura;
+- permite un monto manual de línea mediante `montoModificado`.
 
-- agregar y quitar productos
-- calcular subtotal, impuesto y total
-- mantener trazabilidad operativa de cliente y personal
-- conservar configuración fiscal durante captura
-- conservar `procedencia` del flujo comercial
-
-No modela como propiedad pública primaria:
-
-- `notas`
-- `tasaImpuesto` paralela a `configuracionFiscal`
-- `clienteId` derivado
-- `personalId` derivado
+El carrito sí mantiene líneas porque todavía está siendo editado.
 
 ### `Venta`
 
-`Venta` representa el hecho comercial confirmado.
+Representa la raíz del hecho comercial confirmado y publica un resumen compacto:
 
-Responsabilidades observadas:
+- identidad y estado comercial;
+- condición de pago;
+- cantidad de líneas mediante `items`;
+- totales;
+- cliente, vendedor y pedido relacionados por ID;
+- procedencia, código y numeración.
 
-- identificar la venta
-- expresar estado comercial
-- expresar condición de pago de cierre
-- congelar `items`, `totales`, `clienteId` y `vendedorId`
-- relacionar un `pedidoId` opcional
-- emitir `VentaConfirmada` al confirmar
+No contiene:
 
-No modela como propiedad primaria:
-
-- cobro
-- caja
-- deuda
-- fiscalización
-- `esPedido`
+- array de productos;
+- cobro o evidencia de pago;
+- caja o turno;
+- deuda del cliente;
+- movimiento de inventario.
 
 ### `VentaSnapshot`
 
-`VentaSnapshot` representa la versión histórica mostrable de la venta.
+Es el documento de detalle histórico propiedad de la venta. Conserva exactamente un array de `VentaSnapshotItem` con:
 
-Responsabilidades observadas:
+- identidad de línea y presentación;
+- nombre histórico;
+- cantidad y precio;
+- total y descuento;
+- imagen y unidad comercial;
+- señal de monto modificado.
 
-- preservar nombres visibles de productos
-- preservar actores visibles (`cliente`, `vendedor`)
-- preservar `subtotal`, `impuesto`, `total`, `codigoVenta` y `procedencia`
-- seguir siendo útil aunque cambie catálogo vivo
-
-No reemplaza a `Venta`.
-
-### `Pedido`
-
-`Pedido` ya no se documenta como contrato propietario de `ventas`.
-
-Lectura vigente:
-
-- `ventas` solo mantiene relación documental con `Pedido`;
-- si una venta nace desde un pedido, la relación correcta es `pedidoId`;
-- el ownership de `Pedido` y `PedidoEntrega` vive en [../pedido/modelo-vigente.md](../pedido/modelo-vigente.md).
-
-Lectura contractual observada:
-
-- `Pedido` se mantiene como contrato liviano de reserva comercial;
-- cada item expone `cantidadSolicitada` y `cantidadAtendida`;
-- la cantidad pendiente se deriva como `cantidadSolicitada - cantidadAtendida`;
-- `Pedido` ya no expone `cantidadCancelada` como parte del contrato vigente.
-
-## Estados y lifecycle
-
-### `VentaState`
-
-- `CONFIRMADA`
-- `ANULADA`
-
-Lectura de negocio observada:
-
-- `CONFIRMADA`: venta cerrada comercialmente
-- `ANULADA`: venta revertida por flujo explícito
-
-### `CondicionPagoVenta`
-
-- `CONTADO`
-- `CREDITO`
-
-Lectura de negocio observada:
-
-- `CONTADO`: la venta nace con cancelación total en el mismo cierre comercial
-- `CREDITO`: la venta nace como hecho comercial confirmado y además debe reflejar deuda en `CuentaCliente`
-
-### `CarritoVenta`
-
-`CarritoVenta` no expone estado canónico de negocio equivalente a `VentaState`. Su rol es captura mutable.
+No es una segunda versión editable de la venta. Es el detalle inmutable necesario para historial, voucher y reconstrucción visible.
 
 ### `Pedido`
 
-`Pedido` usa ciclo de vida propio y no debe mezclarse con `VentaState`.
+`Pedido` pertenece a su propio Domain. Ventas sólo mantiene `pedidoId` cuando una venta nace desde una reserva comercial.
 
 ## Contratos nucleares
 
-### `Venta`
+### `IVenta`
 
-Campos canónicos observados:
+Campos canónicos:
 
 - `id`
 - `nombre`
 - `type`
 - `estado`
 - `condicionPago`
-- `items`
+- `items: number`
 - `pedidoId`
+- `createdAt`
+- `updatedAt`
+- `costoEnvio`
 - `subtotal`
 - `impuesto`
 - `total`
@@ -134,43 +102,23 @@ Campos canónicos observados:
 - `vendedorId`
 - `codigoVenta`
 - `numeroVenta`
-- `createdAt`
-- `updatedAt`
 
-### `VentaItem`
+`items` cuenta líneas del snapshot, no unidades físicas vendidas.
 
-Campos observados:
+### `VentaCreateInput`
 
-- `id`
-- `presentacionId`
-- `cantidadVendida`
-- `precioUnitario`
-- `montoTotal`
-- `montoModificado`
-- `descuento`
+Además del resumen de `IVenta`, admite `snapshotItems?: VentaSnapshotItem[]` como contexto transitorio de construcción.
 
-### `VentaSnapshot`
+Ese campo:
 
-Campos canónicos observados:
-
-- `id`
-- `type`
-- `ventaId`
-- `createdAt`
-- `items`
-- `subtotal`
-- `descuentoTotal`
-- `impuesto`
-- `montoRedondeo`
-- `total`
-- `codigoVenta`
-- `procedencia`
-- `cliente`
-- `vendedor`
+- permite crear Venta y snapshot desde el mismo carrito;
+- debe tener la misma longitud que `items`;
+- no aparece en `Venta.toJSON()`;
+- no debe persistirse dentro del documento `venta`.
 
 ### `VentaSnapshotItem`
 
-Campos observados:
+Campos canónicos:
 
 - `id`
 - `presentacionId`
@@ -183,56 +131,113 @@ Campos observados:
 - `montoModificado`
 - `descuento`
 
-## Reglas de negocio respaldadas por contrato
+### `IVentaSnapshot`
 
-- `Venta` debe tener al menos un item
-- `total` de `Venta` debe ser mayor a cero
-- `subtotal` e `impuesto` no pueden ser negativos
-- `condicionPago` es obligatoria y no debe modelarse como estado
-- `Venta.confirmar()` no permite confirmar venta vacía
-- `CarritoVenta` ya no captura `metodoPago` ni `dineroRecibido` como parte de su contrato vigente
-- `CarritoVenta` ya no publica `notas`, `tasaImpuesto`, `clienteId` ni `personalId` como parte de su contrato compartido vigente
-- `montoModificado` preserva un total manual de línea, pero no autoriza reinterpretar `precioUnitario`
-- `montoTotal` de item representa monto bruto de línea antes de aplicar `descuento`
-- si cambia `quantity` en un ítem con `montoModificado`, el override manual previo deja de aplicar y la línea vuelve a cálculo normal
-- `CarritoVenta` redondea dinero a 2 decimales; cualquier ajuste por sencillo o cierre físico debe modelarse en `Venta.montoRedondeo`
-- `VentaSnapshot` debe tener al menos un item
-- `VentaSnapshot.total` debe ser consistente con `subtotal - descuentoTotal + impuesto + montoRedondeo`
-- `VentaSnapshot` no admite montos negativos
-- `VentaSnapshot.montoRedondeo` admite valor firmado: negativo, cero o positivo
-- `VentaSnapshot` es proyección histórica de `Venta`; no debe bloquear persistencia operativa de la venta en POS
+Campos canónicos:
 
-## Separación canónica
+- `id`
+- `type = "venta_snapshot"`
+- `ventaId`
+- `createdAt`
+- `items: VentaSnapshotItem[]`
+- `subtotal`
+- `descuentoTotal`
+- `impuesto`
+- `montoRedondeo`
+- `total`
+- `codigoVenta`
+- `procedencia`
+- `cliente`
+- `vendedor`
+
+## Estados
+
+### `VentaState`
+
+- `CONFIRMADA`
+- `ANULADA`
+
+### `CondicionPagoVenta`
+
+- `CONTADO`
+- `CREDITO`
+
+La condición de pago no es estado de cobranza.
+
+## Invariantes
+
+- `Venta.items` debe ser un entero mayor a cero;
+- si se proporcionan `snapshotItems`, su longitud debe coincidir con `Venta.items`;
+- `VentaSnapshot.fromVenta()` rechaza un detalle cuya longitud no coincide;
+- una venta rehidratada desde `IVenta` necesita recibir `context.items` para reconstruir el snapshot;
+- `Venta.total` debe ser mayor a cero;
+- subtotal e impuesto no pueden ser negativos;
+- `montoRedondeo` debe ser finito y puede ser firmado;
+- `VentaSnapshot` debe contener al menos una línea;
+- el total del snapshot debe ser consistente con subtotal, descuentos, impuesto y redondeo;
+- `VentaSnapshotItem.nombre` es obligatorio;
+- cantidad vendida debe ser mayor a cero;
+- precios, totales y descuentos no pueden ser negativos.
+
+## Construcción recomendada
+
+```ts
+const venta = Venta.fromCarritoVenta(carrito, ventaId);
+const ventaDoc = venta.toJSON();       // items: number
+const snapshotDoc = venta.toVentaSnapshot(); // items: VentaSnapshotItem[]
+```
+
+`fromCarritoVenta()` mantiene el detalle sólo de forma transitoria para poder crear el snapshot. Después de serializar, una venta rehidratada no contiene ese array:
+
+```ts
+const venta = new Venta(ventaDoc);
+const snapshot = venta.toVentaSnapshot({ items: detalleHistorico });
+```
+
+## Persistencia y sincronización
+
+El consumer debe tratar `ventaDoc` y `snapshotDoc` como un bundle indivisible:
+
+1. construir ambos antes de escribir;
+2. validar que `ventaDoc.items === snapshotDoc.items.length`;
+3. guardarlos en una misma transacción local cuando la persistencia lo permita;
+4. no marcar la operación como completa si falta uno de los dos;
+5. sincronizar con IDs deterministas y reconciliar el bundle en bootstrap.
+
+La librería define contratos e invariantes, pero no implementa una transacción de persistencia.
+
+## Separación interdominio
 
 ```mermaid
 flowchart LR
   CarritoVenta --> Venta
-  Pedido --> Venta
-  Venta --> VentaSnapshot
-  Pago[Pago: evidencia externa]
+  CarritoVenta --> VentaSnapshot
+  Venta -->|ventaId| VentaSnapshot
+  Pedido -->|pedidoId| Venta
   Venta --> MovimientoCaja
   Venta --> MovimientoCuentaCliente
   Venta --> MovimientoInventario
 ```
 
-Lectura correcta:
+- `Venta` es la raíz comercial;
+- `VentaSnapshot` es su detalle histórico único;
+- `MovimientoCaja` resuelve tesorería;
+- `MovimientoCuentaCliente` resuelve deuda o saldo;
+- `MovimientoInventario` resuelve stock.
 
-- `CarritoVenta` prepara operación
-- `Venta` congela hecho comercial
-- `VentaSnapshot` congela representación humana
-- `Pago` conserva evidencia externa de pago sin producir movimientos por sí mismo
-- `MovimientoCaja` resuelve tesorería
-- `MovimientoCuentaCliente` resuelve deuda o saldo
-- `MovimientoInventario` resuelve impacto de stock
+## Ruptura contractual
 
-## Límites vigentes del paquete
+Este cambio es incompatible con consumers que:
 
-- `Venta` publica estado `ANULADA`, pero la librería no orquesta cascadas automáticas sobre caja, cuenta cliente o inventario;
-- `VentaSnapshot` existe como representación histórica disponible desde la propia entidad `Venta`, pero cada consumer decide momento exacto de persistencia;
-- logística o despacho físico no viven como estado canónico dentro de `Venta`; si el consumer necesita esa dimensión, debe modelarla aparte.
+- recorren `venta.items`;
+- importan `VentaItem`;
+- calculan cantidades o totales desde `Venta`;
+- construyen `VentaSnapshot` implícitamente desde una venta rehidratada.
+
+La migración está documentada en [migracion-venta-items-conteo.md](./migracion-venta-items-conteo.md).
 
 ## Referencias
 
 - [README.md](./README.md)
-- [relaciones-interdominio.md](./relaciones-interdominio.md)
 - [guia-de-consumo.md](./guia-de-consumo.md)
+- [relaciones-interdominio.md](./relaciones-interdominio.md)

@@ -1,156 +1,140 @@
-# Guía de Consumo del Domain de Ventas
+# Guía de consumo del Domain de Ventas
 
 ## Propósito
 
-Este documento describe cómo debe interpretar un consumer el Domain de ventas expuesto por `yolafresh-utils`.
+Explicar cómo consumir el contrato compacto de `Venta` y su detalle canónico `VentaSnapshot`.
 
-## Secuencia funcional recomendada
+## Secuencia recomendada
 
-### 1. Captura operativa
+### 1. Capturar la operación
 
-Usar `CarritoVenta` para:
+Usar `CarritoVenta` mientras el usuario agrega o modifica productos. No usar `Venta` como carrito editable.
 
-- agregar productos
-- calcular totales
-- capturar cliente y personal
-- mantener configuración fiscal
+### 2. Construir venta y snapshot
 
-No usar `CarritoVenta` para:
+```ts
+import { Venta } from "yola-fresh-utils/ventas/entities";
 
-- persistir metadata efímera ajena a `Venta` o `VentaSnapshot`
-- duplicar fiscalidad con `tasaImpuesto` paralela
-- publicar IDs derivados como `clienteId` o `personalId` dentro del contrato compartido
+const venta = Venta.fromCarritoVenta(carrito, ventaId, {
+  condicionPago,
+  pedidoId,
+  montoRedondeo,
+});
 
-### 2. Conversión a venta
+const ventaDoc = venta.toJSON();
+const snapshotResult = venta.tryToVentaSnapshot({ cliente, vendedor });
 
-Cuando operación se confirma comercialmente:
+if (!snapshotResult.snapshot) {
+  throw snapshotResult.error;
+}
 
-- crear `Venta`
-- usar `VentaState`
-- definir `CondicionPagoVenta`
-- congelar items y totales
+const snapshotDoc = snapshotResult.snapshot;
+```
 
-Si operación proviene de reserva:
+Resultado:
 
-- relacionar con `pedidoId`
-- leer `Pedido` desde su Domain propietario en [../pedido/guia-de-consumo.md](../pedido/guia-de-consumo.md)
+- `ventaDoc.items` es un número;
+- `snapshotDoc.items` es el único array detallado;
+- ambos comparten la identidad por `snapshotDoc.ventaId`;
+- la cantidad debe coincidir.
 
-### 3. Snapshot histórico
+### 3. Persistir como una unidad
 
-Para historial humano durable:
+El consumer debe guardar Venta y snapshot en una misma transacción local o workflow reanudable.
 
-- crear `VentaSnapshot`
-- usar `venta.toVentaSnapshot()` cuando flujo necesite snapshot estricto
-- usar `venta.tryToVentaSnapshot()` en POS o flujos críticos donde la venta no debe abortarse por fallo de proyección histórica
+No corresponde:
 
-`VentaSnapshot` sirve para:
+- guardar la venta y dejar el snapshot para una tarea no controlada;
+- duplicar `snapshot.items` dentro de otro campo de Venta;
+- considerar confirmada una escritura parcial;
+- usar un ID de snapshot no determinista para reintentos.
 
-- historial visible
-- ticket interno o voucher histórico
-- reconstrucción duradera sin depender de catálogo vivo
-- preservar `montoModificado` por item cuando línea fue ajustada manualmente
-- reflejar `descuentoTotal` y `montoRedondeo` cuando forman parte de `Venta`
-- aceptar `montoRedondeo` firmado cuando POS cierre con ajuste a favor o en contra
+### 4. Leer resumen o detalle
 
-Lectura correcta:
+Para listados ligeros:
 
-- `Venta` es transacción operativa crítica
-- `VentaSnapshot` es representación histórica derivada
-- si snapshot falla en flujo crítico, se registra y se continúa con persistencia de `Venta`
-- `montoTotal` de item es bruto antes de descuento
-- ajustes de sencillo o cierre físico deben entrar por `montoRedondeo`, no por redondeo implícito del carrito
+- leer `IVenta`;
+- usar `items` como cantidad de líneas;
+- usar subtotal, impuesto y total ya confirmados.
 
-### 4. Cobro y tesorería
+Para voucher, detalle o historial:
+
+- leer `IVentaSnapshot` por `ventaId`;
+- mostrar `VentaSnapshotItem.nombre`, imagen, unidad, cantidad, precio y ajustes;
+- validar que la longitud coincide con `Venta.items`.
+
+No volver a consultar el catálogo vivo para reconstruir nombres históricos.
+
+### 5. Rehidratar una Venta
+
+Una venta creada desde `IVenta` sólo conoce el conteo. Para volver a construir su snapshot hay que proporcionar el detalle:
+
+```ts
+const venta = new Venta(ventaDoc);
+const snapshot = venta.toVentaSnapshot({
+  items: snapshotDoc.items,
+  cliente: snapshotDoc.cliente,
+  vendedor: snapshotDoc.vendedor,
+});
+```
+
+Llamar `toVentaSnapshot()` sin detalle sobre una venta rehidratada produce error explícito.
+
+## Imports públicos
+
+```ts
+import type {
+  IVenta,
+  VentaCreateInput,
+  IVentaSnapshot,
+  VentaSnapshotItem,
+} from "yola-fresh-utils/ventas/contracts";
+
+import {
+  CondicionPagoVenta,
+  VentaState,
+} from "yola-fresh-utils/shared/kernel";
+```
+
+`VentaItem` ya no existe en la surface pública.
+
+## Cobro y tesorería
 
 Si entra dinero real:
 
-- recibir o validar `Pago` como evidencia externa cuando exista
-- registrar `MovimientoCaja`
+- validar o registrar `Pago` cuando exista;
+- registrar `MovimientoCaja`;
+- no guardar cobro dentro de Venta o snapshot.
 
-No guardar cobro dentro de `Venta`.
+## Cuenta cliente
 
-Lectura correcta:
+Si la venta genera deuda o consume saldo:
 
-- `Pago` no siempre nace dentro del flujo de venta;
-- `Pago` puede llegar desde sistema externo después;
-- `Pago` puede no terminar asociado a la venta y seguir siendo válido;
-- asociación a venta ocurre solo cuando evidencia se aplica efectivamente.
+- registrar `MovimientoCuentaCliente`;
+- usar `ImputacionCuentaCliente` para aplicaciones entre crédito y débito;
+- no guardar saldo dentro de Venta.
 
-### 5. Cuenta cliente
+## Inventario
 
-Si venta genera deuda o consume saldo:
+Si la venta afecta stock:
 
-- registrar `MovimientoCuentaCliente`
-- crear `ImputacionCuentaCliente` cuando un crédito financia un débito
-
-No guardar saldo o deuda dentro de `Venta`.
-
-### 6. Inventario
-
-Si venta impacta stock:
-
-- generar `MovimientoInventario`
-- usar `origenDocumento = VENTA`
-- resolver aplicación de stock en la capa consumidora o módulo operativo correspondiente
-
-## Lectura recomendada por caso
-
-### Historial comercial
-
-- `Venta`
-- `VentaSnapshot`
-
-### Evidencia de pago y tesorería
-
-- `Pago`
-- `MovimientoCaja`
-
-### Deuda, adelantos y saldo
-
-- `CuentaCliente`
-- `MovimientoCuentaCliente`
-- `ImputacionCuentaCliente`
-- `ResumenCuentaCliente`
-
-### Stock y kardex
-
-- `MovimientoInventario`
-- `StockPresentacionAlmacen`
-- `KardexLinea`
-
-## Reglas de separación
-
-- `CarritoVenta` != `Venta`
-- `Venta` != `Pago`
-- `Venta` != `MovimientoCaja`
-- `Venta` != `MovimientoCuentaCliente`
-- `Venta` != `MovimientoInventario`
-- `Venta` != `VentaSnapshot`
-- `CondicionPagoVenta` != estado de cobranza
-- `Pago` huérfano != error de dominio
+- generar `MovimientoInventario`;
+- usar la venta como referencia documental;
+- obtener líneas desde el snapshot o desde el comando original, no desde `Venta.items`.
 
 ## Errores de modelado a evitar
 
-- meter `estadoCobranza` en contrato primario de `Venta`
-- meter `turnoCajaId` en contrato primario de `Venta`
-- meter `finanzaId` en contrato primario de `Venta`
-- usar `esPedido` en vez de `pedidoId`
-- usar `notas` como si siguiera siendo parte contractual de `CarritoVenta`
-- leer `carrito.tasaImpuesto` en vez de `carrito.configuracionFiscal`
-- reconstruir actor desde `clienteId` o `personalId` del carrito compartido
-- usar `Venta` como si fuera documento de stock
-- usar `Venta` como si fuera documento de deuda
-- asumir que todo `Pago` debe asociarse a una venta
-
-## Límites vigentes del paquete
-
-- `VentaSnapshot` puede construirse desde `Venta`, pero la librería no obliga instante único de persistencia;
-- `MovimientoInventario` se mantiene desacoplado del agregado `Venta`, por lo que cada consumer decide disparo operativo;
-- la anulación interdominio requiere coordinación externa entre contratos, no automatismo dentro de `Venta`.
+- `venta.items.map(...)`;
+- importar `VentaItem`;
+- interpretar `Venta.items` como cantidad física vendida;
+- reconstruir detalle desde catálogo vivo;
+- persistir `snapshotItems` dentro de Venta;
+- permitir conteo diferente al array del snapshot;
+- usar Venta como pago, caja, deuda o movimiento de stock.
 
 ## Referencias
 
 - [README.md](./README.md)
 - [modelo-vigente.md](./modelo-vigente.md)
+- [migracion-venta-items-conteo.md](./migracion-venta-items-conteo.md)
 - [relaciones-interdominio.md](./relaciones-interdominio.md)
-- [migracion-v1-0-4-a-v1-0-5.md](./migracion-v1-0-4-a-v1-0-5.md)

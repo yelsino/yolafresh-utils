@@ -1,5 +1,9 @@
 # Migración `v1.0.4 -> v1.0.5`
 
+> Documento histórico. La revisión actual reemplaza `VentaItem[]` por el conteo
+> `Venta.items` y conserva el detalle sólo en `VentaSnapshotItem[]`. Consultar
+> [migracion-venta-items-conteo.md](./migracion-venta-items-conteo.md).
+
 ## Propósito
 
 Este documento guía migración de consumers que usan `CarritoVenta` hacia `v1.0.5`.

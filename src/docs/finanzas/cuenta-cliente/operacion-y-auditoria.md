@@ -73,6 +73,7 @@ Si cliente paga más de lo necesario:
 - quién recibió dinero;
 - cuánto dinero se recibió;
 - método de pago;
+- código de constancia, cuando existe;
 - momento de recepción.
 
 ### Custodia

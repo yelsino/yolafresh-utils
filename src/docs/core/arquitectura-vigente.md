@@ -4,6 +4,8 @@
 
 El core vigente de `yolafresh-utils` queda orientado a contratos de negocio, primitivas de dominio y pocas entidades ricas de alto valor transversal.
 
+La versión publicada de referencia es `2.0.0` (`v2.0.0`).
+
 La evidencia principal está en [src/index.ts](../../index.ts).
 
 ## Surface pública raíz
@@ -14,7 +16,7 @@ La raíz exporta hoy:
 - `shared/kernel`
 - `shared/utils`
 - `shared/value-objects`
-- `auth`
+- contratos públicos de `pedido`, `ventas`, `compras`, `inventario`, `tesoreria`, `finanzas`, `auth`, `personas` y `contabilidad`;
 - `Venta`
 - `CarritoVenta`
 - `VentaSnapshot`
@@ -66,6 +68,7 @@ Los contratos ya no viven en `shared/interfaces`.
 
 Ahora se distribuyen en:
 
+- `pedido/contracts`
 - `ventas/contracts`
 - `compras/contracts`
 - `inventario/contracts`
@@ -87,6 +90,9 @@ El paquete todavía conserva comportamiento de dominio en:
 - [catálogo auth](../../domain/auth/index.ts)
 - [Usuario](../../domain/personas/entities/Usuario.ts)
 - [AsientoContable](../../domain/contabilidad/entities/AsientoContable.ts)
+
+`Pedido` y `PedidoEntrega` son contratos publicados del dominio `pedido`; no son
+entidades ricas con comportamiento dentro de esta librería.
 
 ## Qué salió del core
 
@@ -127,11 +133,12 @@ flowchart TD
   Root --> Kernel[shared/kernel]
   Root --> Utils[shared/utils]
   Root --> ValueObjects[shared/value-objects]
-  Root --> Auth[auth]
+  Root --> Contracts[contratos públicos por dominio]
   Root --> Ventas[Venta / CarritoVenta / VentaSnapshot]
   Root --> Recurrencia[RecurrenciaEntity]
 
-  Auth --> AuthContracts[auth/contracts + catalogs + helpers]
+  Contracts --> Pedido[pedido/contracts]
+  Contracts --> Auth[auth/contracts + catalogs + helpers]
   Ventas --> VentasContracts[ventas/contracts]
   Recurrencia --> FinanzasContracts[finanzas/contracts]
 ```
