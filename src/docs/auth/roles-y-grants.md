@@ -59,6 +59,13 @@ Roles base vigentes:
 - `auditor`
 - `soporte-tecnico`
 - `solo-lectura`
+- `cliente`
+
+`cliente` representa una cuenta digital de cliente final. No representa el
+documento comercial `Cliente` ni recibe privilegios del ERP por defecto. La
+tienda puede definir y proteger sus capacidades propias mediante políticas y
+permisos de su aplicación; Finanzas no debe inferir acceso desde la entidad ni
+desde la mera autenticación.
 
 Fuente:
 

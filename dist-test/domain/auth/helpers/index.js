@@ -1,0 +1,29 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./expand-grant"), exports);
+__exportStar(require("./expand-grants"), exports);
+__exportStar(require("./expand-role-grants"), exports);
+__exportStar(require("./get-catalog-version"), exports);
+__exportStar(require("./get-permission-definition"), exports);
+__exportStar(require("./get-role-definition"), exports);
+__exportStar(require("./is-system-admin-role"), exports);
+__exportStar(require("./is-valid-grant"), exports);
+__exportStar(require("./is-valid-permission"), exports);
+__exportStar(require("./list-all-permissions"), exports);
+__exportStar(require("./list-all-roles"), exports);
+__exportStar(require("./resolve-role-grants"), exports);
+__exportStar(require("./resolve-role-permissions"), exports);

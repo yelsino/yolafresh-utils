@@ -12,6 +12,7 @@ export const AUTH_BASE_ROLE_IDS = [
   "auditor",
   "soporte-tecnico",
   "solo-lectura",
+  "cliente",
 ] as const;
 
 export const AUTH_ROLE_DEFINITIONS: Readonly<Record<(typeof AUTH_BASE_ROLE_IDS)[number], RoleDefinition>> =
@@ -127,5 +128,11 @@ export const AUTH_ROLE_DEFINITIONS: Readonly<Record<(typeof AUTH_BASE_ROLE_IDS)[
         "finanzas:reporte:ver",
         "caja:movimiento:ver",
       ],
+    },
+    cliente: {
+      id: "cliente",
+      nombre: "CLIENTE",
+      descripcion: "Usuario cliente autenticado, sin privilegios del ERP por defecto",
+      grants: [],
     },
   });

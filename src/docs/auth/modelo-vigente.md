@@ -70,6 +70,11 @@ Backend es dueño de:
 - enforcement real;
 - construcción de `AuthSnapshot`.
 
+La persistencia de una asignación concreta de usuario a rol pertenece al
+backend IAM. Por ejemplo, `auth_user_role` puede contener `userId`, `roleId`,
+`active` y sus fechas; no forma parte del documento base `usuario` ni del
+catálogo maestro de esta librería.
+
 ### Cliente móvil
 
 Cliente es dueño de:

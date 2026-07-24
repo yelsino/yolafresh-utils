@@ -1,1 +1,1 @@
-export const AUTH_CATALOG_VERSION = "1.0.3";
+export const AUTH_CATALOG_VERSION = "1.0.4";

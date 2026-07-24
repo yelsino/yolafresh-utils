@@ -47,6 +47,15 @@ test("getRoleDefinition y resolveRolePermissions resuelven roles base", () => {
   assert.ok(permissions.includes("inventario:stock:ver"));
 });
 
+test("cliente es un rol oficial sin permisos del ERP", () => {
+  const cliente = getRoleDefinition("cliente");
+
+  assert.ok(cliente);
+  assert.equal(cliente.id, "cliente");
+  assert.deepEqual(cliente.grants, []);
+  assert.deepEqual(resolveRolePermissions(["cliente"]), []);
+});
+
 test("admin global resuelve wildcard total", () => {
   const permissions = resolveRolePermissions(["admin"]);
 

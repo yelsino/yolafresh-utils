@@ -27,6 +27,11 @@ Flujo lógico:
 
 El actor real del negocio sigue modelado aparte como `Entidad`.
 
+`Rol` no se deduce de `Entidad` y tampoco debe persistirse como un atributo
+autoritativo dentro del documento de identidad. El backend IAM conserva la
+asignación `usuario -> rol` en su propio almacenamiento (en YolaFresh, el
+documento `auth_user_role`) y reconstruye los roles resueltos para la sesión.
+
 ## Qué vive en `personas`
 
 - `Entidad`
@@ -68,6 +73,10 @@ El actor real del negocio sigue modelado aparte como `Entidad`.
 
 - `Entidad` representa actor real;
 - `IUsuario` representa cuenta digital.
+
+Un usuario asociado a `Personal` no es administrador por ese motivo. Un
+usuario asociado a `Cliente` tampoco recibe permisos por ese motivo. El rol y
+los permisos se resuelven mediante la asignación de autorización.
 
 ### Scope != Permiso
 
