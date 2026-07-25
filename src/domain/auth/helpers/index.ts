@@ -11,3 +11,4 @@ export * from "./list-all-permissions";
 export * from "./list-all-roles";
 export * from "./resolve-role-grants";
 export * from "./resolve-role-permissions";
+export * from "./device-enrollment";

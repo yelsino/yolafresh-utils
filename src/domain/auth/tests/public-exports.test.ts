@@ -16,6 +16,9 @@ test("root export publica surface auth esperada", () => {
   assert.equal(typeof pkg.getCatalogVersion, "function");
   assert.equal(typeof pkg.listAllPermissions, "function");
   assert.equal(typeof pkg.listAllRoles, "function");
+  assert.equal(pkg.DEVICE_ENROLLMENT_CONTRACT_VERSION, 1);
+  assert.equal(typeof pkg.parseDeviceEnrollmentQrPayload, "function");
+  assert.equal(typeof pkg.buildDeviceEnrollmentProofChallenge, "function");
 });
 
 test("subpath auth publica misma surface base", () => {
@@ -32,6 +35,8 @@ test("subpath auth publica misma surface base", () => {
   assert.equal(typeof authPkg.getCatalogVersion, "function");
   assert.equal(typeof authPkg.listAllPermissions, "function");
   assert.equal(typeof authPkg.listAllRoles, "function");
+  assert.equal(authPkg.DEVICE_ENROLLMENT_CONTRACT_VERSION, 1);
+  assert.equal(typeof authPkg.parseDeviceEnrollmentQrPayload, "function");
 });
 
 test("root y subpath auth comparten versión de catálogo", () => {

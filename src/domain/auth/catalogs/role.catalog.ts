@@ -112,7 +112,7 @@ export const AUTH_ROLE_DEFINITIONS: Readonly<Record<(typeof AUTH_BASE_ROLE_IDS)[
       id: "soporte-tecnico",
       nombre: "SOPORTE_TECNICO",
       descripcion: "Configuración y soporte técnico operativo",
-      grants: ["configuracion:sistema:*", "iam:usuario:ver"],
+      grants: ["configuracion:sistema:*", "iam:usuario:ver", "iam:dispositivo:*"],
     },
     "solo-lectura": {
       id: "solo-lectura",

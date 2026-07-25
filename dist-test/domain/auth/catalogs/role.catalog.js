@@ -111,7 +111,7 @@ exports.AUTH_ROLE_DEFINITIONS = Object.freeze({
         id: "soporte-tecnico",
         nombre: "SOPORTE_TECNICO",
         descripcion: "Configuración y soporte técnico operativo",
-        grants: ["configuracion:sistema:*", "iam:usuario:ver"],
+        grants: ["configuracion:sistema:*", "iam:usuario:ver", "iam:dispositivo:*"],
     },
     "solo-lectura": {
         id: "solo-lectura",

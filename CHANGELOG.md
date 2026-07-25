@@ -10,6 +10,16 @@ Este proyecto adopta versionado semántico:
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-25
+
+### Added
+
+- Contrato público v1 para enrolamiento seguro de dispositivos mediante QR.
+- DTOs de invitación, claim, polling, finalización, binding y conexión tenant.
+- Parser seguro del payload QR y constructor canónico del challenge Ed25519.
+- Permisos IAM `iam:dispositivo:*` y concesión al rol base `soporte-tecnico`.
+- Documentación del contrato compartido y RFC de implementación para frontend.
+
 ## [1.0.9] - 2026-07-22
 
 ### Changed

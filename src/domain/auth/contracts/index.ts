@@ -4,3 +4,4 @@ export * from "./auth-permission.contract";
 export * from "./auth-role.contract";
 export * from "./auth-scope.contract";
 export * from "./auth-snapshot.contract";
+export * from "./device-enrollment.contract";

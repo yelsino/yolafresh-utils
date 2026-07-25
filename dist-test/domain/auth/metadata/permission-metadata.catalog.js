@@ -15,6 +15,8 @@ const CRITICIDAD_POR_ACCION = {
     cerrar: "high",
     abrir: "high",
     global: "critical",
+    enrolar: "high",
+    revocar: "critical",
 };
 const PERMISSION_METADATA_OVERRIDES = {
     "sistema:admin:global": {
@@ -30,6 +32,9 @@ const PERMISSION_METADATA_OVERRIDES = {
         criticidad: "critical",
     },
     "iam:rol:asignar": {
+        criticidad: "critical",
+    },
+    "iam:dispositivo:aprobar": {
         criticidad: "critical",
     },
     "caja:movimiento:anular": {

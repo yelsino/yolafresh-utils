@@ -31,7 +31,9 @@ Si pregunta es:
 - [helpers-puros.md](./helpers-puros.md): helpers oficiales para expansión y validación.
 - [migracion-v1-0-2-a-v1-0-3.md](./migracion-v1-0-2-a-v1-0-3.md): transición secuencial dentro de línea `v1.x`.
 - [versionado-y-gobernanza.md](./versionado-y-gobernanza.md): semver y proceso de cambio.
+- [enrolamiento-dispositivos-qr.md](./enrolamiento-dispositivos-qr.md): contrato compartido v1 y guía de consumo.
 - [rfcs/rfc-ssot-auth-shared.md](./rfcs/rfc-ssot-auth-shared.md): RFC implementado del dominio.
+- [rfcs/rfc-frontend-enrolamiento-dispositivos-qr.md](./rfcs/rfc-frontend-enrolamiento-dispositivos-qr.md): plan de implementación para frontend.
 
 ## Imports oficiales
 

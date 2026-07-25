@@ -19,6 +19,9 @@ const node_test_1 = __importDefault(require("node:test"));
     strict_1.default.equal(typeof pkg.getCatalogVersion, "function");
     strict_1.default.equal(typeof pkg.listAllPermissions, "function");
     strict_1.default.equal(typeof pkg.listAllRoles, "function");
+    strict_1.default.equal(pkg.DEVICE_ENROLLMENT_CONTRACT_VERSION, 1);
+    strict_1.default.equal(typeof pkg.parseDeviceEnrollmentQrPayload, "function");
+    strict_1.default.equal(typeof pkg.buildDeviceEnrollmentProofChallenge, "function");
 });
 (0, node_test_1.default)("subpath auth publica misma surface base", () => {
     const authPkg = require("yola-fresh-utils/auth");
@@ -33,6 +36,8 @@ const node_test_1 = __importDefault(require("node:test"));
     strict_1.default.equal(typeof authPkg.getCatalogVersion, "function");
     strict_1.default.equal(typeof authPkg.listAllPermissions, "function");
     strict_1.default.equal(typeof authPkg.listAllRoles, "function");
+    strict_1.default.equal(authPkg.DEVICE_ENROLLMENT_CONTRACT_VERSION, 1);
+    strict_1.default.equal(typeof authPkg.parseDeviceEnrollmentQrPayload, "function");
 });
 (0, node_test_1.default)("root y subpath auth comparten versión de catálogo", () => {
     const pkg = require("yola-fresh-utils");

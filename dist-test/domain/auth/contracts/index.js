@@ -20,3 +20,4 @@ __exportStar(require("./auth-permission.contract"), exports);
 __exportStar(require("./auth-role.contract"), exports);
 __exportStar(require("./auth-scope.contract"), exports);
 __exportStar(require("./auth-snapshot.contract"), exports);
+__exportStar(require("./device-enrollment.contract"), exports);

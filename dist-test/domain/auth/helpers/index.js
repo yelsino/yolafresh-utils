@@ -27,3 +27,4 @@ __exportStar(require("./list-all-permissions"), exports);
 __exportStar(require("./list-all-roles"), exports);
 __exportStar(require("./resolve-role-grants"), exports);
 __exportStar(require("./resolve-role-permissions"), exports);
+__exportStar(require("./device-enrollment"), exports);

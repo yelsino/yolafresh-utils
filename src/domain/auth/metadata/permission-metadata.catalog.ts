@@ -14,6 +14,8 @@ const CRITICIDAD_POR_ACCION: Record<string, PermissionCriticidad> = {
   cerrar: "high",
   abrir: "high",
   global: "critical",
+  enrolar: "high",
+  revocar: "critical",
 };
 
 const PERMISSION_METADATA_OVERRIDES: Partial<Record<AuthPermission, Partial<PermissionDefinition>>> = {
@@ -30,6 +32,9 @@ const PERMISSION_METADATA_OVERRIDES: Partial<Record<AuthPermission, Partial<Perm
     criticidad: "critical",
   },
   "iam:rol:asignar": {
+    criticidad: "critical",
+  },
+  "iam:dispositivo:aprobar": {
     criticidad: "critical",
   },
   "caja:movimiento:anular": {
