@@ -200,10 +200,12 @@ Evidencia principal:
 - [evidencias.contract.ts](../../domain/shared/kernel/evidencias.contract.ts)
 - [enums.ts](../../domain/shared/kernel/enums.ts)
 - [fiscal.contract.ts](../../domain/shared/kernel/fiscal.contract.ts)
+- [configuracion-de-empresa.md](./configuracion-de-empresa.md)
 
 Responsabilidad:
 
 - sostener documentos, empresa, evidencias, enums y configuración fiscal transversal.
+- `ConfigEmpresa` conserva `type: "config_empresa"` y evoluciona de forma aditiva con `empresa.pais?` y `perfilNegocio?`.
 
 ## Restricciones observadas
 
