@@ -10,6 +10,16 @@ Este proyecto adopta versionado semántico:
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-08-05
+
+### Fixed
+
+- Se incorpora `productos:producto:editar_imagen` al catálogo IAM canónico y
+  se concede a los roles `supervisor` e `inventario`, manteniendo al rol
+  `admin` cubierto por el wildcard global.
+- El permiso IAM canónico queda alineado conceptualmente con el permiso legado
+  `productos:editar-imagen` sin mezclar los formatos de ambos catálogos.
+
 ## [1.4.0] - 2026-08-05
 
 ### Added

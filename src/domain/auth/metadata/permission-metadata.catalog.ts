@@ -6,6 +6,7 @@ const CRITICIDAD_POR_ACCION: Record<string, PermissionCriticidad> = {
   crear: "medium",
   exportar: "medium",
   editar: "high",
+  editar_imagen: "high",
   asignar: "high",
   aprobar: "high",
   anular: "high",

@@ -22,6 +22,7 @@ export const AUTH_PERMISSIONS = [
   "inventario:ajuste:aprobar",
   "inventario:transferencia:crear",
   "inventario:transferencia:ver",
+  "productos:producto:editar_imagen",
   "finanzas:cuenta_cliente:ver",
   "finanzas:cuenta_cliente:ajustar",
   "finanzas:reporte:ver",

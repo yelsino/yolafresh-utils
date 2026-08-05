@@ -35,6 +35,7 @@ export const AUTH_ROLE_DEFINITIONS: Readonly<Record<(typeof AUTH_BASE_ROLE_IDS)[
         "inventario:stock:ver",
         "inventario:conteo:*",
         "inventario:ajuste:*",
+        "productos:producto:editar_imagen",
         "compras:compra:ver",
         "reportes:ventas:*",
         "caja:turno:ver_todos",
@@ -65,7 +66,11 @@ export const AUTH_ROLE_DEFINITIONS: Readonly<Record<(typeof AUTH_BASE_ROLE_IDS)[
       id: "inventario",
       nombre: "INVENTARIO",
       descripcion: "Control de stock, conteos, ajustes y transferencias",
-      grants: ["inventario:*", "compras:compra:recepcionar"],
+      grants: [
+        "inventario:*",
+        "productos:producto:editar_imagen",
+        "compras:compra:recepcionar",
+      ],
     },
     compras: {
       id: "compras",
