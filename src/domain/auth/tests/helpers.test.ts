@@ -63,6 +63,11 @@ test("admin global resuelve wildcard total", () => {
   assert.equal(permissions.length, AUTH_PERMISSIONS.length);
 });
 
+test("inventario puede editar imagenes de producto", () => {
+  const permissions = resolveRolePermissions(["inventario"]);
+  assert.ok(permissions.includes("productos:producto:editar_imagen"));
+});
+
 test("validadores detectan permiso y grant inválidos", () => {
   assert.equal(isValidPermission("ventas:venta:ver"), true);
   assert.equal(isValidPermission("ventas:sucursal-lima:ver"), false);

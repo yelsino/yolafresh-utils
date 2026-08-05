@@ -10,6 +10,14 @@ Este proyecto adopta versionado semántico:
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-08-05
+
+### Fixed
+
+- Se incrementa `AUTH_CATALOG_VERSION` a `1.2.0` para que snapshots y clientes
+  detecten la incorporación del permiso de imágenes.
+- Se prueba explícitamente que el rol `inventario` resuelve el permiso canónico.
+
 ## [1.4.1] - 2026-08-05
 
 ### Fixed
