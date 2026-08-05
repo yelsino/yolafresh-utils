@@ -55,6 +55,10 @@ const permission_catalog_1 = require("../catalogs/permission.catalog");
     strict_1.default.equal((0, is_system_admin_role_1.isSystemAdminRole)(["admin"]), true);
     strict_1.default.equal(permissions.length, permission_catalog_1.AUTH_PERMISSIONS.length);
 });
+(0, node_test_1.default)("inventario puede editar imagenes de producto", () => {
+    const permissions = (0, resolve_role_permissions_1.resolveRolePermissions)(["inventario"]);
+    strict_1.default.ok(permissions.includes("productos:producto:editar_imagen"));
+});
 (0, node_test_1.default)("validadores detectan permiso y grant inválidos", () => {
     strict_1.default.equal((0, is_valid_permission_1.isValidPermission)("ventas:venta:ver"), true);
     strict_1.default.equal((0, is_valid_permission_1.isValidPermission)("ventas:sucursal-lima:ver"), false);

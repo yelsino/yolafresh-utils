@@ -34,6 +34,7 @@ exports.AUTH_ROLE_DEFINITIONS = Object.freeze({
             "inventario:stock:ver",
             "inventario:conteo:*",
             "inventario:ajuste:*",
+            "productos:producto:editar_imagen",
             "compras:compra:ver",
             "reportes:ventas:*",
             "caja:turno:ver_todos",
@@ -64,7 +65,11 @@ exports.AUTH_ROLE_DEFINITIONS = Object.freeze({
         id: "inventario",
         nombre: "INVENTARIO",
         descripcion: "Control de stock, conteos, ajustes y transferencias",
-        grants: ["inventario:*", "compras:compra:recepcionar"],
+        grants: [
+            "inventario:*",
+            "productos:producto:editar_imagen",
+            "compras:compra:recepcionar",
+        ],
     },
     compras: {
         id: "compras",
