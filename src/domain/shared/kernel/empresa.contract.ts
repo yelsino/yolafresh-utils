@@ -1,5 +1,5 @@
 import type { ISODateString } from "../utils/dates";
-import { ImageSizes } from "../../inventario/contracts/producto.contract";
+import type { CompatibleProductImage } from "./media.contract";
 
 export type PaisEmpresa =
   | "PERU"
@@ -76,7 +76,7 @@ export interface ConfigEmpresa {
     direccion?: string;
     telefono?: string;
     email?: string;
-    logoUrl?: ImageSizes;
+    logoUrl?: CompatibleProductImage;
   };
 
   /**

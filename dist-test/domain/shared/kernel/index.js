@@ -19,3 +19,4 @@ __exportStar(require("./empresa.contract"), exports);
 __exportStar(require("./enums"), exports);
 __exportStar(require("./evidencias.contract"), exports);
 __exportStar(require("./fiscal.contract"), exports);
+__exportStar(require("./media.contract"), exports);

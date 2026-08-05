@@ -10,6 +10,22 @@ Este proyecto adopta versionado semántico:
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-08-05
+
+### Added
+
+- Contratos `ImageScope`, `ProductImage` y `CompatibleProductImage` para
+  distinguir recursos privados de tenant y recursos globales reutilizables.
+- Validadores `isImageSizes` e `isProductImage` para migracion compatible de
+  documentos existentes.
+- Pruebas de producto sin imagen, imagen legacy e imagen global.
+
+### Changed
+
+- `ProductoBase.imagen` pasa a ser opcional y acepta el contrato compatible.
+- Presentaciones, categorias y logo de empresa comparten el mismo contrato de
+  imagen sin depender de infraestructura ni proveedor CDN.
+
 ## [1.3.0] - 2026-08-05
 
 ### Changed
