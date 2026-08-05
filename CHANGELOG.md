@@ -10,6 +10,20 @@ Este proyecto adopta versionado semántico:
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-05
+
+### Changed
+
+- Los contratos gastronómicos adoptan nombres canónicos simples en español;
+  los nombres ingleses de la vista previa se mantienen como aliases temporales.
+- `ProductoRestaurante` queda definido como configuración de una
+  `Presentacion` existente, no como un segundo producto.
+- Se formaliza `ComandoRestaurante` con versión esperada obligatoria,
+  dependencias causales y resultados tipados para sincronización
+  multidispositivo sin última escritura ganadora.
+- Se documenta la puerta productiva de la primera historia completa de salón,
+  pedido, cocina y entrega.
+
 ## [1.2.0] - 2026-07-29
 
 ### Added

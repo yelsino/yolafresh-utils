@@ -1,6 +1,6 @@
 {
   "name": "yola-fresh-utils",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Biblioteca TypeScript de contratos de negocio, primitivas de dominio y entidades ricas del ecosistema YolaFresh.",
   "keywords": [
     "yolafresh",
