@@ -2,14 +2,19 @@
 
 ## Estado del documento
 
-- Estado: propuesta de dominio y plan de evolución.
-- Fecha de corte: 2026-07-21.
+- Estado: contratos candidatos y puerta de producción de la primera historia.
+- Fecha de corte: 2026-08-01.
 - Aplicación inspeccionada: `D:\Proyectos\MOVILE\FINANZAS-YOLA-FRESH`.
-- Contratos compartidos inspeccionados: `yola-fresh-utils` `1.0.9`.
+- Contratos compartidos inspeccionados: vista previa local `yola-fresh-utils`
+  `1.2.0`, todavía no aprobada para producción multidispositivo.
 - Alcance técnico: aplicación móvil, dominio compartido y persistencia local SQLite/CouchDB.
-- Fuera de alcance: implementación de código y diseño de servicios externos.
+- Fuera de alcance de este corte: implementación del manejador remoto de
+  comandos, reservas, recetas, producción y delivery completo.
 
-Este árbol es la fuente de verdad para la futura modalidad gastronómica. No declara contratos ya publicados: separa evidencia actual, inferencias, recomendaciones y decisiones pendientes para evitar que una propuesta se confunda con una API vigente.
+Este árbol es la fuente de verdad para la modalidad gastronómica. Los contratos
+de `src/domain/restaurant` son candidatos públicos; su presencia en la vista
+previa local no equivale a aprobación de lanzamiento. La puerta vinculante para
+la primera historia está en [Contratos de producción para salón y cocina](./10-primera-historia-contratos-produccion.md).
 
 ## Resultado ejecutivo
 
@@ -52,6 +57,7 @@ La evolución recomendada es incremental y aditiva:
 - [Épicas, historias y aceptación](./07-plan/epicas-historias-aceptacion.md)
 - [Decisiones pendientes](./08-decisiones/registro-decisiones-pendientes.md)
 - [Estrategia de pruebas](./09-calidad/estrategia-de-pruebas.md)
+- [Primera historia: contratos de producción para salón y cocina](./10-primera-historia-contratos-produccion.md)
 
 ## Convenciones de evidencia
 
@@ -64,8 +70,9 @@ Cada afirmación importante usa una de estas marcas:
 
 ## Regla de no contradicción
 
-1. Los documentos de dominios vigentes describen los contratos publicados en `1.0.9`.
-2. Este árbol describe la evolución gastronómica propuesta.
+1. Los documentos de dominios vigentes describen los contratos retail publicados.
+2. Este árbol y `src/domain/restaurant` describen la evolución gastronómica candidata.
 3. Ante una diferencia, el código y la documentación de dominio vigente prevalecen para comportamiento actual.
-4. Ningún nombre o campo propuesto debe publicarse antes de aprobar su RFC y pruebas de contrato.
+4. Ningún nombre o campo candidato debe publicarse antes de aprobar su RFC,
+   pruebas de contrato y escenarios multidispositivo de la primera historia.
 5. Un documento futuro que sustituya una decisión de este árbol debe indicar explícitamente qué sección deja obsoleta.

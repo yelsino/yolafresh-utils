@@ -28,6 +28,10 @@
 
 Casos alternos:
 
+- cliente se retira antes de enviar: un comando idempotente cancela el
+  borrador, anula la cuenta en cero, marca la sesión `ABANDONADA` y libera la
+  mesa; se bloquea si otro dispositivo ya creó cantidad enviada, cargos,
+  pagos, venta, comandas o tareas;
 - cliente sin mesa: barra o mostrador;
 - mesa compartida: sesiones separadas si se habilita;
 - unión de mesas: agrupación temporal de recursos, no nueva mesa maestra;
@@ -72,7 +76,14 @@ Casos alternos:
 4. Se capturan uno o más pagos y se aplican a divisiones o saldo general.
 5. Servicio y propina se calculan/registran como conceptos separados.
 6. Al saldar, se genera Venta y snapshot de forma idempotente.
-7. Los efectos de caja, crédito e inventario siguen sus casos de uso existentes/adaptados.
+7. Saldar pasa la sesión a solicitud de cierre, pero no libera la mesa: los
+   comensales pueden pagar antes de terminar de consumir.
+8. El operador confirma por separado las entregas y, cuando todas las
+   precondiciones se cumplen, presiona `Liberar mesa` en el detalle.
+9. El cierre manual vuelve a leer Cuenta, Pedido, Sesión, Mesa, comandas y
+   tareas antes de cerrar; abrir o refrescar una pantalla nunca ejecuta el
+   comando.
+10. Los efectos de caja, crédito e inventario siguen sus casos de uso existentes/adaptados.
 
 Casos alternos:
 
@@ -163,4 +174,3 @@ Bebidas empacadas u otros productos pueden seguir descontándose por presentaci�
 | Cobrar/reversar | caja | reversa, reapertura |
 | Receta/producción | encargado | publicar receta, ajustar rendimiento |
 | Reserva/no-show | anfitrión | depósito y devolución |
-

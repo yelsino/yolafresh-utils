@@ -32,3 +32,23 @@ const invitationId = "550e8400-e29b-41d4-a716-446655440000";
     strict_1.default.ok(index_1.DEVICE_ENROLLMENT_STATUSES.includes("COMPLETED"));
     strict_1.default.ok(index_1.DEVICE_ENROLLMENT_ERROR_CODES.includes("invalid_device_proof"));
 });
+(0, node_test_1.default)("el contrato instalado admite una credencial bootstrap por dispositivo", () => {
+    const installed = {
+        deviceBinding: {
+            bindingId: "binding-1",
+            tenantId: "tenant-1",
+            deviceId: "device-1",
+            deviceName: "POS Caja 1",
+            deviceType: "android",
+            allowedSucursalIds: [],
+            createdAt: "2026-08-01T00:00:00.000Z",
+            updatedAt: "2026-08-01T00:00:00.000Z",
+        },
+        tenantConnection: {
+            backendBaseUrl: "https://pos.example.com",
+            syncMode: "backend_scoped",
+            bootstrapAccessToken: "opaque-device-bootstrap-token",
+        },
+    };
+    strict_1.default.equal(installed.tenantConnection.bootstrapAccessToken, "opaque-device-bootstrap-token");
+});

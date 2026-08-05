@@ -10,6 +10,32 @@ Este proyecto adopta versionado semántico:
 
 ## [Unreleased]
 
+### Changed
+
+- Los contratos gastronómicos adoptan nombres canónicos simples en español;
+  los nombres ingleses de la vista previa se mantienen como aliases temporales.
+- `ProductoRestaurante` queda definido como configuración de una
+  `Presentacion` existente, no como un segundo producto.
+- Se formaliza `ComandoRestaurante` con versión esperada obligatoria,
+  dependencias causales y resultados tipados para sincronización
+  multidispositivo sin última escritura ganadora.
+- Se documenta la puerta productiva de la primera historia completa de salón,
+  pedido, cocina y entrega.
+
+## [1.2.0] - 2026-07-29
+
+### Added
+
+- Surface pública `restaurant`, `restaurant/contracts` y
+  `restaurant/policies` para la operación gastronómica offline-first.
+- Contratos versionados para local, ambientes, zonas, mesas, estaciones,
+  menú/modificadores, sesiones, pedidos, comandas, preparación, cuentas y
+  asignaciones de pago.
+- Comandos durables con `operationId`, versión esperada y trazabilidad de
+  actor/dispositivo.
+- Políticas puras para transiciones de estado, modificadores y aritmética
+  monetaria en unidades mínimas.
+
 ## [1.1.0] - 2026-07-25
 
 ### Added

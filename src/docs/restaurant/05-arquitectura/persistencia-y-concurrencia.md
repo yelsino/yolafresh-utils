@@ -9,6 +9,19 @@
 5. Los comandos repetidos son idempotentes.
 6. Las proyecciones toleran repetición, desorden y reconstrucción.
 
+## Decisión vinculante para la primera historia
+
+La sincronización de un agregado crítico mediante CRUD genérico de su JSON
+completo no cumple el requisito multidispositivo. La infraestructura actual de
+SQLite, cola y CouchDB puede reutilizarse, pero su unidad durable debe ser
+`ComandoRestaurante`, y el consumidor debe devolver
+`ResultadoComandoRestaurante` después de validar idempotencia, versión e
+invariantes.
+
+El estado materializado puede replicarse para lectura y recuperación. No puede
+ser la única evidencia de agregar una línea, enviar una ronda, marcar listo,
+transferir una mesa, aplicar un pago o cerrar una cuenta.
+
 ## Clasificación de persistencia
 
 ### Estado versionado mutable
@@ -100,6 +113,10 @@ Cada entrada necesita:
 - timestamps;
 - hash o clave de deduplicación cuando aplique.
 
+El payload debe ser la intención mínima (`ADD_ORDER_LINE`,
+`SEND_ORDER_ROUND`, `MARK_PREPARATION_READY`, etc.), no el documento completo
+con una operación `UPDATE` genérica.
+
 Estados sugeridos: `PENDING`, `IN_FLIGHT`, `ACKNOWLEDGED`, `RETRY`, `CONFLICT`, `REJECTED`.
 
 La cola actual reintenta indefinidamente con backoff y coalesce de updates; para gastronomía debe conservar orden causal por agregado y no fusionar eventos inmutables.
@@ -176,4 +193,3 @@ No depender del cuerpo de revisiones antiguas para auditoría: CouchDB puede com
 - separar permisos de lectura y acción por local/estación;
 - logs locales no deben guardar mensajes de pago completos o direcciones innecesarias;
 - definir retención/borrado de datos personales sin borrar hechos económicos requeridos.
-

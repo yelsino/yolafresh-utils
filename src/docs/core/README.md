@@ -61,6 +61,7 @@ Este módulo entra en juego cuando una persona necesita:
 - [versionado-del-paquete.md](./versionado-del-paquete.md): semver, instalación por versión y flujo de release.
 - [implementacion-para-clientes.md](./implementacion-para-clientes.md): pasos exactos para que repos clientes instalen, validen y actualicen la librería.
 - [rfc-evolucion-estructura-libreria.md](./rfc-evolucion-estructura-libreria.md): RFC aceptado e implementado.
+- [rfc-frontend-configuracion-empresa-perfil-negocio.md](./rfc-frontend-configuracion-empresa-perfil-negocio.md): RFC propuesto para consumers frontend sobre país, vertical y capacidades en `ConfigEmpresa`.
 
 Para migraciones de dominio con impacto en consumers, leer además documentos específicos del dominio afectado, por ejemplo:
 

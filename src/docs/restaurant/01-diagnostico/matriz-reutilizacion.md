@@ -13,7 +13,7 @@
 | Activo actual | Decisión | Uso gastronómico | Condición |
 |---|---|---|---|
 | `ProductoBase` | Reutilizar | Identidad comercial o insumo | No cargarle receta, estación ni disponibilidad |
-| `Presentacion` | Extender | Unidad vendible, tamaño o formato | Separar presentación comercial de opción/modificador |
+| `Presentacion` | Reutilizar + configurar | Unidad vendible, tamaño o formato | `ProductoRestaurante` la referencia; no se duplica ni se carga con cocina |
 | Historial de precios | Reutilizar | Precio base vigente | Añadir reglas de canal/horario fuera del historial base |
 | Categoría | Adaptar | Navegación y posible ruteo inicial | La estación no debe depender sólo de categoría |
 | `Venta` | Reutilizar como salida | Resultado comercial cerrado | No usarla como cuenta abierta ni sesión de mesa |
@@ -34,21 +34,26 @@
 | Cola offline | Reutilizar como mecanismo | Salida durable y reintentos | Operaciones gastronómicas requieren idempotencia y dependencia explícitas |
 | Feed de cambios | Reutilizar | Actualización de proyecciones | No asumir que entrega todos los estados intermedios |
 | Estrategia LWW | Adaptar con restricción | Preferencias/configuración simple | Prohibida como regla por defecto para comandas, pagos y transferencias |
-| Store del carrito | No extender | Puede seguir sirviendo al retail | Crear workflows gastronómicos de aplicación separados |
+| Store del carrito | Reutilizar UI, no agregado | Puede aportar selector/cantidades | Sus ítems se traducen a comandos de `PedidoRestaurante`; no se sincroniza el arreglo completo |
 
 ## Conceptos nuevos obligatorios
 
 - `PerfilNegocio` y capacidades;
-- `LocalOperativo`, `Ambiente`, `ZonaServicio`, `Mesa` y opcionalmente `Asiento`;
-- `SesionServicio`;
-- `PedidoGastronomico` y `LineaPedido`;
-- `EnvioPreparacion`/`Comanda` y `LineaPreparacion`;
-- `EstacionPreparacion` y reglas de ruteo;
-- `CuentaConsumo`, `DivisionCuenta`, `Precuenta` y `AsignacionPago`;
-- `GrupoModificadores`, `OpcionModificador` y selección por línea;
+- `LocalRestaurante`, `SalonRestaurante`, `ZonaServicioRestaurante`,
+  `MesaRestaurante` y asiento opcional en la línea;
+- `SesionServicioRestaurante`;
+- `PedidoRestaurante` con `ItemPedidoRestaurante` anidado;
+- `ComandaRestaurante` con `ItemComandaRestaurante` anidado;
+- `TareaPreparacionRestaurante`, `EstacionPreparacionRestaurante` y reglas de ruteo;
+- `CuentaConsumoRestaurante`, futura división, precuenta y `AsignacionPagoRestaurante`;
+- `GrupoModificadorRestaurante`, `OpcionModificadorRestaurante` y selección por línea;
 - `Receta`, `ComponenteReceta`, `PreparacionIntermedia` y `RegistroProduccion`;
 - `Reserva` y `EntradaListaEspera`;
 - eventos operativos, comandos idempotentes y conflictos pendientes.
+
+Esta lista enumera contratos y ciclos de vida, no tablas. Ítems, opciones,
+snapshots, totales y trazas son valores anidados salvo que un adaptador cree una
+proyección física por rendimiento.
 
 ## Límites de compatibilidad
 
