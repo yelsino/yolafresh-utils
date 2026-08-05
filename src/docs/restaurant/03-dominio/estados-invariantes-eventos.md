@@ -16,16 +16,21 @@ Reglas:
 
 - sólo una sesión activa por mesa salvo capacidad compartida explícita;
 - cerrar exige cuenta saldada o excepción autorizada;
+- pagar no cierra ni libera automáticamente: el operador debe confirmar el
+  cierre cuando el servicio y la entrega hayan terminado;
+- abandonar antes de la primera comanda exige cuenta en cero y ausencia de
+  cantidades enviadas, cargos, pagos, venta, comandas y tareas; cancela el
+  borrador, anula la cuenta y libera la mesa en una operación auditable;
 - una sesión cerrada es inmutable salvo reapertura autorizada y auditada;
 - transferir cambia la asignación de recurso, no la identidad de la sesión.
 
-### Pedido gastronómico
+### PedidoRestaurante
 
 `BORRADOR -> ABIERTO -> PARCIALMENTE_ENVIADO -> ENVIADO -> COMPLETADO`
 
 Salidas: `CANCELADO`; las líneas enviadas se compensan, no desaparecen.
 
-### Línea de preparación
+### TareaPreparacionRestaurante
 
 `PENDIENTE -> EN_COLA -> EN_PREPARACION -> LISTA -> ENTREGADA`
 
@@ -38,7 +43,7 @@ Reglas:
 - cancelar después de iniciar exige motivo y puede generar merma;
 - entregar no equivale a cobrar.
 
-### Cuenta de consumo
+### CuentaConsumoRestaurante
 
 `ABIERTA -> PARCIALMENTE_PAGADA -> SALDADA -> CERRADA`
 
@@ -88,17 +93,19 @@ El estado del canal no sustituye a los trabajos de preparación.
 - `ComensalAgregado`
 - `SesionCierreSolicitado`
 - `SesionCerrada`
+- `SesionAbandonada`
+- `MesaLiberadaSinConsumo`
 
 ### Pedido y preparación
 
-- `LineaPedidoAgregada`
+- `ItemPedidoAgregado`
 - `ModificadoresSeleccionados`
-- `EnvioPreparacionCreado`
-- `TrabajoPreparacionIniciado`
-- `TrabajoPreparacionListo`
-- `TrabajoPreparacionEntregado`
+- `ComandaCreada`
+- `TareaPreparacionIniciada`
+- `TareaPreparacionLista`
+- `TareaPreparacionEntregada`
 - `LineaPreparacionCancelada`
-- `TrabajoPreparacionReenviado`
+- `TareaPreparacionReenviada`
 
 ### Cuenta y cobro
 
@@ -139,11 +146,11 @@ Se admiten documentos mutables con versión para:
 
 ## Comandos idempotentes mínimos
 
-Cada comando durable incluye:
+Cada `ComandoRestaurante` durable incluye:
 
-- `commandId` global;
+- `trace.operationId` global;
 - `aggregateId`;
-- `expectedVersion` cuando protege concurrencia;
+- `expectedVersion` obligatorio (`0` al crear);
 - `actorId` y `deviceId`;
 - `occurredAt`;
 - payload específico;
@@ -151,3 +158,11 @@ Cada comando durable incluye:
 
 Resultado repetido: devolver el efecto ya registrado. Resultado con versión vencida: no sobrescribir; clasificar conflicto y ofrecer recarga, reintento semántico o resolución autorizada.
 
+Comandos de cierre de mesa:
+
+- `CLOSE_CONSUMPTION_ACCOUNT`: cierre manual normal; vuelve a validar saldo,
+  Venta, cobertura de cantidades enviadas y tareas terminales, y actualiza
+  Cuenta, Pedido, Sesión y Mesa en una operación durable;
+- `RELEASE_COMPLETED_TABLE`: reparación manual e idempotente cuando Cuenta,
+  Pedido y Sesión ya están terminales pero la Mesa conserva por error el
+  `sesionActivaId`; no permite omitir pago, preparación ni entrega.

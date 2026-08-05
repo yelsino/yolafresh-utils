@@ -7,6 +7,7 @@ import {
   buildDeviceEnrollmentProofChallenge,
   parseDeviceEnrollmentQrPayload,
 } from "../index";
+import type { InstalledDeviceEnrollment } from "../index";
 
 const invitationId = "550e8400-e29b-41d4-a716-446655440000";
 
@@ -58,4 +59,29 @@ test("publica vocabulario estable de estados y errores", () => {
   assert.ok(DEVICE_ENROLLMENT_STATUSES.includes("AWAITING_APPROVAL"));
   assert.ok(DEVICE_ENROLLMENT_STATUSES.includes("COMPLETED"));
   assert.ok(DEVICE_ENROLLMENT_ERROR_CODES.includes("invalid_device_proof"));
+});
+
+test("el contrato instalado admite una credencial bootstrap por dispositivo", () => {
+  const installed: InstalledDeviceEnrollment = {
+    deviceBinding: {
+      bindingId: "binding-1",
+      tenantId: "tenant-1",
+      deviceId: "device-1",
+      deviceName: "POS Caja 1",
+      deviceType: "android",
+      allowedSucursalIds: [],
+      createdAt: "2026-08-01T00:00:00.000Z",
+      updatedAt: "2026-08-01T00:00:00.000Z",
+    },
+    tenantConnection: {
+      backendBaseUrl: "https://pos.example.com",
+      syncMode: "backend_scoped",
+      bootstrapAccessToken: "opaque-device-bootstrap-token",
+    },
+  };
+
+  assert.equal(
+    installed.tenantConnection.bootstrapAccessToken,
+    "opaque-device-bootstrap-token",
+  );
 });

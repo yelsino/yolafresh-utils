@@ -32,6 +32,9 @@ const stubs = [
   { subpath: "contabilidad", target: "dist/domain/contabilidad/index" },
   { subpath: "contabilidad/contracts", target: "dist/domain/contabilidad/contracts/index" },
   { subpath: "contabilidad/entities", target: "dist/domain/contabilidad/entities/index" },
+  { subpath: "restaurant", target: "dist/domain/restaurant/index" },
+  { subpath: "restaurant/contracts", target: "dist/domain/restaurant/contracts/index" },
+  { subpath: "restaurant/policies", target: "dist/domain/restaurant/policies/index" },
   { subpath: "shared/base", target: "dist/domain/shared/base/index" },
   { subpath: "shared/kernel", target: "dist/domain/shared/kernel/index" },
   { subpath: "shared/utils", target: "dist/domain/shared/utils/index" },
@@ -48,6 +51,7 @@ const rootDirs = [
   "auth",
   "personas",
   "contabilidad",
+  "restaurant",
   "shared",
 ];
 

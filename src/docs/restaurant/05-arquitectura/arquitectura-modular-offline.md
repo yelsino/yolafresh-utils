@@ -68,7 +68,7 @@ No se propone event sourcing total. Se usan eventos durables donde el historial 
 
 | Proyección | Clave principal | Necesidad |
 |---|---|---|
-| Plano operativo | local/ambiente | estado de mesa, sesión, cuenta, alerta |
+| Plano operativo | local/salón | estado de mesa, sesión, cuenta, alerta |
 | Menú disponible | local/canal/hora | ítems, precios, agotados, modificadores |
 | KDS por estación | estación | trabajos ordenados, tiempos, curso, prioridad |
 | Expedición | sesión/orden | completitud entre estaciones |
@@ -86,7 +86,7 @@ Cada proyección debe poder reconstruirse desde fuentes durables o reconciliarse
 Transacción local conceptual:
 
 1. validar versión y líneas;
-2. registrar `EnvioPreparacion`;
+2. registrar `ComandaRestaurante`;
 3. crear trabajos/proyección local;
 4. registrar outbox;
 5. confirmar;
@@ -147,4 +147,3 @@ Registrar sin datos sensibles:
 ## Regla de dependencia
 
 `presentation -> application -> domain`. Infraestructura implementa puertos de aplicación y depende de contratos de dominio. Ningún agregado importa stores, schemas Drizzle o documentos CouchDB.
-

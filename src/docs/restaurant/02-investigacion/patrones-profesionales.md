@@ -15,6 +15,7 @@ La documentación profesional revisada converge en una separación clara:
 | Delivery | Canal con aceptación, rechazo y preparación | Estado de canal separado del estado de cocina |
 | Merma | No es venta, sí afecta inventario | Movimiento de merma con motivo y autorización |
 | Offline | Feed y replicación no eliminan conflictos | Política por comando/agregado y revisión visible |
+| Evolución | APIs públicas cambian de forma aditiva | Campos opcionales, aliases y migradores por `schemaVersion` |
 
 ## Hallazgos por fuente
 
@@ -46,6 +47,30 @@ La documentación profesional revisada converge en una separación clara:
 
 **Hecho externo:** el autoservicio diferencia mesa y zona de recojo, y puede cobrar por orden o por comida según modalidad. Fuente: [Self-ordering](https://www.odoo.com/documentation/18.0/applications/sales/point_of_sale/self_order.html).
 
+### Toast
+
+**Hecho externo:** una orden puede asociar modo de servicio, mesa, empleado,
+cantidad de comensales y uno o varios checks. Esto respalda que sesión, pedido y
+cuenta sean conceptos relacionados pero no idénticos. Fuente: [Orders API overview](https://doc.toasttab.com/doc/devguide/portalOrdersApiOverview.html).
+
+**Hecho externo:** modificadores e instrucciones especiales pertenecen a la
+selección pedida y deben preservarse como parte de su snapshot. Fuente:
+[Specifying modifiers and special instructions](https://doc.toasttab.com/doc/devguide/apiSpecifyingModifiersAndInstructions.html).
+
+**Hecho externo:** las selecciones distinguen estados como `NEW`, `HOLD`,
+`SENT` y `READY`; el estado operativo de cocina no se deduce únicamente del
+estado global de la orden. Fuente: [Selection data definition](https://doc.toasttab.com/openapi/orders/tag/Data-definitions/schema/Selection/).
+
+### Evolución de contratos
+
+**Hecho externo:** las guías de Microsoft recomiendan mantener compatibilidad
+hacia atrás y tratar cambios incompatibles mediante una nueva versión. Fuente:
+[Microsoft REST API Guidelines](https://github.com/microsoft/api-guidelines/blob/vNext/azure/Guidelines.md).
+
+**Hecho externo:** Stripe documenta que un reintento con la misma clave de
+idempotencia debe recuperar el resultado original, patrón aplicable a envíos de
+pedido, comandas y pagos. Fuente: [Idempotent requests](https://docs.stripe.com/api/idempotent_requests).
+
 ### CouchDB
 
 **Hecho externo:** la replicación conserva revisiones concurrentes y escoge un ganador determinista para lectura; las revisiones perdedoras quedan ocultas hasta que la aplicación las resuelva. Fuente: [Replication and conflict model](https://docs.couchdb.org/en/stable/replication/conflicts.html).
@@ -70,8 +95,9 @@ La documentación profesional revisada converge en una separación clara:
 4. Separar estado comercial, preparación, pago y entrega.
 5. Conservar snapshots de modificadores y receta aplicable para no reescribir el pasado.
 6. Usar transacciones SQLite pequeñas por agregado y una bandeja de salida durable para propagación.
+7. Publicar nombres canónicos simples y evolucionarlos aditivamente; separar
+   `schemaVersion`, versión de negocio y `_rev` de CouchDB.
 
 ## Límites de la comparación
 
 Las fuentes muestran patrones maduros, no requisitos automáticos. La primera versión de YolaFresh no necesita copiar toda la amplitud de Simphony u Odoo. El alcance mínimo se define en la [matriz de capacidades](../06-alcance/matriz-capacidades.md).
-

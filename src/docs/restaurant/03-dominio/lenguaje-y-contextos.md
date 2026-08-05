@@ -11,7 +11,7 @@ Los términos siguientes son canónicos para esta propuesta. Evitan usar una sol
 | Perfil de negocio | Configuración versionada que habilita capacidades | Texto visual del onboarding |
 | Capacidad | Función independiente activable, por ejemplo mesas o KDS | Tipo rígido de empresa |
 | Local operativo | Establecimiento donde ocurre la operación | Empresa legal |
-| Ambiente | Agrupación física: primer piso, terraza, salón | Almacén |
+| Salón | Plano físico que agrupa mesas: primer piso, terraza, patio, etc. | Almacén o estación |
 | Zona de servicio | Subdivisión para asignar atención | Estación de preparación |
 | Mesa | Recurso físico con capacidad y estado operativo | Cuenta o pedido |
 | Asiento | Posición opcional de un comensal en una sesión | Persona registrada |
@@ -44,7 +44,7 @@ Responsable de perfil, capacidades, local, parámetros y activación gradual. Pu
 
 ### 2. Espacios y reservas
 
-Responsable de ambientes, zonas, mesas, reservas y lista de espera. Una mesa no “contiene” pedidos: sólo puede estar asignada a una sesión activa.
+Responsable de salones, zonas, mesas, reservas y lista de espera. Una mesa no “contiene” pedidos: sólo puede estar asignada a una sesión activa.
 
 ### 3. Servicio y pedidos
 
@@ -120,4 +120,3 @@ Los roles son composiciones de permisos, no condicionales codificados:
 | Administrador | configuración, menú, recetas, estaciones y auditoría |
 
 Una persona puede ejercer varios roles por local y turno. Las acciones sensibles deben registrar actor, dispositivo, motivo y autorización.
-

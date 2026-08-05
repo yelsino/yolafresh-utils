@@ -46,11 +46,12 @@ Habilitar gastronomía sin alterar retail.
 - dos dispositivos no ocupan una mesa silenciosamente;
 - migraciones son repetibles y recuperables.
 
-## Fase 2 — Servicio básico y cuenta abierta
+## Fase 2 — Primera historia: salón, pedido y cocina
 
 ### Objetivo
 
-Operar salón/mostrador sin cocina compleja.
+Entregar el primer corte vertical multidispositivo: abrir mesa, tomar pedido,
+enviar a cocina/bar, preparar, marcar listo y entregar.
 
 ### Trabajo
 
@@ -58,29 +59,41 @@ Operar salón/mostrador sin cocina compleja.
 - pedido gastronómico y líneas;
 - menú sobre Producto/Presentación/Precio;
 - modificadores mínimos/máximos;
+- estaciones y ruteo explícito;
+- comandas inmutables por delta/ronda;
+- tareas de preparación con pendiente, en preparación, lista y entregada;
+- comandos semánticos, versión esperada, deduplicación y conflictos visibles;
+- proyecciones de salón, cocina/bar y expedición;
+- transferencia de mesa con precondiciones de origen/destino;
+
+El cierre económico puede activarse en el mismo piloto si se necesita cobrar:
+
 - cuenta abierta, precuenta, pago único/mixto;
 - cierre idempotente hacia Venta;
-- transferencia de mesa y reasignación de responsable.
+- reasignación de responsable.
 
 ### Puerta de calidad
 
-Flujo completo offline: abrir, pedir, cobrar, generar una sola venta, cerrar y liberar mesa.
+Con dos dispositivos concurrentes, ninguna línea se pierde; ningún reintento
+duplica línea, comanda o tarea; cocina puede marcar lista offline y el mozo ve
+el estado al reconectar. Si se incluye cobro: abrir, pedir, cobrar, generar una
+sola venta, cerrar y liberar mesa.
 
-## Fase 3 — Preparación profesional
+## Fase 3 — Preparación avanzada
 
 ### Objetivo
 
-Coordinar cocina, barra e impresión/KDS.
+Completar cocina, barra, impresión/KDS y excepciones sobre la base ya operable.
 
 ### Trabajo
 
-- envíos por delta y estación;
 - cola de impresión gastronómica idempotente;
-- estados por línea, tiempos y alertas;
+- tiempos, alertas y métricas;
 - cancelación tardía/refire;
 - disponibilidad manual;
-- proyecciones KDS y expedición;
-- rondas; cursos/hold/fire si el piloto lo requiere.
+- etapas configurables y múltiples estaciones por ítem;
+- cursos/hold/fire y expedición avanzada;
+- reimpresión auditada y recuperación de dispositivos KDS.
 
 ### Puerta de calidad
 
@@ -181,5 +194,6 @@ F0 decisiones
               -> F6 reservas/canales
 ```
 
-F3 y F4 pueden solaparse después de estabilizar el cierre de F2. F5 no debe bloquear el piloto inicial: productos de reventa y una política simple permiten probar primero el servicio.
-
+F3 y F4 pueden solaparse después de estabilizar la primera historia de F2. F5
+no debe bloquear el piloto inicial: productos de reventa y una política simple
+permiten probar primero el servicio.

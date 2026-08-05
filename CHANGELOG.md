@@ -10,6 +10,20 @@ Este proyecto adopta versionado semántico:
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-07-29
+
+### Added
+
+- Surface pública `restaurant`, `restaurant/contracts` y
+  `restaurant/policies` para la operación gastronómica offline-first.
+- Contratos versionados para local, ambientes, zonas, mesas, estaciones,
+  menú/modificadores, sesiones, pedidos, comandas, preparación, cuentas y
+  asignaciones de pago.
+- Comandos durables con `operationId`, versión esperada y trazabilidad de
+  actor/dispositivo.
+- Políticas puras para transiciones de estado, modificadores y aritmética
+  monetaria en unidades mínimas.
+
 ## [1.1.0] - 2026-07-25
 
 ### Added

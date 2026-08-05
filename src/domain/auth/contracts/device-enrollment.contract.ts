@@ -140,6 +140,12 @@ export interface DeviceBindingView {
 export interface DeviceTenantConnection {
   backendBaseUrl: string;
   syncMode: "backend_scoped";
+  /**
+   * Credencial opaca y revocable emitida para este dispositivo.
+   * Se persiste exclusivamente en almacenamiento seguro y autoriza la
+   * descarga del snapshot inicial antes de que exista una sesion de usuario.
+   */
+  bootstrapAccessToken?: string;
 }
 
 export interface CompleteDeviceEnrollmentResponse {

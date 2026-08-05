@@ -2,7 +2,8 @@
 
 ## Nota de estado
 
-Los nombres son candidatos para RFC. Este documento define responsabilidades y relaciones, no interfaces TypeScript ni tablas definitivas.
+Los nombres canónicos de la primera historia ya se reflejan en los contratos.
+Este documento define además responsabilidades futuras; no prescribe tablas.
 
 ## Agregados principales
 
@@ -40,7 +41,7 @@ Raíz temporal:
 
 Una reserva puede convertirse en sesión; no es la sesión.
 
-### SesionServicio
+### SesionServicioRestaurante
 
 Raíz de atención:
 
@@ -53,7 +54,7 @@ Raíz de atención:
 
 Protege que una sesión cerrada no reciba nuevos pedidos y que una transferencia no deje dos ubicaciones activas.
 
-### PedidoGastronomico
+### PedidoRestaurante
 
 Raíz de intención de consumo:
 
@@ -66,7 +67,7 @@ Raíz de intención de consumo:
 
 La línea contiene snapshot de nombre, presentación, precio, impuestos, modificadores e instrucciones. No se recalcula retroactivamente al cambiar el menú.
 
-### EnvioPreparacion
+### ComandaRestaurante
 
 Raíz inmutable por envío:
 
@@ -79,7 +80,7 @@ Raíz inmutable por envío:
 
 No debe sobrescribirse para “quitar” una línea ya vista en cocina. Una corrección genera otro envío compensatorio.
 
-### TrabajoPreparacion
+### TareaPreparacionRestaurante
 
 Raíz pequeña por estación o ticket, según prueba operativa:
 
@@ -92,7 +93,7 @@ Raíz pequeña por estación o ticket, según prueba operativa:
 
 Decisión pendiente: granularidad por línea/unidad frente a ticket de estación. La proyección KDS puede agrupar independientemente.
 
-### CuentaConsumo
+### CuentaConsumoRestaurante
 
 Raíz monetaria abierta:
 
@@ -147,7 +148,7 @@ Raíz transaccional:
 - `CapacidadMesa`;
 - `ClaveIdempotencia`;
 - `VersionEsperada`;
-- `SnapshotItemMenu`;
+- `ProductoPedidoRestauranteSnapshot`;
 - `SeleccionModificador`;
 - `DireccionEntregaSnapshot`;
 - `MotivoOperacion`;
@@ -156,9 +157,9 @@ Raíz transaccional:
 
 ## Modelo de menú
 
-### ItemMenu
+### ProductoRestaurante
 
-Referencia un producto/presentación vendible y define:
+Referencia una `Presentacion` vendible y define, sin duplicar el catálogo:
 
 - canales/locales/horarios;
 - categoría visual;
@@ -203,4 +204,3 @@ Toda distribución debe guardar la asignación resultante, no sólo la fórmula,
 - Datos fiscales se solicitan al emitir el documento que los requiera.
 - Delivery requiere un snapshot mínimo de destinatario/dirección, sin obligar a mezclarlo con la identidad maestra.
 - Un comensal puede vincularse opcionalmente a una Persona/Cliente.
-
