@@ -1,11 +1,14 @@
-export type ImageSizes = {
-  base: string;
-  sizes: {
-    small: string;
-    medium: string;
-    large: string;
-  };
-};
+import type {
+  CompatibleProductImage,
+  ImageSizes,
+} from "../../shared/kernel/media.contract";
+
+export type {
+  CompatibleProductImage,
+  ImageScope,
+  ImageSizes,
+  ProductImage,
+} from "../../shared/kernel/media.contract";
 
 export enum UnidadMedidaEnum {
   Unidad = "unidad",
@@ -107,7 +110,8 @@ export interface ProductoBase {
    */
   unidadBaseInterna: UnidadBaseInterna;
   categoriaId: string;
-  imagen: ImageSizes;
+  /** Imagen opcional privada del tenant o reutilizada desde el catalogo global. */
+  imagen?: CompatibleProductImage;
   /** Palabras clave para búsqueda rápida en el POS o catálogo. */
   keywords?: string[];
   /** Indica si el producto está afecto al IGV. */
@@ -202,7 +206,7 @@ export interface Presentacion {
   visibleOnline: boolean;
   /** Precio de compra referencial usado como guía para compras. */
   precioCompraReferencial?: number;
-  imagen?: ImageSizes;
+  imagen?: CompatibleProductImage;
   /** Indica si esta presentación maneja precios por mayoreo. */
   mayoreo?: boolean;
   /** Cantidad mínima requerida para aplicar descuento por volumen. */
@@ -254,7 +258,7 @@ export interface Categoria {
 
   subcategorias?: string[];
 
-  imagen?: ImageSizes;
+  imagen?: CompatibleProductImage;
 
   createdAt: number;
   updatedAt: number;
