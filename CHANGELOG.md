@@ -10,6 +10,28 @@ Este proyecto adopta versionado semántico:
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-08-11
+
+### Added
+
+- Catálogo contextual de cargos laborales según el perfil operativo de la
+  empresa.
+- Cargos gastronómicos para salón, cocina y barra, visibles únicamente en la
+  vertical `GASTRONOMIA`.
+- Cargo `REPARTIDOR`, disponible únicamente cuando se activa `DELIVERY` o
+  `RUTAS_REPARTO`.
+- Catálogo RBAC gastronómico con permisos atómicos para configuración, salón,
+  pedido, rondas, entrega, preparación y cuenta.
+- Roles oficiales de anfitrión, mesero, capitán de salón, cocinero, jefe de
+  cocina y barra, filtrados por vertical.
+
+### Changed
+
+- Las empresas legacy conservan el catálogo compatible con Retail.
+- Los cargos gastronómicos reciben únicamente roles gastronómicos; `CAJERO`
+  conserva su rol compartido y obtiene permisos de cuenta/cobro de restaurante.
+- El catálogo de autorización pasa a la versión `1.3.0`.
+
 ## [1.4.2] - 2026-08-05
 
 ### Fixed

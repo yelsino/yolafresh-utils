@@ -17,6 +17,14 @@ const CRITICIDAD_POR_ACCION: Record<string, PermissionCriticidad> = {
   global: "critical",
   enrolar: "high",
   revocar: "critical",
+  configurar: "high",
+  actualizar: "high",
+  enviar: "high",
+  confirmar: "high",
+  abandonar: "high",
+  liberar_incidencia: "critical",
+  cobrar: "critical",
+  configurar_redondeo: "high",
 };
 
 const PERMISSION_METADATA_OVERRIDES: Partial<Record<AuthPermission, Partial<PermissionDefinition>>> = {
@@ -45,6 +53,12 @@ const PERMISSION_METADATA_OVERRIDES: Partial<Record<AuthPermission, Partial<Perm
     criticidad: "critical",
   },
   "inventario:ajuste:aprobar": {
+    criticidad: "critical",
+  },
+  "restaurante:sesion:liberar_incidencia": {
+    criticidad: "critical",
+  },
+  "restaurante:cuenta:cobrar": {
     criticidad: "critical",
   },
 };

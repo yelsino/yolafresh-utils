@@ -18,6 +18,14 @@ const CRITICIDAD_POR_ACCION = {
     global: "critical",
     enrolar: "high",
     revocar: "critical",
+    configurar: "high",
+    actualizar: "high",
+    enviar: "high",
+    confirmar: "high",
+    abandonar: "high",
+    liberar_incidencia: "critical",
+    cobrar: "critical",
+    configurar_redondeo: "high",
 };
 const PERMISSION_METADATA_OVERRIDES = {
     "sistema:admin:global": {
@@ -45,6 +53,12 @@ const PERMISSION_METADATA_OVERRIDES = {
         criticidad: "critical",
     },
     "inventario:ajuste:aprobar": {
+        criticidad: "critical",
+    },
+    "restaurante:sesion:liberar_incidencia": {
+        criticidad: "critical",
+    },
+    "restaurante:cuenta:cobrar": {
         criticidad: "critical",
     },
 };

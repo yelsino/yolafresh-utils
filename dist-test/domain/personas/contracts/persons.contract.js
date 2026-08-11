@@ -20,6 +20,13 @@ var CargosPersonal;
     CargosPersonal["REPONEDOR"] = "REPONEDOR";
     CargosPersonal["CAJERO"] = "CAJERO";
     CargosPersonal["VENDEDOR"] = "VENDEDOR";
+    CargosPersonal["ANFITRION"] = "ANFITRION";
+    CargosPersonal["MOZO_MESERO"] = "MOZO_MESERO";
+    CargosPersonal["CAPITAN_SALON"] = "CAPITAN_SALON";
+    CargosPersonal["COCINERO"] = "COCINERO";
+    CargosPersonal["JEFE_COCINA"] = "JEFE_COCINA";
+    CargosPersonal["BARTENDER_ENCARGADO_BARRA"] = "BARTENDER_ENCARGADO_BARRA";
+    CargosPersonal["REPARTIDOR"] = "REPARTIDOR";
 })(CargosPersonal || (exports.CargosPersonal = CargosPersonal = {}));
 var CategoriaCliente;
 (function (CategoriaCliente) {

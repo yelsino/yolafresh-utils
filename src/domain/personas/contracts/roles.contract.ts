@@ -18,4 +18,10 @@ export enum RolesPredefinidos {
   AUDITOR = "auditor",
   SOPORTE_TECNICO = "soporte-tecnico",
   SOLO_LECTURA = "solo-lectura",
+  GASTRONOMIA_ANFITRION = "gastronomia-anfitrion",
+  GASTRONOMIA_MESERO = "gastronomia-mesero",
+  GASTRONOMIA_CAPITAN_SALON = "gastronomia-capitan-salon",
+  GASTRONOMIA_COCINERO = "gastronomia-cocinero",
+  GASTRONOMIA_JEFE_COCINA = "gastronomia-jefe-cocina",
+  GASTRONOMIA_BARRA = "gastronomia-barra",
 }

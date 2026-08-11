@@ -15,6 +15,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./direccion.contract"), exports);
+__exportStar(require("./cargo-catalog.contract"), exports);
 __exportStar(require("./entidad.contract"), exports);
 __exportStar(require("./persons.contract"), exports);
 __exportStar(require("./usuario.contract"), exports);

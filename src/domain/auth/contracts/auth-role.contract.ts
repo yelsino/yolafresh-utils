@@ -2,6 +2,10 @@ import type { AUTH_BASE_ROLE_IDS } from "../catalogs/role.catalog";
 import type { AuthGrant } from "./auth-grant.contract";
 import type { AuthPermission } from "./auth-permission.contract";
 import type { AuthScope } from "./auth-scope.contract";
+import type {
+  CapacidadNegocio,
+  VerticalNegocio,
+} from "../../shared/kernel/empresa.contract";
 
 export type AuthBaseRoleId = (typeof AUTH_BASE_ROLE_IDS)[number];
 
@@ -11,12 +15,18 @@ export type AuthRoleFlags = {
   isSystemAdmin?: boolean;
 };
 
+export type AuthRoleAvailability = {
+  verticales?: readonly VerticalNegocio[];
+  requiereAlgunaCapacidad?: readonly CapacidadNegocio[];
+};
+
 export type RoleDefinition = {
   id: RoleId;
   nombre: string;
   descripcion?: string;
   grants: AuthGrant[];
   flags?: AuthRoleFlags;
+  availability?: AuthRoleAvailability;
 };
 
 export interface Rol {

@@ -116,6 +116,22 @@ Los cargos disponibles hoy son:
 - `REPONEDOR`
 - `CAJERO`
 - `VENDEDOR`
+- `ANFITRION`
+- `MOZO_MESERO`
+- `CAPITAN_SALON`
+- `COCINERO`
+- `JEFE_COCINA`
+- `BARTENDER_ENCARGADO_BARRA`
+- `REPARTIDOR`
+
+La disponibilidad del catálogo depende del perfil operativo:
+
+- los cargos de salón, cocina y barra aparecen únicamente en
+  `GASTRONOMIA`;
+- `REPARTIDOR` aparece únicamente con `DELIVERY` o `RUTAS_REPARTO`;
+- una empresa legacy sin perfil conserva el catálogo compatible con Retail;
+- un cargo histórico continúa siendo válido como dato, aunque no se ofrezca
+  para nuevas asignaciones en el perfil actual.
 
 ## 5. Relación sugerida cargo -> roles
 
@@ -140,6 +156,13 @@ La librería expone esta relación sugerida mediante `CARGOS_ROLES_SUGERIDOS`.
 | `REPONEDOR` | `OPERACIONES` |
 | `CAJERO` | `CAJERO` |
 | `VENDEDOR` | `VENDEDOR` |
+| `ANFITRION` | `GASTRONOMIA_ANFITRION` |
+| `MOZO_MESERO` | `GASTRONOMIA_MESERO` |
+| `CAPITAN_SALON` | `GASTRONOMIA_CAPITAN_SALON` |
+| `COCINERO` | `GASTRONOMIA_COCINERO` |
+| `JEFE_COCINA` | `GASTRONOMIA_JEFE_COCINA` |
+| `BARTENDER_ENCARGADO_BARRA` | `GASTRONOMIA_BARRA` |
+| `REPARTIDOR` | Sin sugerencia hasta definir RBAC de reparto |
 
 Importante:
 

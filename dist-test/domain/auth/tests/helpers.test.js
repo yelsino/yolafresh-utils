@@ -19,6 +19,7 @@ const list_all_roles_1 = require("../helpers/list-all-roles");
 const resolve_role_grants_1 = require("../helpers/resolve-role-grants");
 const resolve_role_permissions_1 = require("../helpers/resolve-role-permissions");
 const permission_catalog_1 = require("../catalogs/permission.catalog");
+const role_catalog_1 = require("../catalogs/role.catalog");
 (0, node_test_1.default)("expandGrant devuelve permiso atómico sin alterar", () => {
     strict_1.default.deepEqual((0, expand_grant_1.expandGrant)("ventas:venta:ver"), ["ventas:venta:ver"]);
 });
@@ -76,4 +77,34 @@ const permission_catalog_1 = require("../catalogs/permission.catalog");
     strict_1.default.ok(allRoles.some((role) => role.id === "admin"));
     strict_1.default.equal(permissionDefinition === null || permissionDefinition === void 0 ? void 0 : permissionDefinition.id, "ventas:venta:ver");
     strict_1.default.equal(permissionDefinition === null || permissionDefinition === void 0 ? void 0 : permissionDefinition.modulo, "ventas");
+});
+(0, node_test_1.default)("roles gastronomicos expanden permisos sin heredar ventas Retail", () => {
+    const mesero = (0, resolve_role_permissions_1.resolveRolePermissions)(["gastronomia-mesero"]);
+    const cocina = (0, resolve_role_permissions_1.resolveRolePermissions)(["gastronomia-cocinero"]);
+    const barra = (0, resolve_role_permissions_1.resolveRolePermissions)(["gastronomia-barra"]);
+    const cajero = (0, resolve_role_permissions_1.resolveRolePermissions)(["cajero"]);
+    strict_1.default.ok(mesero.includes("restaurante:pedido:editar"));
+    strict_1.default.ok(mesero.includes("restaurante:ronda:enviar"));
+    strict_1.default.equal(mesero.includes("ventas:venta:crear"), false);
+    strict_1.default.ok(cocina.includes("restaurante:preparacion_cocina:actualizar"));
+    strict_1.default.equal(cocina.includes("restaurante:preparacion_barra:actualizar"), false);
+    strict_1.default.ok(barra.includes("restaurante:preparacion_barra:actualizar"));
+    strict_1.default.equal(barra.includes("restaurante:preparacion_cocina:actualizar"), false);
+    strict_1.default.ok(cajero.includes("restaurante:cuenta:cobrar"));
+    strict_1.default.equal(cajero.includes("restaurante:pedido:editar"), false);
+});
+(0, node_test_1.default)("catalogo de roles oculta gastronomia fuera de su vertical", () => {
+    const retail = (0, role_catalog_1.listarRolesAuthDisponibles)({
+        vertical: "RETAIL",
+        capacidades: ["VENTA_MOSTRADOR", "CAJA"],
+    });
+    const gastronomia = (0, role_catalog_1.listarRolesAuthDisponibles)({
+        vertical: "GASTRONOMIA",
+        capacidades: ["PEDIDOS", "MESAS", "COMANDAS", "CAJA"],
+    });
+    strict_1.default.equal(retail.some((role) => role.id === "gastronomia-mesero"), false);
+    strict_1.default.equal(retail.some((role) => role.id === "gastronomia-cocinero"), false);
+    strict_1.default.equal(gastronomia.some((role) => role.id === "gastronomia-mesero"), true);
+    strict_1.default.equal(gastronomia.some((role) => role.id === "gastronomia-cocinero"), true);
+    strict_1.default.equal(gastronomia.some((role) => role.id === "cajero"), true);
 });

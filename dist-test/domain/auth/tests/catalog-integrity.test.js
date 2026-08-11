@@ -35,3 +35,10 @@ const AUTH_PERMISSION_SET = new Set(permission_catalog_1.AUTH_PERMISSIONS);
 (0, node_test_1.default)("wildcard global expande a catálogo completo", () => {
     strict_1.default.deepEqual([...permission_alias_catalog_1.AUTH_PERMISSION_ALIASES["*"]], [...permission_catalog_1.AUTH_PERMISSIONS]);
 });
+(0, node_test_1.default)("catalogo gastronomico separa salon, cocina, barra y caja", () => {
+    strict_1.default.ok(AUTH_PERMISSION_SET.has("restaurante:pedido:editar"));
+    strict_1.default.ok(AUTH_PERMISSION_SET.has("restaurante:preparacion_cocina:actualizar"));
+    strict_1.default.ok(AUTH_PERMISSION_SET.has("restaurante:preparacion_barra:actualizar"));
+    strict_1.default.ok(AUTH_PERMISSION_SET.has("restaurante:cuenta:cobrar"));
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA["restaurante:cuenta:cobrar"].criticidad, "critical");
+});

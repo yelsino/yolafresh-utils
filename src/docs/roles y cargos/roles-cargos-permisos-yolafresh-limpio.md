@@ -95,6 +95,17 @@ Un cargo no necesariamente define todo lo que la persona puede hacer en la aplic
 | Contador | Revisa finanzas, egresos, ingresos, reportes, caja histórica, compras y cuentas. |
 | Auditor | Revisa historial, movimientos, acciones críticas y cambios importantes del sistema. |
 | Soporte Técnico | Revisa aspectos técnicos, impresoras, dispositivos, errores y configuración operativa. |
+| Anfitrión | Recibe y ubica clientes dentro de la operación gastronómica. |
+| Mozo / Mesero | Gestiona salón, pedido, rondas y entrega a mesa. |
+| Capitán de Salón | Coordina y supervisa la atención del salón. |
+| Cocinero | Prepara los productos asignados a estaciones de cocina. |
+| Jefe de Cocina | Supervisa preparación, prioridades y operación de cocina. |
+| Bartender / Encargado de Barra | Prepara y coordina los productos asignados a barra. |
+| Repartidor | Ejecuta entregas cuando el negocio habilita delivery o rutas de reparto. |
+
+Los cargos gastronómicos se ofrecen solo para la vertical `GASTRONOMIA`.
+`REPARTIDOR` es transversal y requiere la capacidad `DELIVERY` o
+`RUTAS_REPARTO`. La disponibilidad del cargo no concede permisos por sí sola.
 
 ---
 

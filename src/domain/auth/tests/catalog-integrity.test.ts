@@ -38,3 +38,14 @@ test("aliases canónicos expanden solo a permisos válidos", () => {
 test("wildcard global expande a catálogo completo", () => {
   assert.deepEqual([...AUTH_PERMISSION_ALIASES["*"]], [...AUTH_PERMISSIONS]);
 });
+
+test("catalogo gastronomico separa salon, cocina, barra y caja", () => {
+  assert.ok(AUTH_PERMISSION_SET.has("restaurante:pedido:editar"));
+  assert.ok(AUTH_PERMISSION_SET.has("restaurante:preparacion_cocina:actualizar"));
+  assert.ok(AUTH_PERMISSION_SET.has("restaurante:preparacion_barra:actualizar"));
+  assert.ok(AUTH_PERMISSION_SET.has("restaurante:cuenta:cobrar"));
+  assert.equal(
+    PERMISSION_METADATA["restaurante:cuenta:cobrar"].criticidad,
+    "critical",
+  );
+});

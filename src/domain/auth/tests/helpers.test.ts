@@ -15,6 +15,7 @@ import { listAllRoles } from "../helpers/list-all-roles";
 import { resolveRoleGrants } from "../helpers/resolve-role-grants";
 import { resolveRolePermissions } from "../helpers/resolve-role-permissions";
 import { AUTH_PERMISSIONS } from "../catalogs/permission.catalog";
+import { listarRolesAuthDisponibles } from "../catalogs/role.catalog";
 
 test("expandGrant devuelve permiso atómico sin alterar", () => {
   assert.deepEqual(expandGrant("ventas:venta:ver"), ["ventas:venta:ver"]);
@@ -88,4 +89,38 @@ test("helpers de listado y metadata exponen catálogo oficial", () => {
   assert.ok(allRoles.some((role) => role.id === "admin"));
   assert.equal(permissionDefinition?.id, "ventas:venta:ver");
   assert.equal(permissionDefinition?.modulo, "ventas");
+});
+
+test("roles gastronomicos expanden permisos sin heredar ventas Retail", () => {
+  const mesero = resolveRolePermissions(["gastronomia-mesero"]);
+  const cocina = resolveRolePermissions(["gastronomia-cocinero"]);
+  const barra = resolveRolePermissions(["gastronomia-barra"]);
+  const cajero = resolveRolePermissions(["cajero"]);
+
+  assert.ok(mesero.includes("restaurante:pedido:editar"));
+  assert.ok(mesero.includes("restaurante:ronda:enviar"));
+  assert.equal(mesero.includes("ventas:venta:crear"), false);
+  assert.ok(cocina.includes("restaurante:preparacion_cocina:actualizar"));
+  assert.equal(cocina.includes("restaurante:preparacion_barra:actualizar"), false);
+  assert.ok(barra.includes("restaurante:preparacion_barra:actualizar"));
+  assert.equal(barra.includes("restaurante:preparacion_cocina:actualizar"), false);
+  assert.ok(cajero.includes("restaurante:cuenta:cobrar"));
+  assert.equal(cajero.includes("restaurante:pedido:editar"), false);
+});
+
+test("catalogo de roles oculta gastronomia fuera de su vertical", () => {
+  const retail = listarRolesAuthDisponibles({
+    vertical: "RETAIL",
+    capacidades: ["VENTA_MOSTRADOR", "CAJA"],
+  });
+  const gastronomia = listarRolesAuthDisponibles({
+    vertical: "GASTRONOMIA",
+    capacidades: ["PEDIDOS", "MESAS", "COMANDAS", "CAJA"],
+  });
+
+  assert.equal(retail.some((role) => role.id === "gastronomia-mesero"), false);
+  assert.equal(retail.some((role) => role.id === "gastronomia-cocinero"), false);
+  assert.equal(gastronomia.some((role) => role.id === "gastronomia-mesero"), true);
+  assert.equal(gastronomia.some((role) => role.id === "gastronomia-cocinero"), true);
+  assert.equal(gastronomia.some((role) => role.id === "cajero"), true);
 });
