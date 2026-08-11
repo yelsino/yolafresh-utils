@@ -46,4 +46,5 @@ exports.DEVICE_ENROLLMENT_ERROR_CODES = [
     "invitation_not_found",
     "enrollment_not_found",
     "device_not_enrolled",
+    "direct_couch_not_configured",
 ];

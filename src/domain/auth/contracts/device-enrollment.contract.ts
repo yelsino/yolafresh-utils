@@ -49,6 +49,7 @@ export const DEVICE_ENROLLMENT_ERROR_CODES = [
   "invitation_not_found",
   "enrollment_not_found",
   "device_not_enrolled",
+  "direct_couch_not_configured",
 ] as const;
 
 export type DeviceEnrollmentErrorCode = (typeof DEVICE_ENROLLMENT_ERROR_CODES)[number];
@@ -137,7 +138,7 @@ export interface DeviceBindingView {
   expiresAt?: string;
 }
 
-export interface DeviceTenantConnection {
+export interface BackendScopedTenantConnection {
   backendBaseUrl: string;
   syncMode: "backend_scoped";
   /**
@@ -147,6 +148,23 @@ export interface DeviceTenantConnection {
    */
   bootstrapAccessToken?: string;
 }
+
+/**
+ * Conexion emitida exclusivamente para un monitor de pagos autorizado.
+ * La credencial pertenece al dispositivo y al tenant, es revocable y nunca
+ * debe incluirse en el QR ni compilarse dentro de una aplicacion cliente.
+ */
+export interface DirectCouchPaymentTenantConnection {
+  syncMode: "direct_couch";
+  couchBaseUrl: string;
+  database: string;
+  username: string;
+  password: string;
+}
+
+export type DeviceTenantConnection =
+  | BackendScopedTenantConnection
+  | DirectCouchPaymentTenantConnection;
 
 export interface CompleteDeviceEnrollmentResponse {
   ok: true;

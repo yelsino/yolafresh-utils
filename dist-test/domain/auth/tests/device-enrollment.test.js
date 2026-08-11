@@ -31,6 +31,7 @@ const invitationId = "550e8400-e29b-41d4-a716-446655440000";
     strict_1.default.ok(index_1.DEVICE_ENROLLMENT_STATUSES.includes("AWAITING_APPROVAL"));
     strict_1.default.ok(index_1.DEVICE_ENROLLMENT_STATUSES.includes("COMPLETED"));
     strict_1.default.ok(index_1.DEVICE_ENROLLMENT_ERROR_CODES.includes("invalid_device_proof"));
+    strict_1.default.ok(index_1.DEVICE_ENROLLMENT_ERROR_CODES.includes("direct_couch_not_configured"));
 });
 (0, node_test_1.default)("el contrato instalado admite una credencial bootstrap por dispositivo", () => {
     const installed = {
@@ -50,5 +51,33 @@ const invitationId = "550e8400-e29b-41d4-a716-446655440000";
             bootstrapAccessToken: "opaque-device-bootstrap-token",
         },
     };
-    strict_1.default.equal(installed.tenantConnection.bootstrapAccessToken, "opaque-device-bootstrap-token");
+    strict_1.default.equal(installed.tenantConnection.syncMode, "backend_scoped");
+    if (installed.tenantConnection.syncMode === "backend_scoped") {
+        strict_1.default.equal(installed.tenantConnection.bootstrapAccessToken, "opaque-device-bootstrap-token");
+    }
+});
+(0, node_test_1.default)("el monitor de pagos admite una conexion CouchDB directa por dispositivo", () => {
+    const installed = {
+        deviceBinding: {
+            bindingId: "binding-payment-1",
+            tenantId: "tenant-1",
+            deviceId: "device-payment-1",
+            deviceName: "Monitor de pagos",
+            deviceType: "PAYMENT_MONITOR",
+            allowedSucursalIds: [],
+            createdAt: "2026-08-01T00:00:00.000Z",
+            updatedAt: "2026-08-01T00:00:00.000Z",
+        },
+        tenantConnection: {
+            syncMode: "direct_couch",
+            couchBaseUrl: "https://couch.example.com",
+            database: "tenant-1",
+            username: "yf_pay_device",
+            password: "unique-device-secret",
+        },
+    };
+    strict_1.default.equal(installed.tenantConnection.syncMode, "direct_couch");
+    if (installed.tenantConnection.syncMode === "direct_couch") {
+        strict_1.default.equal(installed.tenantConnection.database, "tenant-1");
+    }
 });
