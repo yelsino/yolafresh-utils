@@ -211,14 +211,16 @@ export interface Anulacion {
   updatedAt: Date;
 }
 
-export type TipoMovimientoCuentaProveedor =
+/** @deprecated Usar TipoMovimientoCuentaProveedor del contrato cuenta-proveedor. */
+export type TipoMovimientoCuentaProveedorLegacy =
   | "CARGO"
   | "ABONO"
   | "SALDO_FAVOR"
   | "USO_SALDO"
   | "DEVOLUCION";
 
-export type ReferenciaTipoMovimientoCuentaProveedor =
+/** @deprecated Usar OrigenMovimientoCuentaProveedor. */
+export type ReferenciaTipoMovimientoCuentaProveedorLegacy =
   | "COMPRA"
   | "PAGO"
   | "ADELANTO"
@@ -232,13 +234,14 @@ export type EstadoMovimientoFinanciero =
   | "RECHAZADO"
   | "ANULADO";
 
-export interface MovimientoCuentaProveedor {
+/** @deprecated Usar MovimientoCuentaProveedor del contrato cuenta-proveedor. */
+export interface MovimientoCuentaProveedorLegacy {
   id: string;
   proveedorId: string;
-  tipo: TipoMovimientoCuentaProveedor;
+  tipo: TipoMovimientoCuentaProveedorLegacy;
   monto: number;
   moneda: "PEN" | "USD";
-  referenciaTipo: ReferenciaTipoMovimientoCuentaProveedor;
+  referenciaTipo: ReferenciaTipoMovimientoCuentaProveedorLegacy;
   referenciaId?: string;
   descripcion?: string;
   estado?: EstadoMovimientoFinanciero;
@@ -249,7 +252,8 @@ export interface MovimientoCuentaProveedor {
   createdAt: Date;
 }
 
-export interface CuentaProveedor {
+/** @deprecated Usar CuentaProveedor del contrato cuenta-proveedor. */
+export interface CuentaProveedorLegacy {
   proveedorId: string;
   saldoActual: number;
   moneda: "PEN" | "USD";

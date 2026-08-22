@@ -99,6 +99,7 @@ Campos canónicos observados:
 
 - `id`
 - `type`
+- `schemaVersion` (`3` para checklist colaborativo y snapshot físico por línea)
 - `codigoPedido`
 - `estado`
 - `prioridad`
@@ -112,6 +113,11 @@ Campos canónicos observados:
 - `fechaVencimiento`
 - `observaciones`
 - `items`
+- `checklist`
+- `afectaInventario`
+- `tipoVenta` (semántica comercial congelada de cantidad/peso)
+- `productoBaseId`, `factorUnidadBase`, `unidadBaseInventario` y
+  `versionConversion` cuando `afectaInventario=true`
 - `subtotal`
 - `total`
 - `createdAt`
@@ -131,15 +137,64 @@ Campos canónicos observados:
 - `montoModificado`
 - `unidadComercial`
 - `imagenUrl`
+- `checklist`
 
 Lectura importante:
 
 - pendiente por item = `cantidadSolicitada - cantidadAtendida`;
 - `subtotal` de item congela monto de línea en el pedido;
-- `nombre` es obligatorio y congela la descripción visible;
+- `nombre` es obligatorio, congela la descripción visible y nunca debe ser un
+  UUID ni el `presentacionId` técnico;
 - `montoModificado` indica que el monto de línea fue ajustado manualmente;
 - `unidadComercial` e `imagenUrl` conservan contexto visual sin consultar catálogo vivo;
 - `Pedido` no modela cancelación por línea como campo propio.
+
+Desde `schemaVersion: 3`, todo productor debe escribir
+`PedidoItem.afectaInventario`. Una línea inventariable congela obligatoriamente
+`presentacionId`, `productoBaseId`, `factorUnidadBase`,
+`unidadBaseInventario`, `versionConversion` y `tipoVenta`; catálogo vivo nunca sobrescribe
+ese snapshot. Una línea no inventariable escribe `false` y no inventa esos
+cuatro campos físicos. Los pedidos legacy (schema ausente o `2`) continúan
+siendo legibles, pero no pueden afectar stock ni convertirse en una venta con
+movimiento de inventario hasta una revisión y actualización explícitas.
+
+## Checklist colaborativo y auditable
+
+`PedidoItem.checklist` conserva el último estado visible de la línea:
+
+- `marcado`;
+- `actualizadoPorId` y `actualizadoPorNombre`;
+- `dispositivoId`;
+- `actualizadoAt`;
+- `revision`.
+
+La UI representa ese último actor con un solo chip. La fuente de auditoría
+completa no es el chip, sino `Pedido.checklist.historial`, que es append-only y
+admite estas acciones:
+
+- `ITEM_MARCADO`;
+- `ITEM_DESMARCADO`;
+- `CANTIDAD_ATENDIDA_ACTUALIZADA`;
+- `CHECKLIST_INVALIDADO_POR_EDICION`;
+- `CHECKLIST_CONFIRMADO`;
+- `PEDIDO_ANULADO`.
+
+`Pedido.checklist` contiene `estado`, `completado`, `version`, las fechas y el
+actor de confirmación, además del historial. Una confirmación válida exige:
+
+1. por lo menos una línea;
+2. todas las líneas marcadas explícitamente;
+3. `cantidadSolicitada > 0`;
+4. `0 <= cantidadAtendida <= cantidadSolicitada`.
+
+Una cantidad atendida `0` es válida: representa que el producto fue revisado
+pero no pudo prepararse o entregarse. Cambiar la cantidad solicitada o atendida,
+agregar o retirar una línea invalida la confirmación previa y exige volver a
+revisar las líneas afectadas. El historial anterior se conserva.
+
+`CANCELADO`, `CONVERTIDO` y `VENCIDO` son estados terminales para edición y
+checklist: la evidencia se puede consultar, pero no volver a mutar. Un pedido
+`VENCIDO` todavía puede cerrarse explícitamente como `CANCELADO`.
 
 ### `PedidoEntrega`
 

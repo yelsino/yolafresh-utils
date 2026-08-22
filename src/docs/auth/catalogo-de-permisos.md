@@ -20,9 +20,14 @@ Ejemplos vigentes:
 
 - `ventas:cotizacion:crear`
 - `ventas:pedido:aprobar`
+- `ventas:pedido:editar`
+- `ventas:pedido:anular`
 - `ventas:venta:anular`
 - `compras:compra:crear`
 - `inventario:ajuste:aprobar`
+- `inventario:politica:administrar`
+- `inventario:merma:aprobar`
+- `inventario:transferencia:recibir`
 - `iam:usuario:activar`
 - `sistema:admin:global`
 

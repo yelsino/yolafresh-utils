@@ -56,9 +56,13 @@ Reglas:
 
 1. El envío se enruta por reglas versionadas a una o más estaciones.
 2. Cada estación recibe sólo sus trabajos, con mesa/orden, prioridad, tiempo, curso y modificadores.
-3. El operador inicia, marca listo o reporta incidencia por línea.
-4. La proyección de expedición reúne el estado de todas las estaciones.
-5. Se marca entregado al comensal o listo para recojo/delivery.
+3. Cada estación aplica su modo operativo: seguimiento digital por ítem,
+   seguimiento asistido por comanda completa o visor de comanda física sin
+   transiciones digitales de preparación.
+4. El operador inicia, marca listo o reporta incidencia por línea.
+5. La proyección de expedición reúne el estado de todas las estaciones.
+6. Salón marca entregado al comensal incluso cuando Cocina trabajó con comanda
+   física; esa confirmación es independiente del seguimiento de preparación.
 
 Casos alternos:
 

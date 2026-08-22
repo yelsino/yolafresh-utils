@@ -1,10 +1,13 @@
 import type { Cliente } from "../../personas/contracts/persons.contract";
 import type { IUsuario } from "../../personas/contracts/usuario.contract";
+import type { ActorInventarioSnapshot } from "../../inventario/contracts/inventory-quantity-v2.contract";
 import { VentaState } from "../../shared/kernel/enums";
 import { ProcedenciaVenta } from "./CarritoVenta";
 import type { IVenta } from "./Venta";
 
 export const VENTA_SNAPSHOT_TYPE = "venta_snapshot" as const;
+export const VENTA_INVENTORY_PLAN_SCHEMA = "venta_inventory_plan_v2" as const;
+export const VENTA_INVENTORY_PLAN_VERSION = 1 as const;
 
 type VentaSnapshotActorSource =
   | VentaSnapshotActor
@@ -29,14 +32,42 @@ export interface VentaSnapshotActor {
 export interface VentaSnapshotItem {
   id: string;
   presentacionId: string;
+  /** Decisión explícita congelada; `false` identifica servicios sin stock. */
+  afectaInventario?: boolean;
+  /** Snapshot de inventario; `cantidadVendida` continúa siendo cantidad comercial. */
+  productoBaseId?: string;
   nombre: string;
   cantidadVendida: number;
+  unidadBase?: string;
+  factorConversionBase?: number;
+  cantidadBase?: number;
+  /**
+   * Requerida si el item genera un movimiento Inventory V2. Solo puede faltar
+   * en snapshots comerciales legacy o en items omitidos por la política.
+   */
+  versionConversion?: number;
   precioUnitario: number;
   total: number;
   imagenUrl?: string;
   unidadComercial?: string;
   montoModificado?: boolean;
   descuento?: number;
+}
+
+/**
+ * Recibo durable de la política de inventario aplicada al confirmar la venta.
+ * La partición se congela antes de persistir la venta y nunca se recalcula al
+ * aplicar o recuperar su movimiento físico.
+ */
+export interface VentaInventoryPlan {
+  schema: typeof VENTA_INVENTORY_PLAN_SCHEMA;
+  version: typeof VENTA_INVENTORY_PLAN_VERSION;
+  resueltoAt: number;
+  almacenId: string;
+  /** Actor que confirmó la venta; nunca se sustituye por quien ejecuta un replay. */
+  actor: ActorInventarioSnapshot;
+  registrarMovimientoItemIds: string[];
+  omitidosPorPoliticaItemIds: string[];
 }
 
 export interface IVentaSnapshot {
@@ -54,6 +85,10 @@ export interface IVentaSnapshot {
   procedencia?: ProcedenciaVenta;
   cliente?: VentaSnapshotActor;
   vendedor?: VentaSnapshotActor;
+  /** Almacén físico elegido por la orquestación; no redefine el hecho comercial. */
+  almacenOrigenId?: string;
+  /** Plan de inventario congelado previo a persistir una venta confirmada. */
+  planInventarioV2?: VentaInventoryPlan;
 }
 
 export interface VentaSnapshotBuildContext {
@@ -62,6 +97,8 @@ export interface VentaSnapshotBuildContext {
   items?: VentaSnapshotItem[];
   cliente?: VentaSnapshotActorSource;
   vendedor?: VentaSnapshotActorSource;
+  almacenOrigenId?: string;
+  planInventarioV2?: VentaInventoryPlan;
 }
 
 export interface VentaSnapshotCreateInput extends Omit<IVentaSnapshot, "type"> {
@@ -101,6 +138,201 @@ function safeTrim(value?: string | null): string | undefined {
 
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
+}
+
+const normalizedIds = (values: unknown): string[] =>
+  Array.isArray(values)
+    ? values
+        .map((value) => safeTrim(typeof value === "string" ? value : undefined))
+        .filter((value): value is string => Boolean(value))
+    : [];
+
+export function validarVentaInventoryPlan(
+  plan: Partial<VentaInventoryPlan> | null | undefined,
+  items: ReadonlyArray<Partial<VentaSnapshotItem>>,
+  almacenOrigenId?: string,
+): { valida: boolean; errores: string[] } {
+  const errores: string[] = [];
+  if (!plan || typeof plan !== "object") {
+    return {
+      valida: false,
+      errores: ["VentaSnapshot.planInventarioV2 es requerido"],
+    };
+  }
+
+  if (plan.schema !== VENTA_INVENTORY_PLAN_SCHEMA) {
+    errores.push(
+      `VentaSnapshot.planInventarioV2.schema debe ser '${VENTA_INVENTORY_PLAN_SCHEMA}'`,
+    );
+  }
+  if (plan.version !== VENTA_INVENTORY_PLAN_VERSION) {
+    errores.push(
+      `VentaSnapshot.planInventarioV2.version debe ser ${VENTA_INVENTORY_PLAN_VERSION}`,
+    );
+  }
+  if (!Number.isInteger(plan.resueltoAt) || Number(plan.resueltoAt) <= 0) {
+    errores.push(
+      "VentaSnapshot.planInventarioV2.resueltoAt debe ser un timestamp positivo",
+    );
+  }
+
+  const planAlmacenId = safeTrim(plan.almacenId);
+  const snapshotAlmacenId = safeTrim(almacenOrigenId);
+  if (!planAlmacenId) {
+    errores.push("VentaSnapshot.planInventarioV2.almacenId es requerido");
+  }
+  if (!snapshotAlmacenId) {
+    errores.push(
+      "VentaSnapshot.almacenOrigenId es requerido cuando existe planInventarioV2",
+    );
+  } else if (planAlmacenId && planAlmacenId !== snapshotAlmacenId) {
+    errores.push(
+      "VentaSnapshot.planInventarioV2.almacenId debe coincidir con almacenOrigenId",
+    );
+  }
+
+  const actor = plan.actor;
+  if (!actor || typeof actor !== "object") {
+    errores.push("VentaSnapshot.planInventarioV2.actor es requerido");
+  } else {
+    if (!safeTrim(actor.usuarioId)) {
+      errores.push(
+        "VentaSnapshot.planInventarioV2.actor.usuarioId es requerido",
+      );
+    }
+    for (const [field, value] of [
+      ["usuarioNombre", actor.usuarioNombre],
+      ["dispositivoId", actor.dispositivoId],
+      ["sesionId", actor.sesionId],
+    ] as const) {
+      if (value !== undefined && !safeTrim(value)) {
+        errores.push(
+          `VentaSnapshot.planInventarioV2.actor.${field} no puede estar vacío`,
+        );
+      }
+    }
+  }
+
+  if (!Array.isArray(plan.registrarMovimientoItemIds)) {
+    errores.push(
+      "VentaSnapshot.planInventarioV2.registrarMovimientoItemIds debe ser un arreglo",
+    );
+  }
+  if (!Array.isArray(plan.omitidosPorPoliticaItemIds)) {
+    errores.push(
+      "VentaSnapshot.planInventarioV2.omitidosPorPoliticaItemIds debe ser un arreglo",
+    );
+  }
+
+  const registrarIds = normalizedIds(plan.registrarMovimientoItemIds);
+  const omitidosIds = normalizedIds(plan.omitidosPorPoliticaItemIds);
+  const itemIds = items.map((item) => safeTrim(item.id));
+  if (itemIds.some((itemId) => !itemId)) {
+    errores.push(
+      "VentaSnapshot.planInventarioV2 no puede particionar items sin id",
+    );
+  }
+
+  const uniqueItemIds = new Set(itemIds.filter((id): id is string => Boolean(id)));
+  if (uniqueItemIds.size !== itemIds.length) {
+    errores.push(
+      "VentaSnapshot.planInventarioV2 requiere ids de item únicos",
+    );
+  }
+  if (new Set(registrarIds).size !== registrarIds.length) {
+    errores.push(
+      "VentaSnapshot.planInventarioV2.registrarMovimientoItemIds contiene duplicados",
+    );
+  }
+  if (new Set(omitidosIds).size !== omitidosIds.length) {
+    errores.push(
+      "VentaSnapshot.planInventarioV2.omitidosPorPoliticaItemIds contiene duplicados",
+    );
+  }
+
+  const registrarSet = new Set(registrarIds);
+  const omitidosSet = new Set(omitidosIds);
+  registrarIds.forEach((id) => {
+    if (omitidosSet.has(id)) {
+      errores.push(
+        `VentaSnapshot.planInventarioV2 contiene el item '${id}' en ambas particiones`,
+      );
+    }
+  });
+  [...registrarIds, ...omitidosIds].forEach((id) => {
+    if (!uniqueItemIds.has(id)) {
+      errores.push(
+        `VentaSnapshot.planInventarioV2 referencia el item inexistente '${id}'`,
+      );
+    }
+  });
+  uniqueItemIds.forEach((id) => {
+    if (!registrarSet.has(id) && !omitidosSet.has(id)) {
+      errores.push(
+        `VentaSnapshot.planInventarioV2 no clasificó el item '${id}'`,
+      );
+    }
+  });
+
+  items.forEach((item, index) => {
+    const itemId = safeTrim(item.id);
+    if (item.afectaInventario === false) {
+      if (itemId && registrarSet.has(itemId)) {
+        errores.push(
+          `VentaSnapshot.items[${index}] no inventariable no puede registrar movimiento`,
+        );
+      }
+      if (
+        item.productoBaseId !== undefined ||
+        item.unidadBase !== undefined ||
+        item.factorConversionBase !== undefined ||
+        item.cantidadBase !== undefined ||
+        item.versionConversion !== undefined
+      ) {
+        errores.push(
+          `VentaSnapshot.items[${index}] no inventariable no debe contener conversión física`,
+        );
+      }
+      return;
+    }
+    if (!itemId || !registrarSet.has(itemId)) return;
+    if (!safeTrim(item.productoBaseId)) {
+      errores.push(
+        `VentaSnapshot.items[${index}].productoBaseId es requerido por planInventarioV2`,
+      );
+    }
+    const factorConversionBase = Number(item.factorConversionBase);
+    const cantidadBase = Number(item.cantidadBase);
+    const versionConversion = item.versionConversion;
+    if (!safeTrim(item.unidadBase)) {
+      errores.push(
+        `VentaSnapshot.items[${index}].unidadBase es requerida para movimiento planificado`,
+      );
+    }
+    if (
+      !Number.isFinite(factorConversionBase) ||
+      factorConversionBase <= 0
+    ) {
+      errores.push(
+        `VentaSnapshot.items[${index}].factorConversionBase es requerido para movimiento planificado`,
+      );
+    }
+    if (!Number.isFinite(cantidadBase) || cantidadBase <= 0) {
+      errores.push(
+        `VentaSnapshot.items[${index}].cantidadBase es requerida para movimiento planificado`,
+      );
+    }
+    if (
+      !Number.isSafeInteger(versionConversion) ||
+      Number(versionConversion) < 1
+    ) {
+      errores.push(
+        `VentaSnapshot.items[${index}].versionConversion es requerida para movimiento planificado y debe ser entero seguro positivo`,
+      );
+    }
+  });
+
+  return { valida: errores.length === 0, errores };
 }
 
 function buildActor(id?: string | null, nombre?: string): VentaSnapshotActor | undefined {
@@ -207,6 +439,8 @@ export class VentaSnapshot implements IVentaSnapshot {
   public readonly procedencia?: ProcedenciaVenta;
   public readonly cliente?: VentaSnapshotActor;
   public readonly vendedor?: VentaSnapshotActor;
+  public readonly almacenOrigenId?: string;
+  public readonly planInventarioV2?: VentaInventoryPlan;
 
   constructor(data: VentaSnapshotCreateInput) {
     this.id = data.id;
@@ -216,10 +450,28 @@ export class VentaSnapshot implements IVentaSnapshot {
     this.items = Object.freeze(
       data.items.map((item) => ({
         ...item,
+        afectaInventario:
+          typeof item.afectaInventario === "boolean"
+            ? item.afectaInventario
+            : undefined,
         nombre: safeTrim(item.nombre) ?? item.presentacionId,
+        productoBaseId: safeTrim(item.productoBaseId),
         imagenUrl: safeTrim(item.imagenUrl),
         unidadComercial: safeTrim(item.unidadComercial),
         cantidadVendida: Number(item.cantidadVendida ?? 0),
+        unidadBase: safeTrim(item.unidadBase),
+        factorConversionBase:
+          typeof item.factorConversionBase === "number"
+            ? Number(item.factorConversionBase)
+            : undefined,
+        cantidadBase:
+          typeof item.cantidadBase === "number"
+            ? Number(item.cantidadBase)
+            : undefined,
+        versionConversion:
+          typeof item.versionConversion === "number"
+            ? Number(item.versionConversion)
+            : undefined,
         precioUnitario: roundMoney(Number(item.precioUnitario ?? 0)),
         total: roundMoney(Number(item.total ?? 0)),
         montoModificado:
@@ -245,6 +497,33 @@ export class VentaSnapshot implements IVentaSnapshot {
     this.procedencia = data.procedencia;
     this.cliente = data.cliente ? { ...data.cliente } : undefined;
     this.vendedor = data.vendedor ? { ...data.vendedor } : undefined;
+    this.almacenOrigenId = safeTrim(data.almacenOrigenId);
+    this.planInventarioV2 = data.planInventarioV2
+      ? (Object.freeze({
+          schema: data.planInventarioV2.schema,
+          version: data.planInventarioV2.version,
+          resueltoAt: Number(data.planInventarioV2.resueltoAt),
+          almacenId: safeTrim(data.planInventarioV2.almacenId) ?? "",
+          actor: Object.freeze({
+            usuarioId: safeTrim(data.planInventarioV2.actor?.usuarioId) ?? "",
+            ...(safeTrim(data.planInventarioV2.actor?.usuarioNombre)
+              ? { usuarioNombre: safeTrim(data.planInventarioV2.actor?.usuarioNombre) }
+              : {}),
+            ...(safeTrim(data.planInventarioV2.actor?.dispositivoId)
+              ? { dispositivoId: safeTrim(data.planInventarioV2.actor?.dispositivoId) }
+              : {}),
+            ...(safeTrim(data.planInventarioV2.actor?.sesionId)
+              ? { sesionId: safeTrim(data.planInventarioV2.actor?.sesionId) }
+              : {}),
+          }),
+          registrarMovimientoItemIds: Object.freeze(
+            normalizedIds(data.planInventarioV2.registrarMovimientoItemIds),
+          ) as string[],
+          omitidosPorPoliticaItemIds: Object.freeze(
+            normalizedIds(data.planInventarioV2.omitidosPorPoliticaItemIds),
+          ) as string[],
+        }) as VentaInventoryPlan)
+      : undefined;
 
     const validation = VentaSnapshot.validar(this.toJSON());
     if (!validation.valida) {
@@ -268,6 +547,19 @@ export class VentaSnapshot implements IVentaSnapshot {
       procedencia: this.procedencia,
       cliente: this.cliente ? { ...this.cliente } : undefined,
       vendedor: this.vendedor ? { ...this.vendedor } : undefined,
+      almacenOrigenId: this.almacenOrigenId,
+      planInventarioV2: this.planInventarioV2
+          ? {
+            ...this.planInventarioV2,
+            actor: { ...this.planInventarioV2.actor },
+            registrarMovimientoItemIds: [
+              ...this.planInventarioV2.registrarMovimientoItemIds,
+            ],
+            omitidosPorPoliticaItemIds: [
+              ...this.planInventarioV2.omitidosPorPoliticaItemIds,
+            ],
+          }
+        : undefined,
     };
   }
 
@@ -309,6 +601,8 @@ export class VentaSnapshot implements IVentaSnapshot {
       procedencia: venta.procedencia,
       cliente: mapVentaSnapshotActor(context.cliente),
       vendedor: mapVentaSnapshotActor(context.vendedor),
+      almacenOrigenId: safeTrim(context.almacenOrigenId),
+      planInventarioV2: context.planInventarioV2,
     });
   }
 
@@ -392,10 +686,78 @@ export class VentaSnapshot implements IVentaSnapshot {
         errores.push(`VentaSnapshot.items[${index}].nombre es requerido`);
       }
 
+      if (
+        item.afectaInventario !== undefined &&
+        typeof item.afectaInventario !== "boolean"
+      ) {
+        errores.push(
+          `VentaSnapshot.items[${index}].afectaInventario debe ser booleano`,
+        );
+      }
+
+      if (
+        item.afectaInventario === false &&
+        (item.productoBaseId !== undefined ||
+          item.unidadBase !== undefined ||
+          item.factorConversionBase !== undefined ||
+          item.cantidadBase !== undefined ||
+          item.versionConversion !== undefined)
+      ) {
+        errores.push(
+          `VentaSnapshot.items[${index}] no inventariable no debe contener conversión física`,
+        );
+      }
+
       if (Number(item.cantidadVendida ?? 0) <= 0) {
         errores.push(
           `VentaSnapshot.items[${index}].cantidadVendida debe ser mayor a 0`,
         );
+      }
+
+      if (
+        item.factorConversionBase !== undefined &&
+        (!Number.isFinite(item.factorConversionBase) ||
+          item.factorConversionBase <= 0)
+      ) {
+        errores.push(
+          `VentaSnapshot.items[${index}].factorConversionBase debe ser mayor a 0`,
+        );
+      }
+
+      if (
+        item.cantidadBase !== undefined &&
+        (!Number.isFinite(item.cantidadBase) || item.cantidadBase <= 0)
+      ) {
+        errores.push(
+          `VentaSnapshot.items[${index}].cantidadBase debe ser mayor a 0`,
+        );
+      }
+
+      if (
+        item.versionConversion !== undefined &&
+        (!Number.isSafeInteger(item.versionConversion) ||
+          item.versionConversion < 1)
+      ) {
+        errores.push(
+          `VentaSnapshot.items[${index}].versionConversion debe ser entero seguro positivo`,
+        );
+      }
+
+      if (
+        item.factorConversionBase !== undefined &&
+        item.cantidadBase !== undefined
+      ) {
+        const cantidadBaseEsperada =
+          Math.round(
+            Number(item.cantidadVendida ?? 0) *
+              item.factorConversionBase *
+              1_000_000,
+          ) / 1_000_000;
+        if (Math.abs(cantidadBaseEsperada - item.cantidadBase) > 0.000001) {
+          errores.push(
+            `VentaSnapshot.items[${index}].cantidadBase es inconsistente con cantidadVendida y factorConversionBase`,
+          );
+        }
       }
 
       if (Number(item.precioUnitario ?? 0) < 0) {
@@ -423,6 +785,17 @@ export class VentaSnapshot implements IVentaSnapshot {
         );
       }
     });
+
+    if (data.planInventarioV2 !== undefined) {
+      errores.push(
+        ...validarVentaInventoryPlan(
+          data.planInventarioV2,
+          data.items ?? [],
+          data.almacenOrigenId,
+        ).errores,
+      );
+
+    }
 
     return {
       valida: errores.length === 0,

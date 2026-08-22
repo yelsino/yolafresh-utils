@@ -1,16 +1,15 @@
-import type { DineroRestaurante, DocumentoRestaurante } from "./common.contract";
+import type {
+  DineroRestaurante,
+  DocumentoRestaurante,
+} from "./common.contract";
+import type { ConversionUnidadInventarioSnapshot } from "../../inventario/contracts";
 import type {
   ModificadorSeleccionadoRestaurante,
   RutaPreparacionProductoRestaurante,
 } from "./menu.contract";
 
 export type CanalServicioRestaurante =
-  | "SALON"
-  | "BARRA"
-  | "MOSTRADOR"
-  | "RECOJO"
-  | "DELIVERY"
-  | "AUTOSERVICIO";
+  "SALON" | "BARRA" | "MOSTRADOR" | "RECOJO" | "DELIVERY" | "AUTOSERVICIO";
 
 export type EstadoSesionRestaurante =
   | "PLANIFICADA"
@@ -22,8 +21,7 @@ export type EstadoSesionRestaurante =
   | "ABANDONADA";
 
 /** Atencion continua; la mesa es opcional fuera del canal SALON. */
-export interface SesionServicioRestaurante
-  extends DocumentoRestaurante<"restaurant_sesiones_servicio"> {
+export interface SesionServicioRestaurante extends DocumentoRestaurante<"restaurant_sesiones_servicio"> {
   canal: CanalServicioRestaurante;
   estado: EstadoSesionRestaurante;
   mesaId?: string;
@@ -47,8 +45,8 @@ export type EstadoPedidoRestaurante =
   | "COMPLETADO"
   | "CANCELADO";
 
-/** Snapshot comercial inmutable de una presentacion al crear la linea. */
-export interface ProductoPedidoRestauranteSnapshot {
+/** Datos comerciales inmutables de una presentacion al crear la linea. */
+export interface ProductoPedidoRestauranteSnapshotBase {
   productoId: string;
   presentacionId: string;
   nombre: string;
@@ -57,6 +55,37 @@ export interface ProductoPedidoRestauranteSnapshot {
   precioBaseUnitario: DineroRestaurante;
   impuestoUnitario: DineroRestaurante;
 }
+
+/**
+ * Conversión de inventario congelada por una línea creada con el contrato
+ * versionado. La presentación y su versión son obligatorias: no se infieren al
+ * leer posteriormente el catálogo.
+ */
+export type ConversionInventarioPedidoRestauranteSnapshot = Omit<
+  ConversionUnidadInventarioSnapshot,
+  "presentacionId" | "versionConversion"
+> & {
+  presentacionId: string;
+  versionConversion: number;
+};
+
+/** Pedido histórico anterior a la captura de conversión de inventario. */
+export interface ProductoPedidoRestauranteSnapshotLegacy extends ProductoPedidoRestauranteSnapshotBase {
+  conversionInventario?: undefined;
+}
+
+/** Pedido nuevo con la conversión exacta usada al agregar la línea. */
+export interface ProductoPedidoRestauranteSnapshotVersionado extends ProductoPedidoRestauranteSnapshotBase {
+  conversionInventario: ConversionInventarioPedidoRestauranteSnapshot;
+}
+
+/**
+ * Snapshot comercial inmutable. La ausencia de conversión identifica
+ * explícitamente un documento legacy; nunca significa factor 1 implícito.
+ */
+export type ProductoPedidoRestauranteSnapshot =
+  | ProductoPedidoRestauranteSnapshotLegacy
+  | ProductoPedidoRestauranteSnapshotVersionado;
 
 export interface ItemPedidoRestaurante {
   id: string;
@@ -79,8 +108,7 @@ export interface ItemPedidoRestaurante {
 }
 
 /** Intencion editable; lo enviado se corrige con una comanda compensatoria. */
-export interface PedidoRestaurante
-  extends DocumentoRestaurante<"restaurant_pedidos"> {
+export interface PedidoRestaurante extends DocumentoRestaurante<"restaurant_pedidos"> {
   sesionServicioId: string;
   estado: EstadoPedidoRestaurante;
   numeroRondaActual: number;

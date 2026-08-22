@@ -30,6 +30,9 @@ interface CarritoVentaProductSnapshot {
   tipoVenta?: TipoVentaEnum;
   contenidoNeto?: number;
   unidadContenido?: Presentacion["unidadContenido"];
+  unidadBaseInventario?: Presentacion["unidadBaseInventario"];
+  equivalenciaUnidadBase?: number;
+  versionConversion?: number;
   tipoEmpaque?: string;
   fraccionable?: boolean;
   imagen?: CarritoVentaImageSnapshot;
@@ -125,12 +128,10 @@ export interface CarItem {
 
   product: Partial<Presentacion>;
   
-  /** 
-   * Cantidad en la unidad base del producto
-   * - Si el producto es por unidad → 3
-   * - Si es por kg → 1.75
-   * - Si es por litro → 0.5
-   * @description Representa la cantidad física real (unidades o peso)
+  /**
+   * Cantidad comercial de la presentación agregada al carrito.
+   * Inventario la normaliza usando el snapshot de `equivalenciaUnidadBase`;
+   * este campo siempre conserva su semántica comercial.
    * @minimum 0.001
    */
   quantity: number;
@@ -1122,6 +1123,8 @@ export class CarritoVenta implements ICarritoVenta {
       contenidoNeto: producto.contenidoNeto,
       unidadContenido: producto.unidadContenido,
       equivalenciaUnidadBase: producto.equivalenciaUnidadBase,
+      unidadBaseInventario: producto.unidadBaseInventario,
+      versionConversion: producto.versionConversion,
       fraccionable: producto.fraccionable,
       cantidadParaDescuento: producto.cantidadParaDescuento,
       descuentoXCantidad: producto.descuentoXCantidad,

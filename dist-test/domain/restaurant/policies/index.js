@@ -18,3 +18,4 @@ __exportStar(require("./money.policy"), exports);
 __exportStar(require("./state-transitions.policy"), exports);
 __exportStar(require("./menu.policy"), exports);
 __exportStar(require("./operation.policy"), exports);
+__exportStar(require("./inventory-conversion.policy"), exports);

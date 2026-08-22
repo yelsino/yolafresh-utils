@@ -11,7 +11,7 @@ class Venta extends AggregateRoot_1.AggregateRoot {
         return Math.round(value * 100) / 100;
     }
     static mapCarItemToSnapshotItem(item) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
         const presentacionId = String(((_a = item.product) === null || _a === void 0 ? void 0 : _a.id) || "").trim();
         if (!presentacionId) {
             throw new Error("CarItem.product.id es requerido para crear VentaSnapshotItem");
@@ -24,15 +24,27 @@ class Venta extends AggregateRoot_1.AggregateRoot {
         const totalBruto = typeof item.montoTotal === "number" && Number.isFinite(item.montoTotal)
             ? item.montoTotal
             : precioUnitario * cantidadVendida;
+        const factorConversionBase = Number((_f = item.product) === null || _f === void 0 ? void 0 : _f.equivalenciaUnidadBase);
+        const tieneConversionBase = Number.isFinite(factorConversionBase) && factorConversionBase > 0;
         return {
             id: item.id,
             presentacionId,
-            nombre: String(((_f = item.product) === null || _f === void 0 ? void 0 : _f.nombre) || presentacionId).trim(),
+            productoBaseId: (_g = item.product) === null || _g === void 0 ? void 0 : _g.productoBaseId,
+            nombre: String(((_h = item.product) === null || _h === void 0 ? void 0 : _h.nombre) || presentacionId).trim(),
             cantidadVendida,
+            unidadBase: (_j = item.product) === null || _j === void 0 ? void 0 : _j.unidadBaseInventario,
+            factorConversionBase: tieneConversionBase
+                ? factorConversionBase
+                : undefined,
+            cantidadBase: tieneConversionBase
+                ? Math.round(cantidadVendida * factorConversionBase * 1000000) /
+                    1000000
+                : undefined,
+            versionConversion: (_k = item.product) === null || _k === void 0 ? void 0 : _k.versionConversion,
             precioUnitario: Venta.roundMoney(precioUnitario),
             total: Venta.roundMoney(totalBruto),
-            imagenUrl: (_j = (_h = (_g = item.product) === null || _g === void 0 ? void 0 : _g.imagen) === null || _h === void 0 ? void 0 : _h.sizes) === null || _j === void 0 ? void 0 : _j.small,
-            unidadComercial: (_k = item.product) === null || _k === void 0 ? void 0 : _k.unidadContenido,
+            imagenUrl: (_o = (_m = (_l = item.product) === null || _l === void 0 ? void 0 : _l.imagen) === null || _m === void 0 ? void 0 : _m.sizes) === null || _o === void 0 ? void 0 : _o.small,
+            unidadComercial: (_p = item.product) === null || _p === void 0 ? void 0 : _p.unidadContenido,
             montoModificado: typeof item.montoModificado === "boolean"
                 ? item.montoModificado
                 : undefined,

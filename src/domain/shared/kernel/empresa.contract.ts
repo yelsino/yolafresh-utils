@@ -110,6 +110,14 @@ export interface ConfigEmpresa {
   inventario: {
     permitirStockNegativo: boolean;
     validarStockAntesDeVender: boolean;
+    /**
+     * Almacén operativo predeterminado cuando existen varios almacenes activos.
+     *
+     * La ausencia es válida y obliga a seleccionar explícitamente el almacén.
+     * Cuando solo existe un almacén activo, este se resuelve por derivación y no
+     * es necesario persistir su identificador aquí.
+     */
+    almacenPredeterminadoId?: string;
   };
 
   sistema: {

@@ -76,7 +76,7 @@ export enum TipoVentaEnum {
   Volumen = "volumen", // se vende por volumen
 }
 
-export type UnidadBaseInterna = "kilogramo" | "litro" | "unidad";
+export type UnidadBaseInterna = "kilogramo" | "litro" | "unidad" | "metro";
 
 /**
  * Representa el producto genérico o conceptual dentro del catálogo.
@@ -194,6 +194,18 @@ export interface Presentacion {
    */
   equivalenciaUnidadBase: number;
   /**
+   * Denormalización opcional para congelar la conversión en flujos offline.
+   * La autoridad continúa siendo `ProductoBase.unidadBaseInterna`.
+   */
+  unidadBaseInventario?: UnidadBaseInterna;
+  /**
+   * Versión de la conversión semántica de la presentación.
+   *
+   * Empieza en 1 y solo cambia cuando cambia `productoBaseId`,
+   * `equivalenciaUnidadBase` o `unidadBaseInventario`.
+   */
+  versionConversion: number;
+  /**
    * Indica si la presentación puede venderse en fracciones.
    * 
    * Ejemplo:
@@ -290,6 +302,16 @@ export interface ProductoConPresentacionesDTO {
   producto: ProductoBase;
   presentaciones: Presentacion[];
 }
+
+/**
+ * Entrada de persistencia anterior a `versionConversion`.
+ *
+ * Este tipo existe únicamente en el borde de lectura/migración. El dominio debe
+ * trabajar con `Presentacion`, donde la versión ya es obligatoria y válida.
+ */
+export type PresentacionLegacyInput = Omit<Presentacion, "versionConversion"> & {
+  versionConversion?: unknown;
+};
 
 
 

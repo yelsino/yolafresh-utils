@@ -4,7 +4,7 @@
 
 Esta carpeta concentra documentación oficial del paquete después de la migración completa a estructura por dominios.
 
-Versión de referencia vigente: `1.0.9` (`v1.0.9`). Las migraciones y RFCs pueden
+Versión de referencia vigente: `1.4.4` (`v1.4.4`). Las migraciones y RFCs pueden
 mencionar versiones anteriores, pero no sustituyen el modelo vigente descrito en
 los documentos marcados como actuales.
 
@@ -65,6 +65,7 @@ La lectura recomendada va de:
 
 - [compras/README.md](./compras/README.md)
 - [compras/modelo-vigente.md](./compras/modelo-vigente.md)
+- [compras/integracion-pos-offline-first.md](./compras/integracion-pos-offline-first.md)
 
 ### Inventario
 

@@ -130,6 +130,10 @@ export interface DeviceBindingView {
   deviceId: string;
   deviceName: string;
   deviceType: DeviceEnrollmentDeviceType;
+  /** Versión reportada por el cliente; opcional para bindings anteriores. */
+  appVersion?: string;
+  /** Última actividad confirmada por el servidor en formato ISO-8601. */
+  lastSeenAt?: string;
   allowedRoleIds?: string[];
   allowedSucursalIds: string[];
   createdAt: string;
@@ -143,7 +147,8 @@ export interface DeviceTenantConnection {
   /**
    * Credencial opaca y revocable emitida para este dispositivo.
    * Se persiste exclusivamente en almacenamiento seguro y autoriza la
-   * descarga del snapshot inicial antes de que exista una sesion de usuario.
+   * descarga del snapshot y el catch-up inicial de solo lectura antes de que
+   * exista una sesion de usuario. No autoriza sync continuo ni escrituras.
    */
   bootstrapAccessToken?: string;
 }

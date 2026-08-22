@@ -14,10 +14,14 @@ import type {
 } from "../contracts";
 import {
   TIPO_DOCUMENTO_RESTAURANTE,
+  MODO_OPERACION_ESTACION_RESTAURANTE,
   calcularTotalesCuentaRestaurante,
   crearClaveLineaPedidoRestaurante,
+  crearFirmaConversionPedidoRestaurante,
   dineroRestaurante,
+  evaluarConversionPedidoRestaurante,
   estadoInicialTareaPreparacionRestaurante,
+  esTareaPreparacionTerminalRestaurante,
   evaluarAbandonoSesionRestaurante,
   evaluarCierreRestaurante,
   evaluarLiberacionMesaCompletadaRestaurante,
@@ -77,21 +81,158 @@ test("producto exige ruteo operativo explicito", () => {
     false,
   );
   assert.equal(estadoInicialTareaPreparacionRestaurante("PREPARAR"), "EN_COLA");
-  assert.equal(estadoInicialTareaPreparacionRestaurante("DESPACHO_DIRECTO"), "LISTA");
+  assert.equal(
+    estadoInicialTareaPreparacionRestaurante("DESPACHO_DIRECTO"),
+    "LISTA",
+  );
+  assert.equal(
+    estadoInicialTareaPreparacionRestaurante(
+      "PREPARAR",
+      MODO_OPERACION_ESTACION_RESTAURANTE.COMANDA_FISICA,
+    ),
+    "GESTION_EXTERNA",
+  );
+  assert.equal(
+    esTareaPreparacionTerminalRestaurante({ estado: "GESTION_EXTERNA" }),
+    false,
+  );
 });
 
 test("cada configuracion especial genera identidad de linea diferente", () => {
   const common = {
     productoRestauranteId: "menu-ceviche",
+    snapshot: {
+      productoId: "product-ceviche",
+      presentacionId: "presentation-ceviche",
+      nombre: "Ceviche",
+      precioBaseUnitario: dineroRestaurante(1000),
+      impuestoUnitario: dineroRestaurante(180),
+    },
     modificadores: [],
     rutasPreparacion: [
       { estacionPreparacionId: "kitchen", modo: "PREPARAR" as const, orden: 1 },
     ],
   };
   assert.notEqual(
-    crearClaveLineaPedidoRestaurante({ ...common, instrucciones: "con cebolla" }),
-    crearClaveLineaPedidoRestaurante({ ...common, instrucciones: "sin cebolla" }),
+    crearClaveLineaPedidoRestaurante({
+      ...common,
+      instrucciones: "con cebolla",
+    }),
+    crearClaveLineaPedidoRestaurante({
+      ...common,
+      instrucciones: "sin cebolla",
+    }),
   );
+});
+
+test("conversion gastronómica distingue legacy, versión válida y metadata corrupta", () => {
+  const baseSnapshot = {
+    productoId: "product-beer",
+    presentacionId: "presentation-beer",
+    nombre: "Cerveza",
+    unidadComercial: "botella",
+    precioBaseUnitario: dineroRestaurante(1000),
+    impuestoUnitario: dineroRestaurante(180),
+  };
+  assert.deepEqual(evaluarConversionPedidoRestaurante(baseSnapshot), {
+    estado: "LEGACY_SIN_CONVERSION",
+    valida: true,
+    errores: [],
+  });
+
+  const versionedSnapshot = {
+    ...baseSnapshot,
+    conversionInventario: {
+      productoBaseId: "product-beer",
+      presentacionId: "presentation-beer",
+      unidadOperacion: "botella",
+      unidadBase: "litro" as const,
+      factorUnidadBase: 0.33,
+      precisionCantidadBase: 6,
+      versionConversion: 2,
+      capturadaAt: 2000,
+    },
+  };
+  assert.equal(
+    evaluarConversionPedidoRestaurante(versionedSnapshot).estado,
+    "VERSIONADA",
+  );
+  assert.match(
+    crearFirmaConversionPedidoRestaurante(versionedSnapshot),
+    /product-beer:presentation-beer:botella:litro:0.33:6:2/,
+  );
+
+  const invalid = evaluarConversionPedidoRestaurante({
+    ...versionedSnapshot,
+    conversionInventario: {
+      ...versionedSnapshot.conversionInventario,
+      versionConversion: 0,
+    },
+  });
+  assert.equal(invalid.estado, "INVALIDA");
+  assert.equal(invalid.valida, false);
+});
+
+test("la clave de línea no mezcla legacy ni versiones de conversión distintas", () => {
+  const common = {
+    productoRestauranteId: "menu-beer",
+    modificadores: [],
+    rutasPreparacion: [
+      { estacionPreparacionId: "bar", modo: "PREPARAR" as const, orden: 1 },
+    ],
+  };
+  const legacySnapshot = {
+    productoId: "product-beer",
+    presentacionId: "presentation-beer",
+    nombre: "Cerveza",
+    unidadComercial: "botella",
+    precioBaseUnitario: dineroRestaurante(1000),
+    impuestoUnitario: dineroRestaurante(180),
+  };
+  const versionedSnapshot = {
+    ...legacySnapshot,
+    conversionInventario: {
+      productoBaseId: "product-beer",
+      presentacionId: "presentation-beer",
+      unidadOperacion: "botella",
+      unidadBase: "litro" as const,
+      factorUnidadBase: 0.33,
+      precisionCantidadBase: 6,
+      versionConversion: 1,
+      capturadaAt: 1000,
+    },
+  };
+  const legacyKey = crearClaveLineaPedidoRestaurante({
+    ...common,
+    snapshot: legacySnapshot,
+  });
+  const versionOneKey = crearClaveLineaPedidoRestaurante({
+    ...common,
+    snapshot: versionedSnapshot,
+  });
+  const sameVersionLaterCaptureKey = crearClaveLineaPedidoRestaurante({
+    ...common,
+    snapshot: {
+      ...versionedSnapshot,
+      conversionInventario: {
+        ...versionedSnapshot.conversionInventario,
+        capturadaAt: 3000,
+      },
+    },
+  });
+  const versionTwoKey = crearClaveLineaPedidoRestaurante({
+    ...common,
+    snapshot: {
+      ...versionedSnapshot,
+      conversionInventario: {
+        ...versionedSnapshot.conversionInventario,
+        versionConversion: 2,
+      },
+    },
+  });
+  assert.notEqual(legacyKey, versionOneKey);
+  assert.equal(versionOneKey, sameVersionLaterCaptureKey);
+  assert.notEqual(versionOneKey, versionTwoKey);
 });
 
 test("comando canonico exige idempotencia y version esperada", () => {
@@ -264,10 +405,36 @@ test("permite abandonar una mesa vacia y bloquea consumo enviado", () => {
 });
 
 test("maquinas de estado bloquean regresiones", () => {
-  assert.equal(puedeTransicionarSesionRestaurante("ABIERTA", "EN_ATENCION"), true);
-  assert.equal(puedeTransicionarSesionRestaurante("CERRADA", "EN_ATENCION"), false);
-  assert.equal(puedeTransicionarTareaPreparacionRestaurante("EN_PREPARACION", "LISTA"), true);
-  assert.equal(puedeTransicionarTareaPreparacionRestaurante("ENTREGADA", "EN_PREPARACION"), false);
+  assert.equal(
+    puedeTransicionarSesionRestaurante("ABIERTA", "EN_ATENCION"),
+    true,
+  );
+  assert.equal(
+    puedeTransicionarSesionRestaurante("CERRADA", "EN_ATENCION"),
+    false,
+  );
+  assert.equal(
+    puedeTransicionarTareaPreparacionRestaurante("EN_PREPARACION", "LISTA"),
+    true,
+  );
+  assert.equal(
+    puedeTransicionarTareaPreparacionRestaurante("ENTREGADA", "EN_PREPARACION"),
+    false,
+  );
+  assert.equal(
+    puedeTransicionarTareaPreparacionRestaurante(
+      "GESTION_EXTERNA",
+      "EN_PREPARACION",
+    ),
+    false,
+  );
+  assert.equal(
+    puedeTransicionarTareaPreparacionRestaurante(
+      "GESTION_EXTERNA",
+      "ENTREGADA",
+    ),
+    true,
+  );
   assert.equal(puedeTransicionarCuentaRestaurante("SALDADA", "CERRADA"), true);
   assert.equal(puedeTransicionarCuentaRestaurante("ABIERTA", "CERRADA"), false);
 });
@@ -295,37 +462,51 @@ test("cuenta usa unidades minimas y rechaza sobrepago", () => {
   assert.equal(totals.total.minorUnits, 2660);
   assert.equal(totals.saldo.minorUnits, 1660);
   assert.throws(
-    () => calcularTotalesCuentaRestaurante({ currency: "PEN", cargos: [], pagos: [dineroRestaurante(1)] }),
+    () =>
+      calcularTotalesCuentaRestaurante({
+        currency: "PEN",
+        cargos: [],
+        pagos: [dineroRestaurante(1)],
+      }),
     /no pueden exceder/,
   );
 });
 
 test("modificadores validan minimos, maximos y repeticion", () => {
-  const groups = [{
-    id: "coccion",
-    nombre: "Termino",
-    minimoSelecciones: 1,
-    maximoSelecciones: 1,
-    permiteRepeticion: false,
-    orden: 1,
-    opciones: [{
-      id: "medio",
-      nombre: "Medio",
-      precioExtra: dineroRestaurante(0),
-      activa: true,
-      predeterminada: false,
+  const groups = [
+    {
+      id: "coccion",
+      nombre: "Termino",
+      minimoSelecciones: 1,
+      maximoSelecciones: 1,
+      permiteRepeticion: false,
       orden: 1,
-    }],
-  }];
+      opciones: [
+        {
+          id: "medio",
+          nombre: "Medio",
+          precioExtra: dineroRestaurante(0),
+          activa: true,
+          predeterminada: false,
+          orden: 1,
+        },
+      ],
+    },
+  ];
   assert.equal(validarModificadoresRestaurante(groups, []).valid, false);
-  assert.equal(validarModificadoresRestaurante(groups, [{
-    grupoId: "coccion",
-    opcionId: "medio",
-    grupoNombre: "Termino",
-    opcionNombre: "Medio",
-    cantidad: 1,
-    precioExtraUnitario: dineroRestaurante(0),
-  }]).valid, true);
+  assert.equal(
+    validarModificadoresRestaurante(groups, [
+      {
+        grupoId: "coccion",
+        opcionId: "medio",
+        grupoNombre: "Termino",
+        opcionNombre: "Medio",
+        cantidad: 1,
+        precioExtraUnitario: dineroRestaurante(0),
+      },
+    ]).valid,
+    true,
+  );
 });
 
 test("pagar no libera una mesa con preparacion pendiente", () => {
@@ -336,24 +517,28 @@ test("pagar no libera una mesa con preparacion pendiente", () => {
     sesionServicioId: "session-001",
     estado: "ENVIADO",
     numeroRondaActual: 1,
-    lineas: [{
-      id: "line-001",
-      productoRestauranteId: "menu-001",
-      snapshot: {
-        productoId: "product-001",
-        presentacionId: "presentation-001",
-        nombre: "Ceviche",
-        precioBaseUnitario: dineroRestaurante(2000),
-        impuestoUnitario: dineroRestaurante(0),
+    lineas: [
+      {
+        id: "line-001",
+        productoRestauranteId: "menu-001",
+        snapshot: {
+          productoId: "product-001",
+          presentacionId: "presentation-001",
+          nombre: "Ceviche",
+          precioBaseUnitario: dineroRestaurante(2000),
+          impuestoUnitario: dineroRestaurante(0),
+        },
+        cantidad: 1,
+        cantidadEnviada: 1,
+        modificadores: [],
+        rutasPreparacion: [
+          { estacionPreparacionId: "kitchen", modo: "PREPARAR", orden: 1 },
+        ],
+        totalLinea: dineroRestaurante(2000),
+        creadaAt: 1000,
+        creadaPor: "user-001",
       },
-      cantidad: 1,
-      cantidadEnviada: 1,
-      modificadores: [],
-      rutasPreparacion: [{ estacionPreparacionId: "kitchen", modo: "PREPARAR", orden: 1 }],
-      totalLinea: dineroRestaurante(2000),
-      creadaAt: 1000,
-      creadaPor: "user-001",
-    }],
+    ],
   };
   const cuenta: CuentaConsumoRestaurante = {
     ...audit,
@@ -361,26 +546,37 @@ test("pagar no libera una mesa con preparacion pendiente", () => {
     type: "restaurant_cuentas_consumo",
     sesionServicioId: "session-001",
     estado: "SALDADA",
-    cargos: [{
-      id: "charge-001",
-      pedidoId: pedido.id,
-      pedidoLineaId: "line-001",
-      nombre: "Ceviche",
-      cantidad: 1,
-      subtotal: dineroRestaurante(2000),
-      descuento: dineroRestaurante(0),
-      impuesto: dineroRestaurante(0),
-      total: dineroRestaurante(2000),
-      createdAt: 1000,
-    }],
+    cargos: [
+      {
+        id: "charge-001",
+        pedidoId: pedido.id,
+        pedidoLineaId: "line-001",
+        nombre: "Ceviche",
+        cantidad: 1,
+        subtotal: dineroRestaurante(2000),
+        descuento: dineroRestaurante(0),
+        impuesto: dineroRestaurante(0),
+        total: dineroRestaurante(2000),
+        createdAt: 1000,
+      },
+    ],
     asignacionesPagoIds: ["allocation-001"],
     totales: calcularTotalesCuentaRestaurante({
       currency: "PEN",
-      cargos: [{
-        id: "charge-001", pedidoId: pedido.id, pedidoLineaId: "line-001", nombre: "Ceviche", cantidad: 1,
-        subtotal: dineroRestaurante(2000), descuento: dineroRestaurante(0), impuesto: dineroRestaurante(0),
-        total: dineroRestaurante(2000), createdAt: 1000,
-      }],
+      cargos: [
+        {
+          id: "charge-001",
+          pedidoId: pedido.id,
+          pedidoLineaId: "line-001",
+          nombre: "Ceviche",
+          cantidad: 1,
+          subtotal: dineroRestaurante(2000),
+          descuento: dineroRestaurante(0),
+          impuesto: dineroRestaurante(0),
+          total: dineroRestaurante(2000),
+          createdAt: 1000,
+        },
+      ],
       pagos: [dineroRestaurante(2000)],
     }),
     ventaIds: ["sale-001"],
@@ -394,16 +590,24 @@ test("pagar no libera una mesa con preparacion pendiente", () => {
     secuencia: 1,
     ronda: 1,
     tipoEnvio: "ENVIO",
-    lineas: [{
-      id: "dispatch-line-001",
-      pedidoLineaId: "line-001",
-      estacionPreparacionId: "kitchen",
-      modoPreparacion: "PREPARAR",
-      cantidad: 1,
-      nombre: "Ceviche",
-      modificadores: [],
-    }],
-    trace: { operationId: "op-001", correlationId: "session-001", actorId: "user-001", deviceId: "device-001", occurredAt: 1000 },
+    lineas: [
+      {
+        id: "dispatch-line-001",
+        pedidoLineaId: "line-001",
+        estacionPreparacionId: "kitchen",
+        modoPreparacion: "PREPARAR",
+        cantidad: 1,
+        nombre: "Ceviche",
+        modificadores: [],
+      },
+    ],
+    trace: {
+      operationId: "op-001",
+      correlationId: "session-001",
+      actorId: "user-001",
+      deviceId: "device-001",
+      occurredAt: 1000,
+    },
   };
   const task: TareaPreparacionRestaurante = {
     ...audit,
@@ -420,14 +624,40 @@ test("pagar no libera una mesa con preparacion pendiente", () => {
     cantidad: 1,
     prioridad: 0,
   };
-  const blocked = evaluarCierreRestaurante({ pedido, cuenta, comandas: [comanda], tareas: [task] });
+  const blocked = evaluarCierreRestaurante({
+    pedido,
+    cuenta,
+    comandas: [comanda],
+    tareas: [task],
+  });
   assert.deepEqual(blocked, {
     permitido: false,
     motivo: "PREPARACION_O_ENTREGA_PENDIENTE",
     message: "Aun hay productos en preparacion o pendientes de entrega.",
   });
   assert.equal(
-    evaluarCierreRestaurante({ pedido, cuenta, comandas: [comanda], tareas: [{ ...task, estado: "ENTREGADA" }] }).permitido,
+    evaluarCierreRestaurante({
+      pedido,
+      cuenta,
+      comandas: [comanda],
+      tareas: [
+        {
+          ...task,
+          modoOperacionEstacion:
+            MODO_OPERACION_ESTACION_RESTAURANTE.COMANDA_FISICA,
+          estado: "GESTION_EXTERNA",
+        },
+      ],
+    }).permitido,
+    false,
+  );
+  assert.equal(
+    evaluarCierreRestaurante({
+      pedido,
+      cuenta,
+      comandas: [comanda],
+      tareas: [{ ...task, estado: "ENTREGADA" }],
+    }).permitido,
     true,
   );
 

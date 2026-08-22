@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.esTareaPreparacionTerminalRestaurante = exports.estadoInicialTareaPreparacionRestaurante = exports.puedeTransicionarCuentaRestaurante = exports.puedeTransicionarTareaPreparacionRestaurante = exports.puedeTransicionarPedidoRestaurante = exports.puedeTransicionarSesionRestaurante = void 0;
+const configuration_contract_1 = require("../contracts/configuration.contract");
 const SESSION_TRANSITIONS = {
     PLANIFICADA: ["ABIERTA", "CANCELADA"],
     ABIERTA: ["EN_ATENCION", "SOLICITA_CIERRE", "CANCELADA", "ABANDONADA"],
@@ -25,6 +26,7 @@ const PREPARATION_TRANSITIONS = {
     RETENIDA: ["EN_COLA", "EN_PREPARACION", "CANCELADA"],
     LISTA: ["ENTREGADA", "DESCARTADA"],
     ENTREGADA: [],
+    GESTION_EXTERNA: ["ENTREGADA"],
     CANCELADA: [],
     DESCARTADA: [],
 };
@@ -44,7 +46,11 @@ const puedeTransicionarTareaPreparacionRestaurante = (from, to) => PREPARATION_T
 exports.puedeTransicionarTareaPreparacionRestaurante = puedeTransicionarTareaPreparacionRestaurante;
 const puedeTransicionarCuentaRestaurante = (from, to) => ACCOUNT_TRANSITIONS[from].includes(to);
 exports.puedeTransicionarCuentaRestaurante = puedeTransicionarCuentaRestaurante;
-const estadoInicialTareaPreparacionRestaurante = (mode) => mode === "DESPACHO_DIRECTO" ? "LISTA" : "EN_COLA";
+const estadoInicialTareaPreparacionRestaurante = (mode, stationOperationMode = configuration_contract_1.MODO_OPERACION_ESTACION_RESTAURANTE.SEGUIMIENTO_DIGITAL) => stationOperationMode === configuration_contract_1.MODO_OPERACION_ESTACION_RESTAURANTE.COMANDA_FISICA
+    ? "GESTION_EXTERNA"
+    : mode === "DESPACHO_DIRECTO"
+        ? "LISTA"
+        : "EN_COLA";
 exports.estadoInicialTareaPreparacionRestaurante = estadoInicialTareaPreparacionRestaurante;
 const esTareaPreparacionTerminalRestaurante = (task) => task.estado === "ENTREGADA" ||
     task.estado === "CANCELADA" ||

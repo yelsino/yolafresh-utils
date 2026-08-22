@@ -1,4 +1,8 @@
-import type { AuthPermission, PermissionDefinition, PermissionCriticidad } from "../contracts/auth-permission.contract";
+import type {
+  AuthPermission,
+  PermissionDefinition,
+  PermissionCriticidad,
+} from "../contracts/auth-permission.contract";
 import { AUTH_PERMISSIONS } from "../catalogs/permission.catalog";
 
 const CRITICIDAD_POR_ACCION: Record<string, PermissionCriticidad> = {
@@ -25,9 +29,14 @@ const CRITICIDAD_POR_ACCION: Record<string, PermissionCriticidad> = {
   liberar_incidencia: "critical",
   cobrar: "critical",
   configurar_redondeo: "high",
+  administrar: "critical",
+  recibir: "high",
+  cancelar: "critical",
 };
 
-const PERMISSION_METADATA_OVERRIDES: Partial<Record<AuthPermission, Partial<PermissionDefinition>>> = {
+const PERMISSION_METADATA_OVERRIDES: Partial<
+  Record<AuthPermission, Partial<PermissionDefinition>>
+> = {
   "sistema:admin:global": {
     criticidad: "critical",
     auditable: true,
@@ -52,7 +61,22 @@ const PERMISSION_METADATA_OVERRIDES: Partial<Record<AuthPermission, Partial<Perm
   "ventas:venta:anular": {
     criticidad: "critical",
   },
+  "ventas:pedido:anular": {
+    criticidad: "critical",
+  },
   "inventario:ajuste:aprobar": {
+    criticidad: "critical",
+  },
+  "inventario:almacen:administrar": {
+    criticidad: "critical",
+  },
+  "inventario:politica:administrar": {
+    criticidad: "critical",
+  },
+  "inventario:merma:aprobar": {
+    criticidad: "critical",
+  },
+  "inventario:transferencia:cancelar": {
     criticidad: "critical",
   },
   "restaurante:sesion:liberar_incidencia": {
@@ -81,8 +105,11 @@ function buildPermissionDefinition(id: AuthPermission): PermissionDefinition {
 }
 
 export const PERMISSION_METADATA = Object.freeze(
-  AUTH_PERMISSIONS.reduce<Record<AuthPermission, PermissionDefinition>>((acc, permission) => {
-    acc[permission] = buildPermissionDefinition(permission);
-    return acc;
-  }, {} as Record<AuthPermission, PermissionDefinition>),
+  AUTH_PERMISSIONS.reduce<Record<AuthPermission, PermissionDefinition>>(
+    (acc, permission) => {
+      acc[permission] = buildPermissionDefinition(permission);
+      return acc;
+    },
+    {} as Record<AuthPermission, PermissionDefinition>,
+  ),
 );

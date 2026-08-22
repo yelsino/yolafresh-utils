@@ -40,6 +40,8 @@ const invitationId = "550e8400-e29b-41d4-a716-446655440000";
             deviceId: "device-1",
             deviceName: "POS Caja 1",
             deviceType: "android",
+            appVersion: "2.18.0",
+            lastSeenAt: "2026-08-15T12:00:00.000Z",
             allowedSucursalIds: [],
             createdAt: "2026-08-01T00:00:00.000Z",
             updatedAt: "2026-08-01T00:00:00.000Z",
@@ -51,4 +53,5 @@ const invitationId = "550e8400-e29b-41d4-a716-446655440000";
         },
     };
     strict_1.default.equal(installed.tenantConnection.bootstrapAccessToken, "opaque-device-bootstrap-token");
+    strict_1.default.equal(installed.deviceBinding.appVersion, "2.18.0");
 });

@@ -67,6 +67,11 @@ test("admin global resuelve wildcard total", () => {
 test("inventario puede editar imagenes de producto", () => {
   const permissions = resolveRolePermissions(["inventario"]);
   assert.ok(permissions.includes("productos:producto:editar_imagen"));
+  assert.ok(permissions.includes("inventario:almacen:administrar"));
+  assert.ok(permissions.includes("inventario:politica:administrar"));
+  assert.ok(permissions.includes("inventario:merma:aprobar"));
+  assert.ok(permissions.includes("inventario:transferencia:recibir"));
+  assert.ok(permissions.includes("inventario:transferencia:cancelar"));
 });
 
 test("validadores detectan permiso y grant inválidos", () => {

@@ -2,7 +2,7 @@
 
 ## Visión general
 
-El Domain de compras modela la adquisición formal de mercadería o insumos a proveedor como documento económico separado de la recepción física y del movimiento financiero.
+El Domain de compras modela la adquisición económica de mercadería o insumos a proveedor como documento separado de la recepción física y del movimiento financiero. “Formal” no es un tipo de flujo publicado por el contrato.
 
 La evidencia vigente está en:
 
@@ -30,6 +30,8 @@ Responsabilidades observadas:
 
 - vincular un proveedor dentro del evento;
 - conservar una proyección parcial de `CompraItem`.
+
+El item de evento es preparación. Puede admitir información todavía incompleta según el consumer, pero antes de consolidar una compra o afectar inventario debe satisfacer las invariantes del contrato de destino.
 
 ### `ICompra`
 
@@ -63,8 +65,14 @@ Responsabilidades observadas:
 - identificar presentación y producto base cuando existe;
 - conservar cantidad, costo unitario y costo total;
 - declarar si afecta inventario;
-- conservar factor de conversión a unidad base;
+- congelar `presentacionId`, `productoBaseId`, `factorUnidadBase`,
+  `unidadBaseInventario` y `versionConversion` cuando afecta inventario;
 - registrar lote o fecha de vencimiento cuando aplica.
+
+Un `CompraItemInventariable` conserva la conversión usada al capturarlo; no es
+una referencia para volver a consultar la conversión mutable de la presentación.
+`versionConversion` empieza en 1 y debe ser un entero seguro positivo. Un
+`CompraItemNoInventariable` puede omitir por completo estos metadatos físicos.
 
 ### `CompraEgresoRef`
 
@@ -112,6 +120,8 @@ La compra usa `EstadoPagoEnum` del core compartido para expresar situación de p
 - `total` debe ser consistente con subtotal, impuestos, descuentos y gastos adicionales;
 - en `CREDITO`, `fechaVencimientoPago` es obligatoria;
 - en `CONTADO`, `fechaVencimientoPago` no aplica;
+- todo item inventariable exige presentación, producto base, factor positivo,
+  unidad base de inventario y una `versionConversion` entera segura positiva;
 - no se puede confirmar una compra anulado o fuera de `BORRADOR`;
 - no se puede cerrar una compra fuera de `CONFIRMADO`;
 - no se puede anular una compra `CERRADO`.
@@ -131,6 +141,17 @@ La recepción física y el impacto de inventario descansan en:
 - `RecepcionMercaderia`
 - `MovimientoInventario`
 
+La secuencia canónica es:
+
+    Compra aprobada o registrada
+      → RecepcionMercaderia BORRADOR
+      → RecepcionMercaderia CONFIRMADA
+      → AsignacionRecepcionCompra
+      → MovimientoInventario ENTRADA/APLICADO
+      → Stock + Kardex
+
+Una recepción en borrador no modifica stock. Una compra, aunque esté confirmada, tampoco modifica stock por sí sola.
+
 ### Con `Finanzas`
 
 La compra puede relacionarse con:
@@ -145,7 +166,7 @@ La compra declara tipo, serie y número de documento, pero no reemplaza al contr
 ## Restricciones observadas
 
 - moneda observada: `PEN` y `USD`;
-- `Compra` sigue siendo módulo con comportamiento, pero no está publicado en la raíz del paquete;
+- `Compra` está publicada en el subpath `yola-fresh-utils/compras` y `yola-fresh-utils/compras/entities`; la raíz pública expone los contratos, no la entidad rica;
 - la recepción física se documenta fuera del Domain de compras puro.
 
 ## Decisiones vigentes observables
@@ -154,8 +175,44 @@ La compra declara tipo, serie y número de documento, pero no reemplaza al contr
 - `CompraItem.afectaInventario` permite compras con o sin impacto de inventario según cada ítem;
 - `eventoCompraId` es obligatorio en `ICompra`, por lo que la compra vigente siempre nace vinculada a un evento de compra.
 
+El selector `FORMAL/INFORMAL` observado en un consumer no forma parte de estos
+contratos. La propuesta para reemplazarlo por las dimensiones independientes de
+flujo, documento, recepción y pago está en
+[rfc-compra-directa.md](./rfc-compra-directa.md). Mientras el RFC no sea aprobado,
+`TipoFlujoCompraEnum`, `EstadoDocumentarioCompraEnum` y
+`LIQUIDACION_COMPRA` no deben considerarse APIs publicadas.
+
+## Dimensiones de estado que no deben confundirse
+
+El estado comercial de Compra, el estado físico de Recepción y el estado financiero son independientes:
+
+| Dimensión | Contrato | Pregunta que responde |
+|---|---|---|
+| Compra | `EstadoCompraEnum` | ¿El documento está en borrador, aprobado, cerrado o anulado? |
+| Recepción | `EstadoRecepcionMercaderiaEnum` | ¿La mercadería fue físicamente confirmada? |
+| Pago | `EstadoPagoEnum` | ¿La obligación está pendiente, parcial o pagada? |
+
+Un consumer no debe inferir automáticamente una dimensión a partir de otra, salvo una política de negocio compartida y explícita.
+
+## Invariantes interdominio
+
+- una Compra no cambia stock;
+- una Recepción BORRADOR no cambia stock;
+- solo un MovimientoInventario aplicado cambia stock;
+- una asignación no puede superar la cantidad del CompraItem;
+- la suma de recepciones parciales determina el pendiente físico;
+- `factorUnidadBase` pertenece a la unidad comprada y convierte cantidad comprada a unidad base;
+- `unidadBaseInventario` y `versionConversion` pertenecen al mismo snapshot de
+  conversión que `factorUnidadBase`; no se completan consultando catálogo al recibir;
+- `equivalenciaUnidadBase` de una presentación comercial no reemplaza a `factorUnidadBase` del CompraItem;
+- todo movimiento físico debe tener una clave de presentación/unidad de movimiento inequívoca;
+- un Egreso no sustituye la Compra ni la Recepción;
+- un pago debe asignarse explícitamente a la obligación del proveedor para derivar `estadoPago`.
+
 ## Referencias
 
 - [README.md](./README.md)
+- [integracion-pos-offline-first.md](./integracion-pos-offline-first.md)
+- [rfc-compra-directa.md](./rfc-compra-directa.md)
 - [../inventario/README.md](../inventario/README.md)
 - [../finanzas/README.md](../finanzas/README.md)

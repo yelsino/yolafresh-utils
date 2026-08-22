@@ -12,9 +12,19 @@ import {
   CompraItem,
   CompraEgresoRef,
   EstadoCompraEnum,
+  EstadoDocumentarioCompraEnum,
+  IdentidadContraparteCompra,
+  TipoFlujoCompraEnum,
 } from "../contracts/compra.contract";
 import { EstadoPagoEnum } from "../../shared/kernel/enums";
 import { DateUtils } from "../../shared/utils/dates";
+
+const UNIDADES_BASE_INVENTARIO_VALIDAS = new Set([
+  "kilogramo",
+  "litro",
+  "unidad",
+  "metro",
+]);
 
 
 export class Compra implements ICompra {
@@ -26,8 +36,12 @@ export class Compra implements ICompra {
   public readonly proveedorId: string;
   public readonly proveedorNombreSnapshot?: string;
   public readonly proveedorRucSnapshot?: string;
+  public readonly contraparteSnapshot?: IdentidadContraparteCompra;
+  public readonly tipoFlujoCompra: TipoFlujoCompraEnum;
+  public readonly operationId?: string;
 
   public readonly tipoDocumento: TipoDocumentoCompraEnum;
+  public readonly estadoDocumentario: EstadoDocumentarioCompraEnum;
   public readonly serieDocumento?: string;
   public readonly numeroDocumento?: string;
   public readonly correlativoInterno?: string;
@@ -70,8 +84,16 @@ export class Compra implements ICompra {
     this.proveedorId = data.proveedorId;
     this.proveedorNombreSnapshot = data.proveedorNombreSnapshot;
     this.proveedorRucSnapshot = data.proveedorRucSnapshot;
+    this.contraparteSnapshot = data.contraparteSnapshot
+      ? { ...data.contraparteSnapshot }
+      : undefined;
+    this.tipoFlujoCompra =
+      data.tipoFlujoCompra ?? TipoFlujoCompraEnum.GESTIONADA;
+    this.operationId = data.operationId;
 
     this.tipoDocumento = data.tipoDocumento;
+    this.estadoDocumentario =
+      data.estadoDocumentario ?? EstadoDocumentarioCompraEnum.PENDIENTE;
     this.serieDocumento = data.serieDocumento;
     this.numeroDocumento = data.numeroDocumento;
     this.correlativoInterno = data.correlativoInterno;
@@ -144,7 +166,13 @@ export class Compra implements ICompra {
       proveedorId: this.proveedorId,
       proveedorNombreSnapshot: this.proveedorNombreSnapshot,
       proveedorRucSnapshot: this.proveedorRucSnapshot,
+      contraparteSnapshot: this.contraparteSnapshot
+        ? { ...this.contraparteSnapshot }
+        : undefined,
+      tipoFlujoCompra: this.tipoFlujoCompra,
+      operationId: this.operationId,
       tipoDocumento: this.tipoDocumento,
+      estadoDocumentario: this.estadoDocumentario,
       serieDocumento: this.serieDocumento,
       numeroDocumento: this.numeroDocumento,
       correlativoInterno: this.correlativoInterno,
@@ -266,7 +294,39 @@ export class Compra implements ICompra {
         if (!item.nombreItem || item.nombreItem.trim() === "") {
           throw new Error("CompraItem sin nombreItem");
         }
-        if (!item.presentacionId) throw new Error("CompraItem sin presentacionId");
+        if (item.afectaInventario) {
+          if (!String(item.presentacionId ?? "").trim()) {
+            throw new Error("CompraItem inventariable sin presentacionId");
+          }
+          if (!String(item.productoBaseId ?? "").trim()) {
+            throw new Error("CompraItem inventariable sin productoBaseId");
+          }
+          if (
+            !Number.isFinite(item.factorUnidadBase) ||
+            item.factorUnidadBase <= 0
+          ) {
+            throw new Error(
+              "CompraItem inventariable con factorUnidadBase inválido",
+            );
+          }
+          if (
+            !UNIDADES_BASE_INVENTARIO_VALIDAS.has(
+              String(item.unidadBaseInventario ?? ""),
+            )
+          ) {
+            throw new Error(
+              "CompraItem inventariable con unidadBaseInventario inválida",
+            );
+          }
+          if (
+            !Number.isSafeInteger(item.versionConversion) ||
+            item.versionConversion < 1
+          ) {
+            throw new Error(
+              "CompraItem inventariable con versionConversion inválida: debe ser un entero seguro positivo",
+            );
+          }
+        }
         if (!Number.isFinite(item.cantidad) || item.cantidad <= 0) {
           throw new Error("Cantidad inválida en CompraItem");
         }

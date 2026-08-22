@@ -10,6 +10,136 @@ Este proyecto adopta versionado semántico:
 
 ## [Unreleased]
 
+## [2.2.3] - 2026-08-22
+
+### Fixed
+
+- `Pedido` schema 3 congela por línea la decisión de inventario, el tipo de
+  venta y la conversión física versionada que deberá conservarse al convertir
+  el pedido en venta.
+- Las líneas no inventariables quedan identificadas explícitamente y el plan
+  de una venta ya no les exige metadatos físicos, manteniendo la exigencia
+  completa para toda línea que sí registra un movimiento.
+
+## [2.2.2] - 2026-08-22
+
+### Fixed
+
+- Los items inventariables de Compra congelan ahora la conversión física
+  completa: presentación, producto base, factor, unidad base y
+  `versionConversion` como entero seguro positivo.
+- Los items no inventariables pueden omitir esos metadatos sin fabricar una
+  conversión física ni una versión inexistente.
+
+## [2.2.1] - 2026-08-22
+
+### Fixed
+
+- Todo hecho físico que referencia una presentación exige ahora su
+  `versionConversion` como entero positivo seguro. Las capturas directas en la
+  unidad base permanecen explícitamente separadas y no inventan una versión.
+- `VentaSnapshot` y los validadores de movimientos rechazan versiones mayores
+  que `Number.MAX_SAFE_INTEGER`, evitando incrementos o comparaciones no
+  deterministas.
+
+## [2.2.0] - 2026-08-22
+
+### Added
+
+- `Presentacion.versionConversion` pasa a ser obligatoria y se acompaña de una
+  política compartida para crearla en `1`, conservarla ante cambios cosméticos
+  e incrementarla exactamente en uno cuando cambia la conversión física.
+- Los bordes legacy pueden normalizar únicamente la ausencia histórica a `1`;
+  una versión explícita inválida se rechaza sin corrección silenciosa.
+- Las líneas nuevas de Gastronomía congelan la conversión versionada usada al
+  agregarse. La identidad de línea distingue conversiones diferentes y los
+  pedidos históricos sin metadata permanecen explícitamente legacy.
+
+### Compatibility
+
+- Móvil y backend deben consumir el mismo tarball `2.2.0` antes de admitir
+  nuevas escrituras de catálogo. Los documentos CouchDB existentes requieren
+  un backfill controlado de `versionConversion: 1`.
+
+## [1.12.0] - 2026-08-15
+
+### Changed
+
+- La activación de Inventory V2 deja de depender de un único conteo global:
+  `CORTE_V2` y `V2_ACTIVO` conservan la lista canónica
+  `aperturasPorAlmacen`, con un conteo físico independiente por almacén.
+- `V2_ACTIVO` conserva también `coordinacionId`; la transición desde el corte
+  exige coordinación y lista exactas, sin sustituciones ni omisiones.
+- Las referencias y los snapshots especiales de apertura incorporan
+  `almacenId`, cerrando la posibilidad de aplicar un conteo en otro almacén.
+- La evidencia de activación contiene un par captura/aplicación por almacén y
+  debe cubrir exactamente todas las aperturas declaradas.
+
+### Validation
+
+- `aperturasPorAlmacen` es obligatoria, no vacía, ordenada ascendentemente por
+  `almacenId` y rechaza almacenes o conteos duplicados.
+- Los payloads singulares anteriores con `conteoAperturaId` en `CORTE_V2` o
+  `V2_ACTIVO` fallan cerrados; no se reinterpretan como una apertura completa.
+
+### Migration
+
+- Los coordinadores deben materializar una apertura por cada almacén activo,
+  ordenar la lista antes de persistirla y recopilar ambos recibos por almacén.
+- No debe escribirse `V2_ACTIVO` hasta tener cobertura exacta de todos los
+  almacenes del corte.
+
+## [1.11.1] - 2026-08-15
+
+### Fixed
+
+- `TransferenciaInventarioV2` deja de asumir una recepción total única: soporta
+  recibos parciales/múltiples, cierre con diferencia, presentación opcional para
+  captura base y una entrada determinista por recibo físico.
+- Transferencias incorporan `version`/`expectedVersion`, evolución append-only y
+  validación CAS para impedir sobre-recepción o pérdida de recibos concurrentes.
+- `PoliticaInventario` incorpora observación de autoridad, actor e idempotencia;
+  su administración solo se valida en `PREPARANDO_V2` o `V2_ACTIVO`.
+- `MermaInventario` conserva lectura wire-v2 legacy y agrega un flujo auditado,
+  versionado e idempotente para escritores nuevos. La salida solo se materializa
+  desde una transición validada `APROBADO -> APLICADO`.
+
+### Added
+
+- Resumen contractual de cantidades enviadas, aceptadas, rechazadas, faltantes
+  y en tránsito por transferencia.
+- Validadores de evolución para transferencias, políticas y mermas, junto con
+  pruebas de replay, stale version y decisiones multi-tablet concurrentes.
+- Validación de evidencia de merma derivada de la política resuelta.
+
+### Compatibility
+
+- `Transferencia` V1 continúa intacta. `MermaInventario` mantiene
+  `schemaVersion: 2` y acepta documentos anteriores sin `version`/`flujo` para
+  lectura; toda evolución nueva exige el perfil auditado.
+
+## [1.11.0] - 2026-08-15
+
+### Added
+
+- Raíz `TransferenciaInventarioV2`, separada del contrato V1, con líneas en
+  unidad base, conversión congelada y recibos idempotentes por acción.
+- Validadores, máquina de estados y materializadores puros de movimientos de
+  salida/entrada para transferencias offline-first.
+- Permisos atómicos para administrar políticas, operar/aprobar mermas y
+  ver/crear/enviar/recibir/cancelar transferencias.
+
+### Changed
+
+- El catálogo auth pasa a `1.5.0` por la ampliación compatible de permisos.
+- Los helpers de inventario quedan disponibles también desde la exportación
+  raíz del paquete.
+
+### Compatibility
+
+- `Transferencia` y `EstadoTransferenciaEnum` V1 permanecen exportados sin
+  cambios; ningún payload legacy se reinterpreta como V2.
+
 ## [1.4.3] - 2026-08-11
 
 ### Added

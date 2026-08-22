@@ -77,6 +77,13 @@ Evita errores conceptuales como:
 - reversa o ajuste auditable;
 - transferencia de custodia del dinero recibido.
 
+### Evolución propuesta de `CuentaProveedor`
+
+El contrato actual de saldo resumido todavía no es suficiente para pagos y deuda
+auditables. La propuesta versionada —cuenta estable, libro, imputaciones,
+desembolso y resumen reconstruible— está en
+[cuenta-proveedor/rfc-modelo-propuesto.md](./cuenta-proveedor/rfc-modelo-propuesto.md).
+
 ## Terminología canónica
 
 - `Egreso`
@@ -123,7 +130,10 @@ Lectura correcta del diagrama:
 
 - `MovimientoFinanciero` en `ledger-auxiliar.contract.ts` se documenta como contrato auxiliar histórico y no como fuente canónica de auditoría;
 - `Recurrencia` hoy publica payload tipado solo para `CREAR_EGRESO` y `CREAR_CARGO_CLIENTE`; el resto de acciones permanece genérico;
-- `CuentaProveedor` sigue siendo saldo resumido por proveedor; el detalle auditable vive en `MovimientoCuentaProveedor`.
+- `CuentaProveedor` vigente sigue siendo saldo resumido por proveedor; el detalle
+  se intentó representar en `MovimientoCuentaProveedor`, pero ambos contratos se
+  consideran incompletos para una implementación oficial y tienen una evolución
+  propuesta versionada.
 
 ## Referencias
 
@@ -131,3 +141,4 @@ Lectura correcta del diagrama:
 - [../tesoreria/README.md](../tesoreria/README.md)
 - [../compras/README.md](../compras/README.md)
 - [../contabilidad/README.md](../contabilidad/README.md)
+- [cuenta-proveedor/README.md](./cuenta-proveedor/README.md)

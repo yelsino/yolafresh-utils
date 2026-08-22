@@ -681,6 +681,8 @@ class CarritoVenta {
             contenidoNeto: producto.contenidoNeto,
             unidadContenido: producto.unidadContenido,
             equivalenciaUnidadBase: producto.equivalenciaUnidadBase,
+            unidadBaseInventario: producto.unidadBaseInventario,
+            versionConversion: producto.versionConversion,
             fraccionable: producto.fraccionable,
             cantidadParaDescuento: producto.cantidadParaDescuento,
             descuentoXCantidad: producto.descuentoXCantidad,

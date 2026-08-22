@@ -69,6 +69,8 @@ test("el contrato instalado admite una credencial bootstrap por dispositivo", ()
       deviceId: "device-1",
       deviceName: "POS Caja 1",
       deviceType: "android",
+      appVersion: "2.18.0",
+      lastSeenAt: "2026-08-15T12:00:00.000Z",
       allowedSucursalIds: [],
       createdAt: "2026-08-01T00:00:00.000Z",
       updatedAt: "2026-08-01T00:00:00.000Z",
@@ -84,4 +86,5 @@ test("el contrato instalado admite una credencial bootstrap por dispositivo", ()
     installed.tenantConnection.bootstrapAccessToken,
     "opaque-device-bootstrap-token",
   );
+  assert.equal(installed.deviceBinding.appVersion, "2.18.0");
 });

@@ -10,8 +10,15 @@ exports.Compra = void 0;
 const compra_contract_1 = require("../contracts/compra.contract");
 const enums_1 = require("../../shared/kernel/enums");
 const dates_1 = require("../../shared/utils/dates");
+const UNIDADES_BASE_INVENTARIO_VALIDAS = new Set([
+    "kilogramo",
+    "litro",
+    "unidad",
+    "metro",
+]);
 class Compra {
     constructor(data) {
+        var _a, _b;
         this.type = "compra";
         if (!data.id)
             throw new Error("El ID de la compra es requerido");
@@ -26,7 +33,15 @@ class Compra {
         this.proveedorId = data.proveedorId;
         this.proveedorNombreSnapshot = data.proveedorNombreSnapshot;
         this.proveedorRucSnapshot = data.proveedorRucSnapshot;
+        this.contraparteSnapshot = data.contraparteSnapshot
+            ? { ...data.contraparteSnapshot }
+            : undefined;
+        this.tipoFlujoCompra =
+            (_a = data.tipoFlujoCompra) !== null && _a !== void 0 ? _a : compra_contract_1.TipoFlujoCompraEnum.GESTIONADA;
+        this.operationId = data.operationId;
         this.tipoDocumento = data.tipoDocumento;
+        this.estadoDocumentario =
+            (_b = data.estadoDocumentario) !== null && _b !== void 0 ? _b : compra_contract_1.EstadoDocumentarioCompraEnum.PENDIENTE;
         this.serieDocumento = data.serieDocumento;
         this.numeroDocumento = data.numeroDocumento;
         this.correlativoInterno = data.correlativoInterno;
@@ -83,7 +98,13 @@ class Compra {
             proveedorId: this.proveedorId,
             proveedorNombreSnapshot: this.proveedorNombreSnapshot,
             proveedorRucSnapshot: this.proveedorRucSnapshot,
+            contraparteSnapshot: this.contraparteSnapshot
+                ? { ...this.contraparteSnapshot }
+                : undefined,
+            tipoFlujoCompra: this.tipoFlujoCompra,
+            operationId: this.operationId,
             tipoDocumento: this.tipoDocumento,
+            estadoDocumentario: this.estadoDocumentario,
             serieDocumento: this.serieDocumento,
             numeroDocumento: this.numeroDocumento,
             correlativoInterno: this.correlativoInterno,
@@ -197,13 +218,31 @@ class Compra {
         }
         const redondear = (valor) => Math.round(valor * 100) / 100;
         const totalItems = redondear(this.items.reduce((sum, item) => {
+            var _a, _b, _c;
             if (!item.id)
                 throw new Error("CompraItem sin id");
             if (!item.nombreItem || item.nombreItem.trim() === "") {
                 throw new Error("CompraItem sin nombreItem");
             }
-            if (!item.presentacionId)
-                throw new Error("CompraItem sin presentacionId");
+            if (item.afectaInventario) {
+                if (!String((_a = item.presentacionId) !== null && _a !== void 0 ? _a : "").trim()) {
+                    throw new Error("CompraItem inventariable sin presentacionId");
+                }
+                if (!String((_b = item.productoBaseId) !== null && _b !== void 0 ? _b : "").trim()) {
+                    throw new Error("CompraItem inventariable sin productoBaseId");
+                }
+                if (!Number.isFinite(item.factorUnidadBase) ||
+                    item.factorUnidadBase <= 0) {
+                    throw new Error("CompraItem inventariable con factorUnidadBase inválido");
+                }
+                if (!UNIDADES_BASE_INVENTARIO_VALIDAS.has(String((_c = item.unidadBaseInventario) !== null && _c !== void 0 ? _c : ""))) {
+                    throw new Error("CompraItem inventariable con unidadBaseInventario inválida");
+                }
+                if (!Number.isSafeInteger(item.versionConversion) ||
+                    item.versionConversion < 1) {
+                    throw new Error("CompraItem inventariable con versionConversion inválida: debe ser un entero seguro positivo");
+                }
+            }
             if (!Number.isFinite(item.cantidad) || item.cantidad <= 0) {
                 throw new Error("Cantidad inválida en CompraItem");
             }

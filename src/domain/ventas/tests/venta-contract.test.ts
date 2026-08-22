@@ -12,6 +12,9 @@ import {
 import { Venta, VentaCreateInput } from "../entities/Venta";
 import {
   isVentaSnapshotImmutableState,
+  VENTA_INVENTORY_PLAN_SCHEMA,
+  VENTA_INVENTORY_PLAN_VERSION,
+  VentaSnapshot,
   VentaSnapshotItem,
 } from "../entities/VentaSnapshot";
 
@@ -198,6 +201,238 @@ test("Venta.fromCarritoVenta construye conteo y snapshot histórico", () => {
   assert.equal(snapshot.items[0]?.imagenUrl, "producto-small.jpg");
 });
 
+test("VentaSnapshot conserva el vínculo comercial hacia inventario", () => {
+  const carrito = buildCarrito();
+  Object.assign(carrito.items[0].product, {
+    productoBaseId: "producto_base_001",
+    unidadBaseInventario: "unidad",
+    equivalenciaUnidadBase: 12,
+    versionConversion: 3,
+  });
+
+  const snapshot = Venta.fromCarritoVenta(
+    carrito,
+    "venta_inventory_v2",
+  ).toVentaSnapshot({ almacenOrigenId: "almacen_001" });
+  const item = snapshot.items[0];
+
+  assert.equal(snapshot.almacenOrigenId, "almacen_001");
+  assert.equal(item?.cantidadVendida, 1);
+  assert.equal(item?.productoBaseId, "producto_base_001");
+  assert.equal(item?.unidadBase, "unidad");
+  assert.equal(item?.factorConversionBase, 12);
+  assert.equal(item?.cantidadBase, 12);
+  assert.equal(item?.versionConversion, 3);
+});
+
+test("VentaSnapshot conserva un plan de inventario total, disjunto y completo", () => {
+  const controlled = buildSnapshotItem({
+    id: "item_controlado",
+    productoBaseId: "base_controlada",
+    unidadBase: "unidad",
+    factorConversionBase: 12,
+    cantidadBase: 24,
+    versionConversion: 2,
+  });
+  const omitted = buildSnapshotItem({
+    id: "item_omitido",
+    afectaInventario: false,
+  });
+  const snapshot = new VentaSnapshot({
+    id: "venta_plan:snapshot",
+    ventaId: "venta_plan",
+    createdAt: 1_000,
+    almacenOrigenId: "almacen_001",
+    items: [controlled, omitted],
+    subtotal: 20,
+    impuesto: 0,
+    total: 20,
+    planInventarioV2: {
+      schema: VENTA_INVENTORY_PLAN_SCHEMA,
+      version: VENTA_INVENTORY_PLAN_VERSION,
+      resueltoAt: 900,
+      almacenId: "almacen_001",
+      actor: {
+        usuarioId: "vendedor_001",
+        usuarioNombre: "Operador original",
+        dispositivoId: "tablet_001",
+        sesionId: "sesion_001",
+      },
+      registrarMovimientoItemIds: ["item_controlado"],
+      omitidosPorPoliticaItemIds: ["item_omitido"],
+    },
+  }).toJSON();
+
+  assert.deepEqual(snapshot.planInventarioV2, {
+    schema: VENTA_INVENTORY_PLAN_SCHEMA,
+    version: VENTA_INVENTORY_PLAN_VERSION,
+    resueltoAt: 900,
+    almacenId: "almacen_001",
+    actor: {
+      usuarioId: "vendedor_001",
+      usuarioNombre: "Operador original",
+      dispositivoId: "tablet_001",
+      sesionId: "sesion_001",
+    },
+    registrarMovimientoItemIds: ["item_controlado"],
+    omitidosPorPoliticaItemIds: ["item_omitido"],
+  });
+  assert.equal(snapshot.items[1]?.afectaInventario, false);
+  assert.equal(snapshot.items[1]?.productoBaseId, undefined);
+});
+
+test("VentaSnapshot exige snapshot físico solo a líneas registradas", () => {
+  const registeredWithoutSnapshot = buildSnapshotItem({
+    id: "item_registrado_sin_snapshot",
+  });
+
+  assert.throws(
+    () =>
+      new VentaSnapshot({
+        id: "venta_plan_sin_snapshot:snapshot",
+        ventaId: "venta_plan_sin_snapshot",
+        createdAt: 1_000,
+        almacenOrigenId: "almacen_001",
+        items: [registeredWithoutSnapshot],
+        subtotal: 10,
+        impuesto: 0,
+        total: 10,
+        planInventarioV2: {
+          schema: VENTA_INVENTORY_PLAN_SCHEMA,
+          version: VENTA_INVENTORY_PLAN_VERSION,
+          resueltoAt: 900,
+          almacenId: "almacen_001",
+          actor: { usuarioId: "vendedor_001" },
+          registrarMovimientoItemIds: [registeredWithoutSnapshot.id],
+          omitidosPorPoliticaItemIds: [],
+        },
+      }),
+    /productoBaseId.*requerido por planInventarioV2/,
+  );
+});
+
+test("VentaSnapshot permite legado comercial, pero una salida planificada exige versión segura", () => {
+  const legacy = new VentaSnapshot({
+    id: "venta_legacy:snapshot",
+    ventaId: "venta_legacy",
+    createdAt: 1_000,
+    items: [buildSnapshotItem()],
+    subtotal: 10,
+    impuesto: 0,
+    total: 10,
+  });
+  assert.equal(legacy.items[0]?.versionConversion, undefined);
+
+  const itemSinVersion = buildSnapshotItem({
+    productoBaseId: "base_001",
+    unidadBase: "unidad",
+    factorConversionBase: 1,
+    cantidadBase: 2,
+  });
+  const plan = {
+    schema: VENTA_INVENTORY_PLAN_SCHEMA,
+    version: VENTA_INVENTORY_PLAN_VERSION,
+    resueltoAt: 900,
+    almacenId: "almacen_001",
+    actor: { usuarioId: "vendedor_001" },
+    registrarMovimientoItemIds: [itemSinVersion.id],
+    omitidosPorPoliticaItemIds: [],
+  };
+
+  assert.throws(
+    () =>
+      new VentaSnapshot({
+        id: "venta_sin_version:snapshot",
+        ventaId: "venta_sin_version",
+        createdAt: 1_000,
+        almacenOrigenId: "almacen_001",
+        items: [itemSinVersion],
+        subtotal: 10,
+        impuesto: 0,
+        total: 10,
+        planInventarioV2: plan,
+      }),
+    /versionConversion.*requerida.*entero seguro positivo/,
+  );
+
+  assert.throws(
+    () =>
+      new VentaSnapshot({
+        id: "venta_version_insegura:snapshot",
+        ventaId: "venta_version_insegura",
+        createdAt: 1_000,
+        almacenOrigenId: "almacen_001",
+        items: [{
+          ...itemSinVersion,
+          versionConversion: Number.MAX_SAFE_INTEGER + 1,
+        }],
+        subtotal: 10,
+        impuesto: 0,
+        total: 10,
+        planInventarioV2: plan,
+      }),
+    /versionConversion.*entero seguro positivo/,
+  );
+});
+
+test("VentaSnapshot rechaza planes de inventario ambiguos o parciales", () => {
+  const item = buildSnapshotItem({
+    productoBaseId: "base_001",
+    unidadBase: "unidad",
+    factorConversionBase: 1,
+    cantidadBase: 2,
+    versionConversion: 1,
+  });
+
+  assert.throws(
+    () =>
+      new VentaSnapshot({
+        id: "venta_plan_invalido:snapshot",
+        ventaId: "venta_plan_invalido",
+        createdAt: 1_000,
+        almacenOrigenId: "almacen_001",
+        items: [item],
+        subtotal: 10,
+        impuesto: 0,
+        total: 10,
+        planInventarioV2: {
+          schema: VENTA_INVENTORY_PLAN_SCHEMA,
+          version: VENTA_INVENTORY_PLAN_VERSION,
+          resueltoAt: 900,
+          almacenId: "almacen_001",
+          actor: { usuarioId: "vendedor_001" },
+          registrarMovimientoItemIds: [item.id],
+          omitidosPorPoliticaItemIds: [item.id],
+        },
+      }),
+    /ambas particiones/,
+  );
+
+  assert.throws(
+    () =>
+      new VentaSnapshot({
+        id: "venta_plan_sin_actor:snapshot",
+        ventaId: "venta_plan_sin_actor",
+        createdAt: 1_000,
+        almacenOrigenId: "almacen_001",
+        items: [item],
+        subtotal: 10,
+        impuesto: 0,
+        total: 10,
+        planInventarioV2: {
+          schema: VENTA_INVENTORY_PLAN_SCHEMA,
+          version: VENTA_INVENTORY_PLAN_VERSION,
+          resueltoAt: 900,
+          almacenId: "almacen_001",
+          registrarMovimientoItemIds: [item.id],
+          omitidosPorPoliticaItemIds: [],
+        } as never,
+      }),
+    /actor\.usuarioId es requerido/,
+  );
+
+});
+
 test("Venta rehidratada exige detalle explícito para construir snapshot", () => {
   const original = new Venta(buildVentaInput());
   const rehidratada = new Venta(original.toJSON() as VentaCreateInput);
@@ -207,9 +442,7 @@ test("Venta rehidratada exige detalle explícito para construir snapshot", () =>
     /VentaSnapshotBuildContext\.items es requerido/,
   );
 
-  const snapshot = rehidratada.toVentaSnapshot({
-    items: [buildSnapshotItem()],
-  });
+  const snapshot = rehidratada.toVentaSnapshot({ items: [buildSnapshotItem()] });
   assert.equal(snapshot.items.length, rehidratada.items);
 });
 

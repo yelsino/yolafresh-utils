@@ -1,12 +1,13 @@
-import type { DocumentoRestaurante, TrazaOperacionRestaurante } from "./common.contract";
+import type {
+  DocumentoRestaurante,
+  TrazaOperacionRestaurante,
+} from "./common.contract";
+import type { ModoOperacionEstacionRestaurante } from "./configuration.contract";
 import type { ModoPreparacionRestaurante } from "./menu.contract";
 import type { CanalServicioRestaurante } from "./service.contract";
 
 export type TipoComandaRestaurante =
-  | "ENVIO"
-  | "CANCELACION"
-  | "CORRECCION"
-  | "REFIRE";
+  "ENVIO" | "CANCELACION" | "CORRECCION" | "REFIRE";
 
 export interface ReferenciaServicioComandaRestaurante {
   canal: CanalServicioRestaurante;
@@ -31,8 +32,7 @@ export interface ItemComandaRestaurante {
 }
 
 /** Hecho inmutable enviado a Cocina, Barra u otra estacion. */
-export interface ComandaRestaurante
-  extends DocumentoRestaurante<"restaurant_comandas"> {
+export interface ComandaRestaurante extends DocumentoRestaurante<"restaurant_comandas"> {
   pedidoId: string;
   sesionServicioId: string;
   secuencia: number;
@@ -52,12 +52,12 @@ export type EstadoTareaPreparacionRestaurante =
   | "RETENIDA"
   | "LISTA"
   | "ENTREGADA"
+  | "GESTION_EXTERNA"
   | "CANCELADA"
   | "DESCARTADA";
 
 /** Trabajo mutable de una estacion para un item de comanda. */
-export interface TareaPreparacionRestaurante
-  extends DocumentoRestaurante<"restaurant_tareas_preparacion"> {
+export interface TareaPreparacionRestaurante extends DocumentoRestaurante<"restaurant_tareas_preparacion"> {
   comandaId: string;
   comandaItemId: string;
   pedidoId: string;
@@ -65,6 +65,12 @@ export interface TareaPreparacionRestaurante
   sesionServicioId: string;
   estacionPreparacionId: string;
   modoPreparacion: ModoPreparacionRestaurante;
+  /** Snapshot del modo de la estacion al aceptar la comanda. */
+  modoOperacionEstacion?: ModoOperacionEstacionRestaurante;
+  /**
+   * GESTION_EXTERNA omite el seguimiento de preparacion en Cocina, pero
+   * conserva pendiente la confirmacion de entrega de Salon.
+   */
   estado: EstadoTareaPreparacionRestaurante;
   cantidad: number;
   asiento?: number;

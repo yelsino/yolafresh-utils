@@ -74,12 +74,25 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       typeof item.montoTotal === "number" && Number.isFinite(item.montoTotal)
         ? item.montoTotal
         : precioUnitario * cantidadVendida;
+    const factorConversionBase = Number(item.product?.equivalenciaUnidadBase);
+    const tieneConversionBase =
+      Number.isFinite(factorConversionBase) && factorConversionBase > 0;
 
     return {
       id: item.id,
       presentacionId,
+      productoBaseId: item.product?.productoBaseId,
       nombre: String(item.product?.nombre || presentacionId).trim(),
       cantidadVendida,
+      unidadBase: item.product?.unidadBaseInventario,
+      factorConversionBase: tieneConversionBase
+        ? factorConversionBase
+        : undefined,
+      cantidadBase: tieneConversionBase
+        ? Math.round(cantidadVendida * factorConversionBase * 1_000_000) /
+          1_000_000
+        : undefined,
+      versionConversion: item.product?.versionConversion,
       precioUnitario: Venta.roundMoney(precioUnitario),
       total: Venta.roundMoney(totalBruto),
       imagenUrl: item.product?.imagen?.sizes?.small,

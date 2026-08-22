@@ -34,6 +34,15 @@ Salidas: `CANCELADO`; las líneas enviadas se compensan, no desaparecen.
 
 `PENDIENTE -> EN_COLA -> EN_PREPARACION -> LISTA -> ENTREGADA`
 
+Una estacion configurada como `COMANDA_FISICA` crea la tarea directamente en
+`GESTION_EXTERNA`. Ese estado omite los cambios de preparacion de Cocina, pero
+no significa `LISTA` ni `ENTREGADA`: declara que Yola Fresh no controla el
+avance de esa preparacion. Salon conserva la confirmacion
+`GESTION_EXTERNA -> ENTREGADA`, por lo que la mesa no se libera hasta registrar
+que el plato llego al comensal. El modo queda copiado en la tarea cuando se
+acepta la comanda, por lo que un cambio posterior de configuracion no altera el
+historial.
+
 Salidas controladas: `RETENIDA`, `CANCELADA`, `DESCARTADA`; transición especial `REFIRE` crea un nuevo intento relacionado.
 
 Reglas:

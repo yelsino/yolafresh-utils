@@ -175,7 +175,7 @@ exports.AUTH_ROLE_DEFINITIONS = Object.freeze({
     "gastronomia-anfitrion": {
         id: "gastronomia-anfitrion",
         nombre: "ANFITRION",
-        descripcion: "RecepciÃ³n, disponibilidad de salÃ³n y apertura de atenciones",
+        descripcion: "Recepción, disponibilidad de salón y apertura de atenciones",
         grants: [
             "restaurante:salon:ver",
             "restaurante:mesa:ver",
@@ -187,7 +187,7 @@ exports.AUTH_ROLE_DEFINITIONS = Object.freeze({
     "gastronomia-mesero": {
         id: "gastronomia-mesero",
         nombre: "MOZO_MESERO",
-        descripcion: "SalÃ³n, pedido, rondas y entrega a mesa",
+        descripcion: "Salón, pedido, rondas y entrega a mesa",
         grants: [
             "restaurante:salon:ver",
             "restaurante:mesa:ver",
@@ -204,7 +204,7 @@ exports.AUTH_ROLE_DEFINITIONS = Object.freeze({
     "gastronomia-capitan-salon": {
         id: "gastronomia-capitan-salon",
         nombre: "CAPITAN_SALON",
-        descripcion: "SupervisiÃ³n de atenciones e incidencias del salÃ³n",
+        descripcion: "Supervisión de atenciones e incidencias del salón",
         grants: [
             "restaurante:salon:ver",
             "restaurante:mesa:ver",
@@ -219,14 +219,14 @@ exports.AUTH_ROLE_DEFINITIONS = Object.freeze({
     "gastronomia-cocinero": {
         id: "gastronomia-cocinero",
         nombre: "COCINERO",
-        descripcion: "PreparaciÃ³n de comandas asignadas a estaciones de cocina",
+        descripcion: "Preparación de comandas asignadas a estaciones de cocina",
         grants: ["restaurante:preparacion_cocina:*"],
         availability: { verticales: SOLO_GASTRONOMIA },
     },
     "gastronomia-jefe-cocina": {
         id: "gastronomia-jefe-cocina",
         nombre: "JEFE_COCINA",
-        descripcion: "SupervisiÃ³n de preparaciÃ³n en todas las estaciones",
+        descripcion: "Supervisión de preparación en todas las estaciones",
         grants: [
             "restaurante:preparacion:*",
             "restaurante:preparacion_cocina:*",
@@ -237,7 +237,7 @@ exports.AUTH_ROLE_DEFINITIONS = Object.freeze({
     "gastronomia-barra": {
         id: "gastronomia-barra",
         nombre: "BARRA",
-        descripcion: "PreparaciÃ³n de comandas asignadas a estaciones de barra",
+        descripcion: "Preparación de comandas asignadas a estaciones de barra",
         grants: ["restaurante:preparacion_barra:*"],
         availability: { verticales: SOLO_GASTRONOMIA },
     },

@@ -42,3 +42,37 @@ const AUTH_PERMISSION_SET = new Set(permission_catalog_1.AUTH_PERMISSIONS);
     strict_1.default.ok(AUTH_PERMISSION_SET.has("restaurante:cuenta:cobrar"));
     strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA["restaurante:cuenta:cobrar"].criticidad, "critical");
 });
+(0, node_test_1.default)("pedido comercial separa edición, aprobación y anulación", () => {
+    strict_1.default.ok(AUTH_PERMISSION_SET.has("ventas:pedido:editar"));
+    strict_1.default.ok(AUTH_PERMISSION_SET.has("ventas:pedido:aprobar"));
+    strict_1.default.ok(AUTH_PERMISSION_SET.has("ventas:pedido:anular"));
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA["ventas:pedido:anular"].criticidad, "critical");
+});
+(0, node_test_1.default)("administrar almacenes es un permiso crítico y auditable", () => {
+    const permission = "inventario:almacen:administrar";
+    strict_1.default.ok(AUTH_PERMISSION_SET.has(permission));
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA[permission].criticidad, "critical");
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA[permission].auditable, true);
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA[permission].requiresActiveSession, true);
+});
+(0, node_test_1.default)("operaciones de inventario tienen permisos atomicos y metadata auditable", () => {
+    const esperados = [
+        "inventario:politica:administrar",
+        "inventario:merma:ver",
+        "inventario:merma:crear",
+        "inventario:merma:aprobar",
+        "inventario:transferencia:ver",
+        "inventario:transferencia:crear",
+        "inventario:transferencia:enviar",
+        "inventario:transferencia:recibir",
+        "inventario:transferencia:cancelar",
+    ];
+    for (const permission of esperados) {
+        strict_1.default.ok(AUTH_PERMISSION_SET.has(permission));
+        strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA[permission].auditable, true);
+        strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA[permission].requiresActiveSession, true);
+    }
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA["inventario:politica:administrar"].criticidad, "critical");
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA["inventario:merma:aprobar"].criticidad, "critical");
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA["inventario:transferencia:cancelar"].criticidad, "critical");
+});

@@ -4,6 +4,7 @@ exports.validarModificadoresRestaurante = validarModificadoresRestaurante;
 exports.validarRutasPreparacionRestaurante = validarRutasPreparacionRestaurante;
 exports.validarProductoRestaurante = validarProductoRestaurante;
 exports.crearClaveLineaPedidoRestaurante = crearClaveLineaPedidoRestaurante;
+const inventory_conversion_policy_1 = require("./inventory-conversion.policy");
 function validarModificadoresRestaurante(groups, selections) {
     const errors = [];
     for (const group of groups) {
@@ -15,7 +16,8 @@ function validarModificadoresRestaurante(groups, selections) {
         if (count > group.maximoSelecciones) {
             errors.push(`${group.nombre}: permite como maximo ${group.maximoSelecciones} seleccion(es)`);
         }
-        if (!group.permiteRepeticion && selected.some((item) => item.cantidad > 1)) {
+        if (!group.permiteRepeticion &&
+            selected.some((item) => item.cantidad > 1)) {
             errors.push(`${group.nombre}: no permite repetir opciones`);
         }
         const options = new Map(group.opciones.map((option) => [option.id, option]));
@@ -46,16 +48,20 @@ function validarRutasPreparacionRestaurante(rutas, estacionesActivasIds) {
         if (ids.has(ruta.estacionPreparacionId))
             errors.push("La estacion no puede repetirse en las rutas");
         ids.add(ruta.estacionPreparacionId);
-        if (estacionesActivasIds && !estacionesActivasIds.has(ruta.estacionPreparacionId)) {
+        if (estacionesActivasIds &&
+            !estacionesActivasIds.has(ruta.estacionPreparacionId)) {
             errors.push(`La estacion ${ruta.estacionPreparacionId} no esta activa`);
         }
     }
     return { valid: errors.length === 0, errors };
 }
 function validarProductoRestaurante(product, estacionesActivasIds) {
-    const errors = [...validarRutasPreparacionRestaurante(product.rutasPreparacion, estacionesActivasIds).errors];
+    const errors = [
+        ...validarRutasPreparacionRestaurante(product.rutasPreparacion, estacionesActivasIds).errors,
+    ];
     for (const group of product.gruposModificadores) {
-        if (group.minimoSelecciones < 0 || group.maximoSelecciones < group.minimoSelecciones) {
+        if (group.minimoSelecciones < 0 ||
+            group.maximoSelecciones < group.minimoSelecciones) {
             errors.push(`${group.nombre}: limites de seleccion invalidos`);
         }
     }
@@ -79,5 +85,8 @@ function crearClaveLineaPedidoRestaurante(line) {
         (_b = line.asiento) !== null && _b !== void 0 ? _b : "",
         (_c = line.curso) !== null && _c !== void 0 ? _c : "",
         routes,
+        line.snapshot
+            ? (0, inventory_conversion_policy_1.crearFirmaConversionPedidoRestaurante)(line.snapshot)
+            : "LEGACY_SIN_CONVERSION",
     ].join("::");
 }

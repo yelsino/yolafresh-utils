@@ -8,8 +8,15 @@ import type {
   EstadoSesionRestaurante,
 } from "../contracts/service.contract";
 import type { ModoPreparacionRestaurante } from "../contracts/menu.contract";
+import {
+  MODO_OPERACION_ESTACION_RESTAURANTE,
+  type ModoOperacionEstacionRestaurante,
+} from "../contracts/configuration.contract";
 
-const SESSION_TRANSITIONS: Record<EstadoSesionRestaurante, readonly EstadoSesionRestaurante[]> = {
+const SESSION_TRANSITIONS: Record<
+  EstadoSesionRestaurante,
+  readonly EstadoSesionRestaurante[]
+> = {
   PLANIFICADA: ["ABIERTA", "CANCELADA"],
   ABIERTA: ["EN_ATENCION", "SOLICITA_CIERRE", "CANCELADA", "ABANDONADA"],
   EN_ATENCION: ["SOLICITA_CIERRE", "CANCELADA", "ABANDONADA"],
@@ -19,7 +26,10 @@ const SESSION_TRANSITIONS: Record<EstadoSesionRestaurante, readonly EstadoSesion
   ABANDONADA: [],
 };
 
-const ORDER_TRANSITIONS: Record<EstadoPedidoRestaurante, readonly EstadoPedidoRestaurante[]> = {
+const ORDER_TRANSITIONS: Record<
+  EstadoPedidoRestaurante,
+  readonly EstadoPedidoRestaurante[]
+> = {
   BORRADOR: ["ABIERTO", "CANCELADO"],
   ABIERTO: ["PARCIALMENTE_ENVIADO", "ENVIADO", "CANCELADO"],
   PARCIALMENTE_ENVIADO: ["ENVIADO", "COMPLETADO", "CANCELADO"],
@@ -38,6 +48,7 @@ const PREPARATION_TRANSITIONS: Record<
   RETENIDA: ["EN_COLA", "EN_PREPARACION", "CANCELADA"],
   LISTA: ["ENTREGADA", "DESCARTADA"],
   ENTREGADA: [],
+  GESTION_EXTERNA: ["ENTREGADA"],
   CANCELADA: [],
   DESCARTADA: [],
 };
@@ -76,8 +87,13 @@ export const puedeTransicionarCuentaRestaurante = (
 
 export const estadoInicialTareaPreparacionRestaurante = (
   mode: ModoPreparacionRestaurante,
+  stationOperationMode: ModoOperacionEstacionRestaurante = MODO_OPERACION_ESTACION_RESTAURANTE.SEGUIMIENTO_DIGITAL,
 ): EstadoTareaPreparacionRestaurante =>
-  mode === "DESPACHO_DIRECTO" ? "LISTA" : "EN_COLA";
+  stationOperationMode === MODO_OPERACION_ESTACION_RESTAURANTE.COMANDA_FISICA
+    ? "GESTION_EXTERNA"
+    : mode === "DESPACHO_DIRECTO"
+      ? "LISTA"
+      : "EN_COLA";
 
 export const esTareaPreparacionTerminalRestaurante = (
   task: Pick<TareaPreparacionRestaurante, "estado">,

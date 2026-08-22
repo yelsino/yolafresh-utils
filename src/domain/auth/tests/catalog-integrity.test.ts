@@ -21,7 +21,9 @@ test("todo permiso tiene metadata completa", () => {
     assert.ok(metadata.modulo.length > 0);
     assert.ok(metadata.recurso.length > 0);
     assert.ok(metadata.accion.length > 0);
-    assert.ok(["low", "medium", "high", "critical"].includes(metadata.criticidad));
+    assert.ok(
+      ["low", "medium", "high", "critical"].includes(metadata.criticidad),
+    );
   }
 });
 
@@ -30,7 +32,10 @@ test("aliases canónicos expanden solo a permisos válidos", () => {
     assert.ok(permissions.length > 0, `Alias ${alias} no debe expandir vacío`);
 
     for (const permission of permissions) {
-      assert.ok(AUTH_PERMISSION_SET.has(permission), `${alias} expandió permiso inválido ${permission}`);
+      assert.ok(
+        AUTH_PERMISSION_SET.has(permission),
+        `${alias} expandió permiso inválido ${permission}`,
+      );
     }
   }
 });
@@ -41,11 +46,66 @@ test("wildcard global expande a catálogo completo", () => {
 
 test("catalogo gastronomico separa salon, cocina, barra y caja", () => {
   assert.ok(AUTH_PERMISSION_SET.has("restaurante:pedido:editar"));
-  assert.ok(AUTH_PERMISSION_SET.has("restaurante:preparacion_cocina:actualizar"));
-  assert.ok(AUTH_PERMISSION_SET.has("restaurante:preparacion_barra:actualizar"));
+  assert.ok(
+    AUTH_PERMISSION_SET.has("restaurante:preparacion_cocina:actualizar"),
+  );
+  assert.ok(
+    AUTH_PERMISSION_SET.has("restaurante:preparacion_barra:actualizar"),
+  );
   assert.ok(AUTH_PERMISSION_SET.has("restaurante:cuenta:cobrar"));
   assert.equal(
     PERMISSION_METADATA["restaurante:cuenta:cobrar"].criticidad,
+    "critical",
+  );
+});
+
+test("pedido comercial separa edición, aprobación y anulación", () => {
+  assert.ok(AUTH_PERMISSION_SET.has("ventas:pedido:editar"));
+  assert.ok(AUTH_PERMISSION_SET.has("ventas:pedido:aprobar"));
+  assert.ok(AUTH_PERMISSION_SET.has("ventas:pedido:anular"));
+  assert.equal(
+    PERMISSION_METADATA["ventas:pedido:anular"].criticidad,
+    "critical",
+  );
+});
+
+test("administrar almacenes es un permiso crítico y auditable", () => {
+  const permission = "inventario:almacen:administrar";
+  assert.ok(AUTH_PERMISSION_SET.has(permission));
+  assert.equal(PERMISSION_METADATA[permission].criticidad, "critical");
+  assert.equal(PERMISSION_METADATA[permission].auditable, true);
+  assert.equal(PERMISSION_METADATA[permission].requiresActiveSession, true);
+});
+
+test("operaciones de inventario tienen permisos atomicos y metadata auditable", () => {
+  const esperados = [
+    "inventario:politica:administrar",
+    "inventario:merma:ver",
+    "inventario:merma:crear",
+    "inventario:merma:aprobar",
+    "inventario:transferencia:ver",
+    "inventario:transferencia:crear",
+    "inventario:transferencia:enviar",
+    "inventario:transferencia:recibir",
+    "inventario:transferencia:cancelar",
+  ] as const;
+
+  for (const permission of esperados) {
+    assert.ok(AUTH_PERMISSION_SET.has(permission));
+    assert.equal(PERMISSION_METADATA[permission].auditable, true);
+    assert.equal(PERMISSION_METADATA[permission].requiresActiveSession, true);
+  }
+
+  assert.equal(
+    PERMISSION_METADATA["inventario:politica:administrar"].criticidad,
+    "critical",
+  );
+  assert.equal(
+    PERMISSION_METADATA["inventario:merma:aprobar"].criticidad,
+    "critical",
+  );
+  assert.equal(
+    PERMISSION_METADATA["inventario:transferencia:cancelar"].criticidad,
     "critical",
   );
 });

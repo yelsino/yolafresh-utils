@@ -51,16 +51,131 @@ const audit = {
     strict_1.default.equal((0, index_1.validarProductoRestaurante)({ ...producto, rutasPreparacion: [] }).valid, false);
     strict_1.default.equal((0, index_1.estadoInicialTareaPreparacionRestaurante)("PREPARAR"), "EN_COLA");
     strict_1.default.equal((0, index_1.estadoInicialTareaPreparacionRestaurante)("DESPACHO_DIRECTO"), "LISTA");
+    strict_1.default.equal((0, index_1.estadoInicialTareaPreparacionRestaurante)("PREPARAR", index_1.MODO_OPERACION_ESTACION_RESTAURANTE.COMANDA_FISICA), "GESTION_EXTERNA");
+    strict_1.default.equal((0, index_1.esTareaPreparacionTerminalRestaurante)({ estado: "GESTION_EXTERNA" }), false);
 });
 (0, node_test_1.default)("cada configuracion especial genera identidad de linea diferente", () => {
     const common = {
         productoRestauranteId: "menu-ceviche",
+        snapshot: {
+            productoId: "product-ceviche",
+            presentacionId: "presentation-ceviche",
+            nombre: "Ceviche",
+            precioBaseUnitario: (0, index_1.dineroRestaurante)(1000),
+            impuestoUnitario: (0, index_1.dineroRestaurante)(180),
+        },
         modificadores: [],
         rutasPreparacion: [
             { estacionPreparacionId: "kitchen", modo: "PREPARAR", orden: 1 },
         ],
     };
-    strict_1.default.notEqual((0, index_1.crearClaveLineaPedidoRestaurante)({ ...common, instrucciones: "con cebolla" }), (0, index_1.crearClaveLineaPedidoRestaurante)({ ...common, instrucciones: "sin cebolla" }));
+    strict_1.default.notEqual((0, index_1.crearClaveLineaPedidoRestaurante)({
+        ...common,
+        instrucciones: "con cebolla",
+    }), (0, index_1.crearClaveLineaPedidoRestaurante)({
+        ...common,
+        instrucciones: "sin cebolla",
+    }));
+});
+(0, node_test_1.default)("conversion gastronómica distingue legacy, versión válida y metadata corrupta", () => {
+    const baseSnapshot = {
+        productoId: "product-beer",
+        presentacionId: "presentation-beer",
+        nombre: "Cerveza",
+        unidadComercial: "botella",
+        precioBaseUnitario: (0, index_1.dineroRestaurante)(1000),
+        impuestoUnitario: (0, index_1.dineroRestaurante)(180),
+    };
+    strict_1.default.deepEqual((0, index_1.evaluarConversionPedidoRestaurante)(baseSnapshot), {
+        estado: "LEGACY_SIN_CONVERSION",
+        valida: true,
+        errores: [],
+    });
+    const versionedSnapshot = {
+        ...baseSnapshot,
+        conversionInventario: {
+            productoBaseId: "product-beer",
+            presentacionId: "presentation-beer",
+            unidadOperacion: "botella",
+            unidadBase: "litro",
+            factorUnidadBase: 0.33,
+            precisionCantidadBase: 6,
+            versionConversion: 2,
+            capturadaAt: 2000,
+        },
+    };
+    strict_1.default.equal((0, index_1.evaluarConversionPedidoRestaurante)(versionedSnapshot).estado, "VERSIONADA");
+    strict_1.default.match((0, index_1.crearFirmaConversionPedidoRestaurante)(versionedSnapshot), /product-beer:presentation-beer:botella:litro:0.33:6:2/);
+    const invalid = (0, index_1.evaluarConversionPedidoRestaurante)({
+        ...versionedSnapshot,
+        conversionInventario: {
+            ...versionedSnapshot.conversionInventario,
+            versionConversion: 0,
+        },
+    });
+    strict_1.default.equal(invalid.estado, "INVALIDA");
+    strict_1.default.equal(invalid.valida, false);
+});
+(0, node_test_1.default)("la clave de línea no mezcla legacy ni versiones de conversión distintas", () => {
+    const common = {
+        productoRestauranteId: "menu-beer",
+        modificadores: [],
+        rutasPreparacion: [
+            { estacionPreparacionId: "bar", modo: "PREPARAR", orden: 1 },
+        ],
+    };
+    const legacySnapshot = {
+        productoId: "product-beer",
+        presentacionId: "presentation-beer",
+        nombre: "Cerveza",
+        unidadComercial: "botella",
+        precioBaseUnitario: (0, index_1.dineroRestaurante)(1000),
+        impuestoUnitario: (0, index_1.dineroRestaurante)(180),
+    };
+    const versionedSnapshot = {
+        ...legacySnapshot,
+        conversionInventario: {
+            productoBaseId: "product-beer",
+            presentacionId: "presentation-beer",
+            unidadOperacion: "botella",
+            unidadBase: "litro",
+            factorUnidadBase: 0.33,
+            precisionCantidadBase: 6,
+            versionConversion: 1,
+            capturadaAt: 1000,
+        },
+    };
+    const legacyKey = (0, index_1.crearClaveLineaPedidoRestaurante)({
+        ...common,
+        snapshot: legacySnapshot,
+    });
+    const versionOneKey = (0, index_1.crearClaveLineaPedidoRestaurante)({
+        ...common,
+        snapshot: versionedSnapshot,
+    });
+    const sameVersionLaterCaptureKey = (0, index_1.crearClaveLineaPedidoRestaurante)({
+        ...common,
+        snapshot: {
+            ...versionedSnapshot,
+            conversionInventario: {
+                ...versionedSnapshot.conversionInventario,
+                capturadaAt: 3000,
+            },
+        },
+    });
+    const versionTwoKey = (0, index_1.crearClaveLineaPedidoRestaurante)({
+        ...common,
+        snapshot: {
+            ...versionedSnapshot,
+            conversionInventario: {
+                ...versionedSnapshot.conversionInventario,
+                versionConversion: 2,
+            },
+        },
+    });
+    strict_1.default.notEqual(legacyKey, versionOneKey);
+    strict_1.default.equal(versionOneKey, sameVersionLaterCaptureKey);
+    strict_1.default.notEqual(versionOneKey, versionTwoKey);
 });
 (0, node_test_1.default)("comando canonico exige idempotencia y version esperada", () => {
     const command = {
@@ -228,6 +343,8 @@ const audit = {
     strict_1.default.equal((0, index_1.puedeTransicionarSesionRestaurante)("CERRADA", "EN_ATENCION"), false);
     strict_1.default.equal((0, index_1.puedeTransicionarTareaPreparacionRestaurante)("EN_PREPARACION", "LISTA"), true);
     strict_1.default.equal((0, index_1.puedeTransicionarTareaPreparacionRestaurante)("ENTREGADA", "EN_PREPARACION"), false);
+    strict_1.default.equal((0, index_1.puedeTransicionarTareaPreparacionRestaurante)("GESTION_EXTERNA", "EN_PREPARACION"), false);
+    strict_1.default.equal((0, index_1.puedeTransicionarTareaPreparacionRestaurante)("GESTION_EXTERNA", "ENTREGADA"), true);
     strict_1.default.equal((0, index_1.puedeTransicionarCuentaRestaurante)("SALDADA", "CERRADA"), true);
     strict_1.default.equal((0, index_1.puedeTransicionarCuentaRestaurante)("ABIERTA", "CERRADA"), false);
 });
@@ -253,34 +370,44 @@ const audit = {
     });
     strict_1.default.equal(totals.total.minorUnits, 2660);
     strict_1.default.equal(totals.saldo.minorUnits, 1660);
-    strict_1.default.throws(() => (0, index_1.calcularTotalesCuentaRestaurante)({ currency: "PEN", cargos: [], pagos: [(0, index_1.dineroRestaurante)(1)] }), /no pueden exceder/);
+    strict_1.default.throws(() => (0, index_1.calcularTotalesCuentaRestaurante)({
+        currency: "PEN",
+        cargos: [],
+        pagos: [(0, index_1.dineroRestaurante)(1)],
+    }), /no pueden exceder/);
 });
 (0, node_test_1.default)("modificadores validan minimos, maximos y repeticion", () => {
-    const groups = [{
+    const groups = [
+        {
             id: "coccion",
             nombre: "Termino",
             minimoSelecciones: 1,
             maximoSelecciones: 1,
             permiteRepeticion: false,
             orden: 1,
-            opciones: [{
+            opciones: [
+                {
                     id: "medio",
                     nombre: "Medio",
                     precioExtra: (0, index_1.dineroRestaurante)(0),
                     activa: true,
                     predeterminada: false,
                     orden: 1,
-                }],
-        }];
+                },
+            ],
+        },
+    ];
     strict_1.default.equal((0, index_1.validarModificadoresRestaurante)(groups, []).valid, false);
-    strict_1.default.equal((0, index_1.validarModificadoresRestaurante)(groups, [{
+    strict_1.default.equal((0, index_1.validarModificadoresRestaurante)(groups, [
+        {
             grupoId: "coccion",
             opcionId: "medio",
             grupoNombre: "Termino",
             opcionNombre: "Medio",
             cantidad: 1,
             precioExtraUnitario: (0, index_1.dineroRestaurante)(0),
-        }]).valid, true);
+        },
+    ]).valid, true);
 });
 (0, node_test_1.default)("pagar no libera una mesa con preparacion pendiente", () => {
     const pedido = {
@@ -290,7 +417,8 @@ const audit = {
         sesionServicioId: "session-001",
         estado: "ENVIADO",
         numeroRondaActual: 1,
-        lineas: [{
+        lineas: [
+            {
                 id: "line-001",
                 productoRestauranteId: "menu-001",
                 snapshot: {
@@ -303,11 +431,14 @@ const audit = {
                 cantidad: 1,
                 cantidadEnviada: 1,
                 modificadores: [],
-                rutasPreparacion: [{ estacionPreparacionId: "kitchen", modo: "PREPARAR", orden: 1 }],
+                rutasPreparacion: [
+                    { estacionPreparacionId: "kitchen", modo: "PREPARAR", orden: 1 },
+                ],
                 totalLinea: (0, index_1.dineroRestaurante)(2000),
                 creadaAt: 1000,
                 creadaPor: "user-001",
-            }],
+            },
+        ],
     };
     const cuenta = {
         ...audit,
@@ -315,7 +446,8 @@ const audit = {
         type: "restaurant_cuentas_consumo",
         sesionServicioId: "session-001",
         estado: "SALDADA",
-        cargos: [{
+        cargos: [
+            {
                 id: "charge-001",
                 pedidoId: pedido.id,
                 pedidoLineaId: "line-001",
@@ -326,15 +458,25 @@ const audit = {
                 impuesto: (0, index_1.dineroRestaurante)(0),
                 total: (0, index_1.dineroRestaurante)(2000),
                 createdAt: 1000,
-            }],
+            },
+        ],
         asignacionesPagoIds: ["allocation-001"],
         totales: (0, index_1.calcularTotalesCuentaRestaurante)({
             currency: "PEN",
-            cargos: [{
-                    id: "charge-001", pedidoId: pedido.id, pedidoLineaId: "line-001", nombre: "Ceviche", cantidad: 1,
-                    subtotal: (0, index_1.dineroRestaurante)(2000), descuento: (0, index_1.dineroRestaurante)(0), impuesto: (0, index_1.dineroRestaurante)(0),
-                    total: (0, index_1.dineroRestaurante)(2000), createdAt: 1000,
-                }],
+            cargos: [
+                {
+                    id: "charge-001",
+                    pedidoId: pedido.id,
+                    pedidoLineaId: "line-001",
+                    nombre: "Ceviche",
+                    cantidad: 1,
+                    subtotal: (0, index_1.dineroRestaurante)(2000),
+                    descuento: (0, index_1.dineroRestaurante)(0),
+                    impuesto: (0, index_1.dineroRestaurante)(0),
+                    total: (0, index_1.dineroRestaurante)(2000),
+                    createdAt: 1000,
+                },
+            ],
             pagos: [(0, index_1.dineroRestaurante)(2000)],
         }),
         ventaIds: ["sale-001"],
@@ -348,7 +490,8 @@ const audit = {
         secuencia: 1,
         ronda: 1,
         tipoEnvio: "ENVIO",
-        lineas: [{
+        lineas: [
+            {
                 id: "dispatch-line-001",
                 pedidoLineaId: "line-001",
                 estacionPreparacionId: "kitchen",
@@ -356,8 +499,15 @@ const audit = {
                 cantidad: 1,
                 nombre: "Ceviche",
                 modificadores: [],
-            }],
-        trace: { operationId: "op-001", correlationId: "session-001", actorId: "user-001", deviceId: "device-001", occurredAt: 1000 },
+            },
+        ],
+        trace: {
+            operationId: "op-001",
+            correlationId: "session-001",
+            actorId: "user-001",
+            deviceId: "device-001",
+            occurredAt: 1000,
+        },
     };
     const task = {
         ...audit,
@@ -374,13 +524,35 @@ const audit = {
         cantidad: 1,
         prioridad: 0,
     };
-    const blocked = (0, index_1.evaluarCierreRestaurante)({ pedido, cuenta, comandas: [comanda], tareas: [task] });
+    const blocked = (0, index_1.evaluarCierreRestaurante)({
+        pedido,
+        cuenta,
+        comandas: [comanda],
+        tareas: [task],
+    });
     strict_1.default.deepEqual(blocked, {
         permitido: false,
         motivo: "PREPARACION_O_ENTREGA_PENDIENTE",
         message: "Aun hay productos en preparacion o pendientes de entrega.",
     });
-    strict_1.default.equal((0, index_1.evaluarCierreRestaurante)({ pedido, cuenta, comandas: [comanda], tareas: [{ ...task, estado: "ENTREGADA" }] }).permitido, true);
+    strict_1.default.equal((0, index_1.evaluarCierreRestaurante)({
+        pedido,
+        cuenta,
+        comandas: [comanda],
+        tareas: [
+            {
+                ...task,
+                modoOperacionEstacion: index_1.MODO_OPERACION_ESTACION_RESTAURANTE.COMANDA_FISICA,
+                estado: "GESTION_EXTERNA",
+            },
+        ],
+    }).permitido, false);
+    strict_1.default.equal((0, index_1.evaluarCierreRestaurante)({
+        pedido,
+        cuenta,
+        comandas: [comanda],
+        tareas: [{ ...task, estado: "ENTREGADA" }],
+    }).permitido, true);
     const sesionCerrada = {
         ...audit,
         id: "session-001",

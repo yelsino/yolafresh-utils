@@ -59,6 +59,11 @@ const role_catalog_1 = require("../catalogs/role.catalog");
 (0, node_test_1.default)("inventario puede editar imagenes de producto", () => {
     const permissions = (0, resolve_role_permissions_1.resolveRolePermissions)(["inventario"]);
     strict_1.default.ok(permissions.includes("productos:producto:editar_imagen"));
+    strict_1.default.ok(permissions.includes("inventario:almacen:administrar"));
+    strict_1.default.ok(permissions.includes("inventario:politica:administrar"));
+    strict_1.default.ok(permissions.includes("inventario:merma:aprobar"));
+    strict_1.default.ok(permissions.includes("inventario:transferencia:recibir"));
+    strict_1.default.ok(permissions.includes("inventario:transferencia:cancelar"));
 });
 (0, node_test_1.default)("validadores detectan permiso y grant inválidos", () => {
     strict_1.default.equal((0, is_valid_permission_1.isValidPermission)("ventas:venta:ver"), true);

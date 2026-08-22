@@ -1,11 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.VentaSnapshot = exports.VENTA_SNAPSHOT_TYPE = void 0;
+exports.VentaSnapshot = exports.VENTA_INVENTORY_PLAN_VERSION = exports.VENTA_INVENTORY_PLAN_SCHEMA = exports.VENTA_SNAPSHOT_TYPE = void 0;
+exports.validarVentaInventoryPlan = validarVentaInventoryPlan;
 exports.buildVentaSnapshotId = buildVentaSnapshotId;
 exports.mapVentaSnapshotActor = mapVentaSnapshotActor;
 exports.isVentaSnapshotImmutableState = isVentaSnapshotImmutableState;
 const enums_1 = require("../../shared/kernel/enums");
 exports.VENTA_SNAPSHOT_TYPE = "venta_snapshot";
+exports.VENTA_INVENTORY_PLAN_SCHEMA = "venta_inventory_plan_v2";
+exports.VENTA_INVENTORY_PLAN_VERSION = 1;
 function roundMoney(value) {
     return Math.round(value * 100) / 100;
 }
@@ -24,6 +27,136 @@ function safeTrim(value) {
     }
     const trimmed = value.trim();
     return trimmed ? trimmed : undefined;
+}
+const normalizedIds = (values) => Array.isArray(values)
+    ? values
+        .map((value) => safeTrim(typeof value === "string" ? value : undefined))
+        .filter((value) => Boolean(value))
+    : [];
+function validarVentaInventoryPlan(plan, items, almacenOrigenId) {
+    const errores = [];
+    if (!plan || typeof plan !== "object") {
+        return {
+            valida: false,
+            errores: ["VentaSnapshot.planInventarioV2 es requerido"],
+        };
+    }
+    if (plan.schema !== exports.VENTA_INVENTORY_PLAN_SCHEMA) {
+        errores.push(`VentaSnapshot.planInventarioV2.schema debe ser '${exports.VENTA_INVENTORY_PLAN_SCHEMA}'`);
+    }
+    if (plan.version !== exports.VENTA_INVENTORY_PLAN_VERSION) {
+        errores.push(`VentaSnapshot.planInventarioV2.version debe ser ${exports.VENTA_INVENTORY_PLAN_VERSION}`);
+    }
+    if (!Number.isInteger(plan.resueltoAt) || Number(plan.resueltoAt) <= 0) {
+        errores.push("VentaSnapshot.planInventarioV2.resueltoAt debe ser un timestamp positivo");
+    }
+    const planAlmacenId = safeTrim(plan.almacenId);
+    const snapshotAlmacenId = safeTrim(almacenOrigenId);
+    if (!planAlmacenId) {
+        errores.push("VentaSnapshot.planInventarioV2.almacenId es requerido");
+    }
+    if (!snapshotAlmacenId) {
+        errores.push("VentaSnapshot.almacenOrigenId es requerido cuando existe planInventarioV2");
+    }
+    else if (planAlmacenId && planAlmacenId !== snapshotAlmacenId) {
+        errores.push("VentaSnapshot.planInventarioV2.almacenId debe coincidir con almacenOrigenId");
+    }
+    const actor = plan.actor;
+    if (!actor || typeof actor !== "object") {
+        errores.push("VentaSnapshot.planInventarioV2.actor es requerido");
+    }
+    else {
+        if (!safeTrim(actor.usuarioId)) {
+            errores.push("VentaSnapshot.planInventarioV2.actor.usuarioId es requerido");
+        }
+        for (const [field, value] of [
+            ["usuarioNombre", actor.usuarioNombre],
+            ["dispositivoId", actor.dispositivoId],
+            ["sesionId", actor.sesionId],
+        ]) {
+            if (value !== undefined && !safeTrim(value)) {
+                errores.push(`VentaSnapshot.planInventarioV2.actor.${field} no puede estar vacío`);
+            }
+        }
+    }
+    if (!Array.isArray(plan.registrarMovimientoItemIds)) {
+        errores.push("VentaSnapshot.planInventarioV2.registrarMovimientoItemIds debe ser un arreglo");
+    }
+    if (!Array.isArray(plan.omitidosPorPoliticaItemIds)) {
+        errores.push("VentaSnapshot.planInventarioV2.omitidosPorPoliticaItemIds debe ser un arreglo");
+    }
+    const registrarIds = normalizedIds(plan.registrarMovimientoItemIds);
+    const omitidosIds = normalizedIds(plan.omitidosPorPoliticaItemIds);
+    const itemIds = items.map((item) => safeTrim(item.id));
+    if (itemIds.some((itemId) => !itemId)) {
+        errores.push("VentaSnapshot.planInventarioV2 no puede particionar items sin id");
+    }
+    const uniqueItemIds = new Set(itemIds.filter((id) => Boolean(id)));
+    if (uniqueItemIds.size !== itemIds.length) {
+        errores.push("VentaSnapshot.planInventarioV2 requiere ids de item únicos");
+    }
+    if (new Set(registrarIds).size !== registrarIds.length) {
+        errores.push("VentaSnapshot.planInventarioV2.registrarMovimientoItemIds contiene duplicados");
+    }
+    if (new Set(omitidosIds).size !== omitidosIds.length) {
+        errores.push("VentaSnapshot.planInventarioV2.omitidosPorPoliticaItemIds contiene duplicados");
+    }
+    const registrarSet = new Set(registrarIds);
+    const omitidosSet = new Set(omitidosIds);
+    registrarIds.forEach((id) => {
+        if (omitidosSet.has(id)) {
+            errores.push(`VentaSnapshot.planInventarioV2 contiene el item '${id}' en ambas particiones`);
+        }
+    });
+    [...registrarIds, ...omitidosIds].forEach((id) => {
+        if (!uniqueItemIds.has(id)) {
+            errores.push(`VentaSnapshot.planInventarioV2 referencia el item inexistente '${id}'`);
+        }
+    });
+    uniqueItemIds.forEach((id) => {
+        if (!registrarSet.has(id) && !omitidosSet.has(id)) {
+            errores.push(`VentaSnapshot.planInventarioV2 no clasificó el item '${id}'`);
+        }
+    });
+    items.forEach((item, index) => {
+        const itemId = safeTrim(item.id);
+        if (item.afectaInventario === false) {
+            if (itemId && registrarSet.has(itemId)) {
+                errores.push(`VentaSnapshot.items[${index}] no inventariable no puede registrar movimiento`);
+            }
+            if (item.productoBaseId !== undefined ||
+                item.unidadBase !== undefined ||
+                item.factorConversionBase !== undefined ||
+                item.cantidadBase !== undefined ||
+                item.versionConversion !== undefined) {
+                errores.push(`VentaSnapshot.items[${index}] no inventariable no debe contener conversión física`);
+            }
+            return;
+        }
+        if (!itemId || !registrarSet.has(itemId))
+            return;
+        if (!safeTrim(item.productoBaseId)) {
+            errores.push(`VentaSnapshot.items[${index}].productoBaseId es requerido por planInventarioV2`);
+        }
+        const factorConversionBase = Number(item.factorConversionBase);
+        const cantidadBase = Number(item.cantidadBase);
+        const versionConversion = item.versionConversion;
+        if (!safeTrim(item.unidadBase)) {
+            errores.push(`VentaSnapshot.items[${index}].unidadBase es requerida para movimiento planificado`);
+        }
+        if (!Number.isFinite(factorConversionBase) ||
+            factorConversionBase <= 0) {
+            errores.push(`VentaSnapshot.items[${index}].factorConversionBase es requerido para movimiento planificado`);
+        }
+        if (!Number.isFinite(cantidadBase) || cantidadBase <= 0) {
+            errores.push(`VentaSnapshot.items[${index}].cantidadBase es requerida para movimiento planificado`);
+        }
+        if (!Number.isSafeInteger(versionConversion) ||
+            Number(versionConversion) < 1) {
+            errores.push(`VentaSnapshot.items[${index}].versionConversion es requerida para movimiento planificado y debe ser entero seguro positivo`);
+        }
+    });
+    return { valida: errores.length === 0, errores };
 }
 function buildActor(id, nombre) {
     var _a, _b;
@@ -85,7 +218,7 @@ function isVentaSnapshotImmutableState(estado) {
 }
 class VentaSnapshot {
     constructor(data) {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
         this.id = data.id;
         this.type = (_a = data.type) !== null && _a !== void 0 ? _a : exports.VENTA_SNAPSHOT_TYPE;
         this.ventaId = data.ventaId;
@@ -94,10 +227,24 @@ class VentaSnapshot {
             var _a, _b, _c, _d;
             return ({
                 ...item,
+                afectaInventario: typeof item.afectaInventario === "boolean"
+                    ? item.afectaInventario
+                    : undefined,
                 nombre: (_a = safeTrim(item.nombre)) !== null && _a !== void 0 ? _a : item.presentacionId,
+                productoBaseId: safeTrim(item.productoBaseId),
                 imagenUrl: safeTrim(item.imagenUrl),
                 unidadComercial: safeTrim(item.unidadComercial),
                 cantidadVendida: Number((_b = item.cantidadVendida) !== null && _b !== void 0 ? _b : 0),
+                unidadBase: safeTrim(item.unidadBase),
+                factorConversionBase: typeof item.factorConversionBase === "number"
+                    ? Number(item.factorConversionBase)
+                    : undefined,
+                cantidadBase: typeof item.cantidadBase === "number"
+                    ? Number(item.cantidadBase)
+                    : undefined,
+                versionConversion: typeof item.versionConversion === "number"
+                    ? Number(item.versionConversion)
+                    : undefined,
                 precioUnitario: roundMoney(Number((_c = item.precioUnitario) !== null && _c !== void 0 ? _c : 0)),
                 total: roundMoney(Number((_d = item.total) !== null && _d !== void 0 ? _d : 0)),
                 montoModificado: typeof item.montoModificado === "boolean" ? item.montoModificado : undefined,
@@ -121,6 +268,29 @@ class VentaSnapshot {
         this.procedencia = data.procedencia;
         this.cliente = data.cliente ? { ...data.cliente } : undefined;
         this.vendedor = data.vendedor ? { ...data.vendedor } : undefined;
+        this.almacenOrigenId = safeTrim(data.almacenOrigenId);
+        this.planInventarioV2 = data.planInventarioV2
+            ? Object.freeze({
+                schema: data.planInventarioV2.schema,
+                version: data.planInventarioV2.version,
+                resueltoAt: Number(data.planInventarioV2.resueltoAt),
+                almacenId: (_g = safeTrim(data.planInventarioV2.almacenId)) !== null && _g !== void 0 ? _g : "",
+                actor: Object.freeze({
+                    usuarioId: (_j = safeTrim((_h = data.planInventarioV2.actor) === null || _h === void 0 ? void 0 : _h.usuarioId)) !== null && _j !== void 0 ? _j : "",
+                    ...(safeTrim((_k = data.planInventarioV2.actor) === null || _k === void 0 ? void 0 : _k.usuarioNombre)
+                        ? { usuarioNombre: safeTrim((_l = data.planInventarioV2.actor) === null || _l === void 0 ? void 0 : _l.usuarioNombre) }
+                        : {}),
+                    ...(safeTrim((_m = data.planInventarioV2.actor) === null || _m === void 0 ? void 0 : _m.dispositivoId)
+                        ? { dispositivoId: safeTrim((_o = data.planInventarioV2.actor) === null || _o === void 0 ? void 0 : _o.dispositivoId) }
+                        : {}),
+                    ...(safeTrim((_p = data.planInventarioV2.actor) === null || _p === void 0 ? void 0 : _p.sesionId)
+                        ? { sesionId: safeTrim((_q = data.planInventarioV2.actor) === null || _q === void 0 ? void 0 : _q.sesionId) }
+                        : {}),
+                }),
+                registrarMovimientoItemIds: Object.freeze(normalizedIds(data.planInventarioV2.registrarMovimientoItemIds)),
+                omitidosPorPoliticaItemIds: Object.freeze(normalizedIds(data.planInventarioV2.omitidosPorPoliticaItemIds)),
+            })
+            : undefined;
         const validation = VentaSnapshot.validar(this.toJSON());
         if (!validation.valida) {
             throw new Error(validation.errores.join("; "));
@@ -142,6 +312,19 @@ class VentaSnapshot {
             procedencia: this.procedencia,
             cliente: this.cliente ? { ...this.cliente } : undefined,
             vendedor: this.vendedor ? { ...this.vendedor } : undefined,
+            almacenOrigenId: this.almacenOrigenId,
+            planInventarioV2: this.planInventarioV2
+                ? {
+                    ...this.planInventarioV2,
+                    actor: { ...this.planInventarioV2.actor },
+                    registrarMovimientoItemIds: [
+                        ...this.planInventarioV2.registrarMovimientoItemIds,
+                    ],
+                    omitidosPorPoliticaItemIds: [
+                        ...this.planInventarioV2.omitidosPorPoliticaItemIds,
+                    ],
+                }
+                : undefined,
         };
     }
     static fromJSON(snapshot) {
@@ -173,6 +356,8 @@ class VentaSnapshot {
             procedencia: venta.procedencia,
             cliente: mapVentaSnapshotActor(context.cliente),
             vendedor: mapVentaSnapshotActor(context.vendedor),
+            almacenOrigenId: safeTrim(context.almacenOrigenId),
+            planInventarioV2: context.planInventarioV2,
         });
     }
     static tryFromVenta(venta, context = {}) {
@@ -186,7 +371,7 @@ class VentaSnapshot {
         }
     }
     static validar(data) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
         const errores = [];
         if (!safeTrim(data.id)) {
             errores.push("VentaSnapshot.id es requerido");
@@ -219,7 +404,7 @@ class VentaSnapshot {
             errores.push("VentaSnapshot.total debe ser consistente con subtotal - descuentoTotal + impuesto + montoRedondeo");
         }
         (_k = data.items) === null || _k === void 0 ? void 0 : _k.forEach((item, index) => {
-            var _a, _b, _c, _d;
+            var _a, _b, _c, _d, _e;
             if (!safeTrim(item.id)) {
                 errores.push(`VentaSnapshot.items[${index}].id es requerido`);
             }
@@ -229,16 +414,51 @@ class VentaSnapshot {
             if (!safeTrim(item.nombre)) {
                 errores.push(`VentaSnapshot.items[${index}].nombre es requerido`);
             }
+            if (item.afectaInventario !== undefined &&
+                typeof item.afectaInventario !== "boolean") {
+                errores.push(`VentaSnapshot.items[${index}].afectaInventario debe ser booleano`);
+            }
+            if (item.afectaInventario === false &&
+                (item.productoBaseId !== undefined ||
+                    item.unidadBase !== undefined ||
+                    item.factorConversionBase !== undefined ||
+                    item.cantidadBase !== undefined ||
+                    item.versionConversion !== undefined)) {
+                errores.push(`VentaSnapshot.items[${index}] no inventariable no debe contener conversión física`);
+            }
             if (Number((_a = item.cantidadVendida) !== null && _a !== void 0 ? _a : 0) <= 0) {
                 errores.push(`VentaSnapshot.items[${index}].cantidadVendida debe ser mayor a 0`);
             }
-            if (Number((_b = item.precioUnitario) !== null && _b !== void 0 ? _b : 0) < 0) {
+            if (item.factorConversionBase !== undefined &&
+                (!Number.isFinite(item.factorConversionBase) ||
+                    item.factorConversionBase <= 0)) {
+                errores.push(`VentaSnapshot.items[${index}].factorConversionBase debe ser mayor a 0`);
+            }
+            if (item.cantidadBase !== undefined &&
+                (!Number.isFinite(item.cantidadBase) || item.cantidadBase <= 0)) {
+                errores.push(`VentaSnapshot.items[${index}].cantidadBase debe ser mayor a 0`);
+            }
+            if (item.versionConversion !== undefined &&
+                (!Number.isSafeInteger(item.versionConversion) ||
+                    item.versionConversion < 1)) {
+                errores.push(`VentaSnapshot.items[${index}].versionConversion debe ser entero seguro positivo`);
+            }
+            if (item.factorConversionBase !== undefined &&
+                item.cantidadBase !== undefined) {
+                const cantidadBaseEsperada = Math.round(Number((_b = item.cantidadVendida) !== null && _b !== void 0 ? _b : 0) *
+                    item.factorConversionBase *
+                    1000000) / 1000000;
+                if (Math.abs(cantidadBaseEsperada - item.cantidadBase) > 0.000001) {
+                    errores.push(`VentaSnapshot.items[${index}].cantidadBase es inconsistente con cantidadVendida y factorConversionBase`);
+                }
+            }
+            if (Number((_c = item.precioUnitario) !== null && _c !== void 0 ? _c : 0) < 0) {
                 errores.push(`VentaSnapshot.items[${index}].precioUnitario no puede ser negativo`);
             }
-            if (Number((_c = item.total) !== null && _c !== void 0 ? _c : 0) < 0) {
+            if (Number((_d = item.total) !== null && _d !== void 0 ? _d : 0) < 0) {
                 errores.push(`VentaSnapshot.items[${index}].total no puede ser negativo`);
             }
-            if (Number((_d = item.descuento) !== null && _d !== void 0 ? _d : 0) < 0) {
+            if (Number((_e = item.descuento) !== null && _e !== void 0 ? _e : 0) < 0) {
                 errores.push(`VentaSnapshot.items[${index}].descuento no puede ser negativo`);
             }
             if (item.montoModificado !== undefined &&
@@ -246,6 +466,9 @@ class VentaSnapshot {
                 errores.push(`VentaSnapshot.items[${index}].montoModificado debe ser booleano`);
             }
         });
+        if (data.planInventarioV2 !== undefined) {
+            errores.push(...validarVentaInventoryPlan(data.planInventarioV2, (_l = data.items) !== null && _l !== void 0 ? _l : [], data.almacenOrigenId).errores);
+        }
         return {
             valida: errores.length === 0,
             errores,

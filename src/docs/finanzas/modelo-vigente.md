@@ -66,6 +66,10 @@ Responsabilidades observadas:
 - indicar referencia de compra, pago, adelanto, recurrencia o ajuste;
 - conservar estado y trazabilidad de reversa o anulación.
 
+Este es el contrato reducido vigente. No posee imputaciones pago → compra ni todos
+los metadatos de idempotencia requeridos por un libro oficial. Su evolución se
+define en [cuenta-proveedor/rfc-modelo-propuesto.md](./cuenta-proveedor/rfc-modelo-propuesto.md).
+
 ### `CuentaProveedor`
 
 Representa lectura resumida del saldo actual del proveedor.
@@ -76,6 +80,9 @@ Responsabilidades observadas:
 - conservar moneda base de esa lectura.
 
 No reemplaza al historial detallado de movimientos.
+
+`saldoActual` no debe convertirse en la fuente de verdad de una implementación
+nueva. El RFC de CuentaProveedor lo reemplaza por un resumen reconstruible.
 
 ### `CuentaBancaria`
 
@@ -183,7 +190,8 @@ La relación financiera específica con cliente ahora se documenta dentro del mi
 - no usar `MovimientoFinanciero` como ledger oficial;
 - no mezclar `Recurrencia` con scheduler o I/O dentro del paquete;
 - no borrar historia financiera para anular; usar anulaciones o reversas trazables;
-- `CuentaProveedor` expresa saldo resumido, no detalle completo;
+- `CuentaProveedor` expresa hoy un saldo resumido, no detalle completo; el modelo
+  objetivo está documentado como RFC y aún no es contrato vigente;
 - `RecurrenciaEntity` solo programa y recalcula, no ejecuta efectos externos.
 
 ## Restricciones observadas
