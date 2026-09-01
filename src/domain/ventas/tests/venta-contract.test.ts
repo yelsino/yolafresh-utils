@@ -3,7 +3,14 @@ import test from "node:test";
 
 import { CategoriaCliente, Cliente } from "../../personas/contracts/persons.contract";
 import { IUsuario } from "../../personas/contracts/usuario.contract";
-import { CondicionPagoVenta, VentaState } from "../../shared/kernel/enums";
+import {
+  CondicionPagoVenta,
+  esProcedenciaComercial,
+  normalizarProcedenciaComercial,
+  PedidoProcedenciaEnum,
+  ProcedenciaComercialEnum,
+  VentaState,
+} from "../../shared/kernel/enums";
 import {
   CarritoVenta,
   ICarritoVenta,
@@ -125,6 +132,79 @@ function buildCarrito(): ICarritoVenta {
     personal: buildPersonal(),
   };
 }
+
+test("Pedido y Venta comparten exactamente el mismo enum de procedencia", () => {
+  assert.equal(PedidoProcedenciaEnum, ProcedenciaComercialEnum);
+  assert.equal(ProcedenciaVenta, ProcedenciaComercialEnum);
+  assert.equal(ProcedenciaVenta.Tienda, ProcedenciaComercialEnum.TIENDA);
+  assert.equal(ProcedenciaVenta.WhatsApp, ProcedenciaComercialEnum.WHATSAPP);
+});
+
+test("normaliza serializaciones históricas sin aceptar valores desconocidos", () => {
+  assert.equal(
+    normalizarProcedenciaComercial("Tienda"),
+    ProcedenciaComercialEnum.TIENDA,
+  );
+  assert.equal(
+    normalizarProcedenciaComercial("WhatsApp"),
+    ProcedenciaComercialEnum.WHATSAPP,
+  );
+  assert.equal(
+    normalizarProcedenciaComercial("  instagram  "),
+    ProcedenciaComercialEnum.INSTAGRAM,
+  );
+  assert.equal(normalizarProcedenciaComercial("canal_desconocido"), undefined);
+  assert.equal(esProcedenciaComercial(ProcedenciaComercialEnum.OTRO), true);
+  assert.equal(esProcedenciaComercial("Otro"), false);
+});
+
+test("Carrito, Venta y VentaSnapshot rehidratan legacy y escriben uppercase", () => {
+  const carrito = CarritoVenta.fromJSON({
+    ...buildCarrito(),
+    procedencia: "WhatsApp" as unknown as ProcedenciaComercialEnum,
+  });
+  assert.equal(carrito.procedencia, ProcedenciaComercialEnum.WHATSAPP);
+  assert.equal(
+    carrito.toJSON().procedencia,
+    ProcedenciaComercialEnum.WHATSAPP,
+  );
+
+  const venta = new Venta(
+    buildVentaInput({
+      procedencia: "Tienda" as unknown as ProcedenciaComercialEnum,
+    }),
+  );
+  assert.equal(venta.procedencia, ProcedenciaComercialEnum.TIENDA);
+  assert.equal(
+    venta.toVentaSnapshot().procedencia,
+    ProcedenciaComercialEnum.TIENDA,
+  );
+
+  const snapshot = VentaSnapshot.fromJSON({
+    ...venta.toVentaSnapshot(),
+    procedencia: "Facebook" as unknown as ProcedenciaComercialEnum,
+  });
+  assert.equal(snapshot.procedencia, ProcedenciaComercialEnum.FACEBOOK);
+  assert.equal(
+    snapshot.toJSON().procedencia,
+    ProcedenciaComercialEnum.FACEBOOK,
+  );
+});
+
+test("OTRO se conserva en el round-trip comercial", () => {
+  const carrito = CarritoVenta.fromJSON({
+    ...buildCarrito(),
+    procedencia: ProcedenciaComercialEnum.OTRO,
+  });
+  const venta = Venta.fromCarritoVenta(carrito.toJSON(), "venta_otro");
+
+  assert.equal(venta.procedencia, ProcedenciaComercialEnum.OTRO);
+  assert.equal(venta.toJSON().procedencia, ProcedenciaComercialEnum.OTRO);
+  assert.equal(
+    venta.toVentaSnapshot().procedencia,
+    ProcedenciaComercialEnum.OTRO,
+  );
+});
 
 test("Venta conserva condición de pago en el resumen serializado", () => {
   const venta = new Venta(

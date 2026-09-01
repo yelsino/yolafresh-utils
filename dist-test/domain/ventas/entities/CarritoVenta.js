@@ -7,16 +7,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CarritoVenta = exports.ProcedenciaVenta = void 0;
 const fiscal_contract_1 = require("../../shared/kernel/fiscal.contract");
+const enums_1 = require("../../shared/kernel/enums");
 const dates_1 = require("../../shared/utils/dates");
 const producto_contract_1 = require("../../inventario/contracts/producto.contract");
-var ProcedenciaVenta;
-(function (ProcedenciaVenta) {
-    ProcedenciaVenta["Tienda"] = "Tienda";
-    ProcedenciaVenta["Web"] = "Web";
-    ProcedenciaVenta["WhatsApp"] = "WhatsApp";
-    ProcedenciaVenta["Instagram"] = "Instagram";
-    ProcedenciaVenta["Facebook"] = "Facebook";
-})(ProcedenciaVenta || (exports.ProcedenciaVenta = ProcedenciaVenta = {}));
+/** @deprecated Usar `ProcedenciaComercialEnum`. */
+var enums_2 = require("../../shared/kernel/enums");
+Object.defineProperty(exports, "ProcedenciaVenta", { enumerable: true, get: function () { return enums_2.ProcedenciaComercialEnum; } });
 /**
  * Clase CarritoVenta - Maneja toda la lógica de una venta en curso
  * Simplificada: trabaja solo con CarItem, congela al guardar
@@ -427,7 +423,11 @@ class CarritoVenta {
         return this._procedencia;
     }
     set procedencia(value) {
-        this._procedencia = value;
+        const procedencia = (0, enums_1.normalizarProcedenciaComercial)(value);
+        if (value !== undefined && !procedencia) {
+            throw new Error("Procedencia comercial inválida");
+        }
+        this._procedencia = procedencia;
         this.touch();
     }
     /**
@@ -626,7 +626,7 @@ class CarritoVenta {
         });
         carrito._cliente = data.cliente;
         carrito._personal = data.personal;
-        carrito._procedencia = data.procedencia;
+        carrito._procedencia = (0, enums_1.normalizarProcedenciaComercial)(data.procedencia);
         return carrito;
     }
     /**

@@ -9,6 +9,10 @@ import {
   CONFIGURACIONES_FISCALES,
   ConfiguracionFiscalFactory,
 } from "../../shared/kernel/fiscal.contract";
+import {
+  normalizarProcedenciaComercial,
+  ProcedenciaComercialEnum,
+} from "../../shared/kernel/enums";
 import { generarUlid } from "../../shared/utils/dates";
 import { Cliente } from "../../personas/contracts/persons.contract";
 import { IUsuario } from "../../personas/contracts/usuario.contract";
@@ -94,7 +98,7 @@ interface CarritoVentaSnapshot {
   };
   cliente?: CarritoVentaClienteSnapshot;
   personal?: CarritoVentaPersonalSnapshot;
-  procedencia?: ProcedenciaVenta;
+  procedencia?: ProcedenciaComercialEnum;
 }
 
 
@@ -182,13 +186,8 @@ export interface OpcionesAgregarProducto {
 
 
 
-export enum ProcedenciaVenta {
-  Tienda = 'Tienda',
-  Web = 'Web',
-  WhatsApp = 'WhatsApp',
-  Instagram = 'Instagram',
-  Facebook = 'Facebook'
-}
+/** @deprecated Usar `ProcedenciaComercialEnum`. */
+export { ProcedenciaComercialEnum as ProcedenciaVenta } from "../../shared/kernel/enums";
 
 
 
@@ -301,7 +300,7 @@ export interface ICarritoVenta {
    * Procedencia de la venta (opcional)
    * @description Canal o lugar donde se originó la venta
    */
-  procedencia?: ProcedenciaVenta;
+  procedencia?: ProcedenciaComercialEnum;
   
     /**
    * Configuración fiscal aplicada (opcional)
@@ -325,7 +324,7 @@ export class CarritoVenta implements ICarritoVenta {
   // === CAMPOS DE TRAZABILIDAD ===
   private _cliente?: Cliente;
   private _personal?: IUsuario;
-  private _procedencia?: ProcedenciaVenta;
+  private _procedencia?: ProcedenciaComercialEnum;
 
   constructor(id?: string, configuracionFiscal?: ConfiguracionFiscal, nombre?: string, createdAt?: Date) {
     this.id = id || generarUlid("venta");
@@ -812,12 +811,16 @@ export class CarritoVenta implements ICarritoVenta {
     this.touch();
   }
 
-  get procedencia(): ProcedenciaVenta | undefined {
+  get procedencia(): ProcedenciaComercialEnum | undefined {
     return this._procedencia;
   }
 
-  set procedencia(value: ProcedenciaVenta | undefined) {
-    this._procedencia = value;
+  set procedencia(value: ProcedenciaComercialEnum | undefined) {
+    const procedencia = normalizarProcedenciaComercial(value);
+    if (value !== undefined && !procedencia) {
+      throw new Error("Procedencia comercial inválida");
+    }
+    this._procedencia = procedencia;
     this.touch();
   }
 
@@ -1055,7 +1058,7 @@ export class CarritoVenta implements ICarritoVenta {
     });
     carrito._cliente = data.cliente
     carrito._personal = data.personal
-    carrito._procedencia = data.procedencia;
+    carrito._procedencia = normalizarProcedenciaComercial(data.procedencia);
 
     return carrito;
   }

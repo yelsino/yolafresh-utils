@@ -361,7 +361,7 @@ El siguiente ejemplo muestra una vista de lectura compuesta de un caso finalizad
     "impuesto": 0,
     "total": 106,
     "montoRedondeo": 0,
-    "procedencia": "WhatsApp",
+    "procedencia": "WHATSAPP",
     "clienteId": "cliente-001",
     "vendedorId": "personal-ventas-007",
     "codigoVenta": "VTA-0091",
@@ -399,7 +399,7 @@ El siguiente ejemplo muestra una vista de lectura compuesta de un caso finalizad
     "impuesto": 0,
     "total": 106,
     "montoRedondeo": 0,
-    "procedencia": "WhatsApp",
+    "procedencia": "WHATSAPP",
     "codigoVenta": "VTA-0091",
     "cliente": {
       "id": "cliente-001",

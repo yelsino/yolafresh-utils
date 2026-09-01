@@ -25,13 +25,69 @@ export enum PedidoPrioridadEnum {
   URGENTE = 'URGENTE',
 }
 
-export enum PedidoProcedenciaEnum {
+/**
+ * Canal comercial compartido por Pedido y Venta.
+ *
+ * Los valores persistibles canónicos son uppercase. Los miembros titlecase se
+ * conservan solo para compatibilidad de código con versiones anteriores y
+ * apuntan a esos mismos valores; no constituyen otro catálogo.
+ */
+export enum ProcedenciaComercialEnum {
   TIENDA = 'TIENDA',
   WEB = 'WEB',
   WHATSAPP = 'WHATSAPP',
   INSTAGRAM = 'INSTAGRAM',
   FACEBOOK = 'FACEBOOK',
   OTRO = 'OTRO',
+
+  /** @deprecated Usar `TIENDA`. */
+  Tienda = 'TIENDA',
+  /** @deprecated Usar `WEB`. */
+  Web = 'WEB',
+  /** @deprecated Usar `WHATSAPP`. */
+  WhatsApp = 'WHATSAPP',
+  /** @deprecated Usar `INSTAGRAM`. */
+  Instagram = 'INSTAGRAM',
+  /** @deprecated Usar `FACEBOOK`. */
+  Facebook = 'FACEBOOK',
+}
+
+/** @deprecated Usar `ProcedenciaComercialEnum`. */
+export { ProcedenciaComercialEnum as PedidoProcedenciaEnum };
+
+/** @deprecated Usar `ProcedenciaComercialEnum`. */
+export { ProcedenciaComercialEnum as ProcedenciaVenta };
+
+/**
+ * Normaliza valores canónicos y serializaciones históricas sin inventar una
+ * procedencia para valores desconocidos.
+ */
+export function normalizarProcedenciaComercial(
+  value: unknown,
+): ProcedenciaComercialEnum | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const canonicalKey = value.trim().toUpperCase();
+  if (!canonicalKey) {
+    return undefined;
+  }
+
+  const candidate = (
+    ProcedenciaComercialEnum as unknown as Record<string, string>
+  )[canonicalKey];
+
+  return candidate === canonicalKey
+    ? (candidate as ProcedenciaComercialEnum)
+    : undefined;
+}
+
+/** Retorna true únicamente para valores ya serializados en forma canónica. */
+export function esProcedenciaComercial(
+  value: unknown,
+): value is ProcedenciaComercialEnum {
+  return normalizarProcedenciaComercial(value) === value;
 }
 
 export enum PedidoEntregaModalidadEnum {

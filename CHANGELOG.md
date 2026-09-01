@@ -10,6 +10,18 @@ Este proyecto adopta versionado semántico:
 
 ## [Unreleased]
 
+## [2.2.5] - 2026-09-01
+
+### Fixed
+
+- `Pedido` y `Venta` comparten ahora el único contrato
+  `ProcedenciaComercialEnum`; los nombres históricos son aliases al mismo enum,
+  no catálogos independientes.
+- Las lecturas de `CarritoVenta`, `Venta` y `VentaSnapshot` normalizan las
+  serializaciones titlecase históricas y las nuevas escrituras usan uppercase.
+- `OTRO` forma parte del contrato compartido y los valores desconocidos no se
+  reinterpretan automáticamente.
+
 ## [2.2.3] - 2026-08-22
 
 ### Fixed

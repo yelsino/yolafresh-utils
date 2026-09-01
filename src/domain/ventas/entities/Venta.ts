@@ -1,7 +1,12 @@
-import { CarItem, CarritoVenta, ICarritoVenta, ProcedenciaVenta } from "./CarritoVenta";
+import { CarItem, CarritoVenta, ICarritoVenta } from "./CarritoVenta";
 import { AggregateRoot } from "../../shared/base/AggregateRoot";
 import { VentaConfirmada } from "../events/VentaConfirmada";
-import { CondicionPagoVenta, VentaState } from "../../shared/kernel/enums";
+import {
+  CondicionPagoVenta,
+  normalizarProcedenciaComercial,
+  ProcedenciaComercialEnum,
+  VentaState,
+} from "../../shared/kernel/enums";
 import {
   IVentaSnapshot,
   VentaSnapshot,
@@ -32,7 +37,7 @@ export interface IVenta {
   impuesto: number;
   total: number;
   montoRedondeo?: number;
-  procedencia: ProcedenciaVenta;
+  procedencia: ProcedenciaComercialEnum;
   clienteId?: string;
   vendedorId?: string;
   codigoVenta?: string;
@@ -118,7 +123,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   public readonly impuesto: number;
   public readonly total: number;
   public readonly montoRedondeo?: number;
-  public readonly procedencia: ProcedenciaVenta;
+  public readonly procedencia: ProcedenciaComercialEnum;
   public readonly clienteId?: string;
   public readonly vendedorId?: string;
   public readonly codigoVenta?: string;
@@ -131,6 +136,12 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     if (!data.id || !data.nombre) {
       throw new Error("ID y nombre son requeridos para crear una venta");
     }
+
+    const validation = Venta.validar(data);
+    if (!validation.valida) {
+      throw new Error(validation.errores.join("; "));
+    }
+    const procedencia = normalizarProcedenciaComercial(data.procedencia)!;
 
     this.nombre = data.nombre;
     this.type = data.type || "venta";
@@ -151,17 +162,12 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     this.total = Venta.roundMoney(Number(data.total ?? 0));
     this.montoRedondeo =
       data.montoRedondeo === undefined ? undefined : Number(data.montoRedondeo);
-    this.procedencia = data.procedencia;
+    this.procedencia = procedencia;
     this.clienteId = data.clienteId;
     this.vendedorId = data.vendedorId;
     this.codigoVenta = data.codigoVenta;
     this.numeroVenta = data.numeroVenta;
     this.costoEnvio = data.costoEnvio;
-
-    const validation = Venta.validar(data);
-    if (!validation.valida) {
-      throw new Error(validation.errores.join("; "));
-    }
 
     if (this.snapshotItems && this.snapshotItems.length !== this.items) {
       throw new Error(
@@ -288,7 +294,9 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       impuesto: detalle.impuesto,
       total: totalFinal,
       montoRedondeo,
-      procedencia: carritoJSON.procedencia || ProcedenciaVenta.Tienda,
+      procedencia:
+        normalizarProcedenciaComercial(carritoJSON.procedencia) ??
+        ProcedenciaComercialEnum.TIENDA,
       clienteId: carritoInstance.cliente?.id,
       vendedorId: carritoInstance.personal?.id,
       codigoVenta: "",
@@ -304,7 +312,11 @@ export class Venta extends AggregateRoot<string> implements IVenta {
 
     if (!data.id) errores.push("ID es requerido");
     if (!data.nombre) errores.push("Nombre es requerido");
-    if (!data.procedencia) errores.push("Procedencia es requerida");
+    if (!data.procedencia) {
+      errores.push("Procedencia es requerida");
+    } else if (!normalizarProcedenciaComercial(data.procedencia)) {
+      errores.push("Procedencia comercial inválida");
+    }
     if (!data.condicionPago) errores.push("CondicionPago es requerida");
 
     if (

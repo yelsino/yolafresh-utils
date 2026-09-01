@@ -52,6 +52,11 @@ Representa la raíz del hecho comercial confirmado y publica un resumen compacto
 - cliente, vendedor y pedido relacionados por ID;
 - procedencia, código y numeración.
 
+La procedencia usa `ProcedenciaComercialEnum`, el mismo contrato que `Pedido`,
+y se persiste en uppercase (`TIENDA`, `WEB`, `WHATSAPP`, `INSTAGRAM`,
+`FACEBOOK`, `OTRO`). Las variantes titlecase históricas solo se normalizan al
+rehidratar; no se vuelven a escribir.
+
 No contiene:
 
 - array de productos;

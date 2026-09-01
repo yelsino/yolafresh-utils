@@ -265,7 +265,7 @@ class VentaSnapshot {
                 : roundMoney(Number((_e = data.montoRedondeo) !== null && _e !== void 0 ? _e : 0));
         this.total = roundMoney(Number((_f = data.total) !== null && _f !== void 0 ? _f : 0));
         this.codigoVenta = safeTrim(data.codigoVenta);
-        this.procedencia = data.procedencia;
+        this.procedencia = (0, enums_1.normalizarProcedenciaComercial)(data.procedencia);
         this.cliente = data.cliente ? { ...data.cliente } : undefined;
         this.vendedor = data.vendedor ? { ...data.vendedor } : undefined;
         this.almacenOrigenId = safeTrim(data.almacenOrigenId);

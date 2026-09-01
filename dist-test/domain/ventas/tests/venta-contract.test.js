@@ -109,6 +109,49 @@ function buildCarrito() {
         personal: buildPersonal(),
     };
 }
+(0, node_test_1.default)("Pedido y Venta comparten exactamente el mismo enum de procedencia", () => {
+    strict_1.default.equal(enums_1.PedidoProcedenciaEnum, enums_1.ProcedenciaComercialEnum);
+    strict_1.default.equal(CarritoVenta_1.ProcedenciaVenta, enums_1.ProcedenciaComercialEnum);
+    strict_1.default.equal(CarritoVenta_1.ProcedenciaVenta.Tienda, enums_1.ProcedenciaComercialEnum.TIENDA);
+    strict_1.default.equal(CarritoVenta_1.ProcedenciaVenta.WhatsApp, enums_1.ProcedenciaComercialEnum.WHATSAPP);
+});
+(0, node_test_1.default)("normaliza serializaciones históricas sin aceptar valores desconocidos", () => {
+    strict_1.default.equal((0, enums_1.normalizarProcedenciaComercial)("Tienda"), enums_1.ProcedenciaComercialEnum.TIENDA);
+    strict_1.default.equal((0, enums_1.normalizarProcedenciaComercial)("WhatsApp"), enums_1.ProcedenciaComercialEnum.WHATSAPP);
+    strict_1.default.equal((0, enums_1.normalizarProcedenciaComercial)("  instagram  "), enums_1.ProcedenciaComercialEnum.INSTAGRAM);
+    strict_1.default.equal((0, enums_1.normalizarProcedenciaComercial)("canal_desconocido"), undefined);
+    strict_1.default.equal((0, enums_1.esProcedenciaComercial)(enums_1.ProcedenciaComercialEnum.OTRO), true);
+    strict_1.default.equal((0, enums_1.esProcedenciaComercial)("Otro"), false);
+});
+(0, node_test_1.default)("Carrito, Venta y VentaSnapshot rehidratan legacy y escriben uppercase", () => {
+    const carrito = CarritoVenta_1.CarritoVenta.fromJSON({
+        ...buildCarrito(),
+        procedencia: "WhatsApp",
+    });
+    strict_1.default.equal(carrito.procedencia, enums_1.ProcedenciaComercialEnum.WHATSAPP);
+    strict_1.default.equal(carrito.toJSON().procedencia, enums_1.ProcedenciaComercialEnum.WHATSAPP);
+    const venta = new Venta_1.Venta(buildVentaInput({
+        procedencia: "Tienda",
+    }));
+    strict_1.default.equal(venta.procedencia, enums_1.ProcedenciaComercialEnum.TIENDA);
+    strict_1.default.equal(venta.toVentaSnapshot().procedencia, enums_1.ProcedenciaComercialEnum.TIENDA);
+    const snapshot = VentaSnapshot_1.VentaSnapshot.fromJSON({
+        ...venta.toVentaSnapshot(),
+        procedencia: "Facebook",
+    });
+    strict_1.default.equal(snapshot.procedencia, enums_1.ProcedenciaComercialEnum.FACEBOOK);
+    strict_1.default.equal(snapshot.toJSON().procedencia, enums_1.ProcedenciaComercialEnum.FACEBOOK);
+});
+(0, node_test_1.default)("OTRO se conserva en el round-trip comercial", () => {
+    const carrito = CarritoVenta_1.CarritoVenta.fromJSON({
+        ...buildCarrito(),
+        procedencia: enums_1.ProcedenciaComercialEnum.OTRO,
+    });
+    const venta = Venta_1.Venta.fromCarritoVenta(carrito.toJSON(), "venta_otro");
+    strict_1.default.equal(venta.procedencia, enums_1.ProcedenciaComercialEnum.OTRO);
+    strict_1.default.equal(venta.toJSON().procedencia, enums_1.ProcedenciaComercialEnum.OTRO);
+    strict_1.default.equal(venta.toVentaSnapshot().procedencia, enums_1.ProcedenciaComercialEnum.OTRO);
+});
 (0, node_test_1.default)("Venta conserva condición de pago en el resumen serializado", () => {
     const venta = new Venta_1.Venta(buildVentaInput({ condicionPago: enums_1.CondicionPagoVenta.CREDITO }));
     strict_1.default.equal(venta.condicionPago, enums_1.CondicionPagoVenta.CREDITO);

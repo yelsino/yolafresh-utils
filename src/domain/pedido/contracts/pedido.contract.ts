@@ -1,7 +1,7 @@
 import {
   PedidoPrioridadEnum,
-  PedidoProcedenciaEnum,
   PedidoState,
+  ProcedenciaComercialEnum,
 } from "../../shared/kernel/enums";
 import type {
   TipoVentaEnum,
@@ -134,7 +134,7 @@ export interface Pedido {
   codigoPedido: string;
   estado: PedidoState;
   prioridad: PedidoPrioridadEnum;
-  procedencia?: PedidoProcedenciaEnum;
+  procedencia?: ProcedenciaComercialEnum;
   clienteId?: string;
   responsableId?: string;
   creadoPorId: string;

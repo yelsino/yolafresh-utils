@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EstadoPagoEnum = exports.MonedaEnum = exports.MedioPagoEfectivoEnum = exports.MedioPagoDigitalEnum = exports.MetodoPagoEnum = exports.TipoActualizacionEnum = exports.EstadoStockEnum = exports.CondicionPagoVenta = exports.VentaState = exports.PedidoEntregaModalidadEnum = exports.PedidoProcedenciaEnum = exports.PedidoPrioridadEnum = exports.PedidoEntregaState = exports.PedidoState = void 0;
+exports.EstadoPagoEnum = exports.MonedaEnum = exports.MedioPagoEfectivoEnum = exports.MedioPagoDigitalEnum = exports.MetodoPagoEnum = exports.TipoActualizacionEnum = exports.EstadoStockEnum = exports.CondicionPagoVenta = exports.VentaState = exports.PedidoEntregaModalidadEnum = exports.ProcedenciaVenta = exports.PedidoProcedenciaEnum = exports.ProcedenciaComercialEnum = exports.PedidoPrioridadEnum = exports.PedidoEntregaState = exports.PedidoState = void 0;
+exports.normalizarProcedenciaComercial = normalizarProcedenciaComercial;
+exports.esProcedenciaComercial = esProcedenciaComercial;
 var PedidoState;
 (function (PedidoState) {
     PedidoState["ABIERTO"] = "ABIERTO";
@@ -27,15 +29,53 @@ var PedidoPrioridadEnum;
     PedidoPrioridadEnum["ALTA"] = "ALTA";
     PedidoPrioridadEnum["URGENTE"] = "URGENTE";
 })(PedidoPrioridadEnum || (exports.PedidoPrioridadEnum = PedidoPrioridadEnum = {}));
-var PedidoProcedenciaEnum;
-(function (PedidoProcedenciaEnum) {
-    PedidoProcedenciaEnum["TIENDA"] = "TIENDA";
-    PedidoProcedenciaEnum["WEB"] = "WEB";
-    PedidoProcedenciaEnum["WHATSAPP"] = "WHATSAPP";
-    PedidoProcedenciaEnum["INSTAGRAM"] = "INSTAGRAM";
-    PedidoProcedenciaEnum["FACEBOOK"] = "FACEBOOK";
-    PedidoProcedenciaEnum["OTRO"] = "OTRO";
-})(PedidoProcedenciaEnum || (exports.PedidoProcedenciaEnum = PedidoProcedenciaEnum = {}));
+/**
+ * Canal comercial compartido por Pedido y Venta.
+ *
+ * Los valores persistibles canónicos son uppercase. Los miembros titlecase se
+ * conservan solo para compatibilidad de código con versiones anteriores y
+ * apuntan a esos mismos valores; no constituyen otro catálogo.
+ */
+var ProcedenciaComercialEnum;
+(function (ProcedenciaComercialEnum) {
+    ProcedenciaComercialEnum["TIENDA"] = "TIENDA";
+    ProcedenciaComercialEnum["WEB"] = "WEB";
+    ProcedenciaComercialEnum["WHATSAPP"] = "WHATSAPP";
+    ProcedenciaComercialEnum["INSTAGRAM"] = "INSTAGRAM";
+    ProcedenciaComercialEnum["FACEBOOK"] = "FACEBOOK";
+    ProcedenciaComercialEnum["OTRO"] = "OTRO";
+    /** @deprecated Usar `TIENDA`. */
+    ProcedenciaComercialEnum["Tienda"] = "TIENDA";
+    /** @deprecated Usar `WEB`. */
+    ProcedenciaComercialEnum["Web"] = "WEB";
+    /** @deprecated Usar `WHATSAPP`. */
+    ProcedenciaComercialEnum["WhatsApp"] = "WHATSAPP";
+    /** @deprecated Usar `INSTAGRAM`. */
+    ProcedenciaComercialEnum["Instagram"] = "INSTAGRAM";
+    /** @deprecated Usar `FACEBOOK`. */
+    ProcedenciaComercialEnum["Facebook"] = "FACEBOOK";
+})(ProcedenciaComercialEnum || (exports.ProcedenciaVenta = exports.PedidoProcedenciaEnum = exports.ProcedenciaComercialEnum = ProcedenciaComercialEnum = {}));
+/**
+ * Normaliza valores canónicos y serializaciones históricas sin inventar una
+ * procedencia para valores desconocidos.
+ */
+function normalizarProcedenciaComercial(value) {
+    if (typeof value !== 'string') {
+        return undefined;
+    }
+    const canonicalKey = value.trim().toUpperCase();
+    if (!canonicalKey) {
+        return undefined;
+    }
+    const candidate = ProcedenciaComercialEnum[canonicalKey];
+    return candidate === canonicalKey
+        ? candidate
+        : undefined;
+}
+/** Retorna true únicamente para valores ya serializados en forma canónica. */
+function esProcedenciaComercial(value) {
+    return normalizarProcedenciaComercial(value) === value;
+}
 var PedidoEntregaModalidadEnum;
 (function (PedidoEntregaModalidadEnum) {
     PedidoEntregaModalidadEnum["RECOJO"] = "RECOJO";

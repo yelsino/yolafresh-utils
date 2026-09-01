@@ -57,6 +57,11 @@ class Venta extends AggregateRoot_1.AggregateRoot {
         if (!data.id || !data.nombre) {
             throw new Error("ID y nombre son requeridos para crear una venta");
         }
+        const validation = Venta.validar(data);
+        if (!validation.valida) {
+            throw new Error(validation.errores.join("; "));
+        }
+        const procedencia = (0, enums_1.normalizarProcedenciaComercial)(data.procedencia);
         this.nombre = data.nombre;
         this.type = data.type || "venta";
         this.createdAt = data.createdAt ? new Date(data.createdAt) : new Date();
@@ -76,16 +81,12 @@ class Venta extends AggregateRoot_1.AggregateRoot {
         this.total = Venta.roundMoney(Number((_c = data.total) !== null && _c !== void 0 ? _c : 0));
         this.montoRedondeo =
             data.montoRedondeo === undefined ? undefined : Number(data.montoRedondeo);
-        this.procedencia = data.procedencia;
+        this.procedencia = procedencia;
         this.clienteId = data.clienteId;
         this.vendedorId = data.vendedorId;
         this.codigoVenta = data.codigoVenta;
         this.numeroVenta = data.numeroVenta;
         this.costoEnvio = data.costoEnvio;
-        const validation = Venta.validar(data);
-        if (!validation.valida) {
-            throw new Error(validation.errores.join("; "));
-        }
         if (this.snapshotItems && this.snapshotItems.length !== this.items) {
             throw new Error("Venta.items debe coincidir con la cantidad de VentaSnapshot.items");
         }
@@ -159,7 +160,7 @@ class Venta extends AggregateRoot_1.AggregateRoot {
         return { snapshot: result.snapshot.toJSON() };
     }
     static fromCarritoVenta(carritoJSON, id, options) {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e, _f, _g;
         const ahora = new Date();
         const montoRedondeo = (_a = options === null || options === void 0 ? void 0 : options.montoRedondeo) !== null && _a !== void 0 ? _a : 0;
         const carritoInstance = CarritoVenta_1.CarritoVenta.fromJSON(carritoJSON);
@@ -181,9 +182,9 @@ class Venta extends AggregateRoot_1.AggregateRoot {
             impuesto: detalle.impuesto,
             total: totalFinal,
             montoRedondeo,
-            procedencia: carritoJSON.procedencia || CarritoVenta_1.ProcedenciaVenta.Tienda,
-            clienteId: (_e = carritoInstance.cliente) === null || _e === void 0 ? void 0 : _e.id,
-            vendedorId: (_f = carritoInstance.personal) === null || _f === void 0 ? void 0 : _f.id,
+            procedencia: (_e = (0, enums_1.normalizarProcedenciaComercial)(carritoJSON.procedencia)) !== null && _e !== void 0 ? _e : enums_1.ProcedenciaComercialEnum.TIENDA,
+            clienteId: (_f = carritoInstance.cliente) === null || _f === void 0 ? void 0 : _f.id,
+            vendedorId: (_g = carritoInstance.personal) === null || _g === void 0 ? void 0 : _g.id,
             codigoVenta: "",
             numeroVenta: "",
             costoEnvio: 0,
@@ -195,8 +196,12 @@ class Venta extends AggregateRoot_1.AggregateRoot {
             errores.push("ID es requerido");
         if (!data.nombre)
             errores.push("Nombre es requerido");
-        if (!data.procedencia)
+        if (!data.procedencia) {
             errores.push("Procedencia es requerida");
+        }
+        else if (!(0, enums_1.normalizarProcedenciaComercial)(data.procedencia)) {
+            errores.push("Procedencia comercial inválida");
+        }
         if (!data.condicionPago)
             errores.push("CondicionPago es requerida");
         if (typeof data.items !== "number" ||

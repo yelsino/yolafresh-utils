@@ -1,8 +1,11 @@
 import type { Cliente } from "../../personas/contracts/persons.contract";
 import type { IUsuario } from "../../personas/contracts/usuario.contract";
 import type { ActorInventarioSnapshot } from "../../inventario/contracts/inventory-quantity-v2.contract";
-import { VentaState } from "../../shared/kernel/enums";
-import { ProcedenciaVenta } from "./CarritoVenta";
+import {
+  normalizarProcedenciaComercial,
+  ProcedenciaComercialEnum,
+  VentaState,
+} from "../../shared/kernel/enums";
 import type { IVenta } from "./Venta";
 
 export const VENTA_SNAPSHOT_TYPE = "venta_snapshot" as const;
@@ -82,7 +85,7 @@ export interface IVentaSnapshot {
   montoRedondeo?: number;
   total: number;
   codigoVenta?: string;
-  procedencia?: ProcedenciaVenta;
+  procedencia?: ProcedenciaComercialEnum;
   cliente?: VentaSnapshotActor;
   vendedor?: VentaSnapshotActor;
   /** Almacén físico elegido por la orquestación; no redefine el hecho comercial. */
@@ -436,7 +439,7 @@ export class VentaSnapshot implements IVentaSnapshot {
   public readonly montoRedondeo?: number;
   public readonly total: number;
   public readonly codigoVenta?: string;
-  public readonly procedencia?: ProcedenciaVenta;
+  public readonly procedencia?: ProcedenciaComercialEnum;
   public readonly cliente?: VentaSnapshotActor;
   public readonly vendedor?: VentaSnapshotActor;
   public readonly almacenOrigenId?: string;
@@ -494,7 +497,7 @@ export class VentaSnapshot implements IVentaSnapshot {
         : roundMoney(Number(data.montoRedondeo ?? 0));
     this.total = roundMoney(Number(data.total ?? 0));
     this.codigoVenta = safeTrim(data.codigoVenta);
-    this.procedencia = data.procedencia;
+    this.procedencia = normalizarProcedenciaComercial(data.procedencia);
     this.cliente = data.cliente ? { ...data.cliente } : undefined;
     this.vendedor = data.vendedor ? { ...data.vendedor } : undefined;
     this.almacenOrigenId = safeTrim(data.almacenOrigenId);
