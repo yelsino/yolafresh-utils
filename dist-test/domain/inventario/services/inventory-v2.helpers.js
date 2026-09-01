@@ -366,7 +366,7 @@ const validarMovimientoInventarioV2 = (movimiento) => {
     const errores = [];
     if (!esTextoNoVacio(movimiento.id))
         errores.push("movimiento.id es requerido");
-    if (movimiento.type !== movimiento_inventario_v2_contract_1.MOVIMIENTO_INVENTARIO_V2_TYPE) {
+    if (movimiento.type !== movimiento_inventario_v2_contract_1.MOVIMIENTO_INVENTARIO_TYPE) {
         errores.push("movimiento.type es inválido");
     }
     if (movimiento.schemaVersion !== inventory_quantity_v2_contract_1.INVENTORY_V2_SCHEMA_VERSION) {
@@ -1165,7 +1165,7 @@ const construirMovimientoAplicacionMermaInventarioV2 = (actualAprobada, candidat
     }));
     return {
         id: candidataAplicada.movimientoInventarioId,
-        type: movimiento_inventario_v2_contract_1.MOVIMIENTO_INVENTARIO_V2_TYPE,
+        type: movimiento_inventario_v2_contract_1.MOVIMIENTO_INVENTARIO_TYPE,
         schemaVersion: inventory_quantity_v2_contract_1.INVENTORY_V2_SCHEMA_VERSION,
         estado: "APLICADO",
         tipo: movimiento_inventario_v2_contract_1.TipoMovimientoInventarioV2.SALIDA,

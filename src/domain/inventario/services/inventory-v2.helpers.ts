@@ -29,7 +29,7 @@ import type {
   MovimientoInventarioV2Linea,
 } from "../contracts/movimiento-inventario-v2.contract";
 import {
-  MOVIMIENTO_INVENTARIO_V2_TYPE,
+  MOVIMIENTO_INVENTARIO_TYPE,
   OrigenMovimientoInventarioV2,
   TipoMovimientoInventarioV2,
 } from "../contracts/movimiento-inventario-v2.contract";
@@ -554,7 +554,7 @@ export const validarMovimientoInventarioV2 = (
 ): ResultadoValidacionInventario => {
   const errores: string[] = [];
   if (!esTextoNoVacio(movimiento.id)) errores.push("movimiento.id es requerido");
-  if (movimiento.type !== MOVIMIENTO_INVENTARIO_V2_TYPE) {
+  if (movimiento.type !== MOVIMIENTO_INVENTARIO_TYPE) {
     errores.push("movimiento.type es inválido");
   }
   if (movimiento.schemaVersion !== INVENTORY_V2_SCHEMA_VERSION) {
@@ -1577,7 +1577,7 @@ export const construirMovimientoAplicacionMermaInventarioV2 = (
   );
   return {
     id: candidataAplicada.movimientoInventarioId!,
-    type: MOVIMIENTO_INVENTARIO_V2_TYPE,
+    type: MOVIMIENTO_INVENTARIO_TYPE,
     schemaVersion: INVENTORY_V2_SCHEMA_VERSION,
     estado: "APLICADO",
     tipo: TipoMovimientoInventarioV2.SALIDA,

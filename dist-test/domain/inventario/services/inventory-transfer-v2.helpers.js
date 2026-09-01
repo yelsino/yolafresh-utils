@@ -692,7 +692,7 @@ const construirEntradaRecepcion = (transferencia, recepcion) => {
     });
     return {
         id: recepcion.movimientoEntradaId,
-        type: movimiento_inventario_v2_contract_1.MOVIMIENTO_INVENTARIO_V2_TYPE,
+        type: movimiento_inventario_v2_contract_1.MOVIMIENTO_INVENTARIO_TYPE,
         schemaVersion: inventory_quantity_v2_contract_1.INVENTORY_V2_SCHEMA_VERSION,
         estado: "APLICADO",
         tipo: movimiento_inventario_v2_contract_1.TipoMovimientoInventarioV2.TRANSFERENCIA_ENTRADA,
@@ -724,7 +724,7 @@ const construirMovimientosTransferenciaInventarioV2 = (transferencia) => {
     const envio = transferencia.envio;
     const salida = {
         id: transferencia.movimientoSalidaId,
-        type: movimiento_inventario_v2_contract_1.MOVIMIENTO_INVENTARIO_V2_TYPE,
+        type: movimiento_inventario_v2_contract_1.MOVIMIENTO_INVENTARIO_TYPE,
         schemaVersion: inventory_quantity_v2_contract_1.INVENTORY_V2_SCHEMA_VERSION,
         estado: "APLICADO",
         tipo: movimiento_inventario_v2_contract_1.TipoMovimientoInventarioV2.TRANSFERENCIA_SALIDA,

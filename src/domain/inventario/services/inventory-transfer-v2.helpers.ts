@@ -5,7 +5,7 @@ import {
   type ResultadoValidacionInventario,
 } from "../contracts/inventory-quantity-v2.contract";
 import {
-  MOVIMIENTO_INVENTARIO_V2_TYPE,
+  MOVIMIENTO_INVENTARIO_TYPE,
   OrigenMovimientoInventarioV2,
   TipoMovimientoInventarioV2,
   type MovimientoInventarioV2,
@@ -964,7 +964,7 @@ const construirEntradaRecepcion = (
     });
   return {
     id: recepcion.movimientoEntradaId,
-    type: MOVIMIENTO_INVENTARIO_V2_TYPE,
+    type: MOVIMIENTO_INVENTARIO_TYPE,
     schemaVersion: INVENTORY_V2_SCHEMA_VERSION,
     estado: "APLICADO",
     tipo: TipoMovimientoInventarioV2.TRANSFERENCIA_ENTRADA,
@@ -1001,7 +1001,7 @@ export const construirMovimientosTransferenciaInventarioV2 = (
   const envio = transferencia.envio!;
   const salida: MovimientoInventarioV2 = {
     id: transferencia.movimientoSalidaId!,
-    type: MOVIMIENTO_INVENTARIO_V2_TYPE,
+    type: MOVIMIENTO_INVENTARIO_TYPE,
     schemaVersion: INVENTORY_V2_SCHEMA_VERSION,
     estado: "APLICADO",
     tipo: TipoMovimientoInventarioV2.TRANSFERENCIA_SALIDA,

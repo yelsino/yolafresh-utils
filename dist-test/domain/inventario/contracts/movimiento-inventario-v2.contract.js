@@ -1,7 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OrigenMovimientoInventarioV2 = exports.TipoMovimientoInventarioV2 = exports.MOVIMIENTO_INVENTARIO_V2_TYPE = void 0;
-exports.MOVIMIENTO_INVENTARIO_V2_TYPE = "movimiento_inventario_v2";
+exports.OrigenMovimientoInventarioV2 = exports.TipoMovimientoInventarioV2 = exports.MOVIMIENTO_INVENTARIO_V2_TYPE = exports.MOVIMIENTO_INVENTARIO_TYPE = void 0;
+/** Tipo documental canónico del ledger único de inventario. */
+exports.MOVIMIENTO_INVENTARIO_TYPE = "movimiento_inventario";
+/**
+ * @deprecated Usar `MOVIMIENTO_INVENTARIO_TYPE`. Se conserva únicamente para
+ * no romper imports durante la transición; no representa otro tipo documental.
+ */
+exports.MOVIMIENTO_INVENTARIO_V2_TYPE = exports.MOVIMIENTO_INVENTARIO_TYPE;
 var TipoMovimientoInventarioV2;
 (function (TipoMovimientoInventarioV2) {
     TipoMovimientoInventarioV2["ENTRADA"] = "ENTRADA";

@@ -39,7 +39,7 @@ const buildPolitica = (id, alcance, modo) => ({
 });
 const buildMovimiento = () => ({
     id: "movimiento_001",
-    type: index_1.MOVIMIENTO_INVENTARIO_V2_TYPE,
+    type: index_1.MOVIMIENTO_INVENTARIO_TYPE,
     schemaVersion: index_1.INVENTORY_V2_SCHEMA_VERSION,
     estado: "APLICADO",
     tipo: index_1.TipoMovimientoInventarioV2.SALIDA,
@@ -63,6 +63,11 @@ const buildMovimiento = () => ({
     actor,
     fechaEfectiva: ahora,
     registradoAt: ahora,
+});
+(0, node_test_1.default)("el ledger usa un único tipo documental sin sufijo de implementación", () => {
+    strict_1.default.equal(index_1.MOVIMIENTO_INVENTARIO_TYPE, "movimiento_inventario");
+    strict_1.default.equal(index_1.MOVIMIENTO_INVENTARIO_V2_TYPE, index_1.MOVIMIENTO_INVENTARIO_TYPE);
+    strict_1.default.equal(buildMovimiento().type, "movimiento_inventario");
 });
 (0, node_test_1.default)("convierte cantidades comerciales usando el snapshot congelado", () => {
     strict_1.default.equal((0, index_1.convertirCantidadAUnidadBase)(1.25, conversion), 3.75);

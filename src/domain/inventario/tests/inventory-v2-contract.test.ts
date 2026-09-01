@@ -10,6 +10,7 @@ import {
   EstadoLineaConteoInventario,
   INVENTORY_V2_SCHEMA_VERSION,
   MERMA_INVENTARIO_TYPE,
+  MOVIMIENTO_INVENTARIO_TYPE,
   MOVIMIENTO_INVENTARIO_V2_TYPE,
   ModoControlInventario,
   MotivoMermaInventario,
@@ -84,7 +85,7 @@ const buildPolitica = (
 
 const buildMovimiento = (): MovimientoInventarioV2 => ({
   id: "movimiento_001",
-  type: MOVIMIENTO_INVENTARIO_V2_TYPE,
+  type: MOVIMIENTO_INVENTARIO_TYPE,
   schemaVersion: INVENTORY_V2_SCHEMA_VERSION,
   estado: "APLICADO",
   tipo: TipoMovimientoInventarioV2.SALIDA,
@@ -108,6 +109,12 @@ const buildMovimiento = (): MovimientoInventarioV2 => ({
   actor,
   fechaEfectiva: ahora,
   registradoAt: ahora,
+});
+
+test("el ledger usa un único tipo documental sin sufijo de implementación", () => {
+  assert.equal(MOVIMIENTO_INVENTARIO_TYPE, "movimiento_inventario");
+  assert.equal(MOVIMIENTO_INVENTARIO_V2_TYPE, MOVIMIENTO_INVENTARIO_TYPE);
+  assert.equal(buildMovimiento().type, "movimiento_inventario");
 });
 
 test("convierte cantidades comerciales usando el snapshot congelado", () => {

@@ -46,7 +46,7 @@ Un consumer CouchDB debería mantener como documentos independientes:
 - `compra`;
 - `recepcion_mercaderia`;
 - `asignacion_recepcion_compra`;
-- `movimiento_inventario_v2`;
+- `movimiento_inventario` (`schemaVersion = 2`);
 - proyecciones de stock y kardex si la arquitectura vigente las sincroniza;
 - `egreso`, `movimiento_caja`, evidencia y documentos de pago cuando apliquen;
 - `cuenta_proveedor`, `movimiento_cuenta_proveedor`,

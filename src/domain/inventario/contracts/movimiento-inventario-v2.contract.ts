@@ -5,8 +5,14 @@ import type {
   InventoryV2SchemaVersion,
   UnidadBaseInventarioV2,
 } from "./inventory-quantity-v2.contract";
-export const MOVIMIENTO_INVENTARIO_V2_TYPE =
-  "movimiento_inventario_v2" as const;
+/** Tipo documental canónico del ledger único de inventario. */
+export const MOVIMIENTO_INVENTARIO_TYPE = "movimiento_inventario" as const;
+
+/**
+ * @deprecated Usar `MOVIMIENTO_INVENTARIO_TYPE`. Se conserva únicamente para
+ * no romper imports durante la transición; no representa otro tipo documental.
+ */
+export const MOVIMIENTO_INVENTARIO_V2_TYPE = MOVIMIENTO_INVENTARIO_TYPE;
 
 export enum TipoMovimientoInventarioV2 {
   ENTRADA = "ENTRADA",
@@ -70,7 +76,7 @@ export interface MovimientoInventarioV2Linea {
  */
 export interface MovimientoInventarioV2 {
   id: string;
-  type: typeof MOVIMIENTO_INVENTARIO_V2_TYPE;
+  type: typeof MOVIMIENTO_INVENTARIO_TYPE;
   schemaVersion: InventoryV2SchemaVersion;
   estado: "APLICADO";
 
@@ -93,3 +99,6 @@ export interface MovimientoInventarioV2 {
   fechaEfectiva: UnixMillis;
   registradoAt: UnixMillis;
 }
+
+/** Nombre canónico del contrato; el alias V2 queda disponible por compatibilidad de código. */
+export type MovimientoInventario = MovimientoInventarioV2;
