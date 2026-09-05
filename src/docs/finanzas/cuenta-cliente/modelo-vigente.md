@@ -57,6 +57,12 @@ Responsabilidades observadas:
 - soportar aplicación parcial;
 - declarar estrategia de consumo.
 
+En documentos históricos `cobroId` puede faltar. En evidencia nueva del
+manifest versión `1`, una imputación cuyo `tipoComponenteEjecucionCobro` sea
+`DINERO_NUEVO` debe declarar `cobroId`: es la relación opaca y explícita hacia
+la `RecepcionCobroCliente` que aportó el dinero. No se reconstruye desde `id`,
+`movimientoOrigenId`, prefijos ni ningún patrón del identificador.
+
 El contrato observado declara `FIFO` como estrategia explícita.
 
 ### `RecepcionCobroCliente`
@@ -73,6 +79,64 @@ Responsabilidades observadas:
 
 No equivale por sí sola a impacto financiero confirmado.
 
+### `EjecucionCobroCliente`
+
+Representa el agregado de lectura de una sola acción de cobro, aun cuando use
+saldo a favor y uno o varios grupos de dinero nuevo por método de pago.
+
+Responsabilidades observables del contrato versión `1`:
+
+- agrupar por `ejecucionCobroId` la evidencia originada por la acción;
+- conservar componentes independientes `DINERO_NUEVO` y `SALDO_FAVOR`;
+- comprometer en cada componente `DINERO_NUEVO` la `custodiaEsperada` cuando
+  quien recibe no tiene rol `CAJERO`;
+- exponer la idempotencia y huella de petición cuando la proyección conserva
+  el journal del componente;
+- enumerar recepciones, movimientos e imputaciones por sus identificadores
+  técnicos opacos;
+- publicar totales de dinero nuevo, saldo aplicado, monto imputado y remanente;
+- distinguir `EN_PROGRESO`, `CONFIRMADA`, `PARCIALMENTE_CONFIRMADA`,
+  `RECHAZADA`, `ANULADA` y `REVERTIDA` de un fallo técnico
+  `RECUPERACION_REQUERIDA`.
+
+No es una raíz persistida ni introduce un nuevo tipo documental CouchDB. Se
+sintetiza desde las operaciones y documentos existentes, y no sustituye ni
+fusiona `RecepcionCobroCliente`, `MovimientoCuentaCliente` o
+`ImputacionCuentaCliente`. Esos documentos siguen siendo las evidencias de
+recepción, ledger y aplicación, respectivamente.
+
+Para compatibilidad histórica, `ejecucionCobroId` es opcional al leer esos tres
+documentos. Todo productor nuevo que participe en una ejecución debe escribir
+el mismo identificador en cada documento generado. El valor es opaco: su
+formato no clasifica el documento ni expresa lógica de negocio.
+
+`estadoProcesamientoCobro` no forma parte de `RecepcionCobroCliente`: es un
+detalle privado de journals o adaptadores que no debe convertirse en una
+segunda máquina de estados compartida. Los consumers observan
+`CabeceraEjecucionCobroCliente.estado`, los estados de sus componentes y el
+estado operativo propio de la recepción.
+
+### `DetalleEjecucionCobroCliente`
+
+Es la respuesta versionada para la vista de detalle de un cobro. Mantiene en
+colecciones separadas:
+
+- recepciones operativas;
+- movimientos del ledger;
+- imputaciones exactas entre fuente y deuda;
+- todas las `transferenciasCustodia` asociadas, como colección lossless;
+- créditos destino enriquecidos con código visible, monto aplicado, saldo
+  pendiente anterior y saldo pendiente restante cuando son reconstruibles;
+- movimientos compensatorios posteriores, sin ocultar ni sobrescribir el cobro
+  original.
+
+La relación exacta se obtiene por identificadores contractuales, no por el
+formato de `_id` ni por heurísticas de fecha o monto.
+
+La colección `transferenciasCustodia` es la evidencia completa. Una propiedad
+singular de compatibilidad HTTP, si algún adaptador todavía la publica, solo
+puede ser un alias derivado y nunca puede sustituir ni truncar esta colección.
+
 ### `TransferenciaCustodiaCobro`
 
 Representa traspaso de custodia de una recepción entre responsables y turnos.
@@ -82,6 +146,18 @@ Responsabilidades observadas:
 - separar recepción de custodia efectiva;
 - expresar origen y destino de custodia;
 - dejar rastro de aceptación, rechazo o anulación.
+
+### `CustodiaEsperadaCobroCliente`
+
+Forma parte del plan inmutable de un componente `DINERO_NUEVO` cuando el actor
+que recibe es `VENDEDOR` o `SISTEMA`. Declara custodios y turnos de origen y
+destino, además de cajas opcionales. Para un actor `CAJERO` debe omitirse: no se
+inventa una transferencia desde la misma custodia que ya recibe el dinero.
+
+La ruta completa entra en la serialización canónica y, por tanto, en
+`planHash`. Reutilizar una clave idempotente con una ruta distinta es una
+petición incompatible. Todos sus identificadores son opacos: se conservan sin
+recortar, reconstruir ni interpretar.
 
 ### `ResumenCuentaCliente`
 
@@ -201,6 +277,8 @@ Por eso:
 - una imputación válida debe unir crédito y débito de misma moneda;
 - recepción y movimiento exponen vínculos a caja, turno y custodio.
 - `codigoConstancia` es opcional para mantener compatibilidad con recepciones históricas y medios sin constancia.
+- `ejecucionCobroId` es opcional únicamente para compatibilidad de documentos históricos; es obligatorio para productores nuevos que formen parte de una ejecución.
+- `cobroId` puede faltar en imputaciones históricas, pero es obligatorio en cada `ImputacionCuentaClienteDineroNuevoManifestV1` y debe apuntar a la recepción fuente exacta.
 
 ## Decisiones vigentes observables
 
@@ -210,6 +288,7 @@ Por eso:
 - `MovimientoCuentaCliente` diferencia `CONFIRMADO` de `CONTABILIZADO`, por lo que confirmación operativa y reflejo contable no son el mismo estado;
 - `ResumenCuentaCliente` se interpreta como proyección reconstruible desde movimientos vigentes e imputaciones vigentes;
 - `MovimientoCuentaCliente` ya no publica `deltaSaldoFavor` ni `deltaSaldoPorCobrar`.
+- `EjecucionCobroCliente` versión `1` sintetiza una acción sin imponer una única fuente, método de pago, petición o documento financiero ni crear otra raíz CouchDB.
 
 ## Referencias
 
