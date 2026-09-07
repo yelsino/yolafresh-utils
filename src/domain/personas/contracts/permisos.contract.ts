@@ -25,6 +25,7 @@ export enum Permisos {
   PUNTO_VENTA_PESAR_PRODUCTOS = "punto-venta:pesar-productos",
   PUNTO_VENTA_ASIGNAR_CLIENTE = "punto-venta:asignar-cliente",
   PUNTO_VENTA_APLICAR_DESCUENTO = "punto-venta:aplicar-descuento",
+  PUNTO_VENTA_APROBAR_DESCUENTO = "punto-venta:aprobar-descuento",
   PUNTO_VENTA_CAMBIAR_PRECIO = "punto-venta:cambiar-precio",
   PUNTO_VENTA_ANULAR_ITEM = "punto-venta:anular-item",
   PUNTO_VENTA_IMPRIMIR_COMPROBANTE = "punto-venta:imprimir-comprobante",

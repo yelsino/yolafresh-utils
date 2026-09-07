@@ -69,6 +69,15 @@ test("pedido comercial separa edición, aprobación y anulación", () => {
   );
 });
 
+test("descuento de venta separa aplicación y aprobación", () => {
+  assert.ok(AUTH_PERMISSION_SET.has("ventas:venta:aplicar_descuento"));
+  assert.ok(AUTH_PERMISSION_SET.has("ventas:venta:aprobar_descuento"));
+  assert.equal(
+    PERMISSION_METADATA["ventas:venta:aprobar_descuento"].criticidad,
+    "critical",
+  );
+});
+
 test("administrar almacenes es un permiso crítico y auditable", () => {
   const permission = "inventario:almacen:administrar";
   assert.ok(AUTH_PERMISSION_SET.has(permission));

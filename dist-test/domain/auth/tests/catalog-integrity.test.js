@@ -48,6 +48,11 @@ const AUTH_PERMISSION_SET = new Set(permission_catalog_1.AUTH_PERMISSIONS);
     strict_1.default.ok(AUTH_PERMISSION_SET.has("ventas:pedido:anular"));
     strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA["ventas:pedido:anular"].criticidad, "critical");
 });
+(0, node_test_1.default)("descuento de venta separa aplicación y aprobación", () => {
+    strict_1.default.ok(AUTH_PERMISSION_SET.has("ventas:venta:aplicar_descuento"));
+    strict_1.default.ok(AUTH_PERMISSION_SET.has("ventas:venta:aprobar_descuento"));
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA["ventas:venta:aprobar_descuento"].criticidad, "critical");
+});
 (0, node_test_1.default)("administrar almacenes es un permiso crítico y auditable", () => {
     const permission = "inventario:almacen:administrar";
     strict_1.default.ok(AUTH_PERMISSION_SET.has(permission));

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.VentaSnapshot = exports.VENTA_INVENTORY_PLAN_VERSION = exports.VENTA_INVENTORY_PLAN_SCHEMA = exports.VENTA_SNAPSHOT_TYPE = void 0;
+exports.VentaSnapshot = exports.MOTIVOS_DESCUENTO_VENTA = exports.VENTA_INVENTORY_PLAN_VERSION = exports.VENTA_INVENTORY_PLAN_SCHEMA = exports.VENTA_SNAPSHOT_TYPE = void 0;
 exports.validarVentaInventoryPlan = validarVentaInventoryPlan;
 exports.buildVentaSnapshotId = buildVentaSnapshotId;
 exports.mapVentaSnapshotActor = mapVentaSnapshotActor;
@@ -9,6 +9,13 @@ const enums_1 = require("../../shared/kernel/enums");
 exports.VENTA_SNAPSHOT_TYPE = "venta_snapshot";
 exports.VENTA_INVENTORY_PLAN_SCHEMA = "venta_inventory_plan_v2";
 exports.VENTA_INVENTORY_PLAN_VERSION = 1;
+exports.MOTIVOS_DESCUENTO_VENTA = [
+    "FALTA_SENCILLO",
+    "CORTESIA",
+    "PRECIO_ACORDADO",
+    "PROMOCION_MANUAL",
+    "OTRO",
+];
 function roundMoney(value) {
     return Math.round(value * 100) / 100;
 }
@@ -218,7 +225,7 @@ function isVentaSnapshotImmutableState(estado) {
 }
 class VentaSnapshot {
     constructor(data) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u;
         this.id = data.id;
         this.type = (_a = data.type) !== null && _a !== void 0 ? _a : exports.VENTA_SNAPSHOT_TYPE;
         this.ventaId = data.ventaId;
@@ -258,12 +265,32 @@ class VentaSnapshot {
             data.descuentoTotal === undefined
                 ? undefined
                 : roundMoney(Number((_c = data.descuentoTotal) !== null && _c !== void 0 ? _c : 0));
-        this.impuesto = roundMoney(Number((_d = data.impuesto) !== null && _d !== void 0 ? _d : 0));
+        this.descuentoVenta = data.descuentoVenta
+            ? Object.freeze({
+                ...data.descuentoVenta,
+                monto: roundMoney(Number((_d = data.descuentoVenta.monto) !== null && _d !== void 0 ? _d : 0)),
+                detalle: safeTrim(data.descuentoVenta.detalle),
+                aplicadoPor: Object.freeze({ ...data.descuentoVenta.aplicadoPor }),
+                autorizadoPor: data.descuentoVenta.autorizadoPor
+                    ? Object.freeze({ ...data.descuentoVenta.autorizadoPor })
+                    : undefined,
+            })
+            : undefined;
+        this.impuesto = roundMoney(Number((_e = data.impuesto) !== null && _e !== void 0 ? _e : 0));
         this.montoRedondeo =
             data.montoRedondeo === undefined
                 ? undefined
-                : roundMoney(Number((_e = data.montoRedondeo) !== null && _e !== void 0 ? _e : 0));
-        this.total = roundMoney(Number((_f = data.total) !== null && _f !== void 0 ? _f : 0));
+                : roundMoney(Number((_f = data.montoRedondeo) !== null && _f !== void 0 ? _f : 0));
+        this.redondeoPago = data.redondeoPago
+            ? Object.freeze({
+                ...data.redondeoPago,
+                monto: roundMoney(Number((_g = data.redondeoPago.monto) !== null && _g !== void 0 ? _g : 0)),
+                paso: roundMoney(Number((_h = data.redondeoPago.paso) !== null && _h !== void 0 ? _h : 0)),
+                politicaId: (_j = safeTrim(data.redondeoPago.politicaId)) !== null && _j !== void 0 ? _j : "",
+            })
+            : undefined;
+        this.total = roundMoney(Number((_k = data.total) !== null && _k !== void 0 ? _k : 0));
+        this.moneda = data.moneda;
         this.codigoVenta = safeTrim(data.codigoVenta);
         this.procedencia = (0, enums_1.normalizarProcedenciaComercial)(data.procedencia);
         this.cliente = data.cliente ? { ...data.cliente } : undefined;
@@ -274,17 +301,17 @@ class VentaSnapshot {
                 schema: data.planInventarioV2.schema,
                 version: data.planInventarioV2.version,
                 resueltoAt: Number(data.planInventarioV2.resueltoAt),
-                almacenId: (_g = safeTrim(data.planInventarioV2.almacenId)) !== null && _g !== void 0 ? _g : "",
+                almacenId: (_l = safeTrim(data.planInventarioV2.almacenId)) !== null && _l !== void 0 ? _l : "",
                 actor: Object.freeze({
-                    usuarioId: (_j = safeTrim((_h = data.planInventarioV2.actor) === null || _h === void 0 ? void 0 : _h.usuarioId)) !== null && _j !== void 0 ? _j : "",
-                    ...(safeTrim((_k = data.planInventarioV2.actor) === null || _k === void 0 ? void 0 : _k.usuarioNombre)
-                        ? { usuarioNombre: safeTrim((_l = data.planInventarioV2.actor) === null || _l === void 0 ? void 0 : _l.usuarioNombre) }
+                    usuarioId: (_o = safeTrim((_m = data.planInventarioV2.actor) === null || _m === void 0 ? void 0 : _m.usuarioId)) !== null && _o !== void 0 ? _o : "",
+                    ...(safeTrim((_p = data.planInventarioV2.actor) === null || _p === void 0 ? void 0 : _p.usuarioNombre)
+                        ? { usuarioNombre: safeTrim((_q = data.planInventarioV2.actor) === null || _q === void 0 ? void 0 : _q.usuarioNombre) }
                         : {}),
-                    ...(safeTrim((_m = data.planInventarioV2.actor) === null || _m === void 0 ? void 0 : _m.dispositivoId)
-                        ? { dispositivoId: safeTrim((_o = data.planInventarioV2.actor) === null || _o === void 0 ? void 0 : _o.dispositivoId) }
+                    ...(safeTrim((_r = data.planInventarioV2.actor) === null || _r === void 0 ? void 0 : _r.dispositivoId)
+                        ? { dispositivoId: safeTrim((_s = data.planInventarioV2.actor) === null || _s === void 0 ? void 0 : _s.dispositivoId) }
                         : {}),
-                    ...(safeTrim((_p = data.planInventarioV2.actor) === null || _p === void 0 ? void 0 : _p.sesionId)
-                        ? { sesionId: safeTrim((_q = data.planInventarioV2.actor) === null || _q === void 0 ? void 0 : _q.sesionId) }
+                    ...(safeTrim((_t = data.planInventarioV2.actor) === null || _t === void 0 ? void 0 : _t.sesionId)
+                        ? { sesionId: safeTrim((_u = data.planInventarioV2.actor) === null || _u === void 0 ? void 0 : _u.sesionId) }
                         : {}),
                 }),
                 registrarMovimientoItemIds: Object.freeze(normalizedIds(data.planInventarioV2.registrarMovimientoItemIds)),
@@ -305,9 +332,22 @@ class VentaSnapshot {
             items: this.items.map((item) => ({ ...item })),
             subtotal: this.subtotal,
             descuentoTotal: this.descuentoTotal,
+            descuentoVenta: this.descuentoVenta
+                ? {
+                    ...this.descuentoVenta,
+                    aplicadoPor: { ...this.descuentoVenta.aplicadoPor },
+                    autorizadoPor: this.descuentoVenta.autorizadoPor
+                        ? { ...this.descuentoVenta.autorizadoPor }
+                        : undefined,
+                }
+                : undefined,
             impuesto: this.impuesto,
             montoRedondeo: this.montoRedondeo,
+            redondeoPago: this.redondeoPago
+                ? { ...this.redondeoPago }
+                : undefined,
             total: this.total,
+            moneda: this.moneda,
             codigoVenta: this.codigoVenta,
             procedencia: this.procedencia,
             cliente: this.cliente ? { ...this.cliente } : undefined,
@@ -331,7 +371,7 @@ class VentaSnapshot {
         return new VentaSnapshot(snapshot);
     }
     static fromVenta(venta, context = {}) {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         const items = context.items;
         if (!items) {
             throw new Error("VentaSnapshotBuildContext.items es requerido porque Venta.items solo contiene el conteo");
@@ -339,7 +379,9 @@ class VentaSnapshot {
         if (items.length !== venta.items) {
             throw new Error("Venta.items debe coincidir con la cantidad de VentaSnapshot.items");
         }
-        const descuentoTotal = sumItemDiscounts(items);
+        const descuentoTotal = typeof venta.descuentoTotal === "number"
+            ? roundMoney(venta.descuentoTotal)
+            : sumItemDiscounts(items);
         return new VentaSnapshot({
             id: (_a = safeTrim(context.id)) !== null && _a !== void 0 ? _a : buildVentaSnapshotId(venta.id),
             ventaId: venta.id,
@@ -347,11 +389,14 @@ class VentaSnapshot {
             items,
             subtotal: venta.subtotal,
             descuentoTotal,
+            descuentoVenta: context.descuentoVenta,
             impuesto: venta.impuesto,
             montoRedondeo: typeof venta.montoRedondeo === "number"
                 ? roundMoney(Number(venta.montoRedondeo))
                 : undefined,
+            redondeoPago: context.redondeoPago,
             total: venta.total,
+            moneda: (_d = context.moneda) !== null && _d !== void 0 ? _d : venta.moneda,
             codigoVenta: venta.codigoVenta,
             procedencia: venta.procedencia,
             cliente: mapVentaSnapshotActor(context.cliente),
@@ -371,7 +416,7 @@ class VentaSnapshot {
         }
     }
     static validar(data) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
         const errores = [];
         if (!safeTrim(data.id)) {
             errores.push("VentaSnapshot.id es requerido");
@@ -403,7 +448,81 @@ class VentaSnapshot {
             roundMoney(Number((_j = data.total) !== null && _j !== void 0 ? _j : 0))) {
             errores.push("VentaSnapshot.total debe ser consistente con subtotal - descuentoTotal + impuesto + montoRedondeo");
         }
-        (_k = data.items) === null || _k === void 0 ? void 0 : _k.forEach((item, index) => {
+        if (data.moneda !== undefined && data.moneda !== "PEN" && data.moneda !== "USD") {
+            errores.push("VentaSnapshot.moneda inválida");
+        }
+        if (data.descuentoVenta !== undefined) {
+            const descuento = data.descuentoVenta;
+            const itemDiscounts = sumItemDiscounts(data.items);
+            if (descuento.schemaVersion !== 1) {
+                errores.push("VentaSnapshot.descuentoVenta.schemaVersion debe ser 1");
+            }
+            if (!Number.isFinite(descuento.monto) || descuento.monto <= 0) {
+                errores.push("VentaSnapshot.descuentoVenta.monto debe ser positivo");
+            }
+            if (!exports.MOTIVOS_DESCUENTO_VENTA.includes(descuento.motivo)) {
+                errores.push("VentaSnapshot.descuentoVenta.motivo es inválido");
+            }
+            if (descuento.motivo === "OTRO" && !safeTrim(descuento.detalle)) {
+                errores.push("VentaSnapshot.descuentoVenta.detalle es requerido para OTRO");
+            }
+            if (!safeTrim((_k = descuento.aplicadoPor) === null || _k === void 0 ? void 0 : _k.nombre)) {
+                errores.push("VentaSnapshot.descuentoVenta.aplicadoPor es requerido");
+            }
+            if (!Number.isFinite(descuento.aplicadoAt) || descuento.aplicadoAt <= 0) {
+                errores.push("VentaSnapshot.descuentoVenta.aplicadoAt debe ser positivo");
+            }
+            if (!Number.isSafeInteger(descuento.politicaVersion) || descuento.politicaVersion < 1) {
+                errores.push("VentaSnapshot.descuentoVenta.politicaVersion es inválida");
+            }
+            if (descuento.autorizadoPor !== undefined &&
+                !safeTrim(descuento.autorizadoPor.nombre)) {
+                errores.push("VentaSnapshot.descuentoVenta.autorizadoPor es inválido");
+            }
+            if (roundMoney(itemDiscounts + Number((_l = descuento.monto) !== null && _l !== void 0 ? _l : 0)) !== descuentoTotal) {
+                errores.push("VentaSnapshot.descuentoTotal debe sumar descuentos de items y descuentoVenta");
+            }
+        }
+        if (data.redondeoPago !== undefined) {
+            const redondeo = data.redondeoPago;
+            const montoRedondeo = roundMoney(Number((_m = data.montoRedondeo) !== null && _m !== void 0 ? _m : 0));
+            if (redondeo.schemaVersion !== 1) {
+                errores.push("VentaSnapshot.redondeoPago.schemaVersion debe ser 1");
+            }
+            if (!safeTrim(redondeo.politicaId)) {
+                errores.push("VentaSnapshot.redondeoPago.politicaId es requerido");
+            }
+            if (!Number.isSafeInteger(redondeo.politicaVersion) || redondeo.politicaVersion < 1) {
+                errores.push("VentaSnapshot.redondeoPago.politicaVersion es inválida");
+            }
+            if (!Number.isFinite(redondeo.paso) || redondeo.paso <= 0) {
+                errores.push("VentaSnapshot.redondeoPago.paso debe ser positivo");
+            }
+            if (redondeo.monto > 0) {
+                errores.push("VentaSnapshot.redondeoPago.monto no puede favorecer al comercio");
+            }
+            if (roundMoney(redondeo.monto) !== montoRedondeo) {
+                errores.push("VentaSnapshot.redondeoPago.monto debe coincidir con montoRedondeo");
+            }
+            if (redondeo.moneda !== "PEN" && redondeo.moneda !== "USD") {
+                errores.push("VentaSnapshot.redondeoPago.moneda es inválida");
+            }
+            if (data.moneda !== undefined && redondeo.moneda !== data.moneda) {
+                errores.push("VentaSnapshot.redondeoPago.moneda debe coincidir con la venta");
+            }
+            if (redondeo.direccion !== "A_FAVOR_CLIENTE") {
+                errores.push("VentaSnapshot.redondeoPago.direccion es inválida");
+            }
+            if (redondeo.aplicacion !== "EFECTIVO_TOTAL" && redondeo.aplicacion !== "EFECTIVO_MIXTO") {
+                errores.push("VentaSnapshot.redondeoPago.aplicacion es inválida");
+            }
+            const pasoCentavos = Math.round(redondeo.paso * 100);
+            const ajusteCentavos = Math.round(redondeo.monto * 100);
+            if (pasoCentavos > 0 && ajusteCentavos <= -pasoCentavos) {
+                errores.push("VentaSnapshot.redondeoPago.monto excede el paso configurado");
+            }
+        }
+        (_o = data.items) === null || _o === void 0 ? void 0 : _o.forEach((item, index) => {
             var _a, _b, _c, _d, _e;
             if (!safeTrim(item.id)) {
                 errores.push(`VentaSnapshot.items[${index}].id es requerido`);
@@ -467,7 +586,7 @@ class VentaSnapshot {
             }
         });
         if (data.planInventarioV2 !== undefined) {
-            errores.push(...validarVentaInventoryPlan(data.planInventarioV2, (_l = data.items) !== null && _l !== void 0 ? _l : [], data.almacenOrigenId).errores);
+            errores.push(...validarVentaInventoryPlan(data.planInventarioV2, (_p = data.items) !== null && _p !== void 0 ? _p : [], data.almacenOrigenId).errores);
         }
         return {
             valida: errores.length === 0,

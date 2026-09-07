@@ -7,6 +7,7 @@ import {
   ProcedenciaComercialEnum,
   VentaState,
 } from "../../shared/kernel/enums";
+import type { MonedaEmpresa } from "../../shared/kernel/empresa.contract";
 import {
   IVentaSnapshot,
   VentaSnapshot,
@@ -34,9 +35,11 @@ export interface IVenta {
   updatedAt?: Date;
   costoEnvio?: number;
   subtotal: number;
+  descuentoTotal?: number;
   impuesto: number;
   total: number;
   montoRedondeo?: number;
+  moneda?: MonedaEmpresa;
   procedencia: ProcedenciaComercialEnum;
   clienteId?: string;
   vendedorId?: string;
@@ -120,9 +123,11 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   public updatedAt: Date;
   public readonly costoEnvio?: number;
   public readonly subtotal: number;
+  public readonly descuentoTotal?: number;
   public readonly impuesto: number;
   public readonly total: number;
   public readonly montoRedondeo?: number;
+  public readonly moneda?: MonedaEmpresa;
   public readonly procedencia: ProcedenciaComercialEnum;
   public readonly clienteId?: string;
   public readonly vendedorId?: string;
@@ -158,10 +163,15 @@ export class Venta extends AggregateRoot<string> implements IVenta {
         ? data.pedidoId
         : undefined;
     this.subtotal = Venta.roundMoney(Number(data.subtotal ?? 0));
+    this.descuentoTotal =
+      data.descuentoTotal === undefined
+        ? undefined
+        : Venta.roundMoney(Number(data.descuentoTotal ?? 0));
     this.impuesto = Venta.roundMoney(Number(data.impuesto ?? 0));
     this.total = Venta.roundMoney(Number(data.total ?? 0));
     this.montoRedondeo =
       data.montoRedondeo === undefined ? undefined : Number(data.montoRedondeo);
+    this.moneda = data.moneda;
     this.procedencia = procedencia;
     this.clienteId = data.clienteId;
     this.vendedorId = data.vendedorId;
@@ -224,9 +234,11 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       subtotal: this.subtotal,
+      descuentoTotal: this.descuentoTotal,
       impuesto: this.impuesto,
       total: this.total,
       montoRedondeo: this.montoRedondeo,
+      moneda: this.moneda,
       procedencia: this.procedencia,
       clienteId: this.clienteId,
       vendedorId: this.vendedorId,
@@ -268,13 +280,19 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       montoRedondeo?: number;
       pedidoId?: string;
       condicionPago?: CondicionPagoVenta;
+      descuentoTotal?: number;
+      impuesto?: number;
+      total?: number;
+      moneda?: MonedaEmpresa;
     },
   ): Venta {
     const ahora = new Date();
     const montoRedondeo = options?.montoRedondeo ?? 0;
     const carritoInstance = CarritoVenta.fromJSON(carritoJSON);
     const detalle = carritoInstance.toJSON();
-    const totalFinal = Venta.roundMoney(detalle.total + montoRedondeo);
+    const totalFinal = Venta.roundMoney(
+      options?.total ?? detalle.total + montoRedondeo,
+    );
     const snapshotItems = detalle.items.map((item) =>
       Venta.mapCarItemToSnapshotItem(item),
     );
@@ -291,9 +309,11 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       snapshotItems,
       pedidoId: options?.pedidoId,
       subtotal: detalle.subtotal,
-      impuesto: detalle.impuesto,
+      descuentoTotal: options?.descuentoTotal ?? detalle.descuentoTotal,
+      impuesto: options?.impuesto ?? detalle.impuesto,
       total: totalFinal,
       montoRedondeo,
+      moneda: options?.moneda,
       procedencia:
         normalizarProcedenciaComercial(carritoJSON.procedencia) ??
         ProcedenciaComercialEnum.TIENDA,
@@ -348,6 +368,12 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     if ((data.subtotal || 0) < 0) {
       errores.push("El subtotal no puede ser negativo");
     }
+    if (
+      data.descuentoTotal !== undefined &&
+      (!Number.isFinite(data.descuentoTotal) || data.descuentoTotal < 0)
+    ) {
+      errores.push("descuentoTotal debe ser un número finito no negativo");
+    }
     if ((data.impuesto || 0) < 0) {
       errores.push("El impuesto no puede ser negativo");
     }
@@ -356,6 +382,13 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       !Number.isFinite(data.montoRedondeo)
     ) {
       errores.push("montoRedondeo debe ser un número finito");
+    }
+    if (
+      data.moneda !== undefined &&
+      data.moneda !== "PEN" &&
+      data.moneda !== "USD"
+    ) {
+      errores.push("moneda de venta inválida");
     }
     if (data.costoEnvio !== undefined && data.costoEnvio < 0) {
       errores.push("El costo de envío no puede ser negativo");

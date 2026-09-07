@@ -28,6 +28,7 @@ var Permisos;
     Permisos["PUNTO_VENTA_PESAR_PRODUCTOS"] = "punto-venta:pesar-productos";
     Permisos["PUNTO_VENTA_ASIGNAR_CLIENTE"] = "punto-venta:asignar-cliente";
     Permisos["PUNTO_VENTA_APLICAR_DESCUENTO"] = "punto-venta:aplicar-descuento";
+    Permisos["PUNTO_VENTA_APROBAR_DESCUENTO"] = "punto-venta:aprobar-descuento";
     Permisos["PUNTO_VENTA_CAMBIAR_PRECIO"] = "punto-venta:cambiar-precio";
     Permisos["PUNTO_VENTA_ANULAR_ITEM"] = "punto-venta:anular-item";
     Permisos["PUNTO_VENTA_IMPRIMIR_COMPROBANTE"] = "punto-venta:imprimir-comprobante";

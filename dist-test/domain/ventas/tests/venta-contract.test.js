@@ -545,3 +545,110 @@ function buildCarrito() {
     };
     strict_1.default.throws(() => CarritoVenta_1.CarritoVenta.fromJSON(carritoCorrupto), /CarritoVenta\.items\[0\]\.quantity debe ser un número finito/);
 });
+(0, node_test_1.default)("Venta y VentaSnapshot conservan descuento global, redondeo y moneda", () => {
+    var _a, _b;
+    const venta = new Venta_1.Venta(buildVentaInput({
+        subtotal: 10.43,
+        descuentoTotal: 0.2,
+        impuesto: 0,
+        montoRedondeo: -0.03,
+        total: 10.2,
+        moneda: "PEN",
+    }));
+    const aplicadoAt = new Date("2026-09-06T15:00:00.000Z").getTime();
+    const snapshot = venta.toVentaSnapshot({
+        descuentoVenta: {
+            schemaVersion: 1,
+            monto: 0.2,
+            motivo: "FALTA_SENCILLO",
+            aplicadoPor: { id: "user-1", nombre: "Yola" },
+            aplicadoAt,
+            politicaVersion: 2,
+        },
+        redondeoPago: {
+            schemaVersion: 1,
+            monto: -0.03,
+            politicaId: "pen-cash-floor-010",
+            politicaVersion: 3,
+            moneda: "PEN",
+            paso: 0.1,
+            direccion: "A_FAVOR_CLIENTE",
+            aplicacion: "EFECTIVO_TOTAL",
+        },
+    });
+    strict_1.default.equal(venta.toJSON().descuentoTotal, 0.2);
+    strict_1.default.equal(venta.toJSON().moneda, "PEN");
+    strict_1.default.equal(snapshot.descuentoTotal, 0.2);
+    strict_1.default.equal((_a = snapshot.descuentoVenta) === null || _a === void 0 ? void 0 : _a.motivo, "FALTA_SENCILLO");
+    strict_1.default.equal((_b = snapshot.redondeoPago) === null || _b === void 0 ? void 0 : _b.monto, -0.03);
+    strict_1.default.equal(snapshot.moneda, "PEN");
+    strict_1.default.deepEqual(VentaSnapshot_1.VentaSnapshot.fromJSON(snapshot).toJSON(), snapshot);
+});
+(0, node_test_1.default)("VentaSnapshot exige detalle para motivo OTRO y consistencia de descuentos", () => {
+    const base = {
+        id: "venta_test_001:snapshot",
+        ventaId: "venta_test_001",
+        createdAt: Date.now(),
+        items: [buildSnapshotItem()],
+        subtotal: 10,
+        descuentoTotal: 0.2,
+        impuesto: 0,
+        total: 9.8,
+        descuentoVenta: {
+            schemaVersion: 1,
+            monto: 0.1,
+            motivo: "OTRO",
+            aplicadoPor: { nombre: "Yola" },
+            aplicadoAt: Date.now(),
+            politicaVersion: 1,
+        },
+    };
+    strict_1.default.throws(() => new VentaSnapshot_1.VentaSnapshot(base), /detalle es requerido para OTRO.*descuentoTotal debe sumar/);
+});
+(0, node_test_1.default)("VentaSnapshot rechaza redondeo nuevo a favor del comercio", () => {
+    strict_1.default.throws(() => new VentaSnapshot_1.VentaSnapshot({
+        id: "venta_test_001:snapshot",
+        ventaId: "venta_test_001",
+        createdAt: Date.now(),
+        items: [buildSnapshotItem()],
+        subtotal: 10,
+        impuesto: 0,
+        montoRedondeo: 0.05,
+        total: 10.05,
+        moneda: "PEN",
+        redondeoPago: {
+            schemaVersion: 1,
+            monto: 0.05,
+            politicaId: "invalid-up",
+            politicaVersion: 1,
+            moneda: "PEN",
+            paso: 0.1,
+            direccion: "A_FAVOR_CLIENTE",
+            aplicacion: "EFECTIVO_TOTAL",
+        },
+    }), /no puede favorecer al comercio/);
+});
+(0, node_test_1.default)("VentaSnapshot preserva redondeo legacy positivo sin inventar política", () => {
+    const legacy = new VentaSnapshot_1.VentaSnapshot({
+        id: "venta_legacy:snapshot",
+        ventaId: "venta_legacy",
+        createdAt: Date.now(),
+        items: [buildSnapshotItem()],
+        subtotal: 10,
+        impuesto: 0,
+        montoRedondeo: 0.5,
+        total: 10.5,
+    }).toJSON();
+    strict_1.default.equal(legacy.montoRedondeo, 0.5);
+    strict_1.default.equal(legacy.redondeoPago, undefined);
+    strict_1.default.equal(legacy.moneda, undefined);
+});
+(0, node_test_1.default)("catálogo publica todos los motivos de descuento de venta", () => {
+    strict_1.default.deepEqual(VentaSnapshot_1.MOTIVOS_DESCUENTO_VENTA, [
+        "FALTA_SENCILLO",
+        "CORTESIA",
+        "PRECIO_ACORDADO",
+        "PROMOCION_MANUAL",
+        "OTRO",
+    ]);
+});

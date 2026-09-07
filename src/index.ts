@@ -24,4 +24,10 @@ export {
   VENTA_SNAPSHOT_TYPE,
   VentaSnapshot,
 } from "./domain/ventas/entities";
+export type {
+  MotivoDescuentoVenta,
+  VentaDescuentoSnapshot,
+  VentaRedondeoSnapshot,
+  VentaSnapshotActor,
+} from "./domain/ventas/entities";
 export { RecurrenciaEntity } from "./domain/finanzas/entities";

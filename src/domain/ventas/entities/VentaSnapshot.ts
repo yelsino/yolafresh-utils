@@ -6,6 +6,7 @@ import {
   ProcedenciaComercialEnum,
   VentaState,
 } from "../../shared/kernel/enums";
+import type { MonedaEmpresa } from "../../shared/kernel/empresa.contract";
 import type { IVenta } from "./Venta";
 
 export const VENTA_SNAPSHOT_TYPE = "venta_snapshot" as const;
@@ -30,6 +31,38 @@ type VentaSnapshotActorSource =
 export interface VentaSnapshotActor {
   id?: string | null;
   nombre: string;
+}
+
+export const MOTIVOS_DESCUENTO_VENTA = [
+  "FALTA_SENCILLO",
+  "CORTESIA",
+  "PRECIO_ACORDADO",
+  "PROMOCION_MANUAL",
+  "OTRO",
+] as const;
+
+export type MotivoDescuentoVenta = (typeof MOTIVOS_DESCUENTO_VENTA)[number];
+
+export interface VentaDescuentoSnapshot {
+  schemaVersion: 1;
+  monto: number;
+  motivo: MotivoDescuentoVenta;
+  detalle?: string;
+  aplicadoPor: VentaSnapshotActor;
+  aplicadoAt: number;
+  autorizadoPor?: VentaSnapshotActor;
+  politicaVersion: number;
+}
+
+export interface VentaRedondeoSnapshot {
+  schemaVersion: 1;
+  monto: number;
+  politicaId: string;
+  politicaVersion: number;
+  moneda: MonedaEmpresa;
+  paso: number;
+  direccion: "A_FAVOR_CLIENTE";
+  aplicacion: "EFECTIVO_TOTAL" | "EFECTIVO_MIXTO";
 }
 
 export interface VentaSnapshotItem {
@@ -81,9 +114,12 @@ export interface IVentaSnapshot {
   items: VentaSnapshotItem[];
   subtotal: number;
   descuentoTotal?: number;
+  descuentoVenta?: VentaDescuentoSnapshot;
   impuesto: number;
   montoRedondeo?: number;
+  redondeoPago?: VentaRedondeoSnapshot;
   total: number;
+  moneda?: MonedaEmpresa;
   codigoVenta?: string;
   procedencia?: ProcedenciaComercialEnum;
   cliente?: VentaSnapshotActor;
@@ -100,6 +136,9 @@ export interface VentaSnapshotBuildContext {
   items?: VentaSnapshotItem[];
   cliente?: VentaSnapshotActorSource;
   vendedor?: VentaSnapshotActorSource;
+  descuentoVenta?: VentaDescuentoSnapshot;
+  redondeoPago?: VentaRedondeoSnapshot;
+  moneda?: MonedaEmpresa;
   almacenOrigenId?: string;
   planInventarioV2?: VentaInventoryPlan;
 }
@@ -435,9 +474,12 @@ export class VentaSnapshot implements IVentaSnapshot {
   public readonly items: VentaSnapshotItem[];
   public readonly subtotal: number;
   public readonly descuentoTotal?: number;
+  public readonly descuentoVenta?: VentaDescuentoSnapshot;
   public readonly impuesto: number;
   public readonly montoRedondeo?: number;
+  public readonly redondeoPago?: VentaRedondeoSnapshot;
   public readonly total: number;
+  public readonly moneda?: MonedaEmpresa;
   public readonly codigoVenta?: string;
   public readonly procedencia?: ProcedenciaComercialEnum;
   public readonly cliente?: VentaSnapshotActor;
@@ -490,12 +532,32 @@ export class VentaSnapshot implements IVentaSnapshot {
       data.descuentoTotal === undefined
         ? undefined
         : roundMoney(Number(data.descuentoTotal ?? 0));
+    this.descuentoVenta = data.descuentoVenta
+      ? Object.freeze({
+          ...data.descuentoVenta,
+          monto: roundMoney(Number(data.descuentoVenta.monto ?? 0)),
+          detalle: safeTrim(data.descuentoVenta.detalle),
+          aplicadoPor: Object.freeze({ ...data.descuentoVenta.aplicadoPor }),
+          autorizadoPor: data.descuentoVenta.autorizadoPor
+            ? Object.freeze({ ...data.descuentoVenta.autorizadoPor })
+            : undefined,
+        })
+      : undefined;
     this.impuesto = roundMoney(Number(data.impuesto ?? 0));
     this.montoRedondeo =
       data.montoRedondeo === undefined
         ? undefined
         : roundMoney(Number(data.montoRedondeo ?? 0));
+    this.redondeoPago = data.redondeoPago
+      ? Object.freeze({
+          ...data.redondeoPago,
+          monto: roundMoney(Number(data.redondeoPago.monto ?? 0)),
+          paso: roundMoney(Number(data.redondeoPago.paso ?? 0)),
+          politicaId: safeTrim(data.redondeoPago.politicaId) ?? "",
+        })
+      : undefined;
     this.total = roundMoney(Number(data.total ?? 0));
+    this.moneda = data.moneda;
     this.codigoVenta = safeTrim(data.codigoVenta);
     this.procedencia = normalizarProcedenciaComercial(data.procedencia);
     this.cliente = data.cliente ? { ...data.cliente } : undefined;
@@ -543,9 +605,22 @@ export class VentaSnapshot implements IVentaSnapshot {
       items: this.items.map((item) => ({ ...item })),
       subtotal: this.subtotal,
       descuentoTotal: this.descuentoTotal,
+      descuentoVenta: this.descuentoVenta
+        ? {
+            ...this.descuentoVenta,
+            aplicadoPor: { ...this.descuentoVenta.aplicadoPor },
+            autorizadoPor: this.descuentoVenta.autorizadoPor
+              ? { ...this.descuentoVenta.autorizadoPor }
+              : undefined,
+          }
+        : undefined,
       impuesto: this.impuesto,
       montoRedondeo: this.montoRedondeo,
+      redondeoPago: this.redondeoPago
+        ? { ...this.redondeoPago }
+        : undefined,
       total: this.total,
+      moneda: this.moneda,
       codigoVenta: this.codigoVenta,
       procedencia: this.procedencia,
       cliente: this.cliente ? { ...this.cliente } : undefined,
@@ -585,7 +660,10 @@ export class VentaSnapshot implements IVentaSnapshot {
         "Venta.items debe coincidir con la cantidad de VentaSnapshot.items",
       );
     }
-    const descuentoTotal = sumItemDiscounts(items);
+    const descuentoTotal =
+      typeof venta.descuentoTotal === "number"
+        ? roundMoney(venta.descuentoTotal)
+        : sumItemDiscounts(items);
 
     return new VentaSnapshot({
       id: safeTrim(context.id) ?? buildVentaSnapshotId(venta.id),
@@ -594,12 +672,15 @@ export class VentaSnapshot implements IVentaSnapshot {
       items,
       subtotal: venta.subtotal,
       descuentoTotal,
+      descuentoVenta: context.descuentoVenta,
       impuesto: venta.impuesto,
       montoRedondeo:
         typeof venta.montoRedondeo === "number"
           ? roundMoney(Number(venta.montoRedondeo))
           : undefined,
+      redondeoPago: context.redondeoPago,
       total: venta.total,
+      moneda: context.moneda ?? venta.moneda,
       codigoVenta: venta.codigoVenta,
       procedencia: venta.procedencia,
       cliente: mapVentaSnapshotActor(context.cliente),
@@ -672,6 +753,87 @@ export class VentaSnapshot implements IVentaSnapshot {
       errores.push(
         "VentaSnapshot.total debe ser consistente con subtotal - descuentoTotal + impuesto + montoRedondeo",
       );
+    }
+
+    if (data.moneda !== undefined && data.moneda !== "PEN" && data.moneda !== "USD") {
+      errores.push("VentaSnapshot.moneda inválida");
+    }
+
+    if (data.descuentoVenta !== undefined) {
+      const descuento = data.descuentoVenta;
+      const itemDiscounts = sumItemDiscounts(data.items);
+      if (descuento.schemaVersion !== 1) {
+        errores.push("VentaSnapshot.descuentoVenta.schemaVersion debe ser 1");
+      }
+      if (!Number.isFinite(descuento.monto) || descuento.monto <= 0) {
+        errores.push("VentaSnapshot.descuentoVenta.monto debe ser positivo");
+      }
+      if (!MOTIVOS_DESCUENTO_VENTA.includes(descuento.motivo)) {
+        errores.push("VentaSnapshot.descuentoVenta.motivo es inválido");
+      }
+      if (descuento.motivo === "OTRO" && !safeTrim(descuento.detalle)) {
+        errores.push("VentaSnapshot.descuentoVenta.detalle es requerido para OTRO");
+      }
+      if (!safeTrim(descuento.aplicadoPor?.nombre)) {
+        errores.push("VentaSnapshot.descuentoVenta.aplicadoPor es requerido");
+      }
+      if (!Number.isFinite(descuento.aplicadoAt) || descuento.aplicadoAt <= 0) {
+        errores.push("VentaSnapshot.descuentoVenta.aplicadoAt debe ser positivo");
+      }
+      if (!Number.isSafeInteger(descuento.politicaVersion) || descuento.politicaVersion < 1) {
+        errores.push("VentaSnapshot.descuentoVenta.politicaVersion es inválida");
+      }
+      if (
+        descuento.autorizadoPor !== undefined &&
+        !safeTrim(descuento.autorizadoPor.nombre)
+      ) {
+        errores.push("VentaSnapshot.descuentoVenta.autorizadoPor es inválido");
+      }
+      if (roundMoney(itemDiscounts + Number(descuento.monto ?? 0)) !== descuentoTotal) {
+        errores.push(
+          "VentaSnapshot.descuentoTotal debe sumar descuentos de items y descuentoVenta",
+        );
+      }
+    }
+
+    if (data.redondeoPago !== undefined) {
+      const redondeo = data.redondeoPago;
+      const montoRedondeo = roundMoney(Number(data.montoRedondeo ?? 0));
+      if (redondeo.schemaVersion !== 1) {
+        errores.push("VentaSnapshot.redondeoPago.schemaVersion debe ser 1");
+      }
+      if (!safeTrim(redondeo.politicaId)) {
+        errores.push("VentaSnapshot.redondeoPago.politicaId es requerido");
+      }
+      if (!Number.isSafeInteger(redondeo.politicaVersion) || redondeo.politicaVersion < 1) {
+        errores.push("VentaSnapshot.redondeoPago.politicaVersion es inválida");
+      }
+      if (!Number.isFinite(redondeo.paso) || redondeo.paso <= 0) {
+        errores.push("VentaSnapshot.redondeoPago.paso debe ser positivo");
+      }
+      if (redondeo.monto > 0) {
+        errores.push("VentaSnapshot.redondeoPago.monto no puede favorecer al comercio");
+      }
+      if (roundMoney(redondeo.monto) !== montoRedondeo) {
+        errores.push("VentaSnapshot.redondeoPago.monto debe coincidir con montoRedondeo");
+      }
+      if (redondeo.moneda !== "PEN" && redondeo.moneda !== "USD") {
+        errores.push("VentaSnapshot.redondeoPago.moneda es inválida");
+      }
+      if (data.moneda !== undefined && redondeo.moneda !== data.moneda) {
+        errores.push("VentaSnapshot.redondeoPago.moneda debe coincidir con la venta");
+      }
+      if (redondeo.direccion !== "A_FAVOR_CLIENTE") {
+        errores.push("VentaSnapshot.redondeoPago.direccion es inválida");
+      }
+      if (redondeo.aplicacion !== "EFECTIVO_TOTAL" && redondeo.aplicacion !== "EFECTIVO_MIXTO") {
+        errores.push("VentaSnapshot.redondeoPago.aplicacion es inválida");
+      }
+      const pasoCentavos = Math.round(redondeo.paso * 100);
+      const ajusteCentavos = Math.round(redondeo.monto * 100);
+      if (pasoCentavos > 0 && ajusteCentavos <= -pasoCentavos) {
+        errores.push("VentaSnapshot.redondeoPago.monto excede el paso configurado");
+      }
     }
 
     data.items?.forEach((item, index) => {

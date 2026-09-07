@@ -52,7 +52,7 @@ class Venta extends AggregateRoot_1.AggregateRoot {
         };
     }
     constructor(data) {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         super(data.id);
         if (!data.id || !data.nombre) {
             throw new Error("ID y nombre son requeridos para crear una venta");
@@ -77,10 +77,15 @@ class Venta extends AggregateRoot_1.AggregateRoot {
                 ? data.pedidoId
                 : undefined;
         this.subtotal = Venta.roundMoney(Number((_a = data.subtotal) !== null && _a !== void 0 ? _a : 0));
-        this.impuesto = Venta.roundMoney(Number((_b = data.impuesto) !== null && _b !== void 0 ? _b : 0));
-        this.total = Venta.roundMoney(Number((_c = data.total) !== null && _c !== void 0 ? _c : 0));
+        this.descuentoTotal =
+            data.descuentoTotal === undefined
+                ? undefined
+                : Venta.roundMoney(Number((_b = data.descuentoTotal) !== null && _b !== void 0 ? _b : 0));
+        this.impuesto = Venta.roundMoney(Number((_c = data.impuesto) !== null && _c !== void 0 ? _c : 0));
+        this.total = Venta.roundMoney(Number((_d = data.total) !== null && _d !== void 0 ? _d : 0));
         this.montoRedondeo =
             data.montoRedondeo === undefined ? undefined : Number(data.montoRedondeo);
+        this.moneda = data.moneda;
         this.procedencia = procedencia;
         this.clienteId = data.clienteId;
         this.vendedorId = data.vendedorId;
@@ -128,9 +133,11 @@ class Venta extends AggregateRoot_1.AggregateRoot {
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,
             subtotal: this.subtotal,
+            descuentoTotal: this.descuentoTotal,
             impuesto: this.impuesto,
             total: this.total,
             montoRedondeo: this.montoRedondeo,
+            moneda: this.moneda,
             procedencia: this.procedencia,
             clienteId: this.clienteId,
             vendedorId: this.vendedorId,
@@ -160,31 +167,33 @@ class Venta extends AggregateRoot_1.AggregateRoot {
         return { snapshot: result.snapshot.toJSON() };
     }
     static fromCarritoVenta(carritoJSON, id, options) {
-        var _a, _b, _c, _d, _e, _f, _g;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
         const ahora = new Date();
         const montoRedondeo = (_a = options === null || options === void 0 ? void 0 : options.montoRedondeo) !== null && _a !== void 0 ? _a : 0;
         const carritoInstance = CarritoVenta_1.CarritoVenta.fromJSON(carritoJSON);
         const detalle = carritoInstance.toJSON();
-        const totalFinal = Venta.roundMoney(detalle.total + montoRedondeo);
+        const totalFinal = Venta.roundMoney((_b = options === null || options === void 0 ? void 0 : options.total) !== null && _b !== void 0 ? _b : detalle.total + montoRedondeo);
         const snapshotItems = detalle.items.map((item) => Venta.mapCarItemToSnapshotItem(item));
         return new Venta({
             id,
-            nombre: (_c = (_b = options === null || options === void 0 ? void 0 : options.nombre) !== null && _b !== void 0 ? _b : carritoJSON.nombre) !== null && _c !== void 0 ? _c : "Venta",
+            nombre: (_d = (_c = options === null || options === void 0 ? void 0 : options.nombre) !== null && _c !== void 0 ? _c : carritoJSON.nombre) !== null && _d !== void 0 ? _d : "Venta",
             type: "venta",
             estado: enums_1.VentaState.CONFIRMADA,
-            condicionPago: (_d = options === null || options === void 0 ? void 0 : options.condicionPago) !== null && _d !== void 0 ? _d : enums_1.CondicionPagoVenta.CONTADO,
+            condicionPago: (_e = options === null || options === void 0 ? void 0 : options.condicionPago) !== null && _e !== void 0 ? _e : enums_1.CondicionPagoVenta.CONTADO,
             createdAt: ahora,
             updatedAt: ahora,
             items: snapshotItems.length,
             snapshotItems,
             pedidoId: options === null || options === void 0 ? void 0 : options.pedidoId,
             subtotal: detalle.subtotal,
-            impuesto: detalle.impuesto,
+            descuentoTotal: (_f = options === null || options === void 0 ? void 0 : options.descuentoTotal) !== null && _f !== void 0 ? _f : detalle.descuentoTotal,
+            impuesto: (_g = options === null || options === void 0 ? void 0 : options.impuesto) !== null && _g !== void 0 ? _g : detalle.impuesto,
             total: totalFinal,
             montoRedondeo,
-            procedencia: (_e = (0, enums_1.normalizarProcedenciaComercial)(carritoJSON.procedencia)) !== null && _e !== void 0 ? _e : enums_1.ProcedenciaComercialEnum.TIENDA,
-            clienteId: (_f = carritoInstance.cliente) === null || _f === void 0 ? void 0 : _f.id,
-            vendedorId: (_g = carritoInstance.personal) === null || _g === void 0 ? void 0 : _g.id,
+            moneda: options === null || options === void 0 ? void 0 : options.moneda,
+            procedencia: (_h = (0, enums_1.normalizarProcedenciaComercial)(carritoJSON.procedencia)) !== null && _h !== void 0 ? _h : enums_1.ProcedenciaComercialEnum.TIENDA,
+            clienteId: (_j = carritoInstance.cliente) === null || _j === void 0 ? void 0 : _j.id,
+            vendedorId: (_k = carritoInstance.personal) === null || _k === void 0 ? void 0 : _k.id,
             codigoVenta: "",
             numeroVenta: "",
             costoEnvio: 0,
@@ -223,12 +232,21 @@ class Venta extends AggregateRoot_1.AggregateRoot {
         if ((data.subtotal || 0) < 0) {
             errores.push("El subtotal no puede ser negativo");
         }
+        if (data.descuentoTotal !== undefined &&
+            (!Number.isFinite(data.descuentoTotal) || data.descuentoTotal < 0)) {
+            errores.push("descuentoTotal debe ser un número finito no negativo");
+        }
         if ((data.impuesto || 0) < 0) {
             errores.push("El impuesto no puede ser negativo");
         }
         if (data.montoRedondeo !== undefined &&
             !Number.isFinite(data.montoRedondeo)) {
             errores.push("montoRedondeo debe ser un número finito");
+        }
+        if (data.moneda !== undefined &&
+            data.moneda !== "PEN" &&
+            data.moneda !== "USD") {
+            errores.push("moneda de venta inválida");
         }
         if (data.costoEnvio !== undefined && data.costoEnvio < 0) {
             errores.push("El costo de envío no puede ser negativo");

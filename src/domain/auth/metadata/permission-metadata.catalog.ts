@@ -61,6 +61,9 @@ const PERMISSION_METADATA_OVERRIDES: Partial<
   "ventas:venta:anular": {
     criticidad: "critical",
   },
+  "ventas:venta:aprobar_descuento": {
+    criticidad: "critical",
+  },
   "ventas:pedido:anular": {
     criticidad: "critical",
   },

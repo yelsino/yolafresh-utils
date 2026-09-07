@@ -8,6 +8,8 @@ export const AUTH_PERMISSIONS = [
   "ventas:pedido:anular",
   "ventas:venta:crear",
   "ventas:venta:ver",
+  "ventas:venta:aplicar_descuento",
+  "ventas:venta:aprobar_descuento",
   "ventas:venta:anular",
   "ventas:venta:exportar",
   "ventas:cliente:asignar",

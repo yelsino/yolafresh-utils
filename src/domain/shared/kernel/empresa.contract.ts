@@ -12,6 +12,30 @@ export type PaisEmpresa =
   | "USA"
   | (string & {});
 
+export type MonedaEmpresa = "PEN" | "USD";
+
+/** Política de ajuste del efectivo que nunca incrementa el importe al cliente. */
+export interface PoliticaRedondeoPago {
+  id: string;
+  version: number;
+  habilitado: boolean;
+  moneda: MonedaEmpresa;
+  aplicacion: "EFECTIVO_TOTAL";
+  direccion: "A_FAVOR_CLIENTE";
+  paso: number;
+}
+
+/** Límites del descuento global aplicado antes de resolver el cobro. */
+export interface PoliticaDescuentoVenta {
+  version: number;
+  habilitado: boolean;
+  requiereMotivo: true;
+  porcentajeMaximo: number;
+  montoMaximo?: number;
+  porcentajeDesdeAprobacion?: number;
+  montoDesdeAprobacion?: number;
+}
+
 export type VerticalNegocio =
   | "RETAIL"
   | "GASTRONOMIA"
@@ -86,10 +110,12 @@ export interface ConfigEmpresa {
   perfilNegocio?: PerfilNegocioConfigEmpresa;
 
   fiscal: {
-    moneda: "PEN" | "USD";
+    moneda: MonedaEmpresa;
     simboloMoneda: string;
     porcentajeIGV: number;
     incluyeIGVEnPrecios: boolean;
+    redondeoPago?: PoliticaRedondeoPago;
+    descuentoVenta?: PoliticaDescuentoVenta;
   };
 
   tickets: {

@@ -55,6 +55,9 @@ const PERMISSION_METADATA_OVERRIDES = {
     "ventas:venta:anular": {
         criticidad: "critical",
     },
+    "ventas:venta:aprobar_descuento": {
+        criticidad: "critical",
+    },
     "ventas:pedido:anular": {
         criticidad: "critical",
     },
