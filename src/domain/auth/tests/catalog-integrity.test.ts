@@ -86,6 +86,21 @@ test("administrar almacenes es un permiso crítico y auditable", () => {
   assert.equal(PERMISSION_METADATA[permission].requiresActiveSession, true);
 });
 
+test("cuenta proveedor separa lectura de ajuste financiero", () => {
+  const readPermission = "finanzas:cuenta_proveedor:ver";
+  const updatePermission = "finanzas:cuenta_proveedor:ajustar";
+
+  assert.ok(AUTH_PERMISSION_SET.has(readPermission));
+  assert.ok(AUTH_PERMISSION_SET.has(updatePermission));
+  assert.equal(PERMISSION_METADATA[readPermission].criticidad, "low");
+  assert.equal(PERMISSION_METADATA[updatePermission].criticidad, "critical");
+  assert.equal(PERMISSION_METADATA[updatePermission].auditable, true);
+  assert.equal(
+    PERMISSION_METADATA[updatePermission].requiresActiveSession,
+    true,
+  );
+});
+
 test("operaciones de inventario tienen permisos atomicos y metadata auditable", () => {
   const esperados = [
     "inventario:politica:administrar",

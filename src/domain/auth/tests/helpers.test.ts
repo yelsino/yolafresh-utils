@@ -64,6 +64,22 @@ test("admin global resuelve wildcard total", () => {
   assert.equal(permissions.length, AUTH_PERMISSIONS.length);
 });
 
+test("roles financieros incluyen cuenta proveedor y solo lectura no puede ajustarla", () => {
+  const finanzas = resolveRolePermissions(["finanzas"]);
+  const contador = resolveRolePermissions(["contador"]);
+  const soloLectura = resolveRolePermissions(["solo-lectura"]);
+
+  for (const permissions of [finanzas, contador]) {
+    assert.ok(permissions.includes("finanzas:cuenta_proveedor:ver"));
+    assert.ok(permissions.includes("finanzas:cuenta_proveedor:ajustar"));
+  }
+  assert.ok(soloLectura.includes("finanzas:cuenta_proveedor:ver"));
+  assert.equal(
+    soloLectura.includes("finanzas:cuenta_proveedor:ajustar"),
+    false,
+  );
+});
+
 test("inventario puede editar imagenes de producto", () => {
   const permissions = resolveRolePermissions(["inventario"]);
   assert.ok(permissions.includes("productos:producto:editar_imagen"));

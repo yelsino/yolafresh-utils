@@ -115,7 +115,8 @@ export const AUTH_ROLE_DEFINITIONS: Readonly<Record<(typeof AUTH_BASE_ROLE_IDS)[
     finanzas: {
       id: "finanzas",
       nombre: "FINANZAS",
-      descripcion: "Cuentas cliente, caja histórica y reportes financieros",
+      descripcion:
+        "Cuentas cliente y proveedor, caja histórica y reportes financieros",
       grants: [
         "finanzas:*",
         "reportes:finanzas:ver",
@@ -176,6 +177,7 @@ export const AUTH_ROLE_DEFINITIONS: Readonly<Record<(typeof AUTH_BASE_ROLE_IDS)[
         "compras:compra:ver",
         "inventario:stock:ver",
         "finanzas:cuenta_cliente:ver",
+        "finanzas:cuenta_proveedor:ver",
         "finanzas:reporte:ver",
         "caja:movimiento:ver",
         "restaurante:salon:ver",

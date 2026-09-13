@@ -37,6 +37,8 @@ export const AUTH_PERMISSIONS = [
   "productos:producto:editar_imagen",
   "finanzas:cuenta_cliente:ver",
   "finanzas:cuenta_cliente:ajustar",
+  "finanzas:cuenta_proveedor:ver",
+  "finanzas:cuenta_proveedor:ajustar",
   "finanzas:reporte:ver",
   "caja:turno:abrir",
   "caja:turno:cerrar",

@@ -112,7 +112,7 @@ exports.AUTH_ROLE_DEFINITIONS = Object.freeze({
     finanzas: {
         id: "finanzas",
         nombre: "FINANZAS",
-        descripcion: "Cuentas cliente, caja histórica y reportes financieros",
+        descripcion: "Cuentas cliente y proveedor, caja histórica y reportes financieros",
         grants: [
             "finanzas:*",
             "reportes:finanzas:ver",
@@ -173,6 +173,7 @@ exports.AUTH_ROLE_DEFINITIONS = Object.freeze({
             "compras:compra:ver",
             "inventario:stock:ver",
             "finanzas:cuenta_cliente:ver",
+            "finanzas:cuenta_proveedor:ver",
             "finanzas:reporte:ver",
             "caja:movimiento:ver",
             "restaurante:salon:ver",

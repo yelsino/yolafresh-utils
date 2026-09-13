@@ -60,6 +60,16 @@ const AUTH_PERMISSION_SET = new Set(permission_catalog_1.AUTH_PERMISSIONS);
     strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA[permission].auditable, true);
     strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA[permission].requiresActiveSession, true);
 });
+(0, node_test_1.default)("cuenta proveedor separa lectura de ajuste financiero", () => {
+    const readPermission = "finanzas:cuenta_proveedor:ver";
+    const updatePermission = "finanzas:cuenta_proveedor:ajustar";
+    strict_1.default.ok(AUTH_PERMISSION_SET.has(readPermission));
+    strict_1.default.ok(AUTH_PERMISSION_SET.has(updatePermission));
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA[readPermission].criticidad, "low");
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA[updatePermission].criticidad, "critical");
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA[updatePermission].auditable, true);
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA[updatePermission].requiresActiveSession, true);
+});
 (0, node_test_1.default)("operaciones de inventario tienen permisos atomicos y metadata auditable", () => {
     const esperados = [
         "inventario:politica:administrar",

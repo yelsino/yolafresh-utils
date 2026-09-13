@@ -88,6 +88,9 @@ const PERMISSION_METADATA_OVERRIDES: Partial<
   "restaurante:cuenta:cobrar": {
     criticidad: "critical",
   },
+  "finanzas:cuenta_proveedor:ajustar": {
+    criticidad: "critical",
+  },
 };
 
 function buildPermissionDefinition(id: AuthPermission): PermissionDefinition {

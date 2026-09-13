@@ -56,6 +56,17 @@ const role_catalog_1 = require("../catalogs/role.catalog");
     strict_1.default.equal((0, is_system_admin_role_1.isSystemAdminRole)(["admin"]), true);
     strict_1.default.equal(permissions.length, permission_catalog_1.AUTH_PERMISSIONS.length);
 });
+(0, node_test_1.default)("roles financieros incluyen cuenta proveedor y solo lectura no puede ajustarla", () => {
+    const finanzas = (0, resolve_role_permissions_1.resolveRolePermissions)(["finanzas"]);
+    const contador = (0, resolve_role_permissions_1.resolveRolePermissions)(["contador"]);
+    const soloLectura = (0, resolve_role_permissions_1.resolveRolePermissions)(["solo-lectura"]);
+    for (const permissions of [finanzas, contador]) {
+        strict_1.default.ok(permissions.includes("finanzas:cuenta_proveedor:ver"));
+        strict_1.default.ok(permissions.includes("finanzas:cuenta_proveedor:ajustar"));
+    }
+    strict_1.default.ok(soloLectura.includes("finanzas:cuenta_proveedor:ver"));
+    strict_1.default.equal(soloLectura.includes("finanzas:cuenta_proveedor:ajustar"), false);
+});
 (0, node_test_1.default)("inventario puede editar imagenes de producto", () => {
     const permissions = (0, resolve_role_permissions_1.resolveRolePermissions)(["inventario"]);
     strict_1.default.ok(permissions.includes("productos:producto:editar_imagen"));
