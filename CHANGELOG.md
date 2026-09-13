@@ -10,6 +10,25 @@ Este proyecto adopta versionado semántico:
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-09-12
+
+### Added
+
+- El catálogo auth incorpora `finanzas:cuenta_proveedor:ver` para consultar la
+  cuenta de un proveedor y `finanzas:cuenta_proveedor:ajustar` para ejecutar
+  mutaciones sobre su libro financiero.
+- El permiso de ajuste es crítico, auditable y requiere sesión activa; lectura
+  conserva criticidad baja y permanece separada de cualquier mutación.
+- Los roles base `finanzas` y `contador` resuelven ambos permisos mediante
+  `finanzas:*`; `solo-lectura` recibe únicamente
+  `finanzas:cuenta_proveedor:ver`. `admin` continúa resolviendo el catálogo
+  completo mediante `*`.
+
+### Changed
+
+- `AUTH_CATALOG_VERSION` pasa a `2.2.0`. La versión del catálogo auth es
+  independiente de la versión `2.4.0` del paquete.
+
 ## [2.2.5] - 2026-09-01
 
 ### Fixed

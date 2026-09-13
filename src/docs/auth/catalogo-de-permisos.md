@@ -10,6 +10,12 @@ Fuente de verdad:
 - [permission-alias.catalog.ts](../../domain/auth/catalogs/permission-alias.catalog.ts)
 - [permission-metadata.catalog.ts](../../domain/auth/metadata/permission-metadata.catalog.ts)
 
+## Estado publicado
+
+`yola-fresh-utils` `2.4.0` publica `AUTH_CATALOG_VERSION` `2.2.0`. Son versiones
+independientes: la primera identifica el paquete y la segunda, la revisión del
+catálogo auth que debe viajar en snapshots y verificaciones de compatibilidad.
+
 ## Formato canónico
 
 Todo permiso usa convención:
@@ -28,8 +34,23 @@ Ejemplos vigentes:
 - `inventario:politica:administrar`
 - `inventario:merma:aprobar`
 - `inventario:transferencia:recibir`
+- `finanzas:cuenta_proveedor:ver`
+- `finanzas:cuenta_proveedor:ajustar`
 - `iam:usuario:activar`
 - `sistema:admin:global`
+
+## Cuenta proveedor
+
+La versión de paquete `2.4.0` separa explícitamente lectura y mutación de la
+cuenta proveedor:
+
+| Permiso | Alcance | Criticidad | Sesión activa | Auditable |
+| --- | --- | --- | --- | --- |
+| `finanzas:cuenta_proveedor:ver` | Consultar saldo, resumen, movimientos, imputaciones y estado de operaciones | `low` | Sí | Sí |
+| `finanzas:cuenta_proveedor:ajustar` | Registrar obligaciones, pagos, adelantos y notas; aplicar créditos o ejecutar reversas | `critical` | Sí | Sí |
+
+`ver` nunca autoriza una mutación. Cualquier comando que cambie el libro oficial
+debe exigir `ajustar` en el backend, aunque la interfaz haya ocultado la acción.
 
 ## Reglas de modelado
 

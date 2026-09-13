@@ -21,6 +21,15 @@ Versión actual vive en:
 
 - [auth-catalog.version.ts](../../domain/auth/version/auth-catalog.version.ts)
 
+## Estado de la versión 2.4.0
+
+El paquete `yola-fresh-utils` `2.4.0` publica el catálogo auth `2.2.0`. Este
+incremento minor del catálogo agrega, de forma compatible, los permisos
+`finanzas:cuenta_proveedor:ver` y
+`finanzas:cuenta_proveedor:ajustar`, junto con su metadata y grants de roles
+base. Un consumidor no debe comparar la versión del paquete con
+`catalogVersion` como si fueran el mismo contador.
+
 ## Proceso oficial de cambio
 
 1. negocio define módulo, recurso y acciones;

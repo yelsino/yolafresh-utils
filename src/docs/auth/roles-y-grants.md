@@ -72,6 +72,24 @@ Fuente:
 - [AUTH_BASE_ROLE_IDS](../../domain/auth/catalogs/role.catalog.ts)
 - [AUTH_ROLE_DEFINITIONS](../../domain/auth/catalogs/role.catalog.ts)
 
+## Acceso efectivo a cuenta proveedor
+
+En `yola-fresh-utils` `2.4.0`, con catálogo auth `2.2.0`, los grants de los roles
+base resuelven así:
+
+| Rol base | `finanzas:cuenta_proveedor:ver` | `finanzas:cuenta_proveedor:ajustar` | Grant que lo produce |
+| --- | --- | --- | --- |
+| `admin` | Sí | Sí | `*` |
+| `finanzas` | Sí | Sí | `finanzas:*` |
+| `contador` | Sí | Sí | `finanzas:*` |
+| `solo-lectura` | Sí | No | permiso de lectura explícito |
+| demás roles base | No | No | ninguno |
+
+La tabla describe únicamente el catálogo base. El acceso efectivo de una
+persona resulta de la unión de sus roles activos, grants adicionales y scope
+autoritativo resuelto por backend IAM; el cliente no debe elevar permisos a
+partir del nombre visible del rol.
+
 ## Reglas de grants
 
 Un grant puede ser:
