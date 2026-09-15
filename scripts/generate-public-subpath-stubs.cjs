@@ -10,6 +10,8 @@ const stubs = [
   { subpath: "ventas/contracts", target: "dist/domain/ventas/contracts/index" },
   { subpath: "ventas/entities", target: "dist/domain/ventas/entities/index" },
   { subpath: "ventas/events", target: "dist/domain/ventas/events/index" },
+  { subpath: "fiscal", target: "dist/domain/fiscal/index" },
+  { subpath: "fiscal/contracts", target: "dist/domain/fiscal/contracts/index" },
   { subpath: "compras", target: "dist/domain/compras/index" },
   { subpath: "compras/contracts", target: "dist/domain/compras/contracts/index" },
   { subpath: "compras/entities", target: "dist/domain/compras/entities/index" },
@@ -44,6 +46,7 @@ const stubs = [
 const rootDirs = [
   "pedido",
   "ventas",
+  "fiscal",
   "compras",
   "inventario",
   "tesoreria",

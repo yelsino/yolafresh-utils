@@ -41,6 +41,12 @@ export const AUTH_ROLE_DEFINITIONS: Readonly<Record<(typeof AUTH_BASE_ROLE_IDS)[
       descripcion: "Supervisa operación comercial e inventario",
       grants: [
         "ventas:*",
+        "fiscal:documento:solicitar",
+        "fiscal:documento:ver",
+        "fiscal:evidencia:ver",
+        "fiscal:nota:crear",
+        "fiscal:baja:comunicar",
+        "fiscal:incidencia:resolver",
         "inventario:stock:ver",
         "inventario:conteo:*",
         "inventario:ajuste:*",
@@ -94,6 +100,9 @@ export const AUTH_ROLE_DEFINITIONS: Readonly<Record<(typeof AUTH_BASE_ROLE_IDS)[
         "ventas:venta:exportar",
         "ventas:cliente:asignar",
         "reportes:ventas:ver",
+        "fiscal:documento:solicitar",
+        "fiscal:documento:ver",
+        "fiscal:evidencia:ver",
       ],
     },
     inventario: {

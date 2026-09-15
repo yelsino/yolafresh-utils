@@ -70,6 +70,30 @@ const AUTH_PERMISSION_SET = new Set(permission_catalog_1.AUTH_PERMISSIONS);
     strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA[updatePermission].auditable, true);
     strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA[updatePermission].requiresActiveSession, true);
 });
+(0, node_test_1.default)("permisos fiscales son explícitos, auditables y separados de ventas", () => {
+    const expected = [
+        "fiscal:documento:solicitar",
+        "fiscal:documento:ver",
+        "fiscal:evidencia:ver",
+        "fiscal:nota:crear",
+        "fiscal:baja:comunicar",
+        "fiscal:incidencia:resolver",
+        "fiscal:serie:administrar",
+        "fiscal:tributo:administrar",
+        "fiscal:tributo:aprobar",
+        "fiscal:proveedor:administrar",
+    ];
+    for (const permission of expected) {
+        strict_1.default.ok(AUTH_PERMISSION_SET.has(permission));
+        strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA[permission].auditable, true);
+        strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA[permission].requiresActiveSession, true);
+    }
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA["fiscal:documento:solicitar"].criticidad, "high");
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA["fiscal:incidencia:resolver"].criticidad, "critical");
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA["fiscal:serie:administrar"].criticidad, "critical");
+    strict_1.default.equal(permission_metadata_catalog_1.PERMISSION_METADATA["fiscal:tributo:aprobar"].criticidad, "critical");
+    strict_1.default.equal(permission_alias_catalog_1.AUTH_PERMISSION_ALIASES["ventas:*"].some((permission) => permission.startsWith("fiscal:")), false);
+});
 (0, node_test_1.default)("operaciones de inventario tienen permisos atomicos y metadata auditable", () => {
     const esperados = [
         "inventario:politica:administrar",

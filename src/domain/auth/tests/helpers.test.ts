@@ -80,6 +80,41 @@ test("roles financieros incluyen cuenta proveedor y solo lectura no puede ajusta
   );
 });
 
+test("vendedor solicita CPE pero solo supervisor/admin operan notas, bajas e incidencias", () => {
+  const ventas = resolveRolePermissions(["ventas"]);
+  const supervisor = resolveRolePermissions(["supervisor"]);
+  const admin = resolveRolePermissions(["admin"]);
+  const cajero = resolveRolePermissions(["cajero"]);
+
+  for (const permission of [
+    "fiscal:documento:solicitar",
+    "fiscal:documento:ver",
+    "fiscal:evidencia:ver",
+  ] as const) {
+    assert.ok(ventas.includes(permission));
+    assert.ok(supervisor.includes(permission));
+    assert.ok(admin.includes(permission));
+    assert.equal(cajero.includes(permission), false);
+  }
+  for (const permission of [
+    "fiscal:nota:crear",
+    "fiscal:baja:comunicar",
+    "fiscal:incidencia:resolver",
+  ] as const) {
+    assert.equal(ventas.includes(permission), false);
+    assert.ok(supervisor.includes(permission));
+    assert.ok(admin.includes(permission));
+    assert.equal(cajero.includes(permission), false);
+  }
+  for (const permission of ["fiscal:serie:administrar", "fiscal:tributo:administrar",
+    "fiscal:tributo:aprobar", "fiscal:proveedor:administrar"] as const) {
+    assert.equal(ventas.includes(permission), false);
+    assert.equal(supervisor.includes(permission), false);
+    assert.ok(admin.includes(permission));
+    assert.equal(cajero.includes(permission), false);
+  }
+});
+
 test("inventario puede editar imagenes de producto", () => {
   const permissions = resolveRolePermissions(["inventario"]);
   assert.ok(permissions.includes("productos:producto:editar_imagen"));

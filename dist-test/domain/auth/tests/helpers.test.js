@@ -67,6 +67,39 @@ const role_catalog_1 = require("../catalogs/role.catalog");
     strict_1.default.ok(soloLectura.includes("finanzas:cuenta_proveedor:ver"));
     strict_1.default.equal(soloLectura.includes("finanzas:cuenta_proveedor:ajustar"), false);
 });
+(0, node_test_1.default)("vendedor solicita CPE pero solo supervisor/admin operan notas, bajas e incidencias", () => {
+    const ventas = (0, resolve_role_permissions_1.resolveRolePermissions)(["ventas"]);
+    const supervisor = (0, resolve_role_permissions_1.resolveRolePermissions)(["supervisor"]);
+    const admin = (0, resolve_role_permissions_1.resolveRolePermissions)(["admin"]);
+    const cajero = (0, resolve_role_permissions_1.resolveRolePermissions)(["cajero"]);
+    for (const permission of [
+        "fiscal:documento:solicitar",
+        "fiscal:documento:ver",
+        "fiscal:evidencia:ver",
+    ]) {
+        strict_1.default.ok(ventas.includes(permission));
+        strict_1.default.ok(supervisor.includes(permission));
+        strict_1.default.ok(admin.includes(permission));
+        strict_1.default.equal(cajero.includes(permission), false);
+    }
+    for (const permission of [
+        "fiscal:nota:crear",
+        "fiscal:baja:comunicar",
+        "fiscal:incidencia:resolver",
+    ]) {
+        strict_1.default.equal(ventas.includes(permission), false);
+        strict_1.default.ok(supervisor.includes(permission));
+        strict_1.default.ok(admin.includes(permission));
+        strict_1.default.equal(cajero.includes(permission), false);
+    }
+    for (const permission of ["fiscal:serie:administrar", "fiscal:tributo:administrar",
+        "fiscal:tributo:aprobar", "fiscal:proveedor:administrar"]) {
+        strict_1.default.equal(ventas.includes(permission), false);
+        strict_1.default.equal(supervisor.includes(permission), false);
+        strict_1.default.ok(admin.includes(permission));
+        strict_1.default.equal(cajero.includes(permission), false);
+    }
+});
 (0, node_test_1.default)("inventario puede editar imagenes de producto", () => {
     const permissions = (0, resolve_role_permissions_1.resolveRolePermissions)(["inventario"]);
     strict_1.default.ok(permissions.includes("productos:producto:editar_imagen"));

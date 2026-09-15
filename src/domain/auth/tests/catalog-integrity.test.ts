@@ -101,6 +101,32 @@ test("cuenta proveedor separa lectura de ajuste financiero", () => {
   );
 });
 
+test("permisos fiscales son explícitos, auditables y separados de ventas", () => {
+  const expected = [
+    "fiscal:documento:solicitar",
+    "fiscal:documento:ver",
+    "fiscal:evidencia:ver",
+    "fiscal:nota:crear",
+    "fiscal:baja:comunicar",
+    "fiscal:incidencia:resolver",
+    "fiscal:serie:administrar",
+    "fiscal:tributo:administrar",
+    "fiscal:tributo:aprobar",
+    "fiscal:proveedor:administrar",
+  ] as const;
+
+  for (const permission of expected) {
+    assert.ok(AUTH_PERMISSION_SET.has(permission));
+    assert.equal(PERMISSION_METADATA[permission].auditable, true);
+    assert.equal(PERMISSION_METADATA[permission].requiresActiveSession, true);
+  }
+  assert.equal(PERMISSION_METADATA["fiscal:documento:solicitar"].criticidad, "high");
+  assert.equal(PERMISSION_METADATA["fiscal:incidencia:resolver"].criticidad, "critical");
+  assert.equal(PERMISSION_METADATA["fiscal:serie:administrar"].criticidad, "critical");
+  assert.equal(PERMISSION_METADATA["fiscal:tributo:aprobar"].criticidad, "critical");
+  assert.equal(AUTH_PERMISSION_ALIASES["ventas:*"].some((permission) => permission.startsWith("fiscal:")), false);
+});
+
 test("operaciones de inventario tienen permisos atomicos y metadata auditable", () => {
   const esperados = [
     "inventario:politica:administrar",
