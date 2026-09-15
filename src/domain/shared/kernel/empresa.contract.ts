@@ -14,6 +14,14 @@ export type PaisEmpresa =
 
 export type MonedaEmpresa = "PEN" | "USD";
 
+/** Régimen declarado para el emisor; nunca se infiere del porcentaje de IGV comercial. */
+export type RegimenTributarioEmpresa = "NRUS" | "RER" | "RMT" | "REGIMEN_GENERAL";
+
+/** Habilitación local de solicitudes Demo, distinta de la autorización de emisión del backend. */
+export interface ConfigFiscalDemoEmpresa {
+  enabled: boolean;
+}
+
 /** Política de ajuste del efectivo que nunca incrementa el importe al cliente. */
 export interface PoliticaRedondeoPago {
   id: string;
@@ -114,6 +122,10 @@ export interface ConfigEmpresa {
     simboloMoneda: string;
     porcentajeIGV: number;
     incluyeIGVEnPrecios: boolean;
+    /** Opcional para documentos anteriores; su ausencia bloquea CPE, sin default tributario. */
+    regimenTributario?: RegimenTributarioEmpresa;
+    /** Opcional y apagado por ausencia; jamás sustituye los gates del backend/PSE. */
+    demo?: ConfigFiscalDemoEmpresa;
     redondeoPago?: PoliticaRedondeoPago;
     descuentoVenta?: PoliticaDescuentoVenta;
   };

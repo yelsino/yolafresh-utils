@@ -112,7 +112,13 @@ const snapshot = {
         ...snapshot,
         taxRegime: "NRUS",
         documentType: "FACTURA",
-    }), ["taxRegime.documentType"]);
+    }), ["taxRegime.documentType", "lines[0].tax.nrusDiscriminatedTax"]);
+});
+(0, node_test_1.default)("NRUS no convierte un IGV comercial en tributo desglosado de boleta", () => {
+    strict_1.default.deepEqual((0, contracts_1.validateFiscalSaleSnapshotV1)({
+        ...snapshot,
+        taxRegime: "NRUS",
+    }), ["lines[0].tax.nrusDiscriminatedTax"]);
 });
 (0, node_test_1.default)("snapshot fiscal detecta categoría/tasa inconsistente y total no conciliado", () => {
     const invalid = {

@@ -1,8 +1,10 @@
 /** Contratos puros compartidos. El backend es la única autoridad de emisor, serie y emisión. */
+import type { RegimenTributarioEmpresa } from "../../shared/kernel/empresa.contract";
+
 export const FISCAL_CPE_CONTRACT_VERSION = 1 as const;
 
 export type FiscalCpeDocumentType = "BOLETA" | "FACTURA";
-export type FiscalTaxRegime = "NRUS" | "RER" | "RMT" | "REGIMEN_GENERAL";
+export type FiscalTaxRegime = RegimenTributarioEmpresa;
 export type FiscalCurrency = "PEN";
 
 export type FiscalBuyerDocumentType =
@@ -246,6 +248,13 @@ export function validateFiscalSaleSnapshotV1(snapshot: FiscalSaleSnapshotV1): re
     if (!isNonNegativeCents(line.tax.taxAmountCents)) errors.push(`${prefix}.tax.taxAmountCents`);
     if (!Number.isSafeInteger(line.tax.taxRateBasisPoints) || line.tax.taxRateBasisPoints < 0) {
       errors.push(`${prefix}.tax.taxRateBasisPoints`);
+    }
+    // El Nuevo RUS no discrimina IGV u otro impuesto en la boleta. Una tasa
+    // comercial global no puede convertirse silenciosamente en tributo CPE.
+    if (snapshot.taxRegime === "NRUS" &&
+        (line.tax.taxScheme !== "NONE" || line.tax.taxRateBasisPoints !== 0 ||
+          line.tax.taxAmountCents !== 0)) {
+      errors.push(`${prefix}.tax.nrusDiscriminatedTax`);
     }
     if (line.tax.category === "GRAVADA") {
       if (line.tax.taxScheme !== "IGV") errors.push(`${prefix}.tax.taxScheme`);

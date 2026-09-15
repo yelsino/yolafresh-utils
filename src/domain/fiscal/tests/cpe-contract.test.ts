@@ -129,7 +129,14 @@ test("NRUS no puede construir factura fiscal", () => {
     ...snapshot,
     taxRegime: "NRUS",
     documentType: "FACTURA",
-  }), ["taxRegime.documentType"]);
+  }), ["taxRegime.documentType", "lines[0].tax.nrusDiscriminatedTax"]);
+});
+
+test("NRUS no convierte un IGV comercial en tributo desglosado de boleta", () => {
+  assert.deepEqual(validateFiscalSaleSnapshotV1({
+    ...snapshot,
+    taxRegime: "NRUS",
+  }), ["lines[0].tax.nrusDiscriminatedTax"]);
 });
 
 test("snapshot fiscal detecta categoría/tasa inconsistente y total no conciliado", () => {

@@ -9,7 +9,6 @@ exports.validateFiscalSaleSnapshotV1 = validateFiscalSaleSnapshotV1;
 exports.validateFiscalIntentSnapshotLinkV1 = validateFiscalIntentSnapshotLinkV1;
 exports.validateFiscalCdrVerificationV1 = validateFiscalCdrVerificationV1;
 exports.validateFiscalEvidenceV1 = validateFiscalEvidenceV1;
-/** Contratos puros compartidos. El backend es la única autoridad de emisor, serie y emisión. */
 exports.FISCAL_CPE_CONTRACT_VERSION = 1;
 function isFiscalTerminalState(state) {
     return state === "ACEPTADO" || state === "ACEPTADO_CON_OBSERVACION" || state === "RECHAZADO";
@@ -102,6 +101,13 @@ function validateFiscalSaleSnapshotV1(snapshot) {
             errors.push(`${prefix}.tax.taxAmountCents`);
         if (!Number.isSafeInteger(line.tax.taxRateBasisPoints) || line.tax.taxRateBasisPoints < 0) {
             errors.push(`${prefix}.tax.taxRateBasisPoints`);
+        }
+        // El Nuevo RUS no discrimina IGV u otro impuesto en la boleta. Una tasa
+        // comercial global no puede convertirse silenciosamente en tributo CPE.
+        if (snapshot.taxRegime === "NRUS" &&
+            (line.tax.taxScheme !== "NONE" || line.tax.taxRateBasisPoints !== 0 ||
+                line.tax.taxAmountCents !== 0)) {
+            errors.push(`${prefix}.tax.nrusDiscriminatedTax`);
         }
         if (line.tax.category === "GRAVADA") {
             if (line.tax.taxScheme !== "IGV")
