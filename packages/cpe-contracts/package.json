@@ -1,6 +1,6 @@
 {
   "name": "@yolafresh/cpe-contracts",
-  "version": "1.0.0-cpe.0",
+  "version": "1.0.0-cpe.1",
   "description": "Contratos fiscales CPE aislados de los contratos operativos de YolaFresh",
   "private": true,
   "license": "MIT",
