@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   FISCAL_CPE_CONTRACT_VERSION,
   FISCAL_INTENT_V2_CONTRACT_VERSION,
+  FISCAL_INTENT_V3_CONTRACT_VERSION,
   FISCAL_SALE_SNAPSHOT_CONTRACT_VERSION,
   FISCAL_SALE_SNAPSHOT_V1_CONTRACT_VERSION,
   FISCAL_SALE_SNAPSHOT_V2_CAPABILITY,
@@ -14,8 +15,10 @@ import {
   validateFiscalEvidenceV1,
   validateFiscalIntent,
   validateFiscalIntentReplay,
+  validateFiscalIntentPricingDeclarationV3,
   validateFiscalIntentV1,
   validateFiscalIntentV2,
+  validateFiscalIntentV3,
   validateFiscalIntentSnapshotLinkV1,
   validateFiscalSaleSnapshot,
   validateFiscalSaleSnapshotV1,
@@ -23,6 +26,7 @@ import {
   type FiscalEvidenceV1,
   type FiscalIntentV1,
   type FiscalIntentV2,
+  type FiscalIntentV3,
   type FiscalSaleSnapshotV1,
   type FiscalSaleSnapshotV2,
 } from "../contracts";
@@ -49,6 +53,42 @@ const intentV2: FiscalIntentV2 = {
     taxComputationMode: "NOT_COMPUTED",
     currency: "PEN",
     commercialTotalCents: 1680,
+  },
+};
+
+const intentV3: FiscalIntentV3 = {
+  ...intent,
+  version: FISCAL_INTENT_V3_CONTRACT_VERSION,
+  pricingDeclaration: {
+    taxComputationMode: "NOT_COMPUTED",
+    currency: "PEN",
+    commercialTotalCents: 1680,
+    lines: [
+      {
+        lineId: "opaque-line-a",
+        presentationId: "opaque-presentation-a",
+        unitPriceTaxMode: "TAX_INCLUDED",
+        agreedUnitPriceCents: 1180,
+        agreedPriceSourceRef: "opaque-agreement-a",
+        pricePolicyRef: "opaque-policy-a",
+        pricePolicyVersion: "revision-a",
+        fiscalPolicyRef: "opaque-fiscal-policy-a",
+        fiscalPolicyVersion: "fiscal-revision-a",
+        agreedAt: "2026-09-15T12:59:58.000Z",
+      },
+      {
+        lineId: "opaque-line-b",
+        presentationId: "opaque-presentation-b",
+        unitPriceTaxMode: "TAX_EXCLUDED",
+        agreedUnitPriceCents: 500,
+        agreedPriceSourceRef: "opaque-agreement-b",
+        pricePolicyRef: "opaque-policy-b",
+        pricePolicyVersion: "revision-b",
+        fiscalPolicyRef: "opaque-fiscal-policy-b",
+        fiscalPolicyVersion: "fiscal-revision-b",
+        agreedAt: "2026-09-15T12:59:59.000Z",
+      },
+    ],
   },
 };
 
@@ -168,7 +208,7 @@ test("intent V2 declara precio TAX_INCLUDED sin cálculo tributario ni tocar sna
   assert.equal("tax" in intentV2, false);
   assert.equal("fiscalSnapshotId" in intentV2, false);
   assert.ok(validateFiscalIntentV1(intentV2 as unknown as FiscalIntentV1).includes("version"));
-  assert.deepEqual(validateFiscalIntent({ ...intentV2, version: 3 } as unknown as FiscalIntentV2),
+  assert.deepEqual(validateFiscalIntent({ ...intentV2, version: 4 } as unknown as FiscalIntentV2),
     ["version"]);
 });
 
@@ -191,6 +231,162 @@ test("intent V2 rechaza EXACT, impuesto excluido, montos inválidos y payload ex
   ["pricingDeclaration.unknown.taxAmountCents"]);
   assert.deepEqual(validateFiscalIntentV2({ ...intentV2, issuerRuc: "10770681397" } as FiscalIntentV2),
     ["unknown.issuerRuc"]);
+});
+
+test("intent V3 acepta modos mixtos con presentación y política histórica por línea", () => {
+  assert.deepEqual(validateFiscalIntentV3(intentV3), []);
+  assert.deepEqual(validateFiscalIntent(intentV3), []);
+  assert.deepEqual(validateFiscalIntentPricingDeclarationV3(intentV3.pricingDeclaration), []);
+  assert.equal(intentV3.pricingDeclaration.lines[0].unitPriceTaxMode, "TAX_INCLUDED");
+  assert.equal(intentV3.pricingDeclaration.lines[1].unitPriceTaxMode, "TAX_EXCLUDED");
+  assert.deepEqual(validateFiscalIntentV3({ ...intentV3, pricingDeclaration: {
+    ...intentV3.pricingDeclaration,
+    lines: [intentV3.pricingDeclaration.lines[0],
+      { ...intentV3.pricingDeclaration.lines[1],
+        presentationId: intentV3.pricingDeclaration.lines[0].presentationId,
+        fiscalPolicyRef: intentV3.pricingDeclaration.lines[0].fiscalPolicyRef,
+        fiscalPolicyVersion: intentV3.pricingDeclaration.lines[0].fiscalPolicyVersion }],
+  } }), []);
+  assert.deepEqual(validateFiscalIntentV3({ ...intentV3, pricingDeclaration: {
+    ...intentV3.pricingDeclaration,
+    lines: [{ ...intentV3.pricingDeclaration.lines[0],
+      agreedAt: "2026-09-15T07:59:58.000-05:00" },
+      intentV3.pricingDeclaration.lines[1]],
+  } }), []);
+  assert.equal("tax" in intentV3, false);
+  assert.equal("approved" in intentV3.pricingDeclaration, false);
+  assert.ok(validateFiscalIntentV2(intentV3 as unknown as FiscalIntentV2).includes("version"));
+  assert.ok(validateFiscalIntentV3(intentV2 as unknown as FiscalIntentV3).includes("version"));
+  assert.ok(validateFiscalSaleSnapshotV2({ ...snapshot,
+    lines: [{ ...snapshot.lines[0], unitPriceTaxMode: "TAX_EXCLUDED" } as unknown as
+      FiscalSaleSnapshotV2["lines"][number]],
+    totalCents: snapshot.lines[0].totalCents,
+    payment: { status: "PAID", paidAmountCents: snapshot.lines[0].totalCents,
+      paidAt: "2026-09-15T13:00:00.000Z" },
+  }).includes("lines[0].unitPriceTaxMode"));
+});
+
+test("intent V3 rechaza campos ausentes, líneas vacías y duplicados por identidad opaca", () => {
+  assert.deepEqual(validateFiscalIntentV3({ ...intentV3,
+    pricingDeclaration: undefined } as unknown as FiscalIntentV3), ["pricingDeclaration"]);
+  assert.deepEqual(validateFiscalIntentV3({ ...intentV3,
+    pricingDeclaration: { ...intentV3.pricingDeclaration, lines: [] } }),
+  ["pricingDeclaration.lines"]);
+  const missing = { ...intentV3.pricingDeclaration.lines[0],
+    presentationId: undefined, agreedPriceSourceRef: " ",
+    pricePolicyRef: undefined, pricePolicyVersion: " ",
+    fiscalPolicyRef: undefined, fiscalPolicyVersion: " ", agreedAt: undefined,
+  };
+  const missingErrors = validateFiscalIntentV3({ ...intentV3,
+    pricingDeclaration: { ...intentV3.pricingDeclaration, lines: [missing] },
+  } as unknown as FiscalIntentV3);
+  assert.deepEqual(missingErrors, [
+    "pricingDeclaration.lines[0].presentationId",
+    "pricingDeclaration.lines[0].agreedPriceSourceRef",
+    "pricingDeclaration.lines[0].pricePolicyRef",
+    "pricingDeclaration.lines[0].pricePolicyVersion",
+    "pricingDeclaration.lines[0].fiscalPolicyRef",
+    "pricingDeclaration.lines[0].fiscalPolicyVersion",
+    "pricingDeclaration.lines[0].agreedAt",
+  ]);
+  assert.deepEqual(validateFiscalIntentV3({ ...intentV3,
+    pricingDeclaration: { ...intentV3.pricingDeclaration,
+      lines: [intentV3.pricingDeclaration.lines[0],
+        { ...intentV3.pricingDeclaration.lines[1], lineId: "opaque-line-a" }],
+    },
+  }), ["pricingDeclaration.lines[1].lineId"]);
+  assert.deepEqual(validateFiscalIntentV3({ ...intentV3,
+    pricingDeclaration: { ...intentV3.pricingDeclaration,
+      lines: [intentV3.pricingDeclaration.lines[0],
+        { ...intentV3.pricingDeclaration.lines[1],
+          presentationId: "opaque-presentation-a" }],
+    },
+  }), []);
+  assert.deepEqual(validateFiscalIntentV3({ ...intentV3,
+    pricingDeclaration: { ...intentV3.pricingDeclaration, lines: [null] },
+  } as unknown as FiscalIntentV3), ["pricingDeclaration.lines[0]"]);
+  assert.deepEqual(validateFiscalIntentV3({ ...intentV3,
+    pricingDeclaration: { ...intentV3.pricingDeclaration,
+      lines: [{ ...intentV3.pricingDeclaration.lines[0], fiscalPolicyRef: " " }],
+    },
+  }), ["pricingDeclaration.lines[0].fiscalPolicyRef"]);
+});
+
+test("intent V3 rechaza importes, modo, fecha y autoridad declarada por el cliente", () => {
+  for (const amount of [0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, Infinity, NaN]) {
+    const invalid = { ...intentV3, pricingDeclaration: {
+      ...intentV3.pricingDeclaration,
+      lines: [{ ...intentV3.pricingDeclaration.lines[0], agreedUnitPriceCents: amount }],
+    } };
+    assert.ok(validateFiscalIntentV3(invalid).includes(
+      "pricingDeclaration.lines[0].agreedUnitPriceCents"));
+    assert.ok(validateFiscalIntentV3({ ...intentV3, pricingDeclaration: {
+      ...intentV3.pricingDeclaration, commercialTotalCents: amount,
+    } }).includes("pricingDeclaration.commercialTotalCents"));
+  }
+  const invalid = { ...intentV3, pricingDeclaration: {
+    ...intentV3.pricingDeclaration,
+    taxComputationMode: "EXACT",
+    lines: [{ ...intentV3.pricingDeclaration.lines[0],
+      unitPriceTaxMode: "UNKNOWN", agreedAt: "2026-09-15", approved: true,
+      taxAmountCents: 180 }],
+    approved: true,
+  } } as unknown as FiscalIntentV3;
+  assert.deepEqual(validateFiscalIntentV3(invalid), [
+    "pricingDeclaration.taxComputationMode",
+    "pricingDeclaration.lines[0].unitPriceTaxMode",
+    "pricingDeclaration.lines[0].agreedAt",
+    "pricingDeclaration.lines[0].unknown.approved",
+    "pricingDeclaration.lines[0].unknown.taxAmountCents",
+    "pricingDeclaration.unknown.approved",
+  ]);
+  for (const agreedAt of ["2026-02-30T12:00:00.000Z", "2026-09-15T12:00:00",
+    "2026-09-15T25:00:00.000Z", "2026-09-15T12:00:00+25:00"]) {
+    assert.ok(validateFiscalIntentV3({ ...intentV3, pricingDeclaration: {
+      ...intentV3.pricingDeclaration,
+      lines: [{ ...intentV3.pricingDeclaration.lines[0], agreedAt }],
+    } }).includes("pricingDeclaration.lines[0].agreedAt"));
+  }
+});
+
+test("replay V3 exige misma evidencia completa y orden de líneas", () => {
+  const copy: FiscalIntentV3 = { ...intentV3, pricingDeclaration: {
+    ...intentV3.pricingDeclaration,
+    lines: intentV3.pricingDeclaration.lines.map((line) => ({ ...line })),
+  } };
+  assert.deepEqual(validateFiscalIntentReplay(intentV3, copy), []);
+  for (const change of [
+    { lineId: "another-line" },
+    { unitPriceTaxMode: "TAX_EXCLUDED" },
+    { agreedUnitPriceCents: 1181 },
+    { presentationId: "another-presentation" },
+    { agreedPriceSourceRef: "another-agreement" },
+    { pricePolicyRef: "another-policy" },
+    { pricePolicyVersion: "revision-b" },
+    { fiscalPolicyRef: "another-fiscal-policy" },
+    { fiscalPolicyVersion: "another-fiscal-revision" },
+    { agreedAt: "2026-09-15T12:59:57.000Z" },
+  ]) {
+    const replay = { ...copy, pricingDeclaration: { ...copy.pricingDeclaration,
+      lines: [{ ...copy.pricingDeclaration.lines[0], ...change },
+        copy.pricingDeclaration.lines[1]],
+    } } as FiscalIntentV3;
+    assert.deepEqual(validateFiscalIntentReplay(intentV3, replay),
+      ["replay.payloadMismatch"]);
+  }
+  assert.deepEqual(validateFiscalIntentReplay(intentV3, { ...copy,
+    pricingDeclaration: { ...copy.pricingDeclaration,
+      lines: [...copy.pricingDeclaration.lines].reverse(),
+    },
+  }), ["replay.payloadMismatch"]);
+  assert.deepEqual(validateFiscalIntentReplay(intentV2, intentV3),
+    ["replay.payloadMismatch"]);
+  assert.deepEqual(validateFiscalIntentReplay(intentV3, { ...copy,
+    pricingDeclaration: { ...copy.pricingDeclaration,
+      lines: [{ ...copy.pricingDeclaration.lines[0], pricePolicyVersion: " " },
+        copy.pricingDeclaration.lines[1]],
+    },
+  }), ["replay.pricingDeclaration.lines[0].pricePolicyVersion"]);
 });
 
 test("replay exige payload V1/V2 idéntico, incluida la declaración comercial", () => {
@@ -497,13 +693,16 @@ test("evidencia terminal requiere identidad, XML firmado y CDR, no HTTP 200", ()
   assert.deepEqual(validateFiscalCdrVerificationV1(cdr, { ...identity, number: 2 }), ["identity"]);
 });
 
-test("subpath fiscal publica contratos V1/V2 y validadores discriminados", () => {
+test("subpath fiscal publica contratos V1/V2/V3 y validadores discriminados", () => {
   const fiscal = require("@yolafresh/cpe-contracts/contracts") as Record<string, unknown>;
   assert.equal(fiscal.FISCAL_CPE_CONTRACT_VERSION, 1);
   assert.equal(fiscal.FISCAL_INTENT_V2_CONTRACT_VERSION, 2);
+  assert.equal(fiscal.FISCAL_INTENT_V3_CONTRACT_VERSION, 3);
   assert.equal(fiscal.FISCAL_SALE_SNAPSHOT_CONTRACT_VERSION, 2);
   assert.equal(typeof fiscal.validateFiscalIntentV1, "function");
   assert.equal(typeof fiscal.validateFiscalIntentV2, "function");
+  assert.equal(typeof fiscal.validateFiscalIntentV3, "function");
+  assert.equal(typeof fiscal.validateFiscalIntentPricingDeclarationV3, "function");
   assert.equal(typeof fiscal.validateFiscalIntent, "function");
   assert.equal(typeof fiscal.validateFiscalIntentReplay, "function");
   assert.equal(typeof fiscal.validateFiscalSaleSnapshotV1, "function");

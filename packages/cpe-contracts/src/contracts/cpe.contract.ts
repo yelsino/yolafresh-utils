@@ -3,6 +3,7 @@ type RegimenTributarioEmpresa = "NRUS" | "RER" | "RMT" | "REGIMEN_GENERAL";
 
 export const FISCAL_INTENT_CONTRACT_VERSION = 1 as const;
 export const FISCAL_INTENT_V2_CONTRACT_VERSION = 2 as const;
+export const FISCAL_INTENT_V3_CONTRACT_VERSION = 3 as const;
 export const FISCAL_EVIDENCE_CONTRACT_VERSION = 1 as const;
 /** @deprecated Alias histórico solo para intents/evidencias V1; no usar en snapshots. */
 export const FISCAL_CPE_CONTRACT_VERSION = FISCAL_INTENT_CONTRACT_VERSION;
@@ -63,7 +64,44 @@ export interface FiscalIntentV2 extends Omit<FiscalIntentV1, "version"> {
   readonly pricingDeclaration: FiscalIntentPricingDeclarationV2;
 }
 
-export type FiscalIntent = FiscalIntentV1 | FiscalIntentV2;
+/**
+ * Referencias declaradas por el cliente para cotejar el precio pactado de
+ * una presentación en el momento de la venta. Son identificadores opacos:
+ * validar este payload no verifica la política ni aprueba el precio.
+ */
+export interface FiscalIntentPriceLineEvidenceV3 {
+  readonly lineId: string;
+  readonly presentationId: string;
+  readonly unitPriceTaxMode: FiscalUnitPriceTaxMode;
+  /** Precio unitario pactado: final en TAX_INCLUDED, antes del tributo en TAX_EXCLUDED. */
+  readonly agreedUnitPriceCents: number;
+  /** Referencia durable al acuerdo/cotización del precio de esta línea. */
+  readonly agreedPriceSourceRef: string;
+  /** Política histórica que el backend debe resolver y verificar a agreedAt. */
+  readonly pricePolicyRef: string;
+  readonly pricePolicyVersion: string;
+  /** Política fiscal independiente; el backend debe resolverla para esta presentación. */
+  readonly fiscalPolicyRef: string;
+  readonly fiscalPolicyVersion: string;
+  readonly agreedAt: string;
+}
+
+/** V3 admite modos mixtos por línea, pero no contiene cálculo ni aprobación fiscal. */
+export interface FiscalIntentPricingDeclarationV3 {
+  readonly taxComputationMode: "NOT_COMPUTED";
+  readonly currency: "PEN";
+  /** Total comercial declarado; el backend debe cotejarlo con la venta. */
+  readonly commercialTotalCents: number;
+  readonly lines: readonly FiscalIntentPriceLineEvidenceV3[];
+}
+
+/** V3 conserva la identidad de la solicitud y sustituye solo la declaración V2. */
+export interface FiscalIntentV3 extends Omit<FiscalIntentV1, "version"> {
+  readonly version: typeof FISCAL_INTENT_V3_CONTRACT_VERSION;
+  readonly pricingDeclaration: FiscalIntentPricingDeclarationV3;
+}
+
+export type FiscalIntent = FiscalIntentV1 | FiscalIntentV2 | FiscalIntentV3;
 
 export type FiscalTaxCategory =
   | "GRAVADA"
@@ -275,6 +313,25 @@ export function isSameFiscalDocumentIdentity(
 const isNonNegativeCents = (value: number): boolean => Number.isSafeInteger(value) && value >= 0;
 const isNonBlank = (value: string): boolean => value.trim().length > 0;
 
+function isIsoTimestampWithOffset(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})$/.exec(value);
+  if (!match) return false;
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, offset] = match;
+  const [year, month, day, hour, minute, second] =
+    [yearText, monthText, dayText, hourText, minuteText, secondText].map(Number);
+  const calendar = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  if (calendar.getUTCFullYear() !== year || calendar.getUTCMonth() + 1 !== month ||
+      calendar.getUTCDate() !== day || calendar.getUTCHours() !== hour ||
+      calendar.getUTCMinutes() !== minute || calendar.getUTCSeconds() !== second) return false;
+  if (offset !== "Z") {
+    const offsetHour = Number(offset.slice(1, 3));
+    const offsetMinute = Number(offset.slice(4, 6));
+    if (offsetHour > 23 || offsetMinute > 59) return false;
+  }
+  return Number.isFinite(Date.parse(value));
+}
+
 // Subconjunto oneroso soportado por el emisor de boletas del backend. Cat07
 // contiene más supuestos; admitirlos exige primero su flujo fiscal propio.
 const SUPPORTED_AFFECTATION_CODES = {
@@ -322,12 +379,21 @@ const INTENT_V1_FIELDS = [
   "saleSnapshotId", "requestedDocumentType", "buyer", "occurredAt", "queuedAt",
 ] as const;
 const INTENT_V2_FIELDS = [...INTENT_V1_FIELDS, "pricingDeclaration"] as const;
+const INTENT_V3_FIELDS = [...INTENT_V1_FIELDS, "pricingDeclaration"] as const;
 const BUYER_FIELDS = ["documentType", "documentNumber", "legalName"] as const;
 const PRICING_DECLARATION_V2_FIELDS = [
   "unitPriceTaxMode", "taxComputationMode", "currency", "commercialTotalCents",
 ] as const;
+const PRICING_DECLARATION_V3_FIELDS = [
+  "taxComputationMode", "currency", "commercialTotalCents", "lines",
+] as const;
+const PRICE_LINE_EVIDENCE_V3_FIELDS = [
+  "lineId", "presentationId", "unitPriceTaxMode", "agreedUnitPriceCents",
+  "agreedPriceSourceRef", "pricePolicyRef", "pricePolicyVersion",
+  "fiscalPolicyRef", "fiscalPolicyVersion", "agreedAt",
+] as const;
 
-function validateFiscalIntentCommon(intent: unknown, version: 1 | 2): string[] {
+function validateFiscalIntentCommon(intent: unknown, version: 1 | 2 | 3): string[] {
   const errors: string[] = [];
   if (!isRecord(intent)) return ["intent"];
   if (intent.version !== version) errors.push("version");
@@ -362,7 +428,9 @@ function validateFiscalIntentCommon(intent: unknown, version: 1 | 2): string[] {
       errors.push(key);
     }
   }
-  rejectUnknownFields(intent, version === 1 ? INTENT_V1_FIELDS : INTENT_V2_FIELDS, "", errors);
+  const allowed = version === 1 ? INTENT_V1_FIELDS :
+    version === 2 ? INTENT_V2_FIELDS : INTENT_V3_FIELDS;
+  rejectUnknownFields(intent, allowed, "", errors);
   return errors;
 }
 
@@ -402,7 +470,73 @@ export function validateFiscalIntentV2(intent: FiscalIntentV2): readonly string[
   return errors;
 }
 
-/** Lector discriminado: un V2 inválido jamás vuelve a evaluarse como V1. */
+/**
+ * Valida solo la forma de las referencias y montos declarados. Aprobación
+ * exige cotejo independiente de venta, presentación, acuerdo y política
+ * histórica por el backend; [] no autoriza emisión.
+ */
+export function validateFiscalIntentPricingDeclarationV3(
+  pricing: FiscalIntentPricingDeclarationV3,
+): readonly string[] {
+  const errors: string[] = [];
+  if (!isRecord(pricing)) return ["pricingDeclaration"];
+  if (pricing.taxComputationMode !== "NOT_COMPUTED") {
+    errors.push("pricingDeclaration.taxComputationMode");
+  }
+  if (pricing.currency !== "PEN") errors.push("pricingDeclaration.currency");
+  if (typeof pricing.commercialTotalCents !== "number" ||
+      !isNonNegativeCents(pricing.commercialTotalCents) ||
+      pricing.commercialTotalCents === 0) {
+    errors.push("pricingDeclaration.commercialTotalCents");
+  }
+  if (!Array.isArray(pricing.lines) || pricing.lines.length === 0) {
+    errors.push("pricingDeclaration.lines");
+  } else {
+    const lineIds = new Set<string>();
+    for (const [index, line] of pricing.lines.entries()) {
+      const prefix = `pricingDeclaration.lines[${index}].`;
+      if (!isRecord(line)) {
+        errors.push(prefix.slice(0, -1));
+        continue;
+      }
+      if (typeof line.lineId !== "string" || !isNonBlank(line.lineId) ||
+          lineIds.has(line.lineId)) {
+        errors.push(`${prefix}lineId`);
+      } else lineIds.add(line.lineId);
+      for (const key of ["presentationId", "agreedPriceSourceRef", "pricePolicyRef",
+        "pricePolicyVersion", "fiscalPolicyRef", "fiscalPolicyVersion"] as const) {
+        if (typeof line[key] !== "string" || !isNonBlank(line[key])) {
+          errors.push(`${prefix}${key}`);
+        }
+      }
+      if (line.unitPriceTaxMode !== "TAX_INCLUDED" &&
+          line.unitPriceTaxMode !== "TAX_EXCLUDED") {
+        errors.push(`${prefix}unitPriceTaxMode`);
+      }
+      if (typeof line.agreedUnitPriceCents !== "number" ||
+          !isNonNegativeCents(line.agreedUnitPriceCents) ||
+          line.agreedUnitPriceCents === 0) {
+        errors.push(`${prefix}agreedUnitPriceCents`);
+      }
+      if (!isIsoTimestampWithOffset(line.agreedAt)) {
+        errors.push(`${prefix}agreedAt`);
+      }
+      rejectUnknownFields(line, PRICE_LINE_EVIDENCE_V3_FIELDS, prefix, errors);
+    }
+  }
+  rejectUnknownFields(pricing, PRICING_DECLARATION_V3_FIELDS,
+    "pricingDeclaration.", errors);
+  return errors;
+}
+
+export function validateFiscalIntentV3(intent: FiscalIntentV3): readonly string[] {
+  const errors = validateFiscalIntentCommon(intent, FISCAL_INTENT_V3_CONTRACT_VERSION);
+  if (!isRecord(intent)) return errors;
+  errors.push(...validateFiscalIntentPricingDeclarationV3(intent.pricingDeclaration));
+  return errors;
+}
+
+/** Lector discriminado: una versión inválida jamás se reinterpreta como otra. */
 export function validateFiscalIntent(intent: FiscalIntent): readonly string[] {
   const version = isRecord(intent) ? intent.version : undefined;
   if (version === FISCAL_INTENT_CONTRACT_VERSION) {
@@ -410,6 +544,9 @@ export function validateFiscalIntent(intent: FiscalIntent): readonly string[] {
   }
   if (version === FISCAL_INTENT_V2_CONTRACT_VERSION) {
     return validateFiscalIntentV2(intent as FiscalIntentV2);
+  }
+  if (version === FISCAL_INTENT_V3_CONTRACT_VERSION) {
+    return validateFiscalIntentV3(intent as FiscalIntentV3);
   }
   return ["version"];
 }
@@ -433,6 +570,17 @@ export function validateFiscalIntentReplay(
       intent.pricingDeclaration.taxComputationMode,
       intent.pricingDeclaration.currency,
       intent.pricingDeclaration.commercialTotalCents,
+    ] : []),
+    ...(intent.version === FISCAL_INTENT_V3_CONTRACT_VERSION ? [
+      intent.pricingDeclaration.taxComputationMode,
+      intent.pricingDeclaration.currency,
+      intent.pricingDeclaration.commercialTotalCents,
+      intent.pricingDeclaration.lines.map((line) => [
+        line.lineId, line.presentationId, line.unitPriceTaxMode,
+        line.agreedUnitPriceCents, line.agreedPriceSourceRef,
+        line.pricePolicyRef, line.pricePolicyVersion,
+        line.fiscalPolicyRef, line.fiscalPolicyVersion, line.agreedAt,
+      ]),
     ] : []),
   ];
   return JSON.stringify(fields(original)) === JSON.stringify(fields(replay))
