@@ -22,9 +22,9 @@ No es colección genérica de helpers frontend ni capa de infraestructura.
 
 | Ruta | Función | ¿Se edita a mano? |
 | --- | --- | --- |
-| `src/domain/` | Fuente de los contratos y entidades de la biblioteca general | Sí |
+| `src/domain/` | Fuente de los contratos y entidades; `fiscal/` se compila como paquete independiente | Sí |
 | `src/docs/` | Documentación de los dominios | Sí |
-| `packages/cpe-contracts/src/` | Fuente del paquete fiscal independiente `@yolafresh/cpe-contracts` | Sí |
+| `packages/cpe-contracts/` | Configuración y salida del paquete fiscal independiente `@yolafresh/cpe-contracts` | Solo configuración |
 | `auth/`, `ventas/`, `inventario/` y demás dominios en la raíz | Entradas públicas de compatibilidad generadas para los subpaths de `yola-fresh-utils` | No |
 | `dist/` y `packages/cpe-contracts/dist/` | Compilación de los paquetes | No |
 | `dist-test/` | JavaScript compilado temporalmente para las pruebas | No |
@@ -37,10 +37,11 @@ no debe borrar carpetas completas. La configuración de Cursor/VS Code oculta
 las entradas generadas y las compilaciones en el explorador, sin eliminarlas
 ni impedir buscarlas.
 
-Los contratos fiscales no se buscan en `src/domain`: están en
-`packages/cpe-contracts/src/contracts/cpe.contract.ts`. El paquete fiscal
-tiene su propio `package.json`, build y pruebas; no forma parte de los exports
-de la raíz `yola-fresh-utils`.
+Los contratos fiscales están en `src/domain/fiscal/contracts/cpe.contract.ts`,
+junto a los demás dominios. `packages/cpe-contracts/` conserva el
+`package.json`, build y salida de su paquete independiente. El compilador de
+`yola-fresh-utils` excluye `src/domain/fiscal/`: esa fuente no forma parte de
+los exports ni del artefacto de la biblioteca general.
 
 ## Arquitectura pública
 

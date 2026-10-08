@@ -4,6 +4,10 @@ Contratos y validadores puros para solicitudes, snapshots y evidencia de CPE. El
 paquete es privado y se distribuye como artefacto local. No importa ni incluye
 módulos operativos de `yola-fresh-utils`.
 
+La fuente canónica vive en `../../src/domain/fiscal/`. Esta carpeta contiene
+solo la configuración de empaquetado y el `dist/` generado; el API importable
+del paquete no cambia por la ubicación de la fuente.
+
 ## Integración y exports
 
 Mantener `yola-fresh-utils` en el artefacto pre-CPE `2.4.2` y añadir
