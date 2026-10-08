@@ -41,46 +41,8 @@ const stubs = [
   { subpath: "shared/value-objects", target: "dist/domain/shared/value-objects/index" },
 ];
 
-const rootDirs = [
-  "pedido",
-  "ventas",
-  "compras",
-  "inventario",
-  "tesoreria",
-  "finanzas",
-  "auth",
-  "personas",
-  "contabilidad",
-  "restaurant",
-  "shared",
-];
-
 function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
-}
-
-function removeDirWithRetry(dirPath, attempts = 5) {
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    try {
-      fs.rmSync(dirPath, {
-        recursive: true,
-        force: true,
-        maxRetries: 10,
-        retryDelay: 100,
-      });
-      return;
-    } catch (error) {
-      if (attempt === attempts || error.code !== "ENOTEMPTY") {
-        throw error;
-      }
-    }
-  }
-}
-
-function cleanRootStubs() {
-  for (const dir of rootDirs) {
-    removeDirWithRetry(path.join(repoRoot, dir));
-  }
 }
 
 function toPosixRelative(fromDir, toFileWithoutExt) {
@@ -100,7 +62,8 @@ function writeStub(subpath, target) {
 }
 
 function main() {
-  cleanRootStubs();
+  // Only update known public entry points. Never delete whole root directories:
+  // they may contain files maintained outside this generator.
   for (const stub of stubs) {
     writeStub(stub.subpath, stub.target);
   }

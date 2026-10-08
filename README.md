@@ -4,9 +4,9 @@
 
 `yolafresh-utils` es biblioteca TypeScript del ecosistema YolaFresh orientada al lenguaje compartido del negocio.
 
-Versión publicada vigente: `1.0.9` (`v1.0.9`). La versión del paquete se define en
-`package.json`; las guías de instalación deben usar ese tag o una versión anterior
-explícita cuando se esté realizando una migración.
+La versión de este checkout se define en `package.json`. Para instalar en otro
+proyecto, elegir un tag publicado y verificado; no asumir que la versión del
+checkout ya fue publicada.
 
 El paquete modela:
 
@@ -17,6 +17,30 @@ El paquete modela:
 - surface pública pequeña y explícita.
 
 No es colección genérica de helpers frontend ni capa de infraestructura.
+
+## Mapa del repositorio
+
+| Ruta | Función | ¿Se edita a mano? |
+| --- | --- | --- |
+| `src/domain/` | Fuente de los contratos y entidades de la biblioteca general | Sí |
+| `src/docs/` | Documentación de los dominios | Sí |
+| `packages/cpe-contracts/src/` | Fuente del paquete fiscal independiente `@yolafresh/cpe-contracts` | Sí |
+| `auth/`, `ventas/`, `inventario/` y demás dominios en la raíz | Entradas públicas de compatibilidad generadas para los subpaths de `yola-fresh-utils` | No |
+| `dist/` y `packages/cpe-contracts/dist/` | Compilación de los paquetes | No |
+| `dist-test/` | JavaScript compilado temporalmente para las pruebas | No |
+
+Las carpetas de dominio en la raíz **no duplican el dominio fuente**: contienen
+solo `index.js` e `index.d.ts` que apuntan a `dist/domain/`. Siguen presentes
+porque el paquete las incluye y `typesVersions` las referencia. El script
+`scripts/generate-public-subpath-stubs.cjs` actualiza únicamente esas entradas;
+no debe borrar carpetas completas. La configuración de Cursor/VS Code oculta
+las entradas generadas y las compilaciones en el explorador, sin eliminarlas
+ni impedir buscarlas.
+
+Los contratos fiscales no se buscan en `src/domain`: están en
+`packages/cpe-contracts/src/contracts/cpe.contract.ts`. El paquete fiscal
+tiene su propio `package.json`, build y pruebas; no forma parte de los exports
+de la raíz `yola-fresh-utils`.
 
 ## Arquitectura pública
 
@@ -63,45 +87,16 @@ entidades ricas seleccionadas:
 
 ## Instalación
 
-Consumers de YolaFresh jalan directo desde GitHub.
-
-Recomendación oficial:
-
-- no usar rama flotante `github:yelsino/yolafresh-utils`;
-- fijar siempre tag real `vX.Y.Z`;
-- seguir línea secuencial `v1.x`.
-
-Instalar desde GitHub por tag exacto:
+Los consumidores de YolaFresh instalan un tag exacto y comprobado de GitHub,
+no una rama flotante. Por ejemplo, `v2.4.0` existe como tag en este repositorio:
 
 ```bash
-npm install github:yelsino/yolafresh-utils#v1.0.9
+npm install github:yelsino/yolafresh-utils#v2.4.0
 ```
 
-En `package.json`:
-
-```json
-{
-  "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.9"
-  }
-}
-```
-
-Si un consumer necesita congelarse exactamente en release anterior:
-
-```bash
-npm install github:yelsino/yolafresh-utils#v1.0.7
-```
-
-En `package.json`:
-
-```json
-{
-  "dependencies": {
-    "yola-fresh-utils": "github:yelsino/yolafresh-utils#v1.0.7"
-  }
-}
-```
+El paquete fiscal independiente se integra y versiona por separado; consultar
+[`packages/cpe-contracts/README.md`](./packages/cpe-contracts/README.md)
+antes de elegir su artefacto. No inferir su versión desde la biblioteca general.
 
 Regla de lectura:
 
@@ -109,17 +104,15 @@ Regla de lectura:
 - `minor`: agrega sin romper;
 - `patch`: corrige sin romper.
 
-Por eso:
-
-- `v1.0.7` = release anterior inmediata;
-- `v1.0.9` = release vigente, con la migración de ventas y los contratos actualizados.
-
 ## Desarrollo local
 
 ```bash
 pnpm run generate-exports
 pnpm run build
 ```
+
+El build crea `dist/` y actualiza las entradas públicas de la raíz. Las pruebas
+crean `dist-test/`; ambas carpetas son salidas generadas y no se versionan.
 
 ## Releases
 

@@ -1,0 +1,18 @@
+{
+  "files.exclude": {
+    "auth": true,
+    "compras": true,
+    "contabilidad": true,
+    "finanzas": true,
+    "inventario": true,
+    "pedido": true,
+    "personas": true,
+    "restaurant": true,
+    "shared": true,
+    "tesoreria": true,
+    "ventas": true,
+    "**/dist": true,
+    "**/dist-test": true,
+    "**/node_modules": true
+  }
+}
