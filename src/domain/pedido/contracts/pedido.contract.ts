@@ -136,6 +136,8 @@ export interface Pedido {
   prioridad: PedidoPrioridadEnum;
   procedencia?: ProcedenciaComercialEnum;
   clienteId?: string;
+  /** Persona autorizada que recibirá el consumo, si difiere del titular. */
+  beneficiario?: import("../../personas/contracts/beneficiario.contract").BeneficiarioEnVenta;
   responsableId?: string;
   creadoPorId: string;
   ventaId?: string;

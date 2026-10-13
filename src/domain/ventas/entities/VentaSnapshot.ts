@@ -1,4 +1,8 @@
 import type { Cliente } from "../../personas/contracts/persons.contract";
+import {
+  validarBeneficiarioEnVenta,
+  type BeneficiarioCongelado,
+} from "../../personas/contracts/beneficiario.contract";
 import type { IUsuario } from "../../personas/contracts/usuario.contract";
 import type { ActorInventarioSnapshot } from "../../inventario/contracts/inventory-quantity-v2.contract";
 import {
@@ -123,6 +127,7 @@ export interface IVentaSnapshot {
   codigoVenta?: string;
   procedencia?: ProcedenciaComercialEnum;
   cliente?: VentaSnapshotActor;
+  beneficiario?: BeneficiarioCongelado;
   vendedor?: VentaSnapshotActor;
   /** Almacén físico elegido por la orquestación; no redefine el hecho comercial. */
   almacenOrigenId?: string;
@@ -135,6 +140,7 @@ export interface VentaSnapshotBuildContext {
   createdAt?: number | Date;
   items?: VentaSnapshotItem[];
   cliente?: VentaSnapshotActorSource;
+  beneficiario?: BeneficiarioCongelado;
   vendedor?: VentaSnapshotActorSource;
   descuentoVenta?: VentaDescuentoSnapshot;
   redondeoPago?: VentaRedondeoSnapshot;
@@ -483,6 +489,7 @@ export class VentaSnapshot implements IVentaSnapshot {
   public readonly codigoVenta?: string;
   public readonly procedencia?: ProcedenciaComercialEnum;
   public readonly cliente?: VentaSnapshotActor;
+  public readonly beneficiario?: BeneficiarioCongelado;
   public readonly vendedor?: VentaSnapshotActor;
   public readonly almacenOrigenId?: string;
   public readonly planInventarioV2?: VentaInventoryPlan;
@@ -561,6 +568,9 @@ export class VentaSnapshot implements IVentaSnapshot {
     this.codigoVenta = safeTrim(data.codigoVenta);
     this.procedencia = normalizarProcedenciaComercial(data.procedencia);
     this.cliente = data.cliente ? { ...data.cliente } : undefined;
+    this.beneficiario = data.beneficiario
+      ? Object.freeze({ ...data.beneficiario })
+      : undefined;
     this.vendedor = data.vendedor ? { ...data.vendedor } : undefined;
     this.almacenOrigenId = safeTrim(data.almacenOrigenId);
     this.planInventarioV2 = data.planInventarioV2
@@ -624,6 +634,7 @@ export class VentaSnapshot implements IVentaSnapshot {
       codigoVenta: this.codigoVenta,
       procedencia: this.procedencia,
       cliente: this.cliente ? { ...this.cliente } : undefined,
+      beneficiario: this.beneficiario ? { ...this.beneficiario } : undefined,
       vendedor: this.vendedor ? { ...this.vendedor } : undefined,
       almacenOrigenId: this.almacenOrigenId,
       planInventarioV2: this.planInventarioV2
@@ -660,6 +671,14 @@ export class VentaSnapshot implements IVentaSnapshot {
         "Venta.items debe coincidir con la cantidad de VentaSnapshot.items",
       );
     }
+    if (
+      Boolean(venta.beneficiario) !== Boolean(context.beneficiario) ||
+      (venta.beneficiario &&
+        (venta.beneficiario.vinculoId !== context.beneficiario?.vinculoId ||
+          venta.beneficiario.personaId !== context.beneficiario?.personaId))
+    ) {
+      throw new Error("VentaSnapshot.beneficiario debe coincidir con la Venta");
+    }
     const descuentoTotal =
       typeof venta.descuentoTotal === "number"
         ? roundMoney(venta.descuentoTotal)
@@ -684,6 +703,7 @@ export class VentaSnapshot implements IVentaSnapshot {
       codigoVenta: venta.codigoVenta,
       procedencia: venta.procedencia,
       cliente: mapVentaSnapshotActor(context.cliente),
+      beneficiario: context.beneficiario,
       vendedor: mapVentaSnapshotActor(context.vendedor),
       almacenOrigenId: safeTrim(context.almacenOrigenId),
       planInventarioV2: context.planInventarioV2,
@@ -757,6 +777,11 @@ export class VentaSnapshot implements IVentaSnapshot {
 
     if (data.moneda !== undefined && data.moneda !== "PEN" && data.moneda !== "USD") {
       errores.push("VentaSnapshot.moneda inválida");
+    }
+
+    errores.push(...validarBeneficiarioEnVenta(data.beneficiario));
+    if (data.beneficiario && !safeTrim(data.beneficiario.nombre)) {
+      errores.push("VentaSnapshot.beneficiario.nombre es requerido");
     }
 
     if (data.descuentoVenta !== undefined) {

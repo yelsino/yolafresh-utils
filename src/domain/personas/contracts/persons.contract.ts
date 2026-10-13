@@ -137,6 +137,8 @@ export interface ContactoEmergencia {
  */
 export interface Cliente extends Entidad {
     tipoEntidad: "Cliente";
+    /** Identidad natural opcional; las fichas legacy siguen siendo válidas. */
+    personaId?: string;
     nombres: string;
     apellidos?: string;
     celular: string;
@@ -169,6 +171,32 @@ export interface Cliente extends Entidad {
     /** Información de facturación */
     facturacion?: InformacionFacturacion;
   }
+
+/**
+ * Titular de una cuenta cliente cuyo sujeto es una organización.
+ * No exige ni fabrica atributos de persona física para poder usar crédito.
+ */
+export interface ClienteInstitucional extends Entidad {
+  tipoEntidad: "ClienteInstitucional";
+  razonSocial: string;
+  nombreComercial?: string;
+  ruc?: string;
+  celular?: string;
+  correo?: string;
+  direccion?: string;
+  limiteCredito?: number;
+  personaContactoId?: string;
+}
+
+/** Ambos titulares conservan el mismo identificador de cuenta: `clienteId`. */
+export type TitularCuentaCliente = Cliente | ClienteInstitucional;
+
+export function nombreTitularCuentaCliente(titular: TitularCuentaCliente): string {
+  if (titular.tipoEntidad === "ClienteInstitucional") {
+    return String(titular.nombreComercial || titular.razonSocial).trim();
+  }
+  return [titular.nombres, titular.apellidos].filter(Boolean).join(" ").trim();
+}
 
 /**
  * Preferencias del cliente
