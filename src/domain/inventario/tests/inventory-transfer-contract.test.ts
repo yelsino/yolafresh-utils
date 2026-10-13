@@ -2,29 +2,30 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  INVENTORY_V2_SCHEMA_VERSION,
-  UnidadBaseInventarioV2,
-} from "../contracts/inventory-quantity-v2.contract";
-import { TipoMovimientoInventarioV2 } from "../contracts/movimiento-inventario-v2.contract";
+  INVENTORY_SCHEMA_VERSION,
+  UnidadBaseInventario,
+} from "../contracts/inventory-quantity.contract";
+import { TipoMovimientoInventario } from "../contracts/movimiento-inventario.contract";
 import {
-  EstadoTransferenciaInventarioV2,
+  EstadoTransferenciaInventario,
+  TRANSFERENCIA_INVENTARIO_TYPE,
+  type AccionTransferenciaInventarioSnapshot,
+  type AccionVersionadaTransferenciaInventarioSnapshot,
+  type RecepcionTransferenciaInventarioSnapshot,
+  type TransferenciaInventario,
+  type TransferenciaInventarioLinea,
+} from "../contracts/transferencia-inventario.contract";
+import {
+  assertTransicionTransferenciaInventario,
+  construirIdMovimientoTransferenciaInventario,
+  construirMovimientosTransferenciaInventario,
+  puedeAgregarRecepcionTransferenciaInventario,
+  puedeTransicionarTransferenciaInventario,
+  resumirTransferenciaInventario,
+  validarEvolucionTransferenciaInventario,
+  validarMovimientoInventario,
+  validarTransferenciaInventario,
   TRANSFERENCIA_INVENTARIO_V2_TYPE,
-  type AccionTransferenciaInventarioV2Snapshot,
-  type AccionVersionadaTransferenciaInventarioV2Snapshot,
-  type RecepcionTransferenciaInventarioV2Snapshot,
-  type TransferenciaInventarioV2,
-  type TransferenciaInventarioV2Linea,
-} from "../contracts/transferencia-inventario-v2.contract";
-import {
-  assertTransicionTransferenciaInventarioV2,
-  construirIdMovimientoTransferenciaInventarioV2,
-  construirMovimientosTransferenciaInventarioV2,
-  puedeAgregarRecepcionTransferenciaInventarioV2,
-  puedeTransicionarTransferenciaInventarioV2,
-  resumirTransferenciaInventarioV2,
-  validarEvolucionTransferenciaInventarioV2,
-  validarMovimientoInventarioV2,
-  validarTransferenciaInventarioV2,
 } from "../index";
 
 const ahora = 1_786_800_000_000;
@@ -32,7 +33,7 @@ const ahora = 1_786_800_000_000;
 const accion = (
   suffix: string,
   registradaAt: number,
-): AccionTransferenciaInventarioV2Snapshot => ({
+): AccionTransferenciaInventarioSnapshot => ({
   operationId: `operacion_${suffix}`,
   idempotencyKey: `transferencia_001:${suffix}`,
   actor: {
@@ -48,18 +49,18 @@ const accionVersionada = (
   suffix: string,
   registradaAt: number,
   expectedVersion: number,
-): AccionVersionadaTransferenciaInventarioV2Snapshot => ({
+): AccionVersionadaTransferenciaInventarioSnapshot => ({
   ...accion(suffix, registradaAt),
   expectedVersion,
 });
 
 const crearLinea = (
   capturaBase: boolean,
-): TransferenciaInventarioV2Linea => {
+): TransferenciaInventarioLinea => {
   const comun = {
     id: "linea_001",
     productoBaseId: "producto_arroz",
-    unidadBase: UnidadBaseInventarioV2.KILOGRAMO,
+    unidadBase: UnidadBaseInventario.KILOGRAMO,
     cantidadBase: 6,
     lote: "LOTE-01",
     costoUnitarioBaseSnapshot: 2.5,
@@ -72,8 +73,8 @@ const crearLinea = (
       cantidadOperacion: 6,
       conversionSnapshot: {
         productoBaseId: "producto_arroz",
-        unidadOperacion: UnidadBaseInventarioV2.KILOGRAMO,
-        unidadBase: UnidadBaseInventarioV2.KILOGRAMO,
+        unidadOperacion: UnidadBaseInventario.KILOGRAMO,
+        unidadBase: UnidadBaseInventario.KILOGRAMO,
         factorUnidadBase: 1,
         precisionCantidadBase: 3,
         capturadaAt: ahora - 1_000,
@@ -89,7 +90,7 @@ const crearLinea = (
       productoBaseId: "producto_arroz",
       presentacionId: "presentacion_saco_3kg",
       unidadOperacion: "saco",
-      unidadBase: UnidadBaseInventarioV2.KILOGRAMO,
+      unidadBase: UnidadBaseInventario.KILOGRAMO,
       factorUnidadBase: 3,
       precisionCantidadBase: 3,
       versionConversion: 4,
@@ -98,12 +99,12 @@ const crearLinea = (
   };
 };
 
-const crearBorrador = (capturaBase = false): TransferenciaInventarioV2 => ({
+const crearBorrador = (capturaBase = false): TransferenciaInventario => ({
   id: "transferencia_001",
-  type: TRANSFERENCIA_INVENTARIO_V2_TYPE,
-  schemaVersion: INVENTORY_V2_SCHEMA_VERSION,
+  type: TRANSFERENCIA_INVENTARIO_TYPE,
+  schemaVersion: INVENTORY_SCHEMA_VERSION,
   version: 1,
-  estado: EstadoTransferenciaInventarioV2.BORRADOR,
+  estado: EstadoTransferenciaInventario.BORRADOR,
   empresaId: "empresa_001",
   almacenOrigenId: "almacen_origen",
   almacenDestinoId: "almacen_destino",
@@ -116,12 +117,12 @@ const crearBorrador = (capturaBase = false): TransferenciaInventarioV2 => ({
   updatedAt: ahora,
 });
 
-const enviar = (borrador = crearBorrador()): TransferenciaInventarioV2 => ({
+const enviar = (borrador = crearBorrador()): TransferenciaInventario => ({
   ...borrador,
   version: 2,
-  estado: EstadoTransferenciaInventarioV2.ENVIADA,
+  estado: EstadoTransferenciaInventario.ENVIADA,
   envio: accionVersionada("enviar", ahora + 1_000, 1),
-  movimientoSalidaId: construirIdMovimientoTransferenciaInventarioV2(
+  movimientoSalidaId: construirIdMovimientoTransferenciaInventario(
     borrador.id,
     "SALIDA",
   ),
@@ -136,10 +137,10 @@ const recibo = (
   aceptada: number,
   rechazada = 0,
   faltante = 0,
-): RecepcionTransferenciaInventarioV2Snapshot => ({
+): RecepcionTransferenciaInventarioSnapshot => ({
   id,
   ...accionVersionada(id, registradaAt, expectedVersion),
-  movimientoEntradaId: construirIdMovimientoTransferenciaInventarioV2(
+  movimientoEntradaId: construirIdMovimientoTransferenciaInventario(
     transferenciaId,
     "ENTRADA",
     id,
@@ -156,9 +157,9 @@ const recibo = (
   ],
 });
 
-test("transferencia V2 acepta presentacion o captura directa en unidad base", () => {
-  assert.equal(validarTransferenciaInventarioV2(crearBorrador()).valido, true);
-  assert.equal(validarTransferenciaInventarioV2(crearBorrador(true)).valido, true);
+test("transferencia acepta presentacion o captura directa en unidad base", () => {
+  assert.equal(validarTransferenciaInventario(crearBorrador()).valido, true);
+  assert.equal(validarTransferenciaInventario(crearBorrador(true)).valido, true);
 
   const presentacionSinVersion = crearBorrador();
   presentacionSinVersion.items[0] = {
@@ -169,7 +170,7 @@ test("transferencia V2 acepta presentacion o captura directa en unidad base", ()
     },
   } as never;
   assert.match(
-    validarTransferenciaInventarioV2(presentacionSinVersion).errores.join(" "),
+    validarTransferenciaInventario(presentacionSinVersion).errores.join(" "),
     /versionConversion.*requerida/,
   );
 
@@ -182,7 +183,7 @@ test("transferencia V2 acepta presentacion o captura directa en unidad base", ()
     },
   } as never;
   assert.match(
-    validarTransferenciaInventarioV2(
+    validarTransferenciaInventario(
       presentacionConVersionInsegura,
     ).errores.join(" "),
     /entero seguro positivo/,
@@ -197,62 +198,120 @@ test("transferencia V2 acepta presentacion o captura directa en unidad base", ()
     },
   } as never;
   assert.equal(
-    validarTransferenciaInventarioV2(baseInconsistente).valido,
+    validarTransferenciaInventario(baseInconsistente).valido,
     false,
   );
 
 });
 
+test("una unidad enviada con precision cero permanece en transito hasta recibirla", () => {
+  const borrador = crearBorrador(true);
+  borrador.items = [{
+    ...borrador.items[0],
+    presentacionId: undefined,
+    unidadBase: UnidadBaseInventario.UNIDAD,
+    cantidadOperacion: 1,
+    cantidadBase: 1,
+    conversionSnapshot: {
+      productoBaseId: borrador.items[0].productoBaseId,
+      unidadOperacion: UnidadBaseInventario.UNIDAD,
+      unidadBase: UnidadBaseInventario.UNIDAD,
+      factorUnidadBase: 1,
+      precisionCantidadBase: 0,
+      capturadaAt: ahora - 1_000,
+    },
+  }];
+  const enviada = enviar(borrador);
+
+  assert.equal(validarTransferenciaInventario(enviada).valido, true);
+  assert.equal(
+    resumirTransferenciaInventario(enviada).lineas[0].cantidadBaseEnTransito,
+    1,
+  );
+
+  const recibida: TransferenciaInventario = {
+    ...enviada,
+    version: 3,
+    estado: EstadoTransferenciaInventario.RECIBIDA,
+    recepciones: [recibo(enviada.id, "recibo_unidad", 2, ahora + 2_000, 1)],
+    updatedAt: ahora + 2_000,
+  };
+  assert.equal(validarTransferenciaInventario(recibida).valido, true);
+  assert.equal(
+    resumirTransferenciaInventario(recibida).lineas[0].cantidadBaseEnTransito,
+    0,
+  );
+
+  const sobreRecibida: TransferenciaInventario = {
+    ...recibida,
+    recepciones: [recibo(enviada.id, "recibo_excesivo", 2, ahora + 2_000, 2)],
+  };
+  assert.match(
+    validarTransferenciaInventario(sobreRecibida).errores.join(" "),
+    /excede la cantidad enviada/,
+  );
+
+  const conversionDesfasada = crearBorrador(true);
+  conversionDesfasada.items = [{
+    ...borrador.items[0],
+    cantidadOperacion: 2,
+  }];
+  assert.match(
+    validarTransferenciaInventario(conversionDesfasada).errores.join(" "),
+    /cantidadBase no coincide con la conversion/,
+  );
+});
+
 test("ciclo permite cancelar solo antes del envio y recibir en varios eventos", () => {
   assert.equal(
-    puedeTransicionarTransferenciaInventarioV2(
-      EstadoTransferenciaInventarioV2.BORRADOR,
-      EstadoTransferenciaInventarioV2.ENVIADA,
+    puedeTransicionarTransferenciaInventario(
+      EstadoTransferenciaInventario.BORRADOR,
+      EstadoTransferenciaInventario.ENVIADA,
     ),
     true,
   );
   assert.equal(
-    puedeAgregarRecepcionTransferenciaInventarioV2(
-      EstadoTransferenciaInventarioV2.PARCIALMENTE_RECIBIDA,
+    puedeAgregarRecepcionTransferenciaInventario(
+      EstadoTransferenciaInventario.PARCIALMENTE_RECIBIDA,
     ),
     true,
   );
   assert.throws(
     () =>
-      assertTransicionTransferenciaInventarioV2(
-        EstadoTransferenciaInventarioV2.ENVIADA,
-        EstadoTransferenciaInventarioV2.CANCELADA,
+      assertTransicionTransferenciaInventario(
+        EstadoTransferenciaInventario.ENVIADA,
+        EstadoTransferenciaInventario.CANCELADA,
       ),
     /transicion_transferencia_inventario_v2_no_permitida/,
   );
 
   const borrador = crearBorrador();
-  const cancelada: TransferenciaInventarioV2 = {
+  const cancelada: TransferenciaInventario = {
     ...borrador,
     version: 2,
-    estado: EstadoTransferenciaInventarioV2.CANCELADA,
+    estado: EstadoTransferenciaInventario.CANCELADA,
     cancelacion: {
       ...accionVersionada("cancelar", ahora + 1_000, 1),
       motivoCodigo: "ERROR_CAPTURA",
     },
     updatedAt: ahora + 1_000,
   };
-  assert.equal(validarTransferenciaInventarioV2(cancelada).valido, true);
+  assert.equal(validarTransferenciaInventario(cancelada).valido, true);
 });
 
 test("recepciones parciales materializan una entrada determinista por recibo", () => {
   const enviada = enviar();
   const primera = recibo(enviada.id, "recibo_001", 2, ahora + 2_000, 2);
-  const parcial: TransferenciaInventarioV2 = {
+  const parcial: TransferenciaInventario = {
     ...enviada,
     version: 3,
-    estado: EstadoTransferenciaInventarioV2.PARCIALMENTE_RECIBIDA,
+    estado: EstadoTransferenciaInventario.PARCIALMENTE_RECIBIDA,
     recepciones: [primera],
     updatedAt: ahora + 2_000,
   };
-  assert.equal(validarTransferenciaInventarioV2(parcial).valido, true);
+  assert.equal(validarTransferenciaInventario(parcial).valido, true);
   assert.equal(
-    resumirTransferenciaInventarioV2(parcial).lineas[0].cantidadBaseEnTransito,
+    resumirTransferenciaInventario(parcial).lineas[0].cantidadBaseEnTransito,
     4,
   );
 
@@ -265,19 +324,19 @@ test("recepciones parciales materializan una entrada determinista por recibo", (
     0,
     1,
   );
-  const cerrada: TransferenciaInventarioV2 = {
+  const cerrada: TransferenciaInventario = {
     ...parcial,
     version: 4,
-    estado: EstadoTransferenciaInventarioV2.CERRADA_CON_DIFERENCIA,
+    estado: EstadoTransferenciaInventario.CERRADA_CON_DIFERENCIA,
     recepciones: [primera, segunda],
     updatedAt: ahora + 3_000,
   };
-  assert.equal(validarTransferenciaInventarioV2(cerrada).valido, true);
-  assert.deepEqual(resumirTransferenciaInventarioV2(cerrada), {
+  assert.equal(validarTransferenciaInventario(cerrada).valido, true);
+  assert.deepEqual(resumirTransferenciaInventario(cerrada), {
     lineas: [
       {
         lineaTransferenciaId: "linea_001",
-        unidadBase: UnidadBaseInventarioV2.KILOGRAMO,
+        unidadBase: UnidadBaseInventario.KILOGRAMO,
         cantidadBaseEnviada: 6,
         cantidadBaseAceptada: 5,
         cantidadBaseRechazada: 0,
@@ -287,7 +346,7 @@ test("recepciones parciales materializan una entrada determinista por recibo", (
     ],
     totalesPorUnidadBase: [
       {
-        unidadBase: UnidadBaseInventarioV2.KILOGRAMO,
+        unidadBase: UnidadBaseInventario.KILOGRAMO,
         cantidadBaseEnviada: 6,
         cantidadBaseAceptada: 5,
         cantidadBaseRechazada: 0,
@@ -297,24 +356,24 @@ test("recepciones parciales materializan una entrada determinista por recibo", (
     ],
   });
 
-  const movimientos = construirMovimientosTransferenciaInventarioV2(cerrada);
+  const movimientos = construirMovimientosTransferenciaInventario(cerrada);
   assert.equal(movimientos.length, 3);
-  assert.equal(movimientos[0].tipo, TipoMovimientoInventarioV2.TRANSFERENCIA_SALIDA);
+  assert.equal(movimientos[0].tipo, TipoMovimientoInventario.TRANSFERENCIA_SALIDA);
   assert.equal(movimientos[0].items[0].cantidadBaseDelta, -6);
   assert.equal(movimientos[1].items[0].cantidadBaseDelta, 2);
   assert.equal(movimientos[2].items[0].cantidadBaseDelta, 3);
   assert.notEqual(movimientos[1].id, movimientos[2].id);
   movimientos.forEach((movimiento) => {
-    assert.equal(validarMovimientoInventarioV2(movimiento).valido, true);
+    assert.equal(validarMovimientoInventario(movimiento).valido, true);
   });
 });
 
 test("cierre de diferencia concilia una transferencia sin inventar una entrada", () => {
   const enviada = enviar();
-  const cerrada: TransferenciaInventarioV2 = {
+  const cerrada: TransferenciaInventario = {
     ...enviada,
     version: 3,
-    estado: EstadoTransferenciaInventarioV2.CERRADA_CON_DIFERENCIA,
+    estado: EstadoTransferenciaInventario.CERRADA_CON_DIFERENCIA,
     cierreDiferencia: {
       ...accionVersionada("cerrar_diferencia", ahora + 2_000, 2),
       items: [
@@ -329,25 +388,25 @@ test("cierre de diferencia concilia una transferencia sin inventar una entrada",
     },
     updatedAt: ahora + 2_000,
   };
-  assert.equal(validarTransferenciaInventarioV2(cerrada).valido, true);
-  assert.equal(construirMovimientosTransferenciaInventarioV2(cerrada).length, 1);
+  assert.equal(validarTransferenciaInventario(cerrada).valido, true);
+  assert.equal(construirMovimientosTransferenciaInventario(cerrada).length, 1);
   assert.equal(
-    resumirTransferenciaInventarioV2(cerrada).lineas[0].cantidadBaseFaltante,
+    resumirTransferenciaInventario(cerrada).lineas[0].cantidadBaseFaltante,
     6,
   );
 });
 
 test("validador rechaza sobre-recepcion, diferencias sin motivo y recibos sin entrada", () => {
   const enviada = enviar();
-  const sobreRecibida: TransferenciaInventarioV2 = {
+  const sobreRecibida: TransferenciaInventario = {
     ...enviada,
     version: 3,
-    estado: EstadoTransferenciaInventarioV2.RECIBIDA,
+    estado: EstadoTransferenciaInventario.RECIBIDA,
     recepciones: [recibo(enviada.id, "recibo_001", 2, ahora + 2_000, 7)],
     updatedAt: ahora + 2_000,
   };
   assert.match(
-    validarTransferenciaInventarioV2(sobreRecibida).errores.join(" "),
+    validarTransferenciaInventario(sobreRecibida).errores.join(" "),
     /excede la cantidad enviada/,
   );
 
@@ -362,10 +421,10 @@ test("validador rechaza sobre-recepcion, diferencias sin motivo y recibos sin en
   );
   diferenciaSinMotivo.items[0].motivoCodigo = undefined;
   assert.equal(
-    validarTransferenciaInventarioV2({
+    validarTransferenciaInventario({
       ...enviada,
       version: 3,
-      estado: EstadoTransferenciaInventarioV2.CERRADA_CON_DIFERENCIA,
+      estado: EstadoTransferenciaInventario.CERRADA_CON_DIFERENCIA,
       recepciones: [diferenciaSinMotivo],
       updatedAt: ahora + 2_000,
     }).valido,
@@ -382,10 +441,10 @@ test("validador rechaza sobre-recepcion, diferencias sin motivo y recibos sin en
     6,
   );
   assert.match(
-    validarTransferenciaInventarioV2({
+    validarTransferenciaInventario({
       ...enviada,
       version: 3,
-      estado: EstadoTransferenciaInventarioV2.CERRADA_CON_DIFERENCIA,
+      estado: EstadoTransferenciaInventario.CERRADA_CON_DIFERENCIA,
       recepciones: [sinAceptada],
       updatedAt: ahora + 2_000,
     }).errores.join(" "),
@@ -395,47 +454,50 @@ test("validador rechaza sobre-recepcion, diferencias sin motivo y recibos sin en
 
 test("CAS contractual evita que dos tablets sobrescriban la misma version", () => {
   const enviada = enviar();
-  const candidataA: TransferenciaInventarioV2 = {
+  const candidataA: TransferenciaInventario = {
     ...enviada,
     version: 3,
-    estado: EstadoTransferenciaInventarioV2.PARCIALMENTE_RECIBIDA,
+    estado: EstadoTransferenciaInventario.PARCIALMENTE_RECIBIDA,
     recepciones: [recibo(enviada.id, "recibo_A", 2, ahora + 2_000, 2)],
     updatedAt: ahora + 2_000,
   };
-  const candidataB: TransferenciaInventarioV2 = {
+  const candidataB: TransferenciaInventario = {
     ...enviada,
     version: 3,
-    estado: EstadoTransferenciaInventarioV2.PARCIALMENTE_RECIBIDA,
+    estado: EstadoTransferenciaInventario.PARCIALMENTE_RECIBIDA,
     recepciones: [recibo(enviada.id, "recibo_B", 2, ahora + 2_100, 3)],
     updatedAt: ahora + 2_100,
   };
-  assert.equal(validarTransferenciaInventarioV2(candidataA).valido, true);
-  assert.equal(validarTransferenciaInventarioV2(candidataB).valido, true);
+  assert.equal(validarTransferenciaInventario(candidataA).valido, true);
+  assert.equal(validarTransferenciaInventario(candidataB).valido, true);
   assert.equal(
-    validarEvolucionTransferenciaInventarioV2(enviada, candidataA).valido,
+    validarEvolucionTransferenciaInventario(enviada, candidataA).valido,
     true,
   );
   assert.equal(
-    validarEvolucionTransferenciaInventarioV2(candidataA, candidataA).valido,
+    validarEvolucionTransferenciaInventario(candidataA, candidataA).valido,
     true,
     "el replay identico es idempotente",
   );
   assert.match(
-    validarEvolucionTransferenciaInventarioV2(candidataA, candidataB).errores.join(" "),
+    validarEvolucionTransferenciaInventario(candidataA, candidataB).errores.join(" "),
     /misma version/,
   );
 });
 
 test("la superficie pública exporta los helpers de transferencia", () => {
   const pkg = require("yola-fresh-utils") as Record<string, unknown>;
-  assert.equal(pkg.TRANSFERENCIA_INVENTARIO_V2_TYPE, TRANSFERENCIA_INVENTARIO_V2_TYPE);
-  assert.equal(typeof pkg.validarTransferenciaInventarioV2, "function");
-  assert.equal(typeof pkg.validarEvolucionTransferenciaInventarioV2, "function");
-  assert.equal(typeof pkg.resumirTransferenciaInventarioV2, "function");
+  assert.equal(INVENTORY_SCHEMA_VERSION, 2);
+  assert.equal(TRANSFERENCIA_INVENTARIO_TYPE, "transferencia_inventario_v2");
+  assert.equal(pkg.TRANSFERENCIA_INVENTARIO_TYPE, TRANSFERENCIA_INVENTARIO_TYPE);
+  assert.equal(TRANSFERENCIA_INVENTARIO_V2_TYPE, TRANSFERENCIA_INVENTARIO_TYPE);
+  assert.equal(typeof pkg.validarTransferenciaInventario, "function");
+  assert.equal(typeof pkg.validarEvolucionTransferenciaInventario, "function");
+  assert.equal(typeof pkg.resumirTransferenciaInventario, "function");
   assert.equal(typeof pkg.validarEvolucionPoliticaInventario, "function");
   assert.equal(typeof pkg.validarEvolucionMermaInventario, "function");
   assert.equal(
-    typeof pkg.construirMovimientoAplicacionMermaInventarioV2,
+    typeof pkg.construirMovimientoAplicacionMermaInventario,
     "function",
   );
   assert.equal("EstadoTransferenciaEnum" in pkg, false);

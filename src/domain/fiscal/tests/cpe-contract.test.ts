@@ -1,22 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 import {
   FISCAL_CPE_SCHEMA_VERSION,
   FISCAL_INTENT_CONTRACT_KIND,
   FISCAL_SALE_SNAPSHOT_CONTRACT_KIND,
-  FISCAL_EVIDENCE_CONTRACT_KIND,
-  canAutomaticallySubmitFiscalState,
-  isFiscalTerminalState,
-  isSameFiscalDocumentIdentity,
-  validateFiscalCdrVerification,
-  validateFiscalEvidence,
   validateFiscalIntent,
   validateFiscalIntentReplay,
   validateFiscalIntentPricingDeclaration,
   validateFiscalIntentSnapshotLink,
   validateFiscalSaleSnapshot,
-  type FiscalEvidence,
   type FiscalIntent,
   type FiscalSaleSnapshot,
 } from "../contracts";
@@ -753,106 +748,21 @@ test("snapshot fiscal detecta categoría/tasa inconsistente y total no conciliad
   ]);
 });
 
-test("timeout o envío PSE no permiten reenvío automático ni simulan aceptación", () => {
-  assert.equal(canAutomaticallySubmitFiscalState("RECIBIDA_BACKEND"), true);
-  assert.equal(canAutomaticallySubmitFiscalState("ENVIADA_PSE"), false);
-  assert.equal(canAutomaticallySubmitFiscalState("RESULTADO_DESCONOCIDO"), false);
-  assert.equal(isFiscalTerminalState("RESULTADO_DESCONOCIDO"), false);
-  assert.equal(isFiscalTerminalState("ACEPTADO_CON_OBSERVACION"), true);
-});
-
-test("evidencia terminal requiere identidad, XML firmado y CDR, no HTTP 200", () => {
-  const evidence: FiscalEvidence = {
-    contractKind: FISCAL_EVIDENCE_CONTRACT_KIND,
-    schemaVersion: FISCAL_CPE_SCHEMA_VERSION,
-    fiscalDocumentId: "doc_001",
-    intentId: intent.intentId,
-    tenantId: intent.tenantId,
-    saleId: intent.saleId,
-    issuerRuc: snapshot.issuerRuc,
-    documentType: "BOLETA",
-    series: "B001",
-    number: 1,
-    status: "ACEPTADO",
-    issuedAt: "2026-09-15T13:00:03.000Z",
-    provider: "SmartPSE",
-    providerRequestId: null,
-    signedXmlStorageRef: "evidence/xml/001",
-    signedXmlSha256: "a".repeat(64),
-    cdrStorageRef: "evidence/cdr/001",
-    cdrSha256: "b".repeat(64),
-    sunatResponseCode: "0",
-    sunatResponseDescription: "Aceptado",
-    observations: [],
-  };
-  assert.equal(evidence.status, "ACEPTADO");
-  assert.equal(evidence.issuerRuc, snapshot.issuerRuc);
-  assert.equal(evidence.cdrSha256.length, 64);
-  assert.equal("httpStatus" in evidence, false);
-  assert.deepEqual(validateFiscalEvidence(evidence), []);
-  const { contractKind: _kind, schemaVersion: _schema, ...legacyEvidence } = evidence;
-  assert.ok(validateFiscalEvidence({ ...legacyEvidence, version: 1 } as unknown as FiscalEvidence)
-    .length > 0);
-  assert.ok(validateFiscalEvidence({ ...evidence,
-    contractKind: "OTHER" } as unknown as FiscalEvidence).includes("contractKind"));
-  assert.ok(validateFiscalEvidence({ ...evidence,
-    schemaVersion: 2 } as unknown as FiscalEvidence).includes("schemaVersion"));
-  assert.ok(validateFiscalEvidence({ ...evidence,
-    status: "ENVIADA_PSE" } as unknown as FiscalEvidence).includes("status"));
-  assert.ok(validateFiscalEvidence({ ...evidence,
-    documentType: "OTHER", providerRequestId: " ", observations: [null] } as unknown as FiscalEvidence)
-    .includes("documentType"));
-  assert.ok(validateFiscalEvidence({ ...evidence,
-    providerRequestId: " " } as unknown as FiscalEvidence).includes("providerRequestId"));
-  assert.ok(validateFiscalEvidence({ ...evidence,
-    observations: [null] } as unknown as FiscalEvidence).includes("observations"));
-  assert.ok(validateFiscalEvidence({ ...evidence,
-    rawXml: "<Invoice/>" } as unknown as FiscalEvidence).includes("unknown.rawXml"));
-  assert.ok(validateFiscalEvidence({ ...evidence, issuerRuc: "abc" }).includes("issuerRuc"));
-  const identity = {
-    issuerRuc: evidence.issuerRuc,
-    documentType: evidence.documentType,
-    series: evidence.series,
-    number: evidence.number,
-  };
-  const cdr = {
-    identity,
-    responseCode: evidence.sunatResponseCode,
-    responseDescription: evidence.sunatResponseDescription,
-    status: evidence.status,
-    observations: evidence.observations,
-    signedXmlStorageRef: evidence.signedXmlStorageRef,
-    signedXmlSha256: evidence.signedXmlSha256,
-    cdrStorageRef: evidence.cdrStorageRef,
-    cdrSha256: evidence.cdrSha256,
-  };
-  assert.equal(isSameFiscalDocumentIdentity(identity, { ...identity, number: 2 }), false);
-  assert.deepEqual(validateFiscalCdrVerification(cdr, identity), []);
-  assert.deepEqual(validateFiscalCdrVerification(cdr, { ...identity, number: 2 }), ["identity"]);
-  assert.deepEqual(validateFiscalCdrVerification({ ...cdr,
-    status: "ENVIADA_PSE" } as unknown as typeof cdr, identity), ["status"]);
-  assert.deepEqual(validateFiscalCdrVerification({ ...cdr,
-    observations: [null] } as unknown as typeof cdr, identity), ["observations"]);
-  assert.deepEqual(validateFiscalCdrVerification({ ...cdr,
-    jwt: "secret" } as unknown as typeof cdr, identity), ["unknown.jwt"]);
-  const invalidIdentity = { ...identity, issuerRuc: "abc" };
-  assert.deepEqual(validateFiscalCdrVerification({ ...cdr, identity: invalidIdentity },
-    invalidIdentity), ["expectedIdentity.issuerRuc", "identity.issuerRuc"]);
-});
-
-test("subpath fiscal publica solo el API canónico de primera emisión", () => {
-  const fiscal = require("@yolafresh/cpe-contracts/contracts") as Record<string, unknown>;
-  const root = require("@yolafresh/cpe-contracts") as Record<string, unknown>;
+test("subpath fiscal publica los contratos canónicos de emisión y proceso", () => {
+  const fiscal = require("yola-fresh-utils/fiscal/contracts") as Record<string, unknown>;
+  const root = require("yola-fresh-utils/fiscal") as Record<string, unknown>;
   assert.equal(root.validateFiscalIntent, fiscal.validateFiscalIntent);
   assert.equal(fiscal.FISCAL_CPE_SCHEMA_VERSION, 1);
   assert.equal(fiscal.FISCAL_INTENT_CONTRACT_KIND, "YOLAFRESH_CPE_INTENT");
   assert.equal(fiscal.FISCAL_SALE_SNAPSHOT_CONTRACT_KIND, "YOLAFRESH_CPE_SALE_SNAPSHOT");
-  assert.equal(fiscal.FISCAL_EVIDENCE_CONTRACT_KIND, "YOLAFRESH_CPE_EVIDENCE");
+  assert.equal(fiscal.FISCAL_DOCUMENT_TYPE, "comprobante_electronico");
+  assert.equal(fiscal.FISCAL_PROCESS_TYPE, "proceso_fiscal");
   for (const name of [
     "validateFiscalIntent", "validateFiscalIntentPricingDeclaration",
     "validateFiscalIntentReplay", "validateFiscalSaleSnapshot",
-    "validateFiscalIntentSnapshotLink", "validateFiscalCdrVerification",
-    "validateFiscalEvidence", "isSameFiscalDocumentIdentity",
+    "validateFiscalIntentSnapshotLink", "validateFiscalSignedDocument",
+    "isFiscalSignedDocumentPrintable", "validateFiscalProcess",
+    "validateFiscalProcessDocumentLink", "canAutomaticallyTransmitFiscalProcess",
   ]) {
     assert.equal(typeof fiscal[name], "function", name);
   }
@@ -865,9 +775,23 @@ test("subpath fiscal publica solo el API canónico de primera emisión", () => {
     "validateFiscalIntentPricingDeclarationV3",
     "validateFiscalSaleSnapshotV1", "validateFiscalSaleSnapshotV2",
     "validateFiscalIntentSnapshotLinkV1", "validateFiscalCdrVerificationV1",
-    "validateFiscalEvidenceV1",
+    "validateFiscalEvidenceV1", "validateFiscalEvidence",
+    "FISCAL_EVIDENCE_CONTRACT_KIND",
+    "validateFiscalCdrVerification", "isSameFiscalDocumentIdentity",
+    "canAutomaticallySubmitFiscalState", "isFiscalTerminalState",
   ]) {
     assert.equal(legacyName in fiscal, false, legacyName);
+  }
+});
+
+test("la solicitud de emisión no mezcla estados del proceso fiscal", () => {
+  const declarations = readFileSync(resolve(process.cwd(),
+    "dist/domain/fiscal/contracts/cpe.contract.d.ts"), "utf8");
+  for (const operationalType of [
+    "FiscalBackendState", "FiscalLocalState", "FiscalCdrVerification",
+  ]) {
+    assert.equal(new RegExp(`\\b${operationalType}\\b`).test(declarations), false,
+      operationalType);
   }
 });
 

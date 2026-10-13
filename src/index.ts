@@ -8,6 +8,7 @@ export * from "./domain/shared/utils";
 export * from "./domain/shared/value-objects";
 export * from "./domain/pedido/contracts";
 export * from "./domain/ventas/contracts";
+export * from "./domain/fiscal/contracts";
 export * from "./domain/compras/contracts";
 export * from "./domain/inventario/contracts";
 export * from "./domain/inventario/services";
@@ -31,3 +32,5 @@ export type {
   VentaSnapshotActor,
 } from "./domain/ventas/entities";
 export { RecurrenciaEntity } from "./domain/finanzas/entities";
+export * from "./domain/fiscal/contracts/configuracion-fiscal.contract";
+export * from "./domain/fiscal/contracts/configuracion-fiscal";

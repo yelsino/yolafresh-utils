@@ -2,19 +2,13 @@ import type { ISODateOnly, UnixMillis } from "../../shared/utils/dates";
 import type {
   ActorInventarioSnapshot,
   ConversionUnidadInventarioSnapshot,
-  InventoryV2SchemaVersion,
-  UnidadBaseInventarioV2,
-} from "./inventory-quantity-v2.contract";
+  InventorySchemaVersion,
+  UnidadBaseInventario,
+} from "./inventory-quantity.contract";
 /** Tipo documental canónico del ledger único de inventario. */
 export const MOVIMIENTO_INVENTARIO_TYPE = "movimiento_inventario" as const;
 
-/**
- * @deprecated Usar `MOVIMIENTO_INVENTARIO_TYPE`. Se conserva únicamente para
- * no romper imports durante la transición; no representa otro tipo documental.
- */
-export const MOVIMIENTO_INVENTARIO_V2_TYPE = MOVIMIENTO_INVENTARIO_TYPE;
-
-export enum TipoMovimientoInventarioV2 {
+export enum TipoMovimientoInventario {
   ENTRADA = "ENTRADA",
   SALIDA = "SALIDA",
   AJUSTE = "AJUSTE",
@@ -22,7 +16,7 @@ export enum TipoMovimientoInventarioV2 {
   TRANSFERENCIA_SALIDA = "TRANSFERENCIA_SALIDA",
 }
 
-export enum OrigenMovimientoInventarioV2 {
+export enum OrigenMovimientoInventario {
   COMPRA = "COMPRA",
   VENTA = "VENTA",
   CONTEO = "CONTEO",
@@ -36,13 +30,13 @@ export enum OrigenMovimientoInventarioV2 {
   MIGRACION = "MIGRACION",
 }
 
-export interface ReferenciaOrigenMovimientoInventarioV2 {
-  tipo: OrigenMovimientoInventarioV2;
+export interface ReferenciaOrigenMovimientoInventario {
+  tipo: OrigenMovimientoInventario;
   documentoId: string;
   lineaId?: string;
 }
 
-export interface MovimientoInventarioV2Linea {
+export interface MovimientoInventarioLinea {
   id: string;
   productoBaseId: string;
   almacenId: string;
@@ -56,7 +50,7 @@ export interface MovimientoInventarioV2Linea {
    * expresa la diferencia física encontrada.
    */
   cantidadBaseDelta: number;
-  unidadBase: UnidadBaseInventarioV2;
+  unidadBase: UnidadBaseInventario;
 
   costoUnitarioBase?: number;
   monedaCosto?: "PEN" | "USD" | (string & {});
@@ -74,16 +68,16 @@ export interface MovimientoInventarioV2Linea {
  * Hecho físico aplicado e inmutable. Un error posterior se corrige mediante otro
  * movimiento que declare `reversaDeMovimientoId`; nunca editando este documento.
  */
-export interface MovimientoInventarioV2 {
+export interface MovimientoInventario {
   id: string;
   type: typeof MOVIMIENTO_INVENTARIO_TYPE;
-  schemaVersion: InventoryV2SchemaVersion;
+  schemaVersion: InventorySchemaVersion;
   estado: "APLICADO";
 
-  tipo: TipoMovimientoInventarioV2;
+  tipo: TipoMovimientoInventario;
   almacenId: string;
-  origen: ReferenciaOrigenMovimientoInventarioV2;
-  items: MovimientoInventarioV2Linea[];
+  origen: ReferenciaOrigenMovimientoInventario;
+  items: MovimientoInventarioLinea[];
 
   operationId: string;
   idempotencyKey: string;
@@ -99,6 +93,3 @@ export interface MovimientoInventarioV2 {
   fechaEfectiva: UnixMillis;
   registradoAt: UnixMillis;
 }
-
-/** Nombre canónico del contrato; el alias V2 queda disponible por compatibilidad de código. */
-export type MovimientoInventario = MovimientoInventarioV2;

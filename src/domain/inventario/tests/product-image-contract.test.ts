@@ -36,8 +36,6 @@ function buildProduct(imagen?: ProductoBase["imagen"]): ProductoBase {
     unidadBaseInterna: "kilogramo",
     categoriaId: "frutas",
     imagen,
-    aplicaIGV: false,
-    porcentajeIGV: 0,
     activo: true,
     createdAt: 1,
     updatedAt: 1,

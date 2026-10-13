@@ -32,7 +32,9 @@ test("expandGrant expande alias de módulo y wildcard total", () => {
 
 test("expandGrants deduplica permisos", () => {
   const expanded = expandGrants(["ventas:*", "ventas:venta:ver"]);
-  const matches = expanded.filter((permission) => permission === "ventas:venta:ver");
+  const matches = expanded.filter(
+    (permission) => permission === "ventas:venta:ver",
+  );
 
   assert.equal(matches.length, 1);
 });
@@ -120,11 +122,19 @@ test("roles gastronomicos expanden permisos sin heredar ventas Retail", () => {
 
   assert.ok(mesero.includes("restaurante:pedido:editar"));
   assert.ok(mesero.includes("restaurante:ronda:enviar"));
+  assert.ok(mesero.includes("restaurante:ronda:reimprimir"));
+  assert.ok(mesero.includes("restaurante:cuenta:emitir_precuenta"));
   assert.equal(mesero.includes("ventas:venta:crear"), false);
   assert.ok(cocina.includes("restaurante:preparacion_cocina:actualizar"));
-  assert.equal(cocina.includes("restaurante:preparacion_barra:actualizar"), false);
+  assert.equal(
+    cocina.includes("restaurante:preparacion_barra:actualizar"),
+    false,
+  );
   assert.ok(barra.includes("restaurante:preparacion_barra:actualizar"));
-  assert.equal(barra.includes("restaurante:preparacion_cocina:actualizar"), false);
+  assert.equal(
+    barra.includes("restaurante:preparacion_cocina:actualizar"),
+    false,
+  );
   assert.ok(cajero.includes("restaurante:cuenta:cobrar"));
   assert.equal(cajero.includes("restaurante:pedido:editar"), false);
 });
@@ -139,9 +149,24 @@ test("catalogo de roles oculta gastronomia fuera de su vertical", () => {
     capacidades: ["PEDIDOS", "MESAS", "COMANDAS", "CAJA"],
   });
 
-  assert.equal(retail.some((role) => role.id === "gastronomia-mesero"), false);
-  assert.equal(retail.some((role) => role.id === "gastronomia-cocinero"), false);
-  assert.equal(gastronomia.some((role) => role.id === "gastronomia-mesero"), true);
-  assert.equal(gastronomia.some((role) => role.id === "gastronomia-cocinero"), true);
-  assert.equal(gastronomia.some((role) => role.id === "cajero"), true);
+  assert.equal(
+    retail.some((role) => role.id === "gastronomia-mesero"),
+    false,
+  );
+  assert.equal(
+    retail.some((role) => role.id === "gastronomia-cocinero"),
+    false,
+  );
+  assert.equal(
+    gastronomia.some((role) => role.id === "gastronomia-mesero"),
+    true,
+  );
+  assert.equal(
+    gastronomia.some((role) => role.id === "gastronomia-cocinero"),
+    true,
+  );
+  assert.equal(
+    gastronomia.some((role) => role.id === "cajero"),
+    true,
+  );
 });

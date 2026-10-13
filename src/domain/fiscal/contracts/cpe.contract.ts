@@ -1,13 +1,18 @@
-/** Contratos puros compartidos. El backend es la única autoridad de emisor, serie y emisión. */
-type RegimenTributarioEmpresa = "NRUS" | "RER" | "RMT" | "REGIMEN_GENERAL";
+/** Hechos, solicitudes e invariantes fiscales independientes del canal de operación. */
+import type { FiscalTaxResolutionSource } from "./configuracion-fiscal.contract";
+import { validateFiscalTaxResolutionSource } from "./configuracion-fiscal";
+import type { RegimenTributarioEmpresa } from "../../shared/kernel/empresa.contract";
 
 export const FISCAL_CPE_SCHEMA_VERSION = 1 as const;
 export const FISCAL_INTENT_CONTRACT_KIND = "YOLAFRESH_CPE_INTENT" as const;
 export const FISCAL_SALE_SNAPSHOT_CONTRACT_KIND = "YOLAFRESH_CPE_SALE_SNAPSHOT" as const;
-export const FISCAL_EVIDENCE_CONTRACT_KIND = "YOLAFRESH_CPE_EVIDENCE" as const;
 
 export type FiscalCpeDocumentType = "BOLETA" | "FACTURA";
+export type FiscalDocumentType = FiscalCpeDocumentType | "NOTA_CREDITO" | "NOTA_DEBITO";
 export type FiscalTaxRegime = RegimenTributarioEmpresa;
+export const FISCAL_TAX_REGIMES = ["NRUS", "RER", "RMT", "REGIMEN_GENERAL"] as const satisfies readonly FiscalTaxRegime[];
+export const isFiscalTaxRegime = (value: unknown): value is FiscalTaxRegime =>
+  typeof value === "string" && (FISCAL_TAX_REGIMES as readonly string[]).includes(value);
 export type FiscalCurrency = "PEN";
 
 export type FiscalBuyerDocumentType =
@@ -42,8 +47,8 @@ export interface FiscalIntent {
 }
 
 /**
- * Referencias comerciales declaradas por el cliente. Validar su forma no
- * verifica el precio ni aprueba la política histórica de la presentación.
+ * Referencias del precio acordado. Validar su forma no prueba la vigencia
+ * del acuerdo ni la política histórica de la presentación.
  */
 interface FiscalIntentPriceLineEvidenceCommon {
   readonly lineId: string;
@@ -51,10 +56,10 @@ interface FiscalIntentPriceLineEvidenceCommon {
   readonly agreedUnitPriceCents: number;
   /** Referencia durable al acuerdo/cotización del precio de esta línea. */
   readonly agreedPriceSourceRef: string;
-  /** Política histórica que el backend debe resolver y verificar a agreedAt. */
+  /** Política histórica cuya vigencia debe verificarse en agreedAt. */
   readonly pricePolicyRef: string;
   readonly pricePolicyVersion: string;
-  /** Política fiscal independiente; el backend debe resolverla para esta presentación. */
+  /** Política fiscal aplicable a esta presentación. */
   readonly fiscalPolicyRef: string;
   readonly fiscalPolicyVersion: string;
   readonly agreedAt: string;
@@ -68,11 +73,11 @@ export type FiscalIntentPriceLineEvidence = FiscalIntentPriceLineEvidenceCommon 
       readonly unitPriceTaxMode?: never }
 );
 
-/** Declaración comercial por línea; el backend conserva la autoridad fiscal. */
+/** Importe acordado por línea; no declara por sí mismo la clasificación tributaria. */
 export interface FiscalIntentPricingDeclaration {
   readonly taxComputationMode: "NOT_COMPUTED";
   readonly currency: "PEN";
-  /** Total comercial declarado; el backend debe cotejarlo con la venta. */
+  /** Total comercial declarado; debe conciliarse con la venta de origen. */
   readonly commercialTotalCents: number;
   readonly lines: readonly FiscalIntentPriceLineEvidence[];
 }
@@ -105,6 +110,8 @@ export type FiscalLineTax =
     };
 
 interface FiscalSaleLineCommon {
+  /** Procedencia congelada de la resolución de configuración por presentación. */
+  readonly taxSource?: FiscalTaxResolutionSource;
   readonly lineId: string;
   readonly description: string;
   readonly quantity: number;
@@ -116,7 +123,7 @@ interface FiscalSaleLineCommon {
   readonly tax: FiscalLineTax;
 }
 
-/** Precio bruto y descomposición del descuento congelados por el backend. */
+/** Precio bruto y descomposición del descuento congelados en el hecho fiscal. */
 interface FiscalSaleLineBreakdown {
   readonly commercialGrossBeforeDiscountCents: number;
   readonly commercialGrossDiscountCents: number;
@@ -149,7 +156,7 @@ export interface FiscalDeferredSale {
   readonly orderId: string;
 }
 
-/** Hecho canónico congelado por backend tras conciliar Venta y venta_snapshot. */
+/** Hecho fiscal congelado tras conciliar la venta y su detalle inmutable. */
 export interface FiscalSaleSnapshot {
   readonly contractKind: typeof FISCAL_SALE_SNAPSHOT_CONTRACT_KIND;
   readonly schemaVersion: typeof FISCAL_CPE_SCHEMA_VERSION;
@@ -170,95 +177,12 @@ export interface FiscalSaleSnapshot {
   readonly frozenAt: string;
 }
 
-/** Local y backend tienen ciclos distintos. RECIBIDA_BACKEND tampoco es emitida. */
-export type FiscalLocalState =
-  | "COLA_LOCAL"
-  | "ESPERANDO_VENTA_PUBLICADA"
-  | "RECIBIDA_BACKEND"
-  | "RESULTADO_DESCONOCIDO"
-  | "ACEPTADO"
-  | "ACEPTADO_CON_OBSERVACION"
-  | "RECHAZADO"
-  | "ACCION_SUPERVISOR";
-
-export type FiscalBackendState =
-  | "RECIBIDA_BACKEND"
-  | "VALIDANDO"
-  | "CONGELADA"
-  | "NUMERADA"
-  | "ENVIADA_PSE"
-  | "RESULTADO_DESCONOCIDO"
-  | "ACEPTADO"
-  | "ACEPTADO_CON_OBSERVACION"
-  | "RECHAZADO"
-  | "ACCION_SUPERVISOR";
-
-export type FiscalTerminalState =
-  | "ACEPTADO"
-  | "ACEPTADO_CON_OBSERVACION"
-  | "RECHAZADO";
-
-/** La identidad fiscal se comprueba dentro del CDR, no solo en el HTTP del PSE. */
+/** Identidad legal del comprobante emitido. */
 export interface FiscalDocumentIdentity {
   readonly issuerRuc: string;
-  readonly documentType: FiscalCpeDocumentType;
+  readonly documentType: FiscalDocumentType;
   readonly series: string;
   readonly number: number;
-}
-
-/** Resultado estructural de parsear CDR y cotejar identidad con el XML enviado. */
-export interface FiscalCdrVerification {
-  readonly identity: FiscalDocumentIdentity;
-  readonly responseCode: string;
-  readonly responseDescription: string;
-  readonly status: FiscalTerminalState;
-  readonly observations: readonly string[];
-  readonly signedXmlStorageRef: string;
-  readonly signedXmlSha256: string;
-  readonly cdrStorageRef: string;
-  readonly cdrSha256: string;
-}
-
-/** Referencias y hashes, no tokens, JWT ni XML/CDR crudos en el payload de UI. */
-export interface FiscalEvidence extends FiscalDocumentIdentity {
-  readonly contractKind: typeof FISCAL_EVIDENCE_CONTRACT_KIND;
-  readonly schemaVersion: typeof FISCAL_CPE_SCHEMA_VERSION;
-  readonly fiscalDocumentId: string;
-  readonly intentId: string;
-  readonly tenantId: string;
-  readonly saleId: string;
-  readonly status: FiscalTerminalState;
-  readonly issuedAt: string;
-  readonly provider: string;
-  readonly providerRequestId: string | null;
-  readonly signedXmlStorageRef: string;
-  readonly signedXmlSha256: string;
-  readonly cdrStorageRef: string;
-  readonly cdrSha256: string;
-  readonly sunatResponseCode: string;
-  readonly sunatResponseDescription: string;
-  readonly observations: readonly string[];
-}
-
-export function isFiscalTerminalState(
-  state: FiscalLocalState | FiscalBackendState,
-): state is FiscalTerminalState {
-  return state === "ACEPTADO" || state === "ACEPTADO_CON_OBSERVACION" || state === "RECHAZADO";
-}
-
-/** Un timeout posterior al envío nunca autoriza volver a firmar/enviar. */
-export function canAutomaticallySubmitFiscalState(state: FiscalBackendState): boolean {
-  return state === "RECIBIDA_BACKEND" || state === "VALIDANDO" || state === "CONGELADA";
-}
-
-export function isSameFiscalDocumentIdentity(
-  expected: FiscalDocumentIdentity,
-  actual: FiscalDocumentIdentity,
-): boolean {
-  return expected.issuerRuc === actual.issuerRuc &&
-    expected.documentType === actual.documentType &&
-    expected.series === actual.series &&
-    expected.number === actual.number;
 }
 
 const isNonNegativeCents = (value: number): boolean => Number.isSafeInteger(value) && value >= 0;
@@ -284,8 +208,8 @@ function isIsoTimestampWithOffset(value: unknown): value is string {
   return Number.isFinite(Date.parse(value));
 }
 
-// Subconjunto oneroso soportado por el emisor de boletas del backend. Cat07
-// contiene más supuestos; admitirlos exige primero su flujo fiscal propio.
+// Subconjunto oneroso soportado por el contrato actual de boletas. Cat07
+// contiene más supuestos; admitirlos exige reglas fiscales explícitas.
 const SUPPORTED_AFFECTATION_CODES = {
   GRAVADA: "10",
   EXONERADA: "20",
@@ -347,7 +271,7 @@ const SNAPSHOT_FIELDS = [
   "documentType", "buyer", "currency", "lines", "totalCents", "payment", "frozenAt",
 ] as const;
 const SNAPSHOT_LINE_FIELDS = [
-  "lineId", "description", "quantity", "unitCode", "unitPriceCents",
+  "lineId", "description", "quantity", "unitCode", "unitPriceCents", "taxSource",
   "discountCents", "totalCents", "tax", "unitPriceTaxMode", "commercialAmountBasis",
   "commercialGrossBeforeDiscountCents", "commercialGrossDiscountCents",
   "taxableBaseBeforeDiscountCents", "baseDiscountCents", "discountReasonCode",
@@ -398,7 +322,6 @@ function validateFiscalIntentFields(intent: unknown): string[] {
   rejectUnknownFields(intent, INTENT_FIELDS, "", errors);
   return errors;
 }
-
 function isFloorOrCeilTaxIncludedQuota(grossCents: number, taxCents: number,
   taxRateBasisPoints: number): boolean {
   if (!isNonNegativeCents(grossCents) || !isNonNegativeCents(taxCents) ||
@@ -421,7 +344,7 @@ function halfUpTaxIncludedQuota(grossCents: bigint,
 /**
  * Valida solo la forma de las referencias y montos declarados. Aprobación
  * exige cotejo independiente de venta, presentación, acuerdo y política
- * histórica por el backend; [] no autoriza emisión.
+ * histórica antes de la emisión; [] no autoriza emisión.
  */
 export function validateFiscalIntentPricingDeclaration(
   pricing: FiscalIntentPricingDeclaration,
@@ -525,7 +448,7 @@ function validateFiscalSaleSnapshotCommon(
     if (!isNonBlank(snapshot[key])) errors.push(key);
   }
   if (!/^\d{11}$/.test(snapshot.issuerRuc)) errors.push("issuerRuc.format");
-  if (!["NRUS", "RER", "RMT", "REGIMEN_GENERAL"].includes(snapshot.taxRegime)) {
+  if (!isFiscalTaxRegime(snapshot.taxRegime)) {
     errors.push("taxRegime");
   }
   if (snapshot.documentType !== "BOLETA" && snapshot.documentType !== "FACTURA") {
@@ -564,6 +487,7 @@ function validateFiscalSaleSnapshotCommon(
   const lineIds = new Set<string>();
   for (const [index, line] of snapshot.lines.entries()) {
     const prefix = `lines[${index}]`;
+    if (line.taxSource !== undefined && !validateFiscalTaxResolutionSource(line.taxSource)) errors.push(`${prefix}.taxSource`);
     if (!isNonBlank(line.lineId) || lineIds.has(line.lineId)) errors.push(`${prefix}.lineId`);
     lineIds.add(line.lineId);
     if (!isNonBlank(line.description)) errors.push(`${prefix}.description`);
@@ -777,81 +701,3 @@ export function validateFiscalIntentSnapshotLink(
   }
   return errors;
 }
-
-const isSha256 = (value: unknown): boolean =>
-  typeof value === "string" && /^[a-f\d]{64}$/i.test(value);
-const DOCUMENT_IDENTITY_FIELDS = ["issuerRuc", "documentType", "series", "number"] as const;
-const CDR_FIELDS = [
-  "identity", "responseCode", "responseDescription", "status", "observations",
-  "signedXmlStorageRef", "signedXmlSha256", "cdrStorageRef", "cdrSha256",
-] as const;
-const EVIDENCE_FIELDS = [
-  "contractKind", "schemaVersion", ...DOCUMENT_IDENTITY_FIELDS,
-  "fiscalDocumentId", "intentId", "tenantId", "saleId", "status", "issuedAt",
-  "provider", "providerRequestId", "signedXmlStorageRef", "signedXmlSha256",
-  "cdrStorageRef", "cdrSha256", "sunatResponseCode",
-  "sunatResponseDescription", "observations",
-] as const;
-
-function validateFiscalDocumentIdentity(identity: FiscalDocumentIdentity): readonly string[] {
-  if (!isRecord(identity)) return ["identity"];
-  const errors: string[] = [];
-  if (typeof identity.issuerRuc !== "string" || !/^\d{11}$/.test(identity.issuerRuc)) {
-    errors.push("issuerRuc");
-  }
-  if (identity.documentType !== "BOLETA" && identity.documentType !== "FACTURA") {
-    errors.push("documentType");
-  }
-  if (!isNonBlank(identity.series)) errors.push("series");
-  if (!Number.isSafeInteger(identity.number) || identity.number < 1) errors.push("number");
-  return errors;
-}
-
-export function validateFiscalCdrVerification(
-  cdr: FiscalCdrVerification,
-  expectedIdentity: FiscalDocumentIdentity,
-): readonly string[] {
-  if (!isRecord(cdr) || !isRecord(cdr.identity)) return ["cdr"];
-  const errors: string[] = [];
-  rejectUnknownFields(cdr, CDR_FIELDS, "", errors);
-  rejectUnknownFields(cdr.identity, DOCUMENT_IDENTITY_FIELDS, "identity.", errors);
-  errors.push(...validateFiscalDocumentIdentity(expectedIdentity)
-    .map((error) => `expectedIdentity.${error}`));
-  errors.push(...validateFiscalDocumentIdentity(cdr.identity)
-    .map((error) => `identity.${error}`));
-  if (isRecord(expectedIdentity) &&
-      !isSameFiscalDocumentIdentity(expectedIdentity, cdr.identity)) errors.push("identity");
-  if (!isFiscalTerminalState(cdr.status)) errors.push("status");
-  if (!Array.isArray(cdr.observations) ||
-      !cdr.observations.every((item) => typeof item === "string")) errors.push("observations");
-  if (!isNonBlank(cdr.responseCode)) errors.push("responseCode");
-  if (!isNonBlank(cdr.responseDescription)) errors.push("responseDescription");
-  if (!isNonBlank(cdr.signedXmlStorageRef)) errors.push("signedXmlStorageRef");
-  if (!isSha256(cdr.signedXmlSha256)) errors.push("signedXmlSha256");
-  if (!isNonBlank(cdr.cdrStorageRef)) errors.push("cdrStorageRef");
-  if (!isSha256(cdr.cdrSha256)) errors.push("cdrSha256");
-  return errors;
-}
-
-export function validateFiscalEvidence(evidence: FiscalEvidence): readonly string[] {
-  if (!isRecord(evidence)) return ["evidence"];
-  const errors: string[] = [];
-  rejectUnknownFields(evidence, EVIDENCE_FIELDS, "", errors);
-  if (evidence.contractKind !== FISCAL_EVIDENCE_CONTRACT_KIND) errors.push("contractKind");
-  if (evidence.schemaVersion !== FISCAL_CPE_SCHEMA_VERSION) errors.push("schemaVersion");
-  if (!isFiscalTerminalState(evidence.status)) errors.push("status");
-  errors.push(...validateFiscalDocumentIdentity(evidence));
-  if (evidence.providerRequestId !== null && !isNonBlank(evidence.providerRequestId)) {
-    errors.push("providerRequestId");
-  }
-  if (!Array.isArray(evidence.observations) ||
-      !evidence.observations.every((item) => typeof item === "string")) errors.push("observations");
-  for (const key of ["fiscalDocumentId", "intentId", "tenantId", "saleId", "provider", "signedXmlStorageRef", "cdrStorageRef", "sunatResponseCode", "sunatResponseDescription"] as const) {
-    if (!isNonBlank(evidence[key])) errors.push(key);
-  }
-  if (!isSha256(evidence.signedXmlSha256)) errors.push("signedXmlSha256");
-  if (!isSha256(evidence.cdrSha256)) errors.push("cdrSha256");
-  if (!Number.isFinite(Date.parse(evidence.issuedAt))) errors.push("issuedAt");
-  return errors;
-}
-

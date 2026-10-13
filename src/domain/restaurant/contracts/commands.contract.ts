@@ -1,4 +1,7 @@
-import type { DineroRestaurante, TrazaOperacionRestaurante } from "./common.contract";
+import type {
+  DineroRestaurante,
+  TrazaOperacionRestaurante,
+} from "./common.contract";
 import type { ModificadorSeleccionadoRestaurante } from "./menu.contract";
 import type { CanalServicioRestaurante } from "./service.contract";
 
@@ -101,6 +104,15 @@ export type ComandoRestaurante =
       }
     >
   | ComandoRestauranteBase<
+      "REPRINT_ORDER_ROUND",
+      {
+        comandaId: string;
+        ronda: number;
+        estacionPreparacionIds: string[];
+        motivo: string;
+      }
+    >
+  | ComandoRestauranteBase<
       | "START_PREPARATION"
       | "QUEUE_PREPARATION"
       | "MARK_PREPARATION_READY"
@@ -117,10 +129,12 @@ export type ComandoRestaurante =
       { allocationId: string; pagoId: string; monto: DineroRestaurante }
     >
   | ComandoRestauranteBase<
-      "CLOSE_CONSUMPTION_ACCOUNT",
-      { ventaId: string }
-    >;
+      "ISSUE_ACCOUNT_PRECHECK",
+      { impresoraId: string; emitidaAt: number }
+    >
+  | ComandoRestauranteBase<"CLOSE_CONSUMPTION_ACCOUNT", { ventaId: string }>;
 
 export type NombreComandoRestaurante = ComandoRestaurante["nombre"];
-export type PayloadComandoRestaurante<TNombre extends NombreComandoRestaurante> =
-  Extract<ComandoRestaurante, { nombre: TNombre }>["payload"];
+export type PayloadComandoRestaurante<
+  TNombre extends NombreComandoRestaurante,
+> = Extract<ComandoRestaurante, { nombre: TNombre }>["payload"];

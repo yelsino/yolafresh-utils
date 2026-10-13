@@ -1,34 +1,34 @@
 import type { UnixMillis } from "../../shared/utils/dates";
 
 /**
- * Versión del esquema documental Inventory V2.
+ * Versión del esquema documental vigente de Inventario.
  *
  * Es independiente de la versión npm, del schema de snapshot y del schema SQLite.
  */
-export const INVENTORY_V2_SCHEMA_VERSION = 2 as const;
+export const INVENTORY_SCHEMA_VERSION = 2 as const;
 
-export type InventoryV2SchemaVersion = typeof INVENTORY_V2_SCHEMA_VERSION;
+export type InventorySchemaVersion = typeof INVENTORY_SCHEMA_VERSION;
 
 /**
  * Unidad canónica en la que Inventario conserva la existencia de un producto base.
- * Las presentaciones son unidades comerciales/de captura y nunca claves de stock V2.
+ * Las presentaciones son unidades comerciales/de captura y nunca claves de stock.
  */
-export const UnidadBaseInventarioV2 = Object.freeze({
+export const UnidadBaseInventario = Object.freeze({
   UNIDAD: "unidad",
   KILOGRAMO: "kilogramo",
   LITRO: "litro",
   METRO: "metro",
 } as const);
 
-export type UnidadBaseInventarioV2 =
-  (typeof UnidadBaseInventarioV2)[keyof typeof UnidadBaseInventarioV2];
+export type UnidadBaseInventario =
+  (typeof UnidadBaseInventario)[keyof typeof UnidadBaseInventario];
 
 /** Campos comunes de la conversión congelada por un hecho físico. */
 interface ConversionUnidadInventarioSnapshotComun {
   productoBaseId: string;
   /** Etiqueta capturada: unidad, kg, caja, saco, botella, etc. */
   unidadOperacion: string;
-  unidadBase: UnidadBaseInventarioV2;
+  unidadBase: UnidadBaseInventario;
   /** Unidades base contenidas en una unidad de operación. Debe ser mayor a cero. */
   factorUnidadBase: number;
   /** Escala decimal acordada para redondear la cantidad base (0..9). */
@@ -42,6 +42,7 @@ interface ConversionUnidadInventarioSnapshotComun {
  */
 export interface ConversionUnidadBaseInventarioSnapshot
   extends ConversionUnidadInventarioSnapshotComun {
+  origenConversion?: undefined;
   presentacionId?: undefined;
   versionConversion?: undefined;
 }
@@ -52,15 +53,25 @@ export interface ConversionUnidadBaseInventarioSnapshot
  */
 export interface ConversionPresentacionInventarioSnapshot
   extends ConversionUnidadInventarioSnapshotComun {
+  origenConversion?: undefined;
   presentacionId: string;
   /** Entero seguro positivo de la equivalencia de catálogo congelada. */
   versionConversion: number;
 }
 
+/** Conversión física capturada en una compra sin presentación de catálogo. */
+export interface ConversionEmpaqueCompraInventarioSnapshot
+  extends ConversionUnidadInventarioSnapshotComun {
+  origenConversion: "EMPAQUE_COMPRA";
+  presentacionId?: undefined;
+  versionConversion?: undefined;
+}
+
 /** Snapshot inmutable de la conversión usada por un hecho físico. */
 export type ConversionUnidadInventarioSnapshot =
   | ConversionUnidadBaseInventarioSnapshot
-  | ConversionPresentacionInventarioSnapshot;
+  | ConversionPresentacionInventarioSnapshot
+  | ConversionEmpaqueCompraInventarioSnapshot;
 
 /** Cantidad comercial y su resultado normalizado, congelados juntos. */
 export interface CantidadInventarioConvertida {

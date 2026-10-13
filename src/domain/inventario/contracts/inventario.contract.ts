@@ -66,8 +66,7 @@ export enum EstadoRecepcionMercaderiaEnum {
   ANULADA = "ANULADA",
 }
 
-export interface RecepcionMercaderiaItem {
-  presentacionId: string;
+interface RecepcionMercaderiaItemBase {
   cantidadRecibida: number;
 
   lote?: string;
@@ -78,13 +77,42 @@ export interface RecepcionMercaderiaItem {
   proveedorId?: string;
 }
 
-export interface AsignacionRecepcionCompra {
+export interface RecepcionMercaderiaItemCatalogo extends RecepcionMercaderiaItemBase {
+  tipoPresentacionCompra?: undefined;
+  presentacionId: string;
+}
+
+export interface RecepcionMercaderiaItemPersonalizada extends RecepcionMercaderiaItemBase {
+  tipoPresentacionCompra: "PERSONALIZADA";
+  presentacionId?: undefined;
+  compraItemId: string;
+  compraId: string;
+}
+
+export type RecepcionMercaderiaItem =
+  | RecepcionMercaderiaItemCatalogo
+  | RecepcionMercaderiaItemPersonalizada;
+
+interface AsignacionRecepcionCompraBase {
   id: string;
   recepcionMercaderiaId: string;
   compraId: string;
   compraItemId: string;
-  presentacionId: string;
   cantidadAsignada: number;
   createdAt: UnixMillis;
   updatedAt: UnixMillis;
 }
+
+export interface AsignacionRecepcionCompraCatalogo extends AsignacionRecepcionCompraBase {
+  tipoPresentacionCompra?: undefined;
+  presentacionId: string;
+}
+
+export interface AsignacionRecepcionCompraPersonalizada extends AsignacionRecepcionCompraBase {
+  tipoPresentacionCompra: "PERSONALIZADA";
+  presentacionId?: undefined;
+}
+
+export type AsignacionRecepcionCompra =
+  | AsignacionRecepcionCompraCatalogo
+  | AsignacionRecepcionCompraPersonalizada;

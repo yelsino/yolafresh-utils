@@ -2,8 +2,9 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "declaration": false,
-    "outDir": "./dist-test"
+    "outDir": "./dist-test",
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "dist-test", "src/domain/fiscal"]
+  "exclude": ["node_modules", "dist", "dist-test"]
 }

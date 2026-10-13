@@ -2,9 +2,9 @@ import type { UnixMillis } from "../../shared/utils/dates";
 import type {
   ActorInventarioSnapshot,
   ConversionUnidadInventarioSnapshot,
-  InventoryV2SchemaVersion,
-  UnidadBaseInventarioV2,
-} from "./inventory-quantity-v2.contract";
+  InventorySchemaVersion,
+  UnidadBaseInventario,
+} from "./inventory-quantity.contract";
 
 export const AJUSTE_INVENTARIO_TYPE = "ajuste_inventario" as const;
 export const MERMA_INVENTARIO_TYPE = "merma_inventario" as const;
@@ -42,7 +42,7 @@ export interface AjusteInventarioLinea {
   id: string;
   productoBaseId: string;
   almacenId: string;
-  unidadBase: UnidadBaseInventarioV2;
+  unidadBase: UnidadBaseInventario;
   conversionSnapshot: ConversionUnidadInventarioSnapshot;
   cantidadTeoricaBase: number;
   cantidadObjetivoBase: number;
@@ -55,7 +55,7 @@ export interface AjusteInventarioLinea {
 export interface AjusteInventario {
   id: string;
   type: typeof AJUSTE_INVENTARIO_TYPE;
-  schemaVersion: InventoryV2SchemaVersion;
+  schemaVersion: InventorySchemaVersion;
   estado: EstadoAprobacionInventario;
   origen: OrigenAjusteInventario;
   empresaId: string;
@@ -88,7 +88,7 @@ export interface MermaInventarioLinea {
   id: string;
   productoBaseId: string;
   almacenId: string;
-  unidadBase: UnidadBaseInventarioV2;
+  unidadBase: UnidadBaseInventario;
   cantidadOperacion: number;
   cantidadBase: number;
   conversionSnapshot: ConversionUnidadInventarioSnapshot;
@@ -126,7 +126,7 @@ export interface FlujoAuditadoMermaInventario {
 export interface MermaInventario {
   id: string;
   type: typeof MERMA_INVENTARIO_TYPE;
-  schemaVersion: InventoryV2SchemaVersion;
+  schemaVersion: InventorySchemaVersion;
   estado: EstadoAprobacionInventario;
   empresaId: string;
   almacenId: string;
