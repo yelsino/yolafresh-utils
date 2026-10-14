@@ -57,7 +57,8 @@ Como mesero quiero registrar exactamente cómo desea el plato cada comensal.
 
 Criterios:
 
-- obliga mínimos y máximos de grupos requeridos;
+- permite agregar directamente sin configuración y exige mínimos/máximos solo
+  en los grupos que el operador activa manualmente;
 - calcula extras sin alterar precio maestro;
 - guarda snapshot de nombres/precios/instrucciones;
 - dos altas offline con IDs distintos se conservan;

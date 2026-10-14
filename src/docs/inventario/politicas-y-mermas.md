@@ -35,7 +35,7 @@ CAS antes de persistir.
 
 `APROBADO` todavía no modifica stock. La única construcción física admitida es
 la transición validada `APROBADO -> APLICADO`, mediante
-`construirMovimientoAplicacionMermaInventarioV2`. Produce una sola salida con ID
+`construirMovimientoAplicacionMermaInventario`. Produce una sola salida con ID
 determinista y clave derivada de la acción de aplicación. Reintentar exactamente
 la misma versión reproduce el mismo hecho; una segunda aplicación divergente es
 rechazada.
@@ -67,4 +67,4 @@ requieren sesión activa.
 
 - [politica-inventario.contract.ts](../../domain/inventario/contracts/politica-inventario.contract.ts)
 - [ajuste-inventario.contract.ts](../../domain/inventario/contracts/ajuste-inventario.contract.ts)
-- [inventory-v2.helpers.ts](../../domain/inventario/services/inventory-v2.helpers.ts)
+- [inventory.helpers.ts](../../domain/inventario/services/inventory.helpers.ts)

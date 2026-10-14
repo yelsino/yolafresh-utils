@@ -40,14 +40,15 @@ Casos alternos:
 ## 3. Toma de pedido y modificadores
 
 1. Se consulta proyección local del menú por local, canal y horario.
-2. Al elegir un ítem, se solicitan grupos requeridos hasta cumplir mínimos/máximos.
+2. Al elegir un ítem se puede agregar directamente; los grupos de modificadores
+   se activan únicamente cuando el operador selecciona una opción manualmente.
 3. La línea captura precio, impuesto, modificadores, instrucciones, asiento y curso.
 4. El pedido permanece editable hasta enviar.
 5. Al enviar se crea un delta inmutable; nuevas líneas forman otra ronda.
 
 Reglas:
 
-- un ítem incompleto no puede enviarse;
+- un grupo activado debe cumplir sus mínimos/máximos antes de agregar el ítem;
 - agotado manual impide nuevas líneas, pero no borra líneas aceptadas;
 - instrucciones libres están separadas de modificadores para auditoría/costo;
 - cambiar una línea enviada requiere anulación/corrección con motivo.

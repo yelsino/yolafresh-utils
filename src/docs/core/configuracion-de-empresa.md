@@ -31,8 +31,20 @@ La evolución aplicada en esta librería es aditiva:
 
 - `empresa.pais?`
 - `perfilNegocio?`
+- `fiscal.entornoEmision?`
 
 No se cambió el `type`, no se renombraron bloques existentes y no se introdujo un documento nuevo para reemplazar `config_empresa`.
+
+### Entorno de emisión fiscal
+
+`fiscal.entornoEmision` expresa el entorno elegido para emitir comprobantes de esa empresa:
+`DEMO` o `PRODUCCION`. Es una decisión de configuración fiscal, independiente de la
+identidad del tenant y de los ajustes comerciales de precios e IGV.
+
+La ausencia del campo no equivale a Demo. Tampoco basta seleccionar `PRODUCCION`
+para convertir una firma de prueba en comprobante válido: el proveedor, las
+credenciales y la ruta de emisión deben corresponder al mismo entorno. Cada
+comprobante conserva el entorno con el que realmente fue firmado.
 
 ## Decisión de modelado
 

@@ -7,12 +7,12 @@ base y almacén.
 ## Contratos principales
 
 - `StockProductoBaseAlmacen`: saldo proyectado y costo promedio.
-- `MovimientoInventarioV2`: hecho físico append-only.
+- `MovimientoInventario`: hecho físico append-only.
 - `PoliticaInventario`: forma de control por empresa, almacén o producto.
 - `ConteoInventario` y `ConteoInventarioLinea`: inventario inicial y periódico.
 - `AjusteInventario`: corrección aprobada.
 - `MermaInventario`: pérdida auditada.
-- `TransferenciaInventarioV2`: salida y recepciones entre almacenes.
+- `TransferenciaInventario`: salida y recepciones entre almacenes.
 - `RecepcionMercaderia`: ingreso físico vinculado a una compra.
 
 Los sufijos de versión son revisiones del contrato wire; no representan motores
@@ -30,6 +30,6 @@ alternativos ni un modo elegible por tenant.
 ## Documentos
 
 - [modelo-vigente.md](./modelo-vigente.md)
-- [transferencias-v2.md](./transferencias-v2.md)
-- [politicas-y-mermas-v2.md](./politicas-y-mermas-v2.md)
+- [transferencias.md](./transferencias.md)
+- [politicas-y-mermas.md](./politicas-y-mermas.md)
 - [Integración POS de compras](../compras/integracion-pos-offline-first.md)

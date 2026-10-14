@@ -19,6 +19,10 @@ export function validarModificadoresRestaurante(
   const errors: string[] = [];
   for (const group of groups) {
     const selected = selections.filter((item) => item.grupoId === group.id);
+    // Los modificadores son una personalización iniciada explícitamente por el
+    // operador. Un grupo intacto no convierte la configuración en un paso
+    // obligatorio; sus límites se aplican recién cuando contiene selecciones.
+    if (selected.length === 0) continue;
     const count = selected.reduce((total, item) => total + item.cantidad, 0);
     if (count < group.minimoSelecciones) {
       errors.push(

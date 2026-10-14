@@ -15,7 +15,7 @@ operación histórica desde la presentación actual.
 
 ## Fuente de verdad
 
-`MovimientoInventarioV2` es un hecho aplicado e inmutable. Contiene origen,
+`MovimientoInventario` es un hecho aplicado e inmutable. Contiene origen,
 actor, fecha efectiva, operación idempotente y líneas con delta base firmado.
 `StockProductoBaseAlmacen` y el kardex son proyecciones reconstruibles del libro.
 

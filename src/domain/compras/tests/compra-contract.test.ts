@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { EstadoPagoEnum } from "../../shared/kernel/enums";
+import { TipoEmpaqueEnum } from "../../inventario/contracts/producto.contract";
 import {
   EstadoCompraEnum,
   ICompra,
   TipoDocumentoCompraEnum,
+  esCompraItemInventariablePersonalizada,
 } from "../contracts/compra.contract";
 import { Compra } from "../entities/Compra";
 
@@ -57,6 +59,79 @@ test("Compra conserva el snapshot de conversión del item inventariable", () => 
   assert.equal(item.factorUnidadBase, 12);
   assert.equal(item.unidadBaseInventario, "unidad");
   assert.equal(item.versionConversion, 3);
+  assert.equal(item.tipoPresentacionCompra, undefined);
+  assert.equal(esCompraItemInventariablePersonalizada(item), false);
+});
+
+test("Compra conserva un empaque personalizado de 90 unidades sin presentación de catálogo", () => {
+  const input = buildCompraInput({
+    subtotal: 50,
+    total: 50,
+    items: [{
+      id: "a41b9c4e-5c6a-4f85-a953-d38ac4ebce42",
+      compraId: "compra_001",
+      nombreItem: "Pepino, bolsa x90",
+      cantidad: 1,
+      costoUnitario: 50,
+      costoTotal: 50,
+      afectaInventario: true,
+      tipoPresentacionCompra: "PERSONALIZADA",
+      productoBaseId: "3e19bc35-f8ec-43f3-970f-4360d819d7e7",
+      productoEmpaque: TipoEmpaqueEnum.Bolsa,
+      factorUnidadBase: 90,
+      unidadBaseInventario: "unidad",
+    }],
+  });
+  const item = Compra.fromJSON(input).toJSON().items[0];
+  if (!item.afectaInventario) {
+    assert.fail("El item debía ser inventariable");
+  }
+
+  assert.equal(item.id, input.items[0].id);
+  assert.equal(item.tipoPresentacionCompra, "PERSONALIZADA");
+  assert.equal(item.presentacionId, undefined);
+  assert.equal(item.versionConversion, undefined);
+  assert.equal(item.productoBaseId, input.items[0].productoBaseId);
+  assert.equal(item.productoEmpaque, TipoEmpaqueEnum.Bolsa);
+  assert.equal(item.factorUnidadBase, 90);
+  assert.equal(esCompraItemInventariablePersonalizada(item), true);
+});
+
+test("Compra mantiene cerrada la ruta heredada si falta presentación o versión", () => {
+  const input = buildCompraInput();
+  for (const [changes, message] of [
+    [{ presentacionId: undefined }, /sin presentacionId/],
+    [{ presentacionId: undefined, factorUnidadBase: 90 }, /sin presentacionId/],
+    [{ versionConversion: undefined }, /versionConversion inválida/],
+    [{ tipoPresentacionCompra: "DESCONOCIDA" }, /tipoPresentacionCompra inválido/],
+  ] as const) {
+    assert.throws(() => new Compra({
+      ...input,
+      items: [{ ...input.items[0], ...changes } as unknown as ICompra["items"][number]],
+    }), message);
+  }
+});
+
+test("Compra rechaza un empaque personalizado incompleto o mezclado con catálogo", () => {
+  const input = buildCompraInput();
+  const personalizada = {
+    ...input.items[0],
+    tipoPresentacionCompra: "PERSONALIZADA",
+    presentacionId: undefined,
+    versionConversion: undefined,
+    productoEmpaque: TipoEmpaqueEnum.Bolsa,
+  };
+  for (const [changes, message] of [
+    [{ productoEmpaque: undefined }, /productoEmpaque inválido/],
+    [{ presentacionId: "presentacion_caja_12" }, /no admite presentacionId/],
+    [{ versionConversion: 3 }, /no admite presentacionId ni versionConversion/],
+    [{ factorUnidadBase: 0 }, /factorUnidadBase inválido/],
+  ] as const) {
+    assert.throws(() => new Compra({
+      ...input,
+      items: [{ ...personalizada, ...changes } as unknown as ICompra["items"][number]],
+    }), message);
+  }
 });
 
 test("Compra rechaza item físico sin unidad base congelada", () => {

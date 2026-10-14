@@ -22,17 +22,17 @@ import type {
   ActorInventarioSnapshot,
   ConversionUnidadInventarioSnapshot,
   ResultadoValidacionInventario,
-} from "../contracts/inventory-quantity-v2.contract";
-import { INVENTORY_V2_SCHEMA_VERSION } from "../contracts/inventory-quantity-v2.contract";
+} from "../contracts/inventory-quantity.contract";
+import { INVENTORY_SCHEMA_VERSION } from "../contracts/inventory-quantity.contract";
 import type {
-  MovimientoInventarioV2,
-  MovimientoInventarioV2Linea,
-} from "../contracts/movimiento-inventario-v2.contract";
+  MovimientoInventario,
+  MovimientoInventarioLinea,
+} from "../contracts/movimiento-inventario.contract";
 import {
   MOVIMIENTO_INVENTARIO_TYPE,
-  OrigenMovimientoInventarioV2,
-  TipoMovimientoInventarioV2,
-} from "../contracts/movimiento-inventario-v2.contract";
+  OrigenMovimientoInventario,
+  TipoMovimientoInventario,
+} from "../contracts/movimiento-inventario.contract";
 import type {
   ConfiguracionPoliticaInventario,
   ContextoResolucionPoliticaInventario,
@@ -66,8 +66,9 @@ const resultado = (errores: string[]): ResultadoValidacionInventario => ({
   errores,
 });
 
+// Una unidad mínima representable nunca puede equivaler a cero u otra unidad.
 const casiIguales = (left: number, right: number, precision: number): boolean =>
-  Math.abs(left - right) <= Math.pow(10, -precision) + Number.EPSILON;
+  Math.abs(left - right) < Math.pow(10, -precision) / 2;
 
 export const redondearCantidadInventario = (
   cantidad: number,
@@ -93,6 +94,10 @@ export const validarConversionInventario = (
 ): ResultadoValidacionInventario => {
   const errores: string[] = [];
   const usaPresentacion = conversion.presentacionId !== undefined;
+  const esEmpaqueCompra = conversion.origenConversion === "EMPAQUE_COMPRA";
+  if (conversion.origenConversion !== undefined && !esEmpaqueCompra) {
+    errores.push("conversion.origenConversion es inválido");
+  }
   if (!esTextoNoVacio(conversion.productoBaseId)) {
     errores.push("conversion.productoBaseId es requerido");
   }
@@ -118,7 +123,14 @@ export const validarConversionInventario = (
   ) {
     errores.push("conversion.precisionCantidadBase debe estar entre 0 y 9");
   }
-  if (usaPresentacion) {
+  if (esEmpaqueCompra) {
+    if (usaPresentacion) {
+      errores.push("conversion de empaque de compra no admite presentacionId");
+    }
+    if (conversion.versionConversion !== undefined) {
+      errores.push("conversion de empaque de compra no admite versionConversion");
+    }
+  } else if (usaPresentacion) {
     if (
       !Number.isSafeInteger(conversion.versionConversion) ||
       Number(conversion.versionConversion) < 1
@@ -317,6 +329,7 @@ export const resolverPoliticaInventario = (
   return {
     modo,
     ...semanticaModo[modo],
+    stockMinimoBase: configuracion.stockMinimoBase,
     inventarioInicialRequerido:
       configuracion.inventarioInicialRequerido ?? false,
     conteoCiego: configuracion.conteoCiego ?? true,
@@ -331,6 +344,10 @@ export const resolverPoliticaInventario = (
     requiereEvidenciaMerma:
       configuracion.requiereEvidenciaMerma ?? false,
     fuentesAplicadas: aplicadas.map((politica) => politica.id),
+    fuentesVersionadasAplicadas: aplicadas.map((politica) => ({
+      politicaId: politica.id,
+      version: politica.version,
+    })),
   };
 };
 
@@ -342,7 +359,7 @@ export const validarPoliticaInventario = (
   if (politica.type !== POLITICA_INVENTARIO_TYPE) {
     errores.push("politica.type es inválido");
   }
-  if (politica.schemaVersion !== INVENTORY_V2_SCHEMA_VERSION) {
+  if (politica.schemaVersion !== INVENTORY_SCHEMA_VERSION) {
     errores.push("politica.schemaVersion debe ser 2");
   }
   if (!Object.values(NivelPoliticaInventario).includes(politica.alcance.nivel)) {
@@ -414,6 +431,13 @@ export const validarPoliticaInventario = (
     errores.push("politica.updatedAt no puede ser anterior a createdAt");
   }
   const cfg = politica.configuracion;
+  if (
+    cfg.stockMinimoBase !== undefined &&
+    politica.alcance.nivel !== NivelPoliticaInventario.PRODUCTO &&
+    politica.alcance.nivel !== NivelPoliticaInventario.PRODUCTO_ALMACEN
+  ) {
+    errores.push("politica.configuracion.stockMinimoBase requiere alcance de producto");
+  }
   if (cfg.modo !== undefined && !Object.values(ModoControlInventario).includes(cfg.modo)) {
     errores.push("politica.configuracion.modo es invalido");
   }
@@ -428,6 +452,7 @@ export const validarPoliticaInventario = (
     }
   }
   for (const [campo, value] of [
+    ["stockMinimoBase", cfg.stockMinimoBase],
     ["toleranciaCantidadBase", cfg.toleranciaCantidadBase],
     ["toleranciaPorcentaje", cfg.toleranciaPorcentaje],
     ["umbralAprobacionCantidadBase", cfg.umbralAprobacionCantidadBase],
@@ -535,29 +560,29 @@ export const validarEvolucionPoliticaInventario = (
 };
 
 const signoEsperadoMovimiento = (
-  tipo: TipoMovimientoInventarioV2,
+  tipo: TipoMovimientoInventario,
 ): -1 | 0 | 1 => {
   switch (tipo) {
-    case TipoMovimientoInventarioV2.ENTRADA:
-    case TipoMovimientoInventarioV2.TRANSFERENCIA_ENTRADA:
+    case TipoMovimientoInventario.ENTRADA:
+    case TipoMovimientoInventario.TRANSFERENCIA_ENTRADA:
       return 1;
-    case TipoMovimientoInventarioV2.SALIDA:
-    case TipoMovimientoInventarioV2.TRANSFERENCIA_SALIDA:
+    case TipoMovimientoInventario.SALIDA:
+    case TipoMovimientoInventario.TRANSFERENCIA_SALIDA:
       return -1;
-    case TipoMovimientoInventarioV2.AJUSTE:
+    case TipoMovimientoInventario.AJUSTE:
       return 0;
   }
 };
 
-export const validarMovimientoInventarioV2 = (
-  movimiento: MovimientoInventarioV2,
+export const validarMovimientoInventario = (
+  movimiento: MovimientoInventario,
 ): ResultadoValidacionInventario => {
   const errores: string[] = [];
   if (!esTextoNoVacio(movimiento.id)) errores.push("movimiento.id es requerido");
   if (movimiento.type !== MOVIMIENTO_INVENTARIO_TYPE) {
     errores.push("movimiento.type es inválido");
   }
-  if (movimiento.schemaVersion !== INVENTORY_V2_SCHEMA_VERSION) {
+  if (movimiento.schemaVersion !== INVENTORY_SCHEMA_VERSION) {
     errores.push("movimiento.schemaVersion debe ser 2");
   }
   if (!esTextoNoVacio(movimiento.almacenId)) {
@@ -646,7 +671,7 @@ export const validarConteoInventario = (
   if (conteo.type !== CONTEO_INVENTARIO_TYPE) {
     errores.push("conteo.type es inválido");
   }
-  if (conteo.schemaVersion !== INVENTORY_V2_SCHEMA_VERSION) {
+  if (conteo.schemaVersion !== INVENTORY_SCHEMA_VERSION) {
     errores.push("conteo.schemaVersion debe ser 2");
   }
   if (!esTextoNoVacio(conteo.empresaId)) {
@@ -735,7 +760,7 @@ export const validarConteoInventarioLinea = (
   if (linea.type !== CONTEO_INVENTARIO_LINEA_TYPE) {
     errores.push("linea.type es inválido");
   }
-  if (linea.schemaVersion !== INVENTORY_V2_SCHEMA_VERSION) {
+  if (linea.schemaVersion !== INVENTORY_SCHEMA_VERSION) {
     errores.push("linea.schemaVersion debe ser 2");
   }
   if (!esTextoNoVacio(linea.conteoId)) {
@@ -807,6 +832,48 @@ export const validarConteoInventarioLinea = (
   );
   if (linea.capturaVigenteId && !capturaVigente) {
     errores.push("linea.capturaVigenteId no existe en capturas");
+  }
+  const evaluacion = linea.evaluacionAprobacion;
+  if (evaluacion) {
+    if (evaluacion.capturaId !== linea.capturaVigenteId ||
+      evaluacion.versionProyeccionAlCorte !== linea.versionProyeccionAlCorte ||
+      linea.diferenciaBase === 0) {
+      errores.push("linea.evaluacionAprobacion no corresponde al conteo vigente");
+    }
+    if (!Number.isSafeInteger(evaluacion.evaluadaAt) || evaluacion.evaluadaAt <= 0) {
+      errores.push("linea.evaluacionAprobacion.evaluadaAt es inválida");
+    }
+    const politica = evaluacion.politica;
+    if (!politica ||
+      !esNumeroFinito(politica.toleranciaCantidadBase) || politica.toleranciaCantidadBase < 0 ||
+      !esNumeroFinito(politica.toleranciaPorcentaje) || politica.toleranciaPorcentaje < 0 ||
+      typeof politica.requiereAprobacionAjuste !== "boolean" ||
+      (politica.umbralAprobacionCantidadBase != null &&
+        (!esNumeroFinito(politica.umbralAprobacionCantidadBase) || politica.umbralAprobacionCantidadBase < 0)) ||
+      (politica.umbralAprobacionValor != null &&
+        (!esNumeroFinito(politica.umbralAprobacionValor) || politica.umbralAprobacionValor < 0))) {
+      errores.push("linea.evaluacionAprobacion.politica es inválida");
+    }
+    if (evaluacion.diferenciaValorPEN !== null &&
+      (!esNumeroFinito(evaluacion.diferenciaValorPEN) || evaluacion.diferenciaValorPEN < 0)) {
+      errores.push("linea.evaluacionAprobacion.diferenciaValorPEN es inválida");
+    }
+    const fuentes = evaluacion.fuentes;
+    if (!Array.isArray(fuentes) ||
+      fuentes.some((fuente) => !esTextoNoVacio(fuente?.politicaId) ||
+        !Number.isSafeInteger(fuente?.version) || fuente.version < 1) ||
+      new Set(fuentes.map((fuente) => fuente.politicaId)).size !== fuentes.length) {
+      errores.push("linea.evaluacionAprobacion.fuentes son inválidas");
+    }
+    const motivos = evaluacion.motivos;
+    const validMotivos = new Set([
+      "QUANTITY_TOLERANCE", "PERCENT_TOLERANCE", "APPROVAL_QUANTITY_THRESHOLD",
+      "APPROVAL_VALUE_THRESHOLD", "APPROVAL_VALUE_UNKNOWN", "APPROVAL_ALL_DIFFERENCES",
+    ]);
+    if (!Array.isArray(motivos) || motivos.some((motivo) => !validMotivos.has(motivo)) ||
+      evaluacion.requiereAprobacion !== (motivos.length > 0)) {
+      errores.push("linea.evaluacionAprobacion.decision es inválida");
+    }
   }
   if (
     linea.estado !== EstadoLineaConteoInventario.PENDIENTE &&
@@ -931,7 +998,7 @@ export const validarAjusteInventario = (
   if (ajuste.type !== AJUSTE_INVENTARIO_TYPE) {
     errores.push("ajuste.type es inválido");
   }
-  if (ajuste.schemaVersion !== INVENTORY_V2_SCHEMA_VERSION) {
+  if (ajuste.schemaVersion !== INVENTORY_SCHEMA_VERSION) {
     errores.push("ajuste.schemaVersion debe ser 2");
   }
   if (!esTextoNoVacio(ajuste.operationId)) {
@@ -1049,7 +1116,7 @@ const mismoActorMerma = (
   right: ActorInventarioSnapshot | undefined,
 ): boolean => JSON.stringify(left) === JSON.stringify(right);
 
-export const construirIdMovimientoMermaInventarioV2 = (
+export const construirIdMovimientoMermaInventario = (
   mermaId: string,
 ): string => {
   const id = mermaId.trim();
@@ -1065,7 +1132,7 @@ export const validarMermaInventario = (
   if (merma.type !== MERMA_INVENTARIO_TYPE) {
     errores.push("merma.type es inválido");
   }
-  if (merma.schemaVersion !== INVENTORY_V2_SCHEMA_VERSION) {
+  if (merma.schemaVersion !== INVENTORY_SCHEMA_VERSION) {
     errores.push("merma.schemaVersion debe ser 2");
   }
   if (!esTextoNoVacio(merma.operationId)) {
@@ -1294,7 +1361,7 @@ export const validarMermaInventario = (
     }
 
     const movimientoEsperado = esTextoNoVacio(merma.id)
-      ? construirIdMovimientoMermaInventarioV2(merma.id)
+      ? construirIdMovimientoMermaInventario(merma.id)
       : undefined;
     switch (merma.estado) {
       case EstadoAprobacionInventario.BORRADOR:
@@ -1539,10 +1606,10 @@ export const validarEvolucionMermaInventario = (
  * El adapter persiste candidata + movimiento + proyeccion atomica y deduplica
  * por ID/idempotencyKey.
  */
-export const construirMovimientoAplicacionMermaInventarioV2 = (
+export const construirMovimientoAplicacionMermaInventario = (
   actualAprobada: MermaInventario,
   candidataAplicada: MermaInventario,
-): MovimientoInventarioV2 => {
+): MovimientoInventario => {
   const evolucion = validarEvolucionMermaInventario(
     actualAprobada,
     candidataAplicada,
@@ -1562,7 +1629,7 @@ export const construirMovimientoAplicacionMermaInventarioV2 = (
     );
   }
   const aplicacion = candidataAplicada.flujo.aplicacion;
-  const items: MovimientoInventarioV2Linea[] = candidataAplicada.lineas.map(
+  const items: MovimientoInventarioLinea[] = candidataAplicada.lineas.map(
     (linea) => ({
       id: `${linea.id}:salida`,
       productoBaseId: linea.productoBaseId,
@@ -1578,12 +1645,12 @@ export const construirMovimientoAplicacionMermaInventarioV2 = (
   return {
     id: candidataAplicada.movimientoInventarioId!,
     type: MOVIMIENTO_INVENTARIO_TYPE,
-    schemaVersion: INVENTORY_V2_SCHEMA_VERSION,
+    schemaVersion: INVENTORY_SCHEMA_VERSION,
     estado: "APLICADO",
-    tipo: TipoMovimientoInventarioV2.SALIDA,
+    tipo: TipoMovimientoInventario.SALIDA,
     almacenId: candidataAplicada.almacenId,
     origen: {
-      tipo: OrigenMovimientoInventarioV2.MERMA,
+      tipo: OrigenMovimientoInventario.MERMA,
       documentoId: candidataAplicada.id,
     },
     items,

@@ -14,6 +14,29 @@ export type PaisEmpresa =
 
 export type MonedaEmpresa = "PEN" | "USD";
 
+/** Régimen declarado por el emisor; no se infiere del porcentaje comercial de IGV. */
+export type RegimenTributarioEmpresa = "NRUS" | "RER" | "RMT" | "REGIMEN_GENERAL";
+
+/** Destino fiscal de las nuevas emisiones; no depende del nombre del tenant. */
+export type EntornoEmisionFiscal = "DEMO" | "PRODUCCION";
+
+/** Lee el entorno explícito. La ausencia no habilita ni elige un entorno. */
+export function readFiscalEmissionEnvironment(config: unknown): EntornoEmisionFiscal | null {
+  if (!config || typeof config !== "object" || Array.isArray(config) || !("fiscal" in config)) return null;
+  const fiscal = config.fiscal;
+  if (!fiscal || typeof fiscal !== "object" || Array.isArray(fiscal) || !("entornoEmision" in fiscal)) return null;
+  return fiscal.entornoEmision === "DEMO" || fiscal.entornoEmision === "PRODUCCION"
+    ? fiscal.entornoEmision : null;
+}
+
+/** Lee únicamente la habilitación declarada por la empresa; no concede permisos de emisión. */
+export function isFiscalCompanyEnabled(config: unknown): boolean {
+  if (!config || typeof config !== "object" || Array.isArray(config) || !("fiscal" in config)) return false;
+  const fiscal = config.fiscal;
+  if (!fiscal || typeof fiscal !== "object" || Array.isArray(fiscal)) return false;
+  return (fiscal as Partial<ConfigEmpresa["fiscal"]>).facturacionElectronicaEnabled === true;
+}
+
 /** Política de ajuste del efectivo que nunca incrementa el importe al cliente. */
 export interface PoliticaRedondeoPago {
   id: string;
@@ -110,10 +133,21 @@ export interface ConfigEmpresa {
   perfilNegocio?: PerfilNegocioConfigEmpresa;
 
   fiscal: {
+    /** Referencia canónica al perfil de decisiones del emisor. No contiene reglas por producto. */
+    taxProfileDocumentId?: string;
+    /** Código de establecimiento fiscal, configurado explícitamente por la empresa. */
+    codigoEstablecimiento?: string;
     moneda: MonedaEmpresa;
     simboloMoneda: string;
     porcentajeIGV: number;
     incluyeIGVEnPrecios: boolean;
+    regimenTributario?: RegimenTributarioEmpresa;
+    /** Habilitación del vector fiscal por empresa. Ausente o false permanece apagado. */
+    facturacionElectronicaEnabled?: boolean;
+    /** Domicilio fiscal contrastado por el administrador con SUNAT para el emisor actual. */
+    domicilioFiscalVerificado?: string;
+    /** Obligatorio para emitir; puede faltar cuando la facturación está deshabilitada. */
+    entornoEmision?: EntornoEmisionFiscal;
     redondeoPago?: PoliticaRedondeoPago;
     descuentoVenta?: PoliticaDescuentoVenta;
   };

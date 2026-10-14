@@ -22,11 +22,10 @@ No es colección genérica de helpers frontend ni capa de infraestructura.
 
 | Ruta | Función | ¿Se edita a mano? |
 | --- | --- | --- |
-| `src/domain/` | Fuente de los contratos y entidades; `fiscal/` se compila como paquete independiente | Sí |
+| `src/domain/` | Fuente de todos los contratos y entidades, incluido `fiscal/` | Sí |
 | `src/docs/` | Documentación de los dominios | Sí |
-| `packages/cpe-contracts/` | Configuración y salida del paquete fiscal independiente `@yolafresh/cpe-contracts` | Solo configuración |
 | `auth/`, `ventas/`, `inventario/` y demás dominios en la raíz | Entradas públicas de compatibilidad generadas para los subpaths de `yola-fresh-utils` | No |
-| `dist/` y `packages/cpe-contracts/dist/` | Compilación de los paquetes | No |
+| `dist/` | Compilación de `yola-fresh-utils` | No |
 | `dist-test/` | JavaScript compilado temporalmente para las pruebas | No |
 
 Las carpetas de dominio en la raíz **no duplican el dominio fuente**: contienen
@@ -37,11 +36,11 @@ no debe borrar carpetas completas. La configuración de Cursor/VS Code oculta
 las entradas generadas y las compilaciones en el explorador, sin eliminarlas
 ni impedir buscarlas.
 
-Los contratos fiscales están en `src/domain/fiscal/contracts/cpe.contract.ts`,
-junto a los demás dominios. `packages/cpe-contracts/` conserva el
-`package.json`, build y salida de su paquete independiente. El compilador de
-`yola-fresh-utils` excluye `src/domain/fiscal/`: esa fuente no forma parte de
-los exports ni del artefacto de la biblioteca general.
+Los contratos fiscales están en `src/domain/fiscal/contracts/`, junto a los
+demás dominios. Se exportan desde la raíz de `yola-fresh-utils` y desde
+`yola-fresh-utils/fiscal` y `yola-fresh-utils/fiscal/contracts`. La
+[documentación del dominio](src/docs/fiscal/modelo-de-comprobantes.md) explica
+la relación entre venta, comprobante firmado, impresión y respuesta tributaria.
 
 ## Arquitectura pública
 
@@ -75,6 +74,7 @@ entidades ricas seleccionadas:
 - `auth`: permisos, grants, roles base, metadata, snapshot auth y helpers puros.
 - `personas`: contratos de actores, usuarios y direcciones.
 - `contabilidad`: contratos y entidades contables publicadas por subpath.
+- `fiscal`: contratos y validadores puros de CPE publicados por raíz y subpath.
 
 ## Principios
 
@@ -89,15 +89,15 @@ entidades ricas seleccionadas:
 ## Instalación
 
 Los consumidores de YolaFresh instalan un tag exacto y comprobado de GitHub,
-no una rama flotante. Por ejemplo, `v2.4.0` existe como tag en este repositorio:
+no una rama flotante. El antiguo `v2.4.0` no contiene el dominio fiscal; para
+consumirlo hay que usar una versión publicada que incluya esta integración.
+`2.5.8` es la versión local preparada para inspección, no un tag ni una
+publicación. Reemplaza el contrato fiscal experimental `2.4.8-cpe.9`;
+los consumidores deben adaptar sus imports y usos de `FiscalEvidence` antes
+de actualizar la dependencia.
 
-```bash
-npm install github:yelsino/yolafresh-utils#v2.4.0
-```
-
-El paquete fiscal independiente se integra y versiona por separado; consultar
-[`packages/cpe-contracts/README.md`](./packages/cpe-contracts/README.md)
-antes de elegir su artefacto. No inferir su versión desde la biblioteca general.
+Los contratos fiscales se instalan con la misma versión de `yola-fresh-utils`.
+No requieren instalar `@yolafresh/cpe-contracts` por separado.
 
 Regla de lectura:
 

@@ -114,10 +114,6 @@ export interface ProductoBase {
   imagen?: CompatibleProductImage;
   /** Palabras clave para búsqueda rápida en el POS o catálogo. */
   keywords?: string[];
-  /** Indica si el producto está afecto al IGV. */
-  aplicaIGV: boolean;
-  /** Porcentaje de IGV aplicado (ej: 18). */
-  porcentajeIGV: number;
   /** Indica si el producto está activo en el sistema. */
   activo: boolean;
 
@@ -144,6 +140,9 @@ export interface ProductoBase {
  */
 export interface Presentacion {
   id: string;
+
+  /** Referencias opacas a decisiones fiscales; no contiene impuestos ni precios. */
+  fiscalConfigurationRefs?: import("../../fiscal/contracts/configuracion-fiscal.contract").FiscalPresentationConfigurationReference[];
 
   /** Tipo de documento para persistencia (CouchDB / NoSQL). */
   type: "presentacion";

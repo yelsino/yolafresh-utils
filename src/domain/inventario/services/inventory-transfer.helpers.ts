@@ -1,31 +1,31 @@
 import {
-  INVENTORY_V2_SCHEMA_VERSION,
+  INVENTORY_SCHEMA_VERSION,
   type ActorInventarioSnapshot,
   type ConversionUnidadInventarioSnapshot,
   type ResultadoValidacionInventario,
-} from "../contracts/inventory-quantity-v2.contract";
+} from "../contracts/inventory-quantity.contract";
 import {
   MOVIMIENTO_INVENTARIO_TYPE,
-  OrigenMovimientoInventarioV2,
-  TipoMovimientoInventarioV2,
-  type MovimientoInventarioV2,
-  type MovimientoInventarioV2Linea,
-} from "../contracts/movimiento-inventario-v2.contract";
+  OrigenMovimientoInventario,
+  TipoMovimientoInventario,
+  type MovimientoInventario,
+  type MovimientoInventarioLinea,
+} from "../contracts/movimiento-inventario.contract";
 import {
-  EstadoTransferenciaInventarioV2,
-  TRANSFERENCIA_INVENTARIO_V2_TYPE,
-  type AccionTransferenciaInventarioV2Snapshot,
-  type AccionVersionadaTransferenciaInventarioV2Snapshot,
-  type CierreDiferenciaTransferenciaInventarioV2Linea,
-  type RecepcionTransferenciaInventarioV2Linea,
-  type RecepcionTransferenciaInventarioV2Snapshot,
-  type TransferenciaInventarioV2,
-  type TransferenciaInventarioV2Linea,
-} from "../contracts/transferencia-inventario-v2.contract";
+  EstadoTransferenciaInventario,
+  TRANSFERENCIA_INVENTARIO_TYPE,
+  type AccionTransferenciaInventarioSnapshot,
+  type AccionVersionadaTransferenciaInventarioSnapshot,
+  type CierreDiferenciaTransferenciaInventarioLinea,
+  type RecepcionTransferenciaInventarioLinea,
+  type RecepcionTransferenciaInventarioSnapshot,
+  type TransferenciaInventario,
+  type TransferenciaInventarioLinea,
+} from "../contracts/transferencia-inventario.contract";
 import {
   convertirCantidadAUnidadBase,
   validarConversionInventario,
-} from "./inventory-v2.helpers";
+} from "./inventory.helpers";
 
 const textoNoVacio = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
@@ -36,8 +36,9 @@ const numeroFinito = (value: unknown): value is number =>
 const timestampValido = (value: unknown): value is number =>
   typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 
+// Una unidad mínima representable no puede ser indistinguible de cero.
 const casiIguales = (left: number, right: number, precision: number): boolean =>
-  Math.abs(left - right) <= Math.pow(10, -precision) + Number.EPSILON;
+  Math.abs(left - right) < Math.pow(10, -precision) / 2;
 
 const normalizarCero = (value: number, precision: number): number =>
   casiIguales(value, 0, precision) ? 0 : value;
@@ -62,7 +63,7 @@ const validarActor = (
 };
 
 const validarAccion = (
-  accion: AccionTransferenciaInventarioV2Snapshot | null | undefined,
+  accion: AccionTransferenciaInventarioSnapshot | null | undefined,
   ruta: string,
   errores: string[],
 ): void => {
@@ -83,7 +84,7 @@ const validarAccion = (
 };
 
 const validarAccionVersionada = (
-  accion: AccionVersionadaTransferenciaInventarioV2Snapshot | null | undefined,
+  accion: AccionVersionadaTransferenciaInventarioSnapshot | null | undefined,
   ruta: string,
   errores: string[],
 ): void => {
@@ -108,7 +109,7 @@ const validarEvidencias = (
 };
 
 const validarLinea = (
-  linea: TransferenciaInventarioV2Linea,
+  linea: TransferenciaInventarioLinea,
   index: number,
   errores: string[],
 ): void => {
@@ -189,9 +190,9 @@ const validarCantidadNoNegativa = (
 };
 
 const validarLineaRecepcion = (
-  linea: RecepcionTransferenciaInventarioV2Linea,
+  linea: RecepcionTransferenciaInventarioLinea,
   ruta: string,
-  lineasPorId: ReadonlyMap<string, TransferenciaInventarioV2Linea>,
+  lineasPorId: ReadonlyMap<string, TransferenciaInventarioLinea>,
   errores: string[],
 ): void => {
   if (!textoNoVacio(linea.lineaTransferenciaId)) {
@@ -235,9 +236,9 @@ const validarLineaRecepcion = (
 };
 
 const validarLineaCierre = (
-  linea: CierreDiferenciaTransferenciaInventarioV2Linea,
+  linea: CierreDiferenciaTransferenciaInventarioLinea,
   ruta: string,
-  lineasPorId: ReadonlyMap<string, TransferenciaInventarioV2Linea>,
+  lineasPorId: ReadonlyMap<string, TransferenciaInventarioLinea>,
   errores: string[],
 ): void => {
   if (!textoNoVacio(linea.lineaTransferenciaId)) {
@@ -270,53 +271,53 @@ const validarLineaCierre = (
 
 const transicionesTransferencia: Readonly<
   Record<
-    EstadoTransferenciaInventarioV2,
-    readonly EstadoTransferenciaInventarioV2[]
+    EstadoTransferenciaInventario,
+    readonly EstadoTransferenciaInventario[]
   >
 > = Object.freeze({
-  [EstadoTransferenciaInventarioV2.BORRADOR]: Object.freeze([
-    EstadoTransferenciaInventarioV2.ENVIADA,
-    EstadoTransferenciaInventarioV2.CANCELADA,
+  [EstadoTransferenciaInventario.BORRADOR]: Object.freeze([
+    EstadoTransferenciaInventario.ENVIADA,
+    EstadoTransferenciaInventario.CANCELADA,
   ]),
-  [EstadoTransferenciaInventarioV2.ENVIADA]: Object.freeze([
-    EstadoTransferenciaInventarioV2.PARCIALMENTE_RECIBIDA,
-    EstadoTransferenciaInventarioV2.RECIBIDA,
-    EstadoTransferenciaInventarioV2.CERRADA_CON_DIFERENCIA,
+  [EstadoTransferenciaInventario.ENVIADA]: Object.freeze([
+    EstadoTransferenciaInventario.PARCIALMENTE_RECIBIDA,
+    EstadoTransferenciaInventario.RECIBIDA,
+    EstadoTransferenciaInventario.CERRADA_CON_DIFERENCIA,
   ]),
-  [EstadoTransferenciaInventarioV2.PARCIALMENTE_RECIBIDA]: Object.freeze([
-    EstadoTransferenciaInventarioV2.RECIBIDA,
-    EstadoTransferenciaInventarioV2.CERRADA_CON_DIFERENCIA,
+  [EstadoTransferenciaInventario.PARCIALMENTE_RECIBIDA]: Object.freeze([
+    EstadoTransferenciaInventario.RECIBIDA,
+    EstadoTransferenciaInventario.CERRADA_CON_DIFERENCIA,
   ]),
-  [EstadoTransferenciaInventarioV2.RECIBIDA]: Object.freeze([]),
-  [EstadoTransferenciaInventarioV2.CERRADA_CON_DIFERENCIA]: Object.freeze([]),
-  [EstadoTransferenciaInventarioV2.CANCELADA]: Object.freeze([]),
+  [EstadoTransferenciaInventario.RECIBIDA]: Object.freeze([]),
+  [EstadoTransferenciaInventario.CERRADA_CON_DIFERENCIA]: Object.freeze([]),
+  [EstadoTransferenciaInventario.CANCELADA]: Object.freeze([]),
 });
 
-export const puedeTransicionarTransferenciaInventarioV2 = (
-  estadoActual: EstadoTransferenciaInventarioV2,
-  estadoDestino: EstadoTransferenciaInventarioV2,
+export const puedeTransicionarTransferenciaInventario = (
+  estadoActual: EstadoTransferenciaInventario,
+  estadoDestino: EstadoTransferenciaInventario,
 ): boolean => transicionesTransferencia[estadoActual]?.includes(estadoDestino) ?? false;
 
-export const puedeAgregarRecepcionTransferenciaInventarioV2 = (
-  estadoActual: EstadoTransferenciaInventarioV2,
+export const puedeAgregarRecepcionTransferenciaInventario = (
+  estadoActual: EstadoTransferenciaInventario,
 ): boolean =>
-  estadoActual === EstadoTransferenciaInventarioV2.ENVIADA ||
-  estadoActual === EstadoTransferenciaInventarioV2.PARCIALMENTE_RECIBIDA;
+  estadoActual === EstadoTransferenciaInventario.ENVIADA ||
+  estadoActual === EstadoTransferenciaInventario.PARCIALMENTE_RECIBIDA;
 
-export const assertTransicionTransferenciaInventarioV2 = (
-  estadoActual: EstadoTransferenciaInventarioV2,
-  estadoDestino: EstadoTransferenciaInventarioV2,
+export const assertTransicionTransferenciaInventario = (
+  estadoActual: EstadoTransferenciaInventario,
+  estadoDestino: EstadoTransferenciaInventario,
 ): void => {
-  if (!puedeTransicionarTransferenciaInventarioV2(estadoActual, estadoDestino)) {
+  if (!puedeTransicionarTransferenciaInventario(estadoActual, estadoDestino)) {
     throw new Error(
       `transicion_transferencia_inventario_v2_no_permitida:${estadoActual}:${estadoDestino}`,
     );
   }
 };
 
-export interface ResumenTransferenciaInventarioV2Linea {
+export interface ResumenTransferenciaInventarioLinea {
   lineaTransferenciaId: string;
-  unidadBase: TransferenciaInventarioV2Linea["unidadBase"];
+  unidadBase: TransferenciaInventarioLinea["unidadBase"];
   cantidadBaseEnviada: number;
   cantidadBaseAceptada: number;
   cantidadBaseRechazada: number;
@@ -324,8 +325,8 @@ export interface ResumenTransferenciaInventarioV2Linea {
   cantidadBaseEnTransito: number;
 }
 
-export interface ResumenTransferenciaInventarioV2PorUnidadBase {
-  unidadBase: TransferenciaInventarioV2Linea["unidadBase"];
+export interface ResumenTransferenciaInventarioPorUnidadBase {
+  unidadBase: TransferenciaInventarioLinea["unidadBase"];
   cantidadBaseEnviada: number;
   cantidadBaseAceptada: number;
   cantidadBaseRechazada: number;
@@ -333,19 +334,19 @@ export interface ResumenTransferenciaInventarioV2PorUnidadBase {
   cantidadBaseEnTransito: number;
 }
 
-export interface ResumenTransferenciaInventarioV2 {
-  lineas: ResumenTransferenciaInventarioV2Linea[];
+export interface ResumenTransferenciaInventario {
+  lineas: ResumenTransferenciaInventarioLinea[];
   /** Nunca suma kg, unidades, litros o metros entre sí. */
-  totalesPorUnidadBase: ResumenTransferenciaInventarioV2PorUnidadBase[];
+  totalesPorUnidadBase: ResumenTransferenciaInventarioPorUnidadBase[];
 }
 
-export const resumirTransferenciaInventarioV2 = (
+export const resumirTransferenciaInventario = (
   transferencia: Pick<
-    TransferenciaInventarioV2,
+    TransferenciaInventario,
     "items" | "recepciones" | "cierreDiferencia"
   >,
-): ResumenTransferenciaInventarioV2 => {
-  const porId = new Map<string, ResumenTransferenciaInventarioV2Linea>();
+): ResumenTransferenciaInventario => {
+  const porId = new Map<string, ResumenTransferenciaInventarioLinea>();
   for (const linea of transferencia.items ?? []) {
     porId.set(linea.id, {
       lineaTransferenciaId: linea.id,
@@ -390,8 +391,8 @@ export const resumirTransferenciaInventarioV2 = (
     };
   });
   const porUnidad = new Map<
-    TransferenciaInventarioV2Linea["unidadBase"],
-    ResumenTransferenciaInventarioV2PorUnidadBase
+    TransferenciaInventarioLinea["unidadBase"],
+    ResumenTransferenciaInventarioPorUnidadBase
   >();
   for (const linea of lineas) {
     const total = porUnidad.get(linea.unidadBase) ?? {
@@ -413,7 +414,7 @@ export const resumirTransferenciaInventarioV2 = (
 };
 
 const registrarClaveAccion = (
-  accion: AccionTransferenciaInventarioV2Snapshot | undefined,
+  accion: AccionTransferenciaInventarioSnapshot | undefined,
   operationIds: Set<string>,
   idempotencyKeys: Set<string>,
   errores: string[],
@@ -429,16 +430,16 @@ const registrarClaveAccion = (
   idempotencyKeys.add(accion.idempotencyKey);
 };
 
-export function construirIdMovimientoTransferenciaInventarioV2(
+export function construirIdMovimientoTransferenciaInventario(
   transferenciaId: string,
   pierna: "SALIDA",
 ): string;
-export function construirIdMovimientoTransferenciaInventarioV2(
+export function construirIdMovimientoTransferenciaInventario(
   transferenciaId: string,
   pierna: "ENTRADA",
   recepcionId: string,
 ): string;
-export function construirIdMovimientoTransferenciaInventarioV2(
+export function construirIdMovimientoTransferenciaInventario(
   transferenciaId: string,
   pierna: "SALIDA" | "ENTRADA",
   recepcionId?: string,
@@ -453,21 +454,21 @@ export function construirIdMovimientoTransferenciaInventarioV2(
   return `movimiento_inventario_v2:transferencia:${encodeURIComponent(id)}:entrada:${encodeURIComponent(recibo)}`;
 }
 
-export const validarTransferenciaInventarioV2 = (
-  transferencia: TransferenciaInventarioV2,
+export const validarTransferenciaInventario = (
+  transferencia: TransferenciaInventario,
 ): ResultadoValidacionInventario => {
   const errores: string[] = [];
   if (!textoNoVacio(transferencia.id)) errores.push("transferencia.id es requerido");
-  if (transferencia.type !== TRANSFERENCIA_INVENTARIO_V2_TYPE) {
+  if (transferencia.type !== TRANSFERENCIA_INVENTARIO_TYPE) {
     errores.push("transferencia.type es invalido");
   }
-  if (transferencia.schemaVersion !== INVENTORY_V2_SCHEMA_VERSION) {
+  if (transferencia.schemaVersion !== INVENTORY_SCHEMA_VERSION) {
     errores.push("transferencia.schemaVersion debe ser 2");
   }
   if (!Number.isSafeInteger(transferencia.version) || transferencia.version < 1) {
     errores.push("transferencia.version debe ser un entero positivo");
   }
-  if (!Object.values(EstadoTransferenciaInventarioV2).includes(transferencia.estado)) {
+  if (!Object.values(EstadoTransferenciaInventario).includes(transferencia.estado)) {
     errores.push("transferencia.estado es invalido");
   }
   if (!textoNoVacio(transferencia.empresaId)) errores.push("transferencia.empresaId es requerido");
@@ -482,7 +483,7 @@ export const validarTransferenciaInventarioV2 = (
   if (!textoNoVacio(transferencia.correlationId)) errores.push("transferencia.correlationId es requerido");
   validarEvidencias(transferencia.evidenciaIds, "transferencia.evidenciaIds", errores);
 
-  const lineasPorId = new Map<string, TransferenciaInventarioV2Linea>();
+  const lineasPorId = new Map<string, TransferenciaInventarioLinea>();
   if (!Array.isArray(transferencia.items) || transferencia.items.length === 0) {
     errores.push("transferencia.items requiere al menos una linea");
   } else {
@@ -534,7 +535,7 @@ export const validarTransferenciaInventarioV2 = (
       textoNoVacio(transferencia.id) &&
       textoNoVacio(recepcion.id) &&
       recepcion.movimientoEntradaId !==
-        construirIdMovimientoTransferenciaInventarioV2(
+        construirIdMovimientoTransferenciaInventario(
           transferencia.id,
           "ENTRADA",
           recepcion.id,
@@ -667,7 +668,7 @@ export const validarTransferenciaInventarioV2 = (
   }
 
   const salidaEsperada = textoNoVacio(transferencia.id)
-    ? construirIdMovimientoTransferenciaInventarioV2(transferencia.id, "SALIDA")
+    ? construirIdMovimientoTransferenciaInventario(transferencia.id, "SALIDA")
     : undefined;
   if (transferencia.envio) {
     if (transferencia.movimientoSalidaId !== salidaEsperada) {
@@ -677,11 +678,11 @@ export const validarTransferenciaInventarioV2 = (
     errores.push("transferencia sin envio no admite movimientoSalidaId");
   }
 
-  const resumen = resumirTransferenciaInventarioV2(transferencia);
+  const resumen = resumirTransferenciaInventario(transferencia);
   for (const linea of resumen.lineas) {
     const original = lineasPorId.get(linea.lineaTransferenciaId);
     const precision = original?.conversionSnapshot.precisionCantidadBase ?? 6;
-    if (linea.cantidadBaseEnTransito < -Math.pow(10, -precision)) {
+    if (linea.cantidadBaseEnTransito < -Math.pow(10, -precision) / 2) {
       errores.push(
         `transferencia.linea ${linea.lineaTransferenciaId} excede la cantidad enviada`,
       );
@@ -705,7 +706,7 @@ export const validarTransferenciaInventarioV2 = (
     (linea) => linea.cantidadBaseEnTransito === 0,
   );
   switch (transferencia.estado) {
-    case EstadoTransferenciaInventarioV2.BORRADOR:
+    case EstadoTransferenciaInventario.BORRADOR:
       if (
         transferencia.envio ||
         recepciones.length > 0 ||
@@ -716,7 +717,7 @@ export const validarTransferenciaInventarioV2 = (
         errores.push("transferencia BORRADOR no admite efectos posteriores");
       }
       break;
-    case EstadoTransferenciaInventarioV2.ENVIADA:
+    case EstadoTransferenciaInventario.ENVIADA:
       if (!transferencia.envio || transferencia.movimientoSalidaId !== salidaEsperada) {
         errores.push("transferencia ENVIADA exige envio y salida determinista");
       }
@@ -724,7 +725,7 @@ export const validarTransferenciaInventarioV2 = (
         errores.push("transferencia ENVIADA no admite recepciones, cierre ni cancelacion");
       }
       break;
-    case EstadoTransferenciaInventarioV2.PARCIALMENTE_RECIBIDA:
+    case EstadoTransferenciaInventario.PARCIALMENTE_RECIBIDA:
       if (!transferencia.envio || recepciones.length === 0 || transferencia.cancelacion) {
         errores.push("transferencia PARCIALMENTE_RECIBIDA exige envio y recepcion");
       }
@@ -732,7 +733,7 @@ export const validarTransferenciaInventarioV2 = (
         errores.push("transferencia PARCIALMENTE_RECIBIDA exige cantidad aun en transito");
       }
       break;
-    case EstadoTransferenciaInventarioV2.RECIBIDA:
+    case EstadoTransferenciaInventario.RECIBIDA:
       if (
         !transferencia.envio ||
         recepciones.length === 0 ||
@@ -744,7 +745,7 @@ export const validarTransferenciaInventarioV2 = (
         errores.push("transferencia RECIBIDA exige recepcion total sin diferencias");
       }
       break;
-    case EstadoTransferenciaInventarioV2.CERRADA_CON_DIFERENCIA:
+    case EstadoTransferenciaInventario.CERRADA_CON_DIFERENCIA:
       if (
         !transferencia.envio ||
         transferencia.cancelacion ||
@@ -756,7 +757,7 @@ export const validarTransferenciaInventarioV2 = (
         );
       }
       break;
-    case EstadoTransferenciaInventarioV2.CANCELADA:
+    case EstadoTransferenciaInventario.CANCELADA:
       if (!transferencia.cancelacion) errores.push("transferencia CANCELADA exige cancelacion");
       if (
         transferencia.envio ||
@@ -772,10 +773,10 @@ export const validarTransferenciaInventarioV2 = (
   return { valido: errores.length === 0, errores };
 };
 
-export const assertTransferenciaInventarioV2 = (
-  transferencia: TransferenciaInventarioV2,
+export const assertTransferenciaInventario = (
+  transferencia: TransferenciaInventario,
 ): void => {
-  const validacion = validarTransferenciaInventarioV2(transferencia);
+  const validacion = validarTransferenciaInventario(transferencia);
   if (!validacion.valido) throw new Error(validacion.errores.join("; "));
 };
 
@@ -799,13 +800,13 @@ const mismos = (left: unknown, right: unknown): boolean =>
  * Valida la escritura contra la raiz vigente. Un replay byte-equivalente es
  * idempotente; cualquier cambio real debe sumar una version y una sola accion.
  */
-export const validarEvolucionTransferenciaInventarioV2 = (
-  actual: TransferenciaInventarioV2,
-  candidata: TransferenciaInventarioV2,
+export const validarEvolucionTransferenciaInventario = (
+  actual: TransferenciaInventario,
+  candidata: TransferenciaInventario,
 ): ResultadoValidacionInventario => {
   const errores: string[] = [];
-  const validaActual = validarTransferenciaInventarioV2(actual);
-  const validaCandidata = validarTransferenciaInventarioV2(candidata);
+  const validaActual = validarTransferenciaInventario(actual);
+  const validaCandidata = validarTransferenciaInventario(candidata);
   errores.push(
     ...validaActual.errores.map((error) => `actual.${error}`),
     ...validaCandidata.errores.map((error) => `candidata.${error}`),
@@ -900,18 +901,18 @@ export const validarEvolucionTransferenciaInventarioV2 = (
   return { valido: errores.length === 0, errores };
 };
 
-export const assertEvolucionTransferenciaInventarioV2 = (
-  actual: TransferenciaInventarioV2,
-  candidata: TransferenciaInventarioV2,
+export const assertEvolucionTransferenciaInventario = (
+  actual: TransferenciaInventario,
+  candidata: TransferenciaInventario,
 ): void => {
-  const resultado = validarEvolucionTransferenciaInventarioV2(actual, candidata);
+  const resultado = validarEvolucionTransferenciaInventario(actual, candidata);
   if (!resultado.valido) throw new Error(resultado.errores.join("; "));
 };
 
 const construirLineaSalida = (
-  linea: TransferenciaInventarioV2Linea,
+  linea: TransferenciaInventarioLinea,
   almacenId: string,
-): MovimientoInventarioV2Linea => ({
+): MovimientoInventarioLinea => ({
   id: `${linea.id}:salida`,
   productoBaseId: linea.productoBaseId,
   almacenId,
@@ -926,8 +927,8 @@ const construirLineaSalida = (
 });
 
 const construirConversionBaseRecepcion = (
-  linea: TransferenciaInventarioV2Linea,
-  recepcion: RecepcionTransferenciaInventarioV2Snapshot,
+  linea: TransferenciaInventarioLinea,
+  recepcion: RecepcionTransferenciaInventarioSnapshot,
 ): ConversionUnidadInventarioSnapshot => ({
   productoBaseId: linea.productoBaseId,
   unidadOperacion: linea.unidadBase,
@@ -938,13 +939,13 @@ const construirConversionBaseRecepcion = (
 });
 
 const construirEntradaRecepcion = (
-  transferencia: TransferenciaInventarioV2,
-  recepcion: RecepcionTransferenciaInventarioV2Snapshot,
-): MovimientoInventarioV2 => {
+  transferencia: TransferenciaInventario,
+  recepcion: RecepcionTransferenciaInventarioSnapshot,
+): MovimientoInventario => {
   const lineasPorId = new Map(
     transferencia.items.map((linea) => [linea.id, linea] as const),
   );
-  const items: MovimientoInventarioV2Linea[] = recepcion.items
+  const items: MovimientoInventarioLinea[] = recepcion.items
     .filter((linea) => linea.cantidadBaseAceptada > 0)
     .map((recibida) => {
       const linea = lineasPorId.get(recibida.lineaTransferenciaId)!;
@@ -965,12 +966,12 @@ const construirEntradaRecepcion = (
   return {
     id: recepcion.movimientoEntradaId,
     type: MOVIMIENTO_INVENTARIO_TYPE,
-    schemaVersion: INVENTORY_V2_SCHEMA_VERSION,
+    schemaVersion: INVENTORY_SCHEMA_VERSION,
     estado: "APLICADO",
-    tipo: TipoMovimientoInventarioV2.TRANSFERENCIA_ENTRADA,
+    tipo: TipoMovimientoInventario.TRANSFERENCIA_ENTRADA,
     almacenId: transferencia.almacenDestinoId,
     origen: {
-      tipo: OrigenMovimientoInventarioV2.TRANSFERENCIA,
+      tipo: OrigenMovimientoInventario.TRANSFERENCIA,
       documentoId: transferencia.id,
     },
     items,
@@ -988,26 +989,26 @@ const construirEntradaRecepcion = (
  * Materializa una salida total y una entrada por cada recibo. IDs y claves son
  * deterministas, por lo que reintentar la misma raiz no duplica stock.
  */
-export const construirMovimientosTransferenciaInventarioV2 = (
-  transferencia: TransferenciaInventarioV2,
-): MovimientoInventarioV2[] => {
-  assertTransferenciaInventarioV2(transferencia);
+export const construirMovimientosTransferenciaInventario = (
+  transferencia: TransferenciaInventario,
+): MovimientoInventario[] => {
+  assertTransferenciaInventario(transferencia);
   if (
-    transferencia.estado === EstadoTransferenciaInventarioV2.BORRADOR ||
-    transferencia.estado === EstadoTransferenciaInventarioV2.CANCELADA
+    transferencia.estado === EstadoTransferenciaInventario.BORRADOR ||
+    transferencia.estado === EstadoTransferenciaInventario.CANCELADA
   ) {
     return [];
   }
   const envio = transferencia.envio!;
-  const salida: MovimientoInventarioV2 = {
+  const salida: MovimientoInventario = {
     id: transferencia.movimientoSalidaId!,
     type: MOVIMIENTO_INVENTARIO_TYPE,
-    schemaVersion: INVENTORY_V2_SCHEMA_VERSION,
+    schemaVersion: INVENTORY_SCHEMA_VERSION,
     estado: "APLICADO",
-    tipo: TipoMovimientoInventarioV2.TRANSFERENCIA_SALIDA,
+    tipo: TipoMovimientoInventario.TRANSFERENCIA_SALIDA,
     almacenId: transferencia.almacenOrigenId,
     origen: {
-      tipo: OrigenMovimientoInventarioV2.TRANSFERENCIA,
+      tipo: OrigenMovimientoInventario.TRANSFERENCIA,
       documentoId: transferencia.id,
     },
     items: transferencia.items.map((linea) =>

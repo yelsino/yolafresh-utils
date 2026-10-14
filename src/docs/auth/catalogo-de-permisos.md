@@ -12,7 +12,7 @@ Fuente de verdad:
 
 ## Estado publicado
 
-`yola-fresh-utils` `2.4.0` publica `AUTH_CATALOG_VERSION` `2.2.0`. Son versiones
+`yola-fresh-utils` `2.4.2` publica `AUTH_CATALOG_VERSION` `2.3.0`. Son versiones
 independientes: la primera identifica el paquete y la segunda, la revisión del
 catálogo auth que debe viajar en snapshots y verificaciones de compatibilidad.
 

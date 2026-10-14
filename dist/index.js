@@ -24,6 +24,7 @@ __exportStar(require("./domain/shared/utils"), exports);
 __exportStar(require("./domain/shared/value-objects"), exports);
 __exportStar(require("./domain/pedido/contracts"), exports);
 __exportStar(require("./domain/ventas/contracts"), exports);
+__exportStar(require("./domain/fiscal/contracts"), exports);
 __exportStar(require("./domain/compras/contracts"), exports);
 __exportStar(require("./domain/inventario/contracts"), exports);
 __exportStar(require("./domain/inventario/services"), exports);
@@ -41,3 +42,5 @@ Object.defineProperty(exports, "VENTA_SNAPSHOT_TYPE", { enumerable: true, get: f
 Object.defineProperty(exports, "VentaSnapshot", { enumerable: true, get: function () { return entities_1.VentaSnapshot; } });
 var entities_2 = require("./domain/finanzas/entities");
 Object.defineProperty(exports, "RecurrenciaEntity", { enumerable: true, get: function () { return entities_2.RecurrenciaEntity; } });
+__exportStar(require("./domain/fiscal/contracts/configuracion-fiscal.contract"), exports);
+__exportStar(require("./domain/fiscal/contracts/configuracion-fiscal"), exports);

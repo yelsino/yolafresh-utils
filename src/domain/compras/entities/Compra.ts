@@ -18,6 +18,7 @@ import {
 } from "../contracts/compra.contract";
 import { EstadoPagoEnum } from "../../shared/kernel/enums";
 import { DateUtils } from "../../shared/utils/dates";
+import { TipoEmpaqueEnum } from "../../inventario/contracts/producto.contract";
 
 const UNIDADES_BASE_INVENTARIO_VALIDAS = new Set([
   "kilogramo",
@@ -295,8 +296,28 @@ export class Compra implements ICompra {
           throw new Error("CompraItem sin nombreItem");
         }
         if (item.afectaInventario) {
-          if (!String(item.presentacionId ?? "").trim()) {
-            throw new Error("CompraItem inventariable sin presentacionId");
+          if (item.tipoPresentacionCompra === "PERSONALIZADA") {
+            if (item.presentacionId !== undefined || item.versionConversion !== undefined) {
+              throw new Error("CompraItem personalizado no admite presentacionId ni versionConversion");
+            }
+            if (!Object.values(TipoEmpaqueEnum).includes(item.productoEmpaque)) {
+              throw new Error("CompraItem personalizado con productoEmpaque inválido");
+            }
+          } else {
+            if (item.tipoPresentacionCompra !== undefined) {
+              throw new Error("CompraItem inventariable con tipoPresentacionCompra inválido");
+            }
+            if (!String(item.presentacionId ?? "").trim()) {
+              throw new Error("CompraItem inventariable sin presentacionId");
+            }
+            if (
+              !Number.isSafeInteger(item.versionConversion) ||
+              item.versionConversion < 1
+            ) {
+              throw new Error(
+                "CompraItem inventariable con versionConversion inválida: debe ser un entero seguro positivo",
+              );
+            }
           }
           if (!String(item.productoBaseId ?? "").trim()) {
             throw new Error("CompraItem inventariable sin productoBaseId");
@@ -316,14 +337,6 @@ export class Compra implements ICompra {
           ) {
             throw new Error(
               "CompraItem inventariable con unidadBaseInventario inválida",
-            );
-          }
-          if (
-            !Number.isSafeInteger(item.versionConversion) ||
-            item.versionConversion < 1
-          ) {
-            throw new Error(
-              "CompraItem inventariable con versionConversion inválida: debe ser un entero seguro positivo",
             );
           }
         }

@@ -1,14 +1,14 @@
 import type { UnixMillis } from "../../shared/utils/dates";
 import type {
-  InventoryV2SchemaVersion,
-  UnidadBaseInventarioV2,
-} from "./inventory-quantity-v2.contract";
+  InventorySchemaVersion,
+  UnidadBaseInventario,
+} from "./inventory-quantity.contract";
 
 export const STOCK_PRODUCTO_BASE_ALMACEN_TYPE =
   "stock_producto_base_almacen" as const;
 
 /**
- * Proyección reconstruible del ledger V2.
+ * Proyección reconstruible del ledger.
  *
  * La clave lógica es exclusivamente `productoBaseId + almacenId`. La presentación
  * usada para comprar o vender no crea otro saldo físico.
@@ -16,11 +16,11 @@ export const STOCK_PRODUCTO_BASE_ALMACEN_TYPE =
 export interface StockProductoBaseAlmacen {
   id: string;
   type: typeof STOCK_PRODUCTO_BASE_ALMACEN_TYPE;
-  schemaVersion: InventoryV2SchemaVersion;
+  schemaVersion: InventorySchemaVersion;
 
   productoBaseId: string;
   almacenId: string;
-  unidadBase: UnidadBaseInventarioV2;
+  unidadBase: UnidadBaseInventario;
 
   cantidadFisicaBase: number;
   cantidadReservadaBase: number;

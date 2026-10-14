@@ -116,15 +116,32 @@ export interface CompraItemBase {
   fechaVencimiento?: string;
 }
 
-export interface CompraItemInventariable extends CompraItemBase {
+interface CompraItemInventariableBase extends CompraItemBase {
   afectaInventario: true;
-  presentacionId: string;
   productoBaseId: string;
   factorUnidadBase: number;
   unidadBaseInventario: UnidadBaseInterna;
+}
+
+/** Una presentación de catálogo ya existente; los documentos históricos omiten el discriminante. */
+export interface CompraItemInventariableCatalogo extends CompraItemInventariableBase {
+  tipoPresentacionCompra?: undefined;
+  presentacionId: string;
   /** Entero seguro positivo de la conversión congelada al capturar el item. */
   versionConversion: number;
 }
+
+/** Empaque físico capturado solo para esta compra, sin alta en el catálogo. */
+export interface CompraItemInventariablePersonalizada extends CompraItemInventariableBase {
+  tipoPresentacionCompra: "PERSONALIZADA";
+  presentacionId?: undefined;
+  versionConversion?: undefined;
+  productoEmpaque: TipoEmpaqueEnum;
+}
+
+export type CompraItemInventariable =
+  | CompraItemInventariableCatalogo
+  | CompraItemInventariablePersonalizada;
 
 export interface CompraItemNoInventariable extends CompraItemBase {
   afectaInventario: false;
@@ -137,11 +154,19 @@ export interface CompraItemNoInventariable extends CompraItemBase {
 
 /**
  * Una línea que afecta stock congela obligatoriamente la identidad y conversión
- * física completas: presentación, producto base, factor, unidad base y versión.
+ * física completas. La presentación catalogada congela su ID y versión; un
+ * empaque personalizado congela su tipo y factor sin simular una presentación.
  * Servicios/gastos (`afectaInventario=false`) pueden omitir esos campos sin
  * inventar una identidad física.
  */
 export type CompraItem = CompraItemInventariable | CompraItemNoInventariable;
+
+/** Discriminante de una línea inventariable ya tipada; no sustituye la validación de Compra. */
+export const esCompraItemInventariablePersonalizada = (
+  item: CompraItem,
+): item is CompraItemInventariablePersonalizada =>
+  item.afectaInventario === true &&
+  item.tipoPresentacionCompra === "PERSONALIZADA";
 
 export interface CompraEgresoRef {
   egresoId: string;

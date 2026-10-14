@@ -8,7 +8,7 @@ import {
   EstadoAprobacionInventario,
   EstadoConteoInventario,
   EstadoLineaConteoInventario,
-  INVENTORY_V2_SCHEMA_VERSION,
+  INVENTORY_SCHEMA_VERSION,
   MERMA_INVENTARIO_TYPE,
   MOVIMIENTO_INVENTARIO_TYPE,
   MOVIMIENTO_INVENTARIO_V2_TYPE,
@@ -16,16 +16,16 @@ import {
   MotivoMermaInventario,
   NivelPoliticaInventario,
   OrigenAjusteInventario,
-  OrigenMovimientoInventarioV2,
+  OrigenMovimientoInventario,
   POLITICA_INVENTARIO_TYPE,
   TipoCapturaConteoInventario,
   TipoConteoInventario,
-  TipoMovimientoInventarioV2,
-  UnidadBaseInventarioV2,
+  TipoMovimientoInventario,
+  UnidadBaseInventario,
   calcularDiferenciaConteo,
   calcularStockDisponibleBase,
   construirIdStockProductoBaseAlmacen,
-  construirIdMovimientoMermaInventarioV2,
+  construirIdMovimientoMermaInventario,
   convertirCantidadAUnidadBase,
   resolverPoliticaInventario,
   validarAjusteInventario,
@@ -33,17 +33,19 @@ import {
   validarConteoInventarioLinea,
   validarConversionInventario,
   validarMermaInventario,
-  validarMovimientoInventarioV2,
+  validarMovimientoInventario,
   validarPoliticaInventario,
   type ActorInventarioSnapshot,
   type AjusteInventario,
+  type AsignacionRecepcionCompra,
   type ConteoInventario,
   type ConteoInventarioLinea,
   type ConversionUnidadInventarioSnapshot,
   type MermaInventario,
-  type MovimientoInventarioV2,
+  type MovimientoInventario,
   type AlcancePoliticaInventario,
   type PoliticaInventario,
+  type RecepcionMercaderiaItem,
 } from "../index";
 
 const ahora = 1_786_800_000_000;
@@ -57,10 +59,18 @@ const conversion: ConversionUnidadInventarioSnapshot = {
   productoBaseId: "producto_arroz",
   presentacionId: "presentacion_saco_3kg",
   unidadOperacion: "saco",
-  unidadBase: UnidadBaseInventarioV2.KILOGRAMO,
+  unidadBase: UnidadBaseInventario.KILOGRAMO,
   factorUnidadBase: 3,
   precisionCantidadBase: 3,
   versionConversion: 2,
+  capturadaAt: ahora,
+};
+const conversionUnidad: ConversionUnidadInventarioSnapshot = {
+  productoBaseId: "producto_arroz",
+  unidadOperacion: UnidadBaseInventario.UNIDAD,
+  unidadBase: UnidadBaseInventario.UNIDAD,
+  factorUnidadBase: 1,
+  precisionCantidadBase: 0,
   capturadaAt: ahora,
 };
 
@@ -71,7 +81,7 @@ const buildPolitica = (
 ): PoliticaInventario => ({
   id,
   type: POLITICA_INVENTARIO_TYPE,
-  schemaVersion: INVENTORY_V2_SCHEMA_VERSION,
+  schemaVersion: INVENTORY_SCHEMA_VERSION,
   alcance,
   configuracion: { modo },
   activa: true,
@@ -83,15 +93,15 @@ const buildPolitica = (
   updatedAt: ahora,
 });
 
-const buildMovimiento = (): MovimientoInventarioV2 => ({
+const buildMovimiento = (): MovimientoInventario => ({
   id: "movimiento_001",
   type: MOVIMIENTO_INVENTARIO_TYPE,
-  schemaVersion: INVENTORY_V2_SCHEMA_VERSION,
+  schemaVersion: INVENTORY_SCHEMA_VERSION,
   estado: "APLICADO",
-  tipo: TipoMovimientoInventarioV2.SALIDA,
+  tipo: TipoMovimientoInventario.SALIDA,
   almacenId: "almacen_001",
   origen: {
-    tipo: OrigenMovimientoInventarioV2.VENTA,
+    tipo: OrigenMovimientoInventario.VENTA,
     documentoId: "venta_001",
   },
   items: [{
@@ -101,7 +111,7 @@ const buildMovimiento = (): MovimientoInventarioV2 => ({
     cantidadOperacion: 2,
     conversionSnapshot: conversion,
     cantidadBaseDelta: -6,
-    unidadBase: UnidadBaseInventarioV2.KILOGRAMO,
+    unidadBase: UnidadBaseInventario.KILOGRAMO,
   }],
   operationId: "operacion_001",
   idempotencyKey: "venta_001:inventario",
@@ -129,8 +139,8 @@ test("convierte cantidades comerciales usando el snapshot congelado", () => {
 test("conversión física exige versión segura con presentación y admite captura base sin versión", () => {
   const directaBase: ConversionUnidadInventarioSnapshot = {
     productoBaseId: "producto_arroz",
-    unidadOperacion: UnidadBaseInventarioV2.KILOGRAMO,
-    unidadBase: UnidadBaseInventarioV2.KILOGRAMO,
+    unidadOperacion: UnidadBaseInventario.KILOGRAMO,
+    unidadBase: UnidadBaseInventario.KILOGRAMO,
     factorUnidadBase: 1,
     precisionCantidadBase: 3,
     capturadaAt: ahora,
@@ -163,6 +173,79 @@ test("conversión física exige versión segura con presentación y admite captu
     validarConversionInventario(baseConVersionInventada).errores.join(" "),
     /no aplica sin presentacionId/,
   );
+});
+
+test("solo un empaque de compra explícito convierte una bolsa en 90 unidades sin presentación", () => {
+  const bolsa: ConversionUnidadInventarioSnapshot = {
+    origenConversion: "EMPAQUE_COMPRA",
+    productoBaseId: "3e19bc35-f8ec-43f3-970f-4360d819d7e7",
+    unidadOperacion: "bolsa",
+    unidadBase: UnidadBaseInventario.UNIDAD,
+    factorUnidadBase: 90,
+    precisionCantidadBase: 0,
+    capturadaAt: ahora,
+  };
+  assert.equal(validarConversionInventario(bolsa).valido, true);
+  assert.equal(convertirCantidadAUnidadBase(2, bolsa), 180);
+
+  const sinOrigen = { ...bolsa, origenConversion: undefined } as unknown as ConversionUnidadInventarioSnapshot;
+  assert.match(
+    validarConversionInventario(sinOrigen).errores.join(" "),
+    /captura directa en unidad base con factor 1/,
+  );
+  for (const [changes, message] of [
+    [{ presentacionId: "catalogo-existente" }, /no admite presentacionId/],
+    [{ versionConversion: 1 }, /no admite versionConversion/],
+    [{ origenConversion: "DESCONOCIDA" }, /origenConversion es inválido/],
+    [{ unidadOperacion: "" }, /unidadOperacion es requerida/],
+    [{ factorUnidadBase: 0 }, /factorUnidadBase debe ser mayor a 0/],
+  ] as const) {
+    const invalida = { ...bolsa, ...changes } as unknown as ConversionUnidadInventarioSnapshot;
+    assert.match(validarConversionInventario(invalida).errores.join(" "), message);
+  }
+
+  const movimiento = buildMovimiento();
+  const entrada: MovimientoInventario = {
+    ...movimiento,
+    tipo: TipoMovimientoInventario.ENTRADA,
+    origen: { tipo: OrigenMovimientoInventario.COMPRA, documentoId: "compra-opaca" },
+    items: [{
+      ...movimiento.items[0],
+      productoBaseId: bolsa.productoBaseId,
+      cantidadOperacion: 1,
+      cantidadBaseDelta: 90,
+      unidadBase: UnidadBaseInventario.UNIDAD,
+      conversionSnapshot: bolsa,
+    }],
+  };
+  assert.equal(validarMovimientoInventario(entrada).valido, true);
+});
+
+test("recepción y asignación identifican el empaque personalizado por línea de compra", () => {
+  const legacy: RecepcionMercaderiaItem = {
+    presentacionId: "presentacion-catalogo-opaca",
+    cantidadRecibida: 1,
+  };
+  const personalizada: RecepcionMercaderiaItem = {
+    tipoPresentacionCompra: "PERSONALIZADA",
+    compraId: "compra-opaca",
+    compraItemId: "linea-opaca",
+    cantidadRecibida: 1,
+  };
+  const asignacion: AsignacionRecepcionCompra = {
+    id: "asignacion-opaca",
+    recepcionMercaderiaId: "recepcion-opaca",
+    compraId: personalizada.compraId!,
+    compraItemId: personalizada.compraItemId!,
+    tipoPresentacionCompra: "PERSONALIZADA",
+    cantidadAsignada: 1,
+    createdAt: ahora,
+    updatedAt: ahora,
+  };
+  assert.equal(legacy.presentacionId, "presentacion-catalogo-opaca");
+  assert.equal(personalizada.presentacionId, undefined);
+  assert.equal(asignacion.compraItemId, personalizada.compraItemId);
+  assert.equal(asignacion.presentacionId, undefined);
 });
 
 test("stock se identifica por producto base y almacén", () => {
@@ -207,12 +290,73 @@ test("política aplica precedencia producto y almacén sobre empresa", () => {
   });
   assert.equal(resuelta.modo, ModoControlInventario.SIN_CONTROL);
   assert.equal(resuelta.registrarMovimientos, false);
+  assert.deepEqual(resuelta.fuentesVersionadasAplicadas, politicas.map((politica) => ({
+    politicaId: politica.id,
+    version: politica.version,
+  })));
+});
+
+test("stock mínimo solo admite alcance de producto y conserva la precedencia por almacén", () => {
+  const scope = {
+    empresaId: "empresa_001",
+    productoBaseId: "producto_arroz",
+  };
+  const product = buildPolitica(
+    "policy-product-opaque",
+    { nivel: NivelPoliticaInventario.PRODUCTO, ...scope },
+    ModoControlInventario.FLEXIBLE,
+  );
+  product.configuracion.stockMinimoBase = 10;
+  const warehouse = buildPolitica(
+    "policy-product-warehouse-opaque",
+    {
+      nivel: NivelPoliticaInventario.PRODUCTO_ALMACEN,
+      ...scope,
+      almacenId: "almacen_001",
+    },
+    ModoControlInventario.FLEXIBLE,
+  );
+  warehouse.configuracion.stockMinimoBase = 4.5;
+  const company = buildPolitica(
+    "policy-company-opaque",
+    { nivel: NivelPoliticaInventario.EMPRESA, empresaId: "empresa_001" },
+    ModoControlInventario.FLEXIBLE,
+  );
+  company.configuracion.stockMinimoBase = 2;
+
+  assert.equal(validarPoliticaInventario(product).valido, true);
+  assert.equal(validarPoliticaInventario(warehouse).valido, true);
+  assert.match(
+    validarPoliticaInventario(company).errores.join(" "),
+    /stockMinimoBase requiere alcance de producto/,
+  );
+  assert.equal(
+    resolverPoliticaInventario([product, warehouse], {
+      ...scope,
+      almacenId: "almacen_001",
+    }).stockMinimoBase,
+    4.5,
+  );
+  assert.equal(
+    resolverPoliticaInventario([product, warehouse], {
+      ...scope,
+      almacenId: "almacen_002",
+    }).stockMinimoBase,
+    10,
+  );
+  assert.equal(
+    validarPoliticaInventario({
+      ...warehouse,
+      configuracion: { ...warehouse.configuracion, stockMinimoBase: -1 },
+    }).valido,
+    false,
+  );
 });
 
 test("movimiento aplicado exige idempotencia, conversión y signo coherente", () => {
   const movimiento = buildMovimiento();
-  assert.equal(validarMovimientoInventarioV2(movimiento).valido, true);
-  const errores = validarMovimientoInventarioV2({
+  assert.equal(validarMovimientoInventario(movimiento).valido, true);
+  const errores = validarMovimientoInventario({
     ...movimiento,
     idempotencyKey: "",
     items: [{ ...movimiento.items[0], cantidadBaseDelta: 6 }],
@@ -221,9 +365,28 @@ test("movimiento aplicado exige idempotencia, conversión y signo coherente", ()
   assert.match(errores, /signo incompatible/);
 });
 
+test("validar movimientos no equipara una unidad entera con cero a precisión cero", () => {
+  const movimiento = buildMovimiento();
+  const linea = {
+    ...movimiento.items[0],
+    unidadBase: UnidadBaseInventario.UNIDAD,
+    cantidadOperacion: 1,
+    cantidadBaseDelta: -1,
+    conversionSnapshot: conversionUnidad,
+  };
+  assert.equal(validarMovimientoInventario({ ...movimiento, items: [linea] }).valido, true);
+  assert.match(
+    validarMovimientoInventario({
+      ...movimiento,
+      items: [{ ...linea, cantidadBaseDelta: -2 }],
+    }).errores.join(" "),
+    /cantidadBaseDelta no coincide con la conversión/,
+  );
+});
+
 test("movimiento físico no acepta una presentación sin versión de conversión", () => {
   const movimiento = buildMovimiento();
-  const sinVersion: MovimientoInventarioV2 = {
+  const sinVersion: MovimientoInventario = {
     ...movimiento,
     items: [{
       ...movimiento.items[0],
@@ -235,11 +398,11 @@ test("movimiento físico no acepta una presentación sin versión de conversión
   };
 
   assert.match(
-    validarMovimientoInventarioV2(sinVersion).errores.join(" "),
+    validarMovimientoInventario(sinVersion).errores.join(" "),
     /versionConversion.*requerida/,
   );
 
-  const directoBase: MovimientoInventarioV2 = {
+  const directoBase: MovimientoInventario = {
     ...movimiento,
     items: [{
       ...movimiento.items[0],
@@ -247,26 +410,26 @@ test("movimiento físico no acepta una presentación sin versión de conversión
       cantidadBaseDelta: -6,
       conversionSnapshot: {
         productoBaseId: "producto_arroz",
-        unidadOperacion: UnidadBaseInventarioV2.KILOGRAMO,
-        unidadBase: UnidadBaseInventarioV2.KILOGRAMO,
+        unidadOperacion: UnidadBaseInventario.KILOGRAMO,
+        unidadBase: UnidadBaseInventario.KILOGRAMO,
         factorUnidadBase: 1,
         precisionCantidadBase: 3,
         capturadaAt: ahora,
       },
     }],
   };
-  assert.equal(validarMovimientoInventarioV2(directoBase).valido, true);
+  assert.equal(validarMovimientoInventario(directoBase).valido, true);
 });
 
 test("conteo guarda cabecera y líneas separadas con cero permitido", () => {
   const linea: ConteoInventarioLinea = {
     id: "conteo_001:producto_arroz",
     type: CONTEO_INVENTARIO_LINEA_TYPE,
-    schemaVersion: INVENTORY_V2_SCHEMA_VERSION,
+    schemaVersion: INVENTORY_SCHEMA_VERSION,
     conteoId: "conteo_001",
     productoBaseId: "producto_arroz",
     almacenId: "almacen_001",
-    unidadBase: UnidadBaseInventarioV2.KILOGRAMO,
+    unidadBase: UnidadBaseInventario.KILOGRAMO,
     cantidadTeoricaBaseAlCorte: 3,
     versionProyeccionAlCorte: 1,
     capturas: [{
@@ -290,7 +453,7 @@ test("conteo guarda cabecera y líneas separadas con cero permitido", () => {
   const conteo: ConteoInventario = {
     id: "conteo_001",
     type: CONTEO_INVENTARIO_TYPE,
-    schemaVersion: INVENTORY_V2_SCHEMA_VERSION,
+    schemaVersion: INVENTORY_SCHEMA_VERSION,
     tipoConteo: TipoConteoInventario.CICLICO,
     estado: EstadoConteoInventario.EN_REVISION,
     empresaId: "empresa_001",
@@ -309,13 +472,56 @@ test("conteo guarda cabecera y líneas separadas con cero permitido", () => {
   assert.equal(validarConteoInventarioLinea(linea).valido, true);
   assert.equal(validarConteoInventario(conteo).valido, true);
   assert.equal("lineas" in conteo, false);
+  const conEvidencia: ConteoInventarioLinea = {
+    ...linea,
+    estado: EstadoLineaConteoInventario.VALIDADA,
+    revisadaPor: actor,
+    revisadaAt: ahora,
+    evaluacionAprobacion: {
+      capturaId: "captura_001",
+      versionProyeccionAlCorte: 1,
+      evaluadaAt: ahora,
+      politica: {
+        toleranciaCantidadBase: 2,
+        toleranciaPorcentaje: 0,
+        requiereAprobacionAjuste: false,
+      },
+      fuentes: [{ politicaId: "politica_empresa", version: 1 }],
+      diferenciaValorPEN: null,
+      requiereAprobacion: true,
+      motivos: ["QUANTITY_TOLERANCE"],
+    },
+  };
+  assert.equal(validarConteoInventarioLinea(conEvidencia).valido, true);
+  assert.match(
+    validarConteoInventarioLinea({
+      ...conEvidencia,
+      evaluacionAprobacion: {
+        ...conEvidencia.evaluacionAprobacion!,
+        capturaId: "otra-captura",
+      },
+    }).errores.join(" "),
+    /no corresponde al conteo vigente/,
+  );
+  const conteoUnidad: ConteoInventarioLinea = {
+    ...linea,
+    unidadBase: UnidadBaseInventario.UNIDAD,
+    cantidadTeoricaBaseAlCorte: 1,
+    capturas: [{ ...linea.capturas[0], conversionSnapshot: conversionUnidad }],
+    cantidadContadaBase: 1,
+    diferenciaBase: -1,
+  };
+  assert.match(
+    validarConteoInventarioLinea(conteoUnidad).errores.join(" "),
+    /cantidadContadaBase no coincide con la captura vigente/,
+  );
 });
 
 test("ajuste y merma aplicados exigen su movimiento resultante", () => {
   const ajuste: AjusteInventario = {
     id: "ajuste_001",
     type: AJUSTE_INVENTARIO_TYPE,
-    schemaVersion: INVENTORY_V2_SCHEMA_VERSION,
+    schemaVersion: INVENTORY_SCHEMA_VERSION,
     estado: EstadoAprobacionInventario.APLICADO,
     origen: OrigenAjusteInventario.CONTEO,
     empresaId: "empresa_001",
@@ -323,7 +529,7 @@ test("ajuste y merma aplicados exigen su movimiento resultante", () => {
     conteoInventarioId: "conteo_001",
     lineas: [{
       id: "ajuste_linea_001", productoBaseId: "producto_arroz",
-      almacenId: "almacen_001", unidadBase: UnidadBaseInventarioV2.KILOGRAMO,
+      almacenId: "almacen_001", unidadBase: UnidadBaseInventario.KILOGRAMO,
       conversionSnapshot: conversion, cantidadTeoricaBase: 3,
       cantidadObjetivoBase: 0, cantidadBaseDelta: -3,
       motivoCodigo: "DIFERENCIA_CONTEO",
@@ -341,13 +547,13 @@ test("ajuste y merma aplicados exigen su movimiento resultante", () => {
   const merma: MermaInventario = {
     id: "merma_001",
     type: MERMA_INVENTARIO_TYPE,
-    schemaVersion: INVENTORY_V2_SCHEMA_VERSION,
+    schemaVersion: INVENTORY_SCHEMA_VERSION,
     estado: EstadoAprobacionInventario.APLICADO,
     empresaId: "empresa_001",
     almacenId: "almacen_001",
     lineas: [{
       id: "merma_linea_001", productoBaseId: "producto_arroz",
-      almacenId: "almacen_001", unidadBase: UnidadBaseInventarioV2.KILOGRAMO,
+      almacenId: "almacen_001", unidadBase: UnidadBaseInventario.KILOGRAMO,
       cantidadOperacion: 1, cantidadBase: 3,
       conversionSnapshot: conversion, motivo: MotivoMermaInventario.DETERIORO,
     }],
@@ -387,12 +593,39 @@ test("ajuste y merma aplicados exigen su movimiento resultante", () => {
       solicitadoPor: actor, solicitadoAt: ahora + 1,
       aprobadoPor: actor, aprobadoAt: ahora + 2,
     },
-    movimientoInventarioId: construirIdMovimientoMermaInventarioV2("merma_001"),
+    movimientoInventarioId: construirIdMovimientoMermaInventario("merma_001"),
     createdAt: ahora,
     updatedAt: ahora + 3,
   };
   assert.equal(validarAjusteInventario(ajuste).valido, true);
   assert.equal(validarMermaInventario(merma).valido, true);
+  assert.match(
+    validarAjusteInventario({
+      ...ajuste,
+      lineas: [{
+        ...ajuste.lineas[0],
+        unidadBase: UnidadBaseInventario.UNIDAD,
+        conversionSnapshot: conversionUnidad,
+        cantidadTeoricaBase: 1,
+        cantidadObjetivoBase: 0,
+        cantidadBaseDelta: -2,
+      }],
+    }).errores.join(" "),
+    /cantidadBaseDelta no concilia con el objetivo/,
+  );
+  assert.match(
+    validarMermaInventario({
+      ...merma,
+      lineas: [{
+        ...merma.lineas[0],
+        unidadBase: UnidadBaseInventario.UNIDAD,
+        conversionSnapshot: conversionUnidad,
+        cantidadOperacion: 1,
+        cantidadBase: 2,
+      }],
+    }).errores.join(" "),
+    /cantidadBase no coincide con la conversión/,
+  );
   assert.equal(
     validarMermaInventario({ ...merma, movimientoInventarioId: undefined }).valido,
     false,

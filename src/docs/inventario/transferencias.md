@@ -2,12 +2,12 @@
 
 ## Decisión de dominio
 
-`TransferenciaInventarioV2` es la raíz canónica con
+`TransferenciaInventario` es la raíz canónica con
 `type: "transferencia_inventario_v2"`. Sus cantidades se expresan y concilian
 en unidad base.
 
 La transferencia representa una orden y su ciclo de custodia. Solo
-`MovimientoInventarioV2` modifica stock:
+`MovimientoInventario` modifica stock:
 
 1. `BORRADOR`: no modifica stock;
 2. `ENVIADA`: produce una única `TRANSFERENCIA_SALIDA` por el total despachado;
@@ -62,7 +62,7 @@ La raíz comienza con `version: 1`. Envío, cada recibo, cierre por diferencia o
 cancelación agregan exactamente una versión. Toda acción posterior a crear
 lleva `expectedVersion`.
 
-`validarEvolucionTransferenciaInventarioV2(actual, candidata)` exige:
+`validarEvolucionTransferenciaInventario(actual, candidata)` exige:
 
 - replay idéntico para repetir la misma versión;
 - incremento exacto de una versión para una mutación real;
@@ -81,7 +81,7 @@ Los IDs físicos también son deterministas:
 - una salida por transferencia;
 - una entrada por `transferenciaId + recepcionId`.
 
-`construirMovimientosTransferenciaInventarioV2` es puro y materializa todos los
+`construirMovimientosTransferenciaInventario` es puro y materializa todos los
 hechos exigidos por la versión validada. El consumer persiste raíz, movimiento y
 proyecciones en una transacción SQLite y publica el conjunto con barrera causal.
 
@@ -105,6 +105,6 @@ cantidades por presentación sin evidencia de conversión.
 
 ## Referencias internas
 
-- [transferencia-inventario-v2.contract.ts](../../domain/inventario/contracts/transferencia-inventario-v2.contract.ts)
-- [inventory-transfer-v2.helpers.ts](../../domain/inventario/services/inventory-transfer-v2.helpers.ts)
-- [politicas-y-mermas-v2.md](./politicas-y-mermas-v2.md)
+- [transferencia-inventario.contract.ts](../../domain/inventario/contracts/transferencia-inventario.contract.ts)
+- [inventory-transfer.helpers.ts](../../domain/inventario/services/inventory-transfer.helpers.ts)
+- [politicas-y-mermas.md](./politicas-y-mermas.md)
