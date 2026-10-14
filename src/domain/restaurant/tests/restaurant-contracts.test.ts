@@ -472,7 +472,7 @@ test("cuenta usa unidades minimas y rechaza sobrepago", () => {
   );
 });
 
-test("modificadores validan minimos, maximos y repeticion", () => {
+test("modificadores opcionales validan limites solo al ser seleccionados", () => {
   const groups = [
     {
       id: "coccion",
@@ -493,7 +493,7 @@ test("modificadores validan minimos, maximos y repeticion", () => {
       ],
     },
   ];
-  assert.equal(validarModificadoresRestaurante(groups, []).valid, false);
+  assert.equal(validarModificadoresRestaurante(groups, []).valid, true);
   assert.equal(
     validarModificadoresRestaurante(groups, [
       {
@@ -506,6 +506,19 @@ test("modificadores validan minimos, maximos y repeticion", () => {
       },
     ]).valid,
     true,
+  );
+  assert.equal(
+    validarModificadoresRestaurante(groups, [
+      {
+        grupoId: "coccion",
+        opcionId: "medio",
+        grupoNombre: "Termino",
+        opcionNombre: "Medio",
+        cantidad: 2,
+        precioExtraUnitario: dineroRestaurante(0),
+      },
+    ]).valid,
+    false,
   );
 });
 

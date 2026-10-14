@@ -38,14 +38,19 @@ export const PERMISOS_CRITICOS: Permisos[] = [
   Permisos.RESTAURANTE_CUENTA_COBRAR,
 ];
 
-export const CARGOS_ROLES_SUGERIDOS: Record<CargosPersonal, RolesPredefinidos[]> = {
+export const CARGOS_ROLES_SUGERIDOS: Record<
+  CargosPersonal,
+  RolesPredefinidos[]
+> = {
   [CargosPersonal.ADMINISTRADOR]: [RolesPredefinidos.ADMIN],
   [CargosPersonal.SUPERVISOR]: [RolesPredefinidos.SUPERVISOR],
   [CargosPersonal.OPERADOR_ATENCION_COMERCIAL]: [
     RolesPredefinidos.VENTAS,
     RolesPredefinidos.CAJERO,
   ],
-  [CargosPersonal.ASISTENTE_OPERACIONES_COMERCIALES]: [RolesPredefinidos.OPERACIONES],
+  [CargosPersonal.ASISTENTE_OPERACIONES_COMERCIALES]: [
+    RolesPredefinidos.OPERACIONES,
+  ],
   [CargosPersonal.ENCARGADO_COMPRAS]: [RolesPredefinidos.COMPRAS],
   [CargosPersonal.ENCARGADO_INVENTARIO]: [RolesPredefinidos.INVENTARIO],
   [CargosPersonal.ENCARGADO_ALMACEN]: [
@@ -60,7 +65,10 @@ export const CARGOS_ROLES_SUGERIDOS: Record<CargosPersonal, RolesPredefinidos[]>
     RolesPredefinidos.FINANZAS,
     RolesPredefinidos.SOLO_LECTURA,
   ],
-  [CargosPersonal.CONTADOR]: [RolesPredefinidos.CONTADOR, RolesPredefinidos.FINANZAS],
+  [CargosPersonal.CONTADOR]: [
+    RolesPredefinidos.CONTADOR,
+    RolesPredefinidos.FINANZAS,
+  ],
   [CargosPersonal.AUDITOR]: [RolesPredefinidos.AUDITOR],
   [CargosPersonal.SOPORTE_TECNICO]: [RolesPredefinidos.SOPORTE_TECNICO],
   [CargosPersonal.SECRETARIO]: [RolesPredefinidos.SOLO_LECTURA],
@@ -73,7 +81,9 @@ export const CARGOS_ROLES_SUGERIDOS: Record<CargosPersonal, RolesPredefinidos[]>
   [CargosPersonal.CAPITAN_SALON]: [RolesPredefinidos.GASTRONOMIA_CAPITAN_SALON],
   [CargosPersonal.COCINERO]: [RolesPredefinidos.GASTRONOMIA_COCINERO],
   [CargosPersonal.JEFE_COCINA]: [RolesPredefinidos.GASTRONOMIA_JEFE_COCINA],
-  [CargosPersonal.BARTENDER_ENCARGADO_BARRA]: [RolesPredefinidos.GASTRONOMIA_BARRA],
+  [CargosPersonal.BARTENDER_ENCARGADO_BARRA]: [
+    RolesPredefinidos.GASTRONOMIA_BARRA,
+  ],
   [CargosPersonal.REPARTIDOR]: [],
 };
 
@@ -88,7 +98,8 @@ export const CONFIGURACIONES_ROLES: Record<
   },
   [RolesPredefinidos.SUPERVISOR]: {
     nombre: RolesPredefinidos.SUPERVISOR,
-    descripcion: "Supervision operativa con control de ventas, caja, inventario y reportes",
+    descripcion:
+      "Supervision operativa con control de ventas, caja, inventario y reportes",
     permisos: [
       ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
@@ -237,7 +248,8 @@ export const CONFIGURACIONES_ROLES: Record<
   },
   [RolesPredefinidos.INVENTARIO]: {
     nombre: RolesPredefinidos.INVENTARIO,
-    descripcion: "Control de stock, ajustes, mermas, almacenes y transferencias",
+    descripcion:
+      "Control de stock, ajustes, mermas, almacenes y transferencias",
     permisos: [
       ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
@@ -266,7 +278,8 @@ export const CONFIGURACIONES_ROLES: Record<
   },
   [RolesPredefinidos.COMPRAS]: {
     nombre: RolesPredefinidos.COMPRAS,
-    descripcion: "Abastecimiento, proveedores, costos y recepcion de mercaderia",
+    descripcion:
+      "Abastecimiento, proveedores, costos y recepcion de mercaderia",
     permisos: [
       ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
@@ -325,7 +338,8 @@ export const CONFIGURACIONES_ROLES: Record<
   },
   [RolesPredefinidos.VENDEDOR]: {
     nombre: RolesPredefinidos.VENDEDOR,
-    descripcion: "Rol legacy para apps antiguas; equivalente funcional a ventas",
+    descripcion:
+      "Rol legacy para apps antiguas; equivalente funcional a ventas",
     permisos: [
       ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
@@ -346,7 +360,8 @@ export const CONFIGURACIONES_ROLES: Record<
   },
   [RolesPredefinidos.CONTADOR]: {
     nombre: RolesPredefinidos.CONTADOR,
-    descripcion: "Revision contable y financiera con acceso a exportaciones y reportes",
+    descripcion:
+      "Revision contable y financiera con acceso a exportaciones y reportes",
     permisos: [
       ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
@@ -382,7 +397,8 @@ export const CONFIGURACIONES_ROLES: Record<
   },
   [RolesPredefinidos.AUDITOR]: {
     nombre: RolesPredefinidos.AUDITOR,
-    descripcion: "Revision de historial, auditoria y acciones sensibles sin operacion directa",
+    descripcion:
+      "Revision de historial, auditoria y acciones sensibles sin operacion directa",
     permisos: [
       ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
@@ -409,7 +425,8 @@ export const CONFIGURACIONES_ROLES: Record<
   },
   [RolesPredefinidos.SOPORTE_TECNICO]: {
     nombre: RolesPredefinidos.SOPORTE_TECNICO,
-    descripcion: "Soporte tecnico, dispositivos, impresoras y configuracion operativa",
+    descripcion:
+      "Soporte tecnico, dispositivos, impresoras y configuracion operativa",
     permisos: [
       ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
@@ -435,7 +452,8 @@ export const CONFIGURACIONES_ROLES: Record<
   },
   [RolesPredefinidos.SOLO_LECTURA]: {
     nombre: RolesPredefinidos.SOLO_LECTURA,
-    descripcion: "Consulta autorizada sin crear, editar, anular ni aprobar registros",
+    descripcion:
+      "Consulta autorizada sin crear, editar, anular ni aprobar registros",
     permisos: [
       ...PERMISOS_IMPRESORAS_USO_UNIVERSAL,
       Permisos.DASHBOARD_VER,
@@ -480,8 +498,10 @@ export const CONFIGURACIONES_ROLES: Record<
       Permisos.RESTAURANTE_PEDIDO_VER,
       Permisos.RESTAURANTE_PEDIDO_EDITAR,
       Permisos.RESTAURANTE_RONDA_ENVIAR,
+      Permisos.RESTAURANTE_RONDA_REIMPRIMIR,
       Permisos.RESTAURANTE_ENTREGA_CONFIRMAR,
       Permisos.RESTAURANTE_CUENTA_VER,
+      Permisos.RESTAURANTE_CUENTA_EMITIR_PRECUENTA,
     ],
   },
   [RolesPredefinidos.GASTRONOMIA_CAPITAN_SALON]: {
@@ -497,8 +517,10 @@ export const CONFIGURACIONES_ROLES: Record<
       Permisos.RESTAURANTE_PEDIDO_VER,
       Permisos.RESTAURANTE_PEDIDO_EDITAR,
       Permisos.RESTAURANTE_RONDA_ENVIAR,
+      Permisos.RESTAURANTE_RONDA_REIMPRIMIR,
       Permisos.RESTAURANTE_ENTREGA_CONFIRMAR,
       Permisos.RESTAURANTE_CUENTA_VER,
+      Permisos.RESTAURANTE_CUENTA_EMITIR_PRECUENTA,
     ],
   },
   [RolesPredefinidos.GASTRONOMIA_COCINERO]: {

@@ -7,12 +7,14 @@ yarn-error.log*
 
 # Build output
 dist/
+dist-test/
 build/
 lib/
 
 # IDE and editor files
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
 *.sublime-project
 *.sublime-workspace
 .project

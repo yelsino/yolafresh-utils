@@ -10,6 +10,8 @@ const stubs = [
   { subpath: "ventas/contracts", target: "dist/domain/ventas/contracts/index" },
   { subpath: "ventas/entities", target: "dist/domain/ventas/entities/index" },
   { subpath: "ventas/events", target: "dist/domain/ventas/events/index" },
+  { subpath: "fiscal", target: "dist/domain/fiscal/index" },
+  { subpath: "fiscal/contracts", target: "dist/domain/fiscal/contracts/index" },
   { subpath: "compras", target: "dist/domain/compras/index" },
   { subpath: "compras/contracts", target: "dist/domain/compras/contracts/index" },
   { subpath: "compras/entities", target: "dist/domain/compras/entities/index" },
@@ -41,46 +43,8 @@ const stubs = [
   { subpath: "shared/value-objects", target: "dist/domain/shared/value-objects/index" },
 ];
 
-const rootDirs = [
-  "pedido",
-  "ventas",
-  "compras",
-  "inventario",
-  "tesoreria",
-  "finanzas",
-  "auth",
-  "personas",
-  "contabilidad",
-  "restaurant",
-  "shared",
-];
-
 function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
-}
-
-function removeDirWithRetry(dirPath, attempts = 5) {
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    try {
-      fs.rmSync(dirPath, {
-        recursive: true,
-        force: true,
-        maxRetries: 10,
-        retryDelay: 100,
-      });
-      return;
-    } catch (error) {
-      if (attempt === attempts || error.code !== "ENOTEMPTY") {
-        throw error;
-      }
-    }
-  }
-}
-
-function cleanRootStubs() {
-  for (const dir of rootDirs) {
-    removeDirWithRetry(path.join(repoRoot, dir));
-  }
 }
 
 function toPosixRelative(fromDir, toFileWithoutExt) {
@@ -100,7 +64,8 @@ function writeStub(subpath, target) {
 }
 
 function main() {
-  cleanRootStubs();
+  // Only update known public entry points. Never delete whole root directories:
+  // they may contain files maintained outside this generator.
   for (const stub of stubs) {
     writeStub(stub.subpath, stub.target);
   }

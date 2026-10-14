@@ -81,6 +81,7 @@ export enum Permisos {
   RESTAURANTE_PEDIDO_VER = "restaurante:pedido:ver",
   RESTAURANTE_PEDIDO_EDITAR = "restaurante:pedido:editar",
   RESTAURANTE_RONDA_ENVIAR = "restaurante:ronda:enviar",
+  RESTAURANTE_RONDA_REIMPRIMIR = "restaurante:ronda:reimprimir",
   RESTAURANTE_ENTREGA_CONFIRMAR = "restaurante:entrega:confirmar",
   RESTAURANTE_PREPARACION_VER = "restaurante:preparacion:ver",
   RESTAURANTE_PREPARACION_ACTUALIZAR = "restaurante:preparacion:actualizar",
@@ -89,6 +90,7 @@ export enum Permisos {
   RESTAURANTE_PREPARACION_BARRA_VER = "restaurante:preparacion_barra:ver",
   RESTAURANTE_PREPARACION_BARRA_ACTUALIZAR = "restaurante:preparacion_barra:actualizar",
   RESTAURANTE_CUENTA_VER = "restaurante:cuenta:ver",
+  RESTAURANTE_CUENTA_EMITIR_PRECUENTA = "restaurante:cuenta:emitir_precuenta",
   RESTAURANTE_CUENTA_CONFIGURAR_REDONDEO = "restaurante:cuenta:configurar_redondeo",
   RESTAURANTE_CUENTA_COBRAR = "restaurante:cuenta:cobrar",
 

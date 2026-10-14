@@ -2,7 +2,7 @@ import type {
   DineroRestaurante,
   DocumentoRestaurante,
 } from "./common.contract";
-import type { ConversionUnidadInventarioSnapshot } from "../../inventario/contracts";
+import type { ConversionPresentacionInventarioSnapshot } from "../../inventario/contracts";
 import type {
   ModificadorSeleccionadoRestaurante,
   RutaPreparacionProductoRestaurante,
@@ -61,13 +61,8 @@ export interface ProductoPedidoRestauranteSnapshotBase {
  * versionado. La presentación y su versión son obligatorias: no se infieren al
  * leer posteriormente el catálogo.
  */
-export type ConversionInventarioPedidoRestauranteSnapshot = Omit<
-  ConversionUnidadInventarioSnapshot,
-  "presentacionId" | "versionConversion"
-> & {
-  presentacionId: string;
-  versionConversion: number;
-};
+export type ConversionInventarioPedidoRestauranteSnapshot =
+  ConversionPresentacionInventarioSnapshot;
 
 /** Pedido histórico anterior a la captura de conversión de inventario. */
 export interface ProductoPedidoRestauranteSnapshotLegacy extends ProductoPedidoRestauranteSnapshotBase {

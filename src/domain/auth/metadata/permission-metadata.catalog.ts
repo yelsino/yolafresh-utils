@@ -30,6 +30,9 @@ const CRITICIDAD_POR_ACCION: Record<string, PermissionCriticidad> = {
   cobrar: "critical",
   configurar_redondeo: "high",
   administrar: "critical",
+  solicitar: "high",
+  comunicar: "critical",
+  resolver: "critical",
   recibir: "high",
   cancelar: "critical",
 };
@@ -91,6 +94,14 @@ const PERMISSION_METADATA_OVERRIDES: Partial<
   "finanzas:cuenta_proveedor:ajustar": {
     criticidad: "critical",
   },
+  "fiscal:documento:solicitar": { criticidad: "high" },
+  "fiscal:nota:crear": { criticidad: "critical" },
+  "fiscal:baja:comunicar": { criticidad: "critical" },
+  "fiscal:incidencia:resolver": { criticidad: "critical" },
+  "fiscal:serie:administrar": { criticidad: "critical" },
+  "fiscal:tributo:administrar": { criticidad: "critical" },
+  "fiscal:tributo:aprobar": { criticidad: "critical" },
+  "fiscal:proveedor:administrar": { criticidad: "critical" },
 };
 
 function buildPermissionDefinition(id: AuthPermission): PermissionDefinition {
