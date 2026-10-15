@@ -8,3 +8,7 @@ export * from "./proceso-fiscal.contract";
 export * from "./configuracion-fiscal.contract";
 export * from "./configuracion-fiscal";
 export * from "./nota-credito";
+export * from "./modulo-fiscal-v1.contract";
+export * from "./modulo-fiscal-v1";
+export * from "./modulo-fiscal-v1-evidencia.contract";
+export * from "./modulo-fiscal-v1-evidencia";

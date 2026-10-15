@@ -1,0 +1,187 @@
+{
+  "fixtureKind": "SYNTHETIC_NOT_AUTHORIZED_FOR_EMISSION",
+  "nowMs": 1792065600000,
+  "trustedKey": {
+    "keyId": "fixture-key-not-production",
+    "publicKeyBase64": "Zr5+Myx6RTMyvZ0Kf32wVfXF7xoGraZtmLOftoEMRzo=",
+    "tenantId": "tenant-anonimo",
+    "environment": "DEMO",
+    "validFromMs": 1791979200000,
+    "validToMs": 1792152000000
+  },
+  "bundle": {
+    "payload": {
+      "schemaVersion": "fiscal-v1",
+      "tenantId": "tenant-anonimo",
+      "issuerId": "issuer-demo",
+      "environment": "DEMO",
+      "revision": 1,
+      "issuedAtMs": 1792065599000,
+      "expiresAtMs": 1792069200000,
+      "profiles": [
+        {
+          "status": "PUBLISHED",
+          "effectiveFrom": "2026-10-01",
+          "publishedAt": 1792065599000,
+          "sourceRef": "synthetic-fixture-no-legal-authorization",
+          "fingerprintSha256": "a6d336f60c7daa7e2c0be3499b90bfbf0cbf02cbee5c0201016a0ff9764c5e1a",
+          "profileId": "profile-demo",
+          "profileVersion": "v1",
+          "tenantId": "tenant-anonimo",
+          "issuerId": "issuer-demo",
+          "issuerRuc": "10123456789",
+          "issuerLegalName": "EMISOR ANONIMO",
+          "taxRegime": "NRUS",
+          "environment": "DEMO",
+          "establishmentId": "local-demo",
+          "see": "SEE_CONTRIBUYENTE",
+          "provider": "XmlPeru",
+          "adapterVersion": "v1"
+        }
+      ],
+      "rules": [
+        {
+          "status": "PUBLISHED",
+          "effectiveFrom": "2026-10-01",
+          "publishedAt": 1792065599000,
+          "sourceRef": "synthetic-fixture-no-legal-authorization",
+          "fingerprintSha256": "dc36235135f8aa9a5bb52bb65bb329c6c4d5a1f8937ce8a0bd79856f3d4085e0",
+          "configurationDocumentId": "opaque-config",
+          "decisionId": "decision-1",
+          "ruleId": "rule-1",
+          "tenantId": "tenant-anonimo",
+          "issuerId": "issuer-demo",
+          "presentationId": "product-anonimo",
+          "catalogSemanticFingerprintSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "unitCode": "NIU",
+          "context": {
+            "establishmentId": "local-demo",
+            "operationKind": "DOMESTIC_RETAIL",
+            "buyerUse": "FINAL_CONSUMER"
+          },
+          "legalCategory": "GRAVADA",
+          "taxRateBasisPoints": 1800
+        }
+      ],
+      "capabilities": [
+        {
+          "status": "PUBLISHED",
+          "effectiveFrom": "2026-10-01",
+          "publishedAt": 1792065599000,
+          "sourceRef": "synthetic-fixture-no-legal-authorization",
+          "fingerprintSha256": "a9f2851bc1637f088f5db561ffd9f79d7d9c79e238dd7557c5327f14716e388c",
+          "capabilityId": "cap-demo",
+          "tenantId": "tenant-anonimo",
+          "issuerId": "issuer-demo",
+          "profileVersion": "v1",
+          "taxRegime": "NRUS",
+          "environment": "DEMO",
+          "documentType": "BOLETA",
+          "context": {
+            "establishmentId": "local-demo",
+            "operationKind": "DOMESTIC_RETAIL",
+            "buyerUse": "FINAL_CONSUMER"
+          },
+          "legalCategories": [
+            "GRAVADA"
+          ],
+          "see": "SEE_CONTRIBUYENTE",
+          "provider": "XmlPeru",
+          "adapterVersion": "v1",
+          "capabilityStatus": "SUPPORTED",
+          "evidence": {
+            "legalReviewRef": "synthetic-only",
+            "providerXmlRef": "synthetic-only",
+            "tributaryResultRef": "synthetic-only"
+          }
+        }
+      ]
+    },
+    "payloadSha256": "04a22ae64fd8152089553f38f2962f7c54e140f2d76542d0fead4599fa45c452",
+    "signature": {
+      "algorithm": "Ed25519",
+      "keyId": "fixture-key-not-production",
+      "signatureBase64": "B3608nG6jyZWOSdMe43WTE2/HIqs6xMAPXGGZORTEVEWSbV4zg1TudVy8xDU4AjOsYxLcZrDLvRk3U5UExErDA=="
+    }
+  },
+  "sale": {
+    "operationId": "operation-demo",
+    "saleId": "sale-demo",
+    "tenantId": "tenant-anonimo",
+    "issuerId": "issuer-demo",
+    "issuerRuc": "10123456789",
+    "environment": "DEMO",
+    "currency": "PEN",
+    "occurredOn": "2026-10-15",
+    "documentType": "BOLETA",
+    "context": {
+      "establishmentId": "local-demo",
+      "operationKind": "DOMESTIC_RETAIL",
+      "buyerUse": "FINAL_CONSUMER"
+    },
+    "lines": [
+      {
+        "lineId": "line-1",
+        "presentationId": "product-anonimo",
+        "catalogSemanticFingerprintSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "quantityMilli": 1000,
+        "unitPriceCents": 1180,
+        "discountCents": 0
+      }
+    ]
+  },
+  "expectedDecision": {
+    "operationId": "operation-demo",
+    "saleId": "sale-demo",
+    "tenantId": "tenant-anonimo",
+    "issuerId": "issuer-demo",
+    "issuerRuc": "10123456789",
+    "taxRegime": "NRUS",
+    "environment": "DEMO",
+    "currency": "PEN",
+    "occurredOn": "2026-10-15",
+    "documentType": "BOLETA",
+    "context": {
+      "establishmentId": "local-demo",
+      "operationKind": "DOMESTIC_RETAIL",
+      "buyerUse": "FINAL_CONSUMER"
+    },
+    "profileRef": {
+      "profileId": "profile-demo",
+      "profileVersion": "v1",
+      "fingerprintSha256": "a6d336f60c7daa7e2c0be3499b90bfbf0cbf02cbee5c0201016a0ff9764c5e1a"
+    },
+    "capabilityRef": {
+      "capabilityId": "cap-demo",
+      "fingerprintSha256": "a9f2851bc1637f088f5db561ffd9f79d7d9c79e238dd7557c5327f14716e388c"
+    },
+    "lines": [
+      {
+        "lineId": "line-1",
+        "presentationId": "product-anonimo",
+        "quantityMilli": 1000,
+        "unitPriceCents": 1180,
+        "discountCents": 0,
+        "totalCents": 1180,
+        "unitCode": "NIU",
+        "legalCategory": "GRAVADA",
+        "disclosure": {
+          "kind": "NOT_ITEMIZED_BY_ISSUER",
+          "baseCents": null,
+          "taxCents": null,
+          "appliedRateBasisPoints": null
+        },
+        "ruleRef": {
+          "configurationDocumentId": "opaque-config",
+          "decisionId": "decision-1",
+          "ruleId": "rule-1",
+          "fingerprintSha256": "dc36235135f8aa9a5bb52bb65bb329c6c4d5a1f8937ce8a0bd79856f3d4085e0"
+        }
+      }
+    ],
+    "totalCents": 1180,
+    "baseCents": null,
+    "taxCents": null
+  },
+  "expectedDecisionCanonicalJson": "{\"baseCents\":null,\"capabilityRef\":{\"capabilityId\":\"cap-demo\",\"fingerprintSha256\":\"a9f2851bc1637f088f5db561ffd9f79d7d9c79e238dd7557c5327f14716e388c\"},\"context\":{\"buyerUse\":\"FINAL_CONSUMER\",\"establishmentId\":\"local-demo\",\"operationKind\":\"DOMESTIC_RETAIL\"},\"currency\":\"PEN\",\"documentType\":\"BOLETA\",\"environment\":\"DEMO\",\"issuerId\":\"issuer-demo\",\"issuerRuc\":\"10123456789\",\"lines\":[{\"disclosure\":{\"appliedRateBasisPoints\":null,\"baseCents\":null,\"kind\":\"NOT_ITEMIZED_BY_ISSUER\",\"taxCents\":null},\"discountCents\":0,\"legalCategory\":\"GRAVADA\",\"lineId\":\"line-1\",\"presentationId\":\"product-anonimo\",\"quantityMilli\":1000,\"ruleRef\":{\"configurationDocumentId\":\"opaque-config\",\"decisionId\":\"decision-1\",\"fingerprintSha256\":\"dc36235135f8aa9a5bb52bb65bb329c6c4d5a1f8937ce8a0bd79856f3d4085e0\",\"ruleId\":\"rule-1\"},\"totalCents\":1180,\"unitCode\":\"NIU\",\"unitPriceCents\":1180}],\"occurredOn\":\"2026-10-15\",\"operationId\":\"operation-demo\",\"profileRef\":{\"fingerprintSha256\":\"a6d336f60c7daa7e2c0be3499b90bfbf0cbf02cbee5c0201016a0ff9764c5e1a\",\"profileId\":\"profile-demo\",\"profileVersion\":\"v1\"},\"saleId\":\"sale-demo\",\"taxCents\":null,\"taxRegime\":\"NRUS\",\"tenantId\":\"tenant-anonimo\",\"totalCents\":1180}"
+}
