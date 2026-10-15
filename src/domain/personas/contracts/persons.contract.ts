@@ -172,7 +172,10 @@ export interface Cliente extends Entidad {
     facturacion?: InformacionFacturacion;
   }
 
-/** Titular organizacional; no necesita DNI ni nombres de persona física. */
+/**
+ * Titular de una cuenta cliente cuyo sujeto es una organización.
+ * No exige ni fabrica atributos de persona física para poder usar crédito.
+ */
 export interface ClienteInstitucional extends Entidad {
   tipoEntidad: "ClienteInstitucional";
   razonSocial: string;
@@ -185,6 +188,7 @@ export interface ClienteInstitucional extends Entidad {
   personaContactoId?: string;
 }
 
+/** Ambos titulares conservan el mismo identificador de cuenta: `clienteId`. */
 export type TitularCuentaCliente = Cliente | ClienteInstitucional;
 
 export function nombreTitularCuentaCliente(titular: TitularCuentaCliente): string {

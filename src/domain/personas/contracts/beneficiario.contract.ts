@@ -1,21 +1,26 @@
-/** Persona que participa en una operación sin poseer necesariamente una cuenta cliente. */
+/** Persona que puede participar en el negocio sin poseer una cuenta cliente. */
 export interface PersonaBeneficiaria {
   id: string;
   nombres: string;
   apellidos?: string;
   nombreCorto?: string;
-  documento?: { tipo: string; numero: string };
+  documento?: {
+    tipo: string;
+    numero: string;
+  };
   estado: "ACTIVA" | "INACTIVA";
   createdAt: number;
   updatedAt: number;
 }
 
-/** Autorización para recibir consumos con cargo a un titular concreto. */
+/** Autorización de una persona para recibir consumos de un cliente pagador. */
 export interface VinculoBeneficiario {
   id: string;
   clienteId: string;
   personaId: string;
   estado: "ACTIVO" | "INACTIVO";
+  etiquetaId?: string;
+  grupoId?: string;
   etiqueta?: string;
   grupo?: string;
   revision: number;
@@ -23,11 +28,13 @@ export interface VinculoBeneficiario {
   updatedAt: number;
 }
 
+/** La venta identifica el vínculo concreto, no solo el nombre del receptor. */
 export interface BeneficiarioEnVenta {
   vinculoId: string;
   personaId: string;
 }
 
+/** Evidencia histórica inmutable del receptor en el snapshot comercial. */
 export interface BeneficiarioCongelado extends BeneficiarioEnVenta {
   nombre: string;
   etiqueta?: string;
@@ -71,14 +78,16 @@ export function validarVinculoBeneficiario(
   return errores;
 }
 
-/** Solo campos contractuales: nunca se infiere relación desde el ID técnico. */
+/** Compara únicamente referencias contractuales, sin interpretar sus formatos. */
 export function autorizaBeneficiario(
   vinculo: VinculoBeneficiario,
   clienteId: string,
   beneficiario: BeneficiarioEnVenta,
 ): boolean {
-  return vinculo.estado === "ACTIVO" &&
+  return (
+    vinculo.estado === "ACTIVO" &&
     vinculo.clienteId === clienteId &&
     vinculo.id === beneficiario.vinculoId &&
-    vinculo.personaId === beneficiario.personaId;
+    vinculo.personaId === beneficiario.personaId
+  );
 }

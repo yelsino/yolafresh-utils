@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { CategoriaCliente, Cliente } from "../../personas/contracts/persons.contract";
+import {
+  autorizaBeneficiario,
+  validarVinculoBeneficiario,
+  type VinculoBeneficiario,
+} from "../../personas/contracts/beneficiario.contract";
 import { IUsuario } from "../../personas/contracts/usuario.contract";
 import {
   CondicionPagoVenta,
@@ -58,6 +63,64 @@ function buildVentaInput(
     ...overrides,
   };
 }
+
+test("un vínculo activo autoriza únicamente al cliente y persona contractuales", () => {
+  const vinculo: VinculoBeneficiario = {
+    id: "opaque-link-A7",
+    clienteId: "opaque-payer-B8",
+    personaId: "opaque-receiver-C9",
+    estado: "ACTIVO",
+    revision: 1,
+    createdAt: 1,
+    updatedAt: 1,
+  };
+  assert.deepEqual(validarVinculoBeneficiario(vinculo), []);
+  assert.equal(
+    autorizaBeneficiario(vinculo, "opaque-payer-B8", {
+      vinculoId: "opaque-link-A7",
+      personaId: "opaque-receiver-C9",
+    }),
+    true,
+  );
+  assert.equal(
+    autorizaBeneficiario(vinculo, "otro-pagador", {
+      vinculoId: "opaque-link-A7",
+      personaId: "opaque-receiver-C9",
+    }),
+    false,
+  );
+  assert.equal(
+    autorizaBeneficiario({ ...vinculo, estado: "INACTIVO" }, vinculo.clienteId, {
+      vinculoId: vinculo.id,
+      personaId: vinculo.personaId,
+    }),
+    false,
+  );
+});
+
+test("la venta y el snapshot congelan el beneficiario sin cambiar el pagador", () => {
+  const beneficiario = {
+    vinculoId: "opaque-link-A7",
+    personaId: "opaque-receiver-C9",
+  };
+  const venta = new Venta(buildVentaInput({
+    clienteId: "opaque-payer-B8",
+    beneficiario,
+  }));
+  const snapshot = venta.toVentaSnapshot({
+    cliente: { id: "opaque-payer-B8", nombre: "Juan Torres" },
+    beneficiario: { ...beneficiario, nombre: "Juanito Torres" },
+  });
+  assert.equal(venta.toJSON().clienteId, "opaque-payer-B8");
+  assert.deepEqual(snapshot.beneficiario, {
+    ...beneficiario,
+    nombre: "Juanito Torres",
+  });
+  assert.throws(() => venta.toVentaSnapshot({
+    beneficiario: { vinculoId: "otro-vinculo", personaId: beneficiario.personaId, nombre: "Juanito" },
+  }), /debe coincidir/);
+  assert.equal(Venta.validar(buildVentaInput({ beneficiario })).valida, false);
+});
 
 function buildCliente(): Cliente {
   return {
