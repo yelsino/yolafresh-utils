@@ -1,6 +1,6 @@
 # Módulo fiscal V1: estado de implementación
 
-Este corte publica contratos, verificación criptográfica de publicaciones, motor de decisión, snapshot, documento y preparación económica de nota en `yola-fresh-utils`. El backend y el móvil consumen el mismo paquete `2.7.15-fiscal-v1.2` en sus adaptadores de publicación y verificación. El checkout y la emisión V1 todavía no están conectados; la ruta V1 de firma devuelve `501` deliberadamente. No se han publicado perfiles ni modificado datos de ningún tenant.
+Este corte publica contratos, verificación criptográfica de publicaciones, motor de decisión, snapshot, documento y preparación económica de nota en `yola-fresh-utils`. El backend y el móvil consumen el mismo paquete `2.7.15-fiscal-v1.3` en sus adaptadores de publicación y verificación. El checkout y la emisión V1 todavía no están conectados; la ruta V1 de firma devuelve `501` deliberadamente. No se han publicado perfiles ni modificado datos de ningún tenant.
 
 ## Límite de confianza
 
