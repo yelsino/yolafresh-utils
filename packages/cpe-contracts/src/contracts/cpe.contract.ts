@@ -1,16 +1,10 @@
 /** Contratos puros compartidos. El backend es la única autoridad de emisor, serie y emisión. */
 type RegimenTributarioEmpresa = "NRUS" | "RER" | "RMT" | "REGIMEN_GENERAL";
 
-export const FISCAL_INTENT_CONTRACT_VERSION = 1 as const;
-export const FISCAL_INTENT_V2_CONTRACT_VERSION = 2 as const;
-export const FISCAL_INTENT_V3_CONTRACT_VERSION = 3 as const;
-export const FISCAL_EVIDENCE_CONTRACT_VERSION = 1 as const;
-/** @deprecated Alias histórico solo para intents/evidencias V1; no usar en snapshots. */
-export const FISCAL_CPE_CONTRACT_VERSION = FISCAL_INTENT_CONTRACT_VERSION;
-export const FISCAL_SALE_SNAPSHOT_V1_CONTRACT_VERSION = 1 as const;
-export const FISCAL_SALE_SNAPSHOT_CONTRACT_VERSION = 2 as const;
-export const FISCAL_SALE_SNAPSHOT_V2_CAPABILITY =
-  "EXPLICIT_TAX_INCLUDED_PRICING_V2" as const;
+export const FISCAL_CPE_SCHEMA_VERSION = 1 as const;
+export const FISCAL_INTENT_CONTRACT_KIND = "YOLAFRESH_CPE_INTENT" as const;
+export const FISCAL_SALE_SNAPSHOT_CONTRACT_KIND = "YOLAFRESH_CPE_SALE_SNAPSHOT" as const;
+export const FISCAL_EVIDENCE_CONTRACT_KIND = "YOLAFRESH_CPE_EVIDENCE" as const;
 
 export type FiscalCpeDocumentType = "BOLETA" | "FACTURA";
 export type FiscalTaxRegime = RegimenTributarioEmpresa;
@@ -23,15 +17,16 @@ export type FiscalBuyerDocumentType =
   | "PASAPORTE"
   | "SIN_DOCUMENTO";
 
-export interface FiscalBuyerV1 {
+export interface FiscalBuyer {
   readonly documentType: FiscalBuyerDocumentType;
   readonly documentNumber: string | null;
   readonly legalName: string;
 }
 
 /** Una solicitud no confirma que haya CPE ni concede número fiscal. */
-export interface FiscalIntentV1 {
-  readonly version: typeof FISCAL_INTENT_CONTRACT_VERSION;
+export interface FiscalIntent {
+  readonly contractKind: typeof FISCAL_INTENT_CONTRACT_KIND;
+  readonly schemaVersion: typeof FISCAL_CPE_SCHEMA_VERSION;
   readonly intentId: string;
   readonly idempotencyKey: string;
   readonly tenantId: string;
@@ -39,41 +34,20 @@ export interface FiscalIntentV1 {
   readonly saleId: string;
   readonly saleSnapshotId: string;
   readonly requestedDocumentType: FiscalCpeDocumentType;
-  readonly buyer: FiscalBuyerV1;
+  readonly buyer: FiscalBuyer;
   /** Oportunidad comercial; no es fecha fiscal ni permite retrofechar. */
   readonly occurredAt: string;
   readonly queuedAt: string;
+  readonly pricingDeclaration: FiscalIntentPricingDeclaration;
 }
 
 /**
- * Declaración comercial del cliente, no cálculo ni determinación tributaria.
- * El backend debe cotejar el total con la venta y su snapshot y congelar allí
- * los importes por línea antes de asignar serie/correlativo. EXACT y los
- * precios con impuesto excluido permanecen fuera de este contrato inicial.
+ * Referencias comerciales declaradas por el cliente. Validar su forma no
+ * verifica el precio ni aprueba la política histórica de la presentación.
  */
-export interface FiscalIntentPricingDeclarationV2 {
-  readonly unitPriceTaxMode: "TAX_INCLUDED";
-  readonly taxComputationMode: "NOT_COMPUTED";
-  readonly currency: "PEN";
-  readonly commercialTotalCents: number;
-}
-
-/** V2 conserva la identidad V1; solo añade una declaración de precio verificable. */
-export interface FiscalIntentV2 extends Omit<FiscalIntentV1, "version"> {
-  readonly version: typeof FISCAL_INTENT_V2_CONTRACT_VERSION;
-  readonly pricingDeclaration: FiscalIntentPricingDeclarationV2;
-}
-
-/**
- * Referencias declaradas por el cliente para cotejar el precio pactado de
- * una presentación en el momento de la venta. Son identificadores opacos:
- * validar este payload no verifica la política ni aprueba el precio.
- */
-export interface FiscalIntentPriceLineEvidenceV3 {
+interface FiscalIntentPriceLineEvidenceCommon {
   readonly lineId: string;
   readonly presentationId: string;
-  readonly unitPriceTaxMode: FiscalUnitPriceTaxMode;
-  /** Precio unitario pactado: final en TAX_INCLUDED, antes del tributo en TAX_EXCLUDED. */
   readonly agreedUnitPriceCents: number;
   /** Referencia durable al acuerdo/cotización del precio de esta línea. */
   readonly agreedPriceSourceRef: string;
@@ -86,35 +60,33 @@ export interface FiscalIntentPriceLineEvidenceV3 {
   readonly agreedAt: string;
 }
 
-/** V3 admite modos mixtos por línea, pero no contiene cálculo ni aprobación fiscal. */
-export interface FiscalIntentPricingDeclarationV3 {
+/** El importe final exonerado no declara ni permite inferir un modo tributario. */
+export type FiscalIntentPriceLineEvidence = FiscalIntentPriceLineEvidenceCommon & (
+  | { readonly unitPriceTaxMode: FiscalUnitPriceTaxMode;
+      readonly commercialAmountBasis?: never }
+  | { readonly commercialAmountBasis: "FINAL_AMOUNT_AS_CHARGED";
+      readonly unitPriceTaxMode?: never }
+);
+
+/** Declaración comercial por línea; el backend conserva la autoridad fiscal. */
+export interface FiscalIntentPricingDeclaration {
   readonly taxComputationMode: "NOT_COMPUTED";
   readonly currency: "PEN";
   /** Total comercial declarado; el backend debe cotejarlo con la venta. */
   readonly commercialTotalCents: number;
-  readonly lines: readonly FiscalIntentPriceLineEvidenceV3[];
+  readonly lines: readonly FiscalIntentPriceLineEvidence[];
 }
-
-/** V3 conserva la identidad de la solicitud y sustituye solo la declaración V2. */
-export interface FiscalIntentV3 extends Omit<FiscalIntentV1, "version"> {
-  readonly version: typeof FISCAL_INTENT_V3_CONTRACT_VERSION;
-  readonly pricingDeclaration: FiscalIntentPricingDeclarationV3;
-}
-
-export type FiscalIntent = FiscalIntentV1 | FiscalIntentV2 | FiscalIntentV3;
 
 export type FiscalTaxCategory =
   | "GRAVADA"
   | "EXONERADA"
-  | "INAFECTA"
-  | "EXPORTACION"
-  | "GRATUITA";
+  | "INAFECTA";
 
-/** Semántica congelada de los importes unitarios/comerciales de la línea. */
-export type FiscalUnitPriceTaxMode = "TAX_INCLUDED" | "TAX_EXCLUDED";
+/** Semántica soportada por el primer snapshot fiscal. */
+export type FiscalUnitPriceTaxMode = "TAX_INCLUDED";
 
 /** Todos los campos tributarios se fijan por línea; jamás se infiere IGV global. */
-export type FiscalLineTaxV1 =
+export type FiscalLineTax =
   | {
       readonly category: "GRAVADA";
       readonly affectationCode: string;
@@ -141,19 +113,11 @@ interface FiscalSaleLineCommon {
   readonly discountCents: number;
   /** Importe fiscal después de descuento de ítem y tributo de esa línea. */
   readonly totalCents: number;
-  readonly tax: FiscalLineTaxV1;
+  readonly tax: FiscalLineTax;
 }
 
-/**
- * Snapshot publicado originalmente: precio unitario y descuento SIN tributo.
- * V1 nunca admite campos TAX_INCLUDED; el adaptador legacy es explícito por
- * `snapshot.version === 1`, no por inferencia aritmética.
- */
-export interface FiscalSaleLineV1 extends FiscalSaleLineCommon {}
-
-/** Precio bruto y descomposición del descuento congelados por el backend V2. */
-export interface FiscalSaleLineV2 extends FiscalSaleLineCommon {
-  readonly unitPriceTaxMode: Extract<FiscalUnitPriceTaxMode, "TAX_INCLUDED">;
+/** Precio bruto y descomposición del descuento congelados por el backend. */
+interface FiscalSaleLineBreakdown {
   readonly commercialGrossBeforeDiscountCents: number;
   readonly commercialGrossDiscountCents: number;
   readonly taxableBaseBeforeDiscountCents: number;
@@ -161,15 +125,23 @@ export interface FiscalSaleLineV2 extends FiscalSaleLineCommon {
   readonly discountReasonCode: "00";
 }
 
+/** Importe final sin tributo discriminado: EXONERADA/20 o GRAVADA/10 de NRUS. */
+export type FiscalSaleLine = FiscalSaleLineCommon & FiscalSaleLineBreakdown & (
+  | { readonly unitPriceTaxMode: FiscalUnitPriceTaxMode;
+      readonly commercialAmountBasis?: never }
+  | { readonly commercialAmountBasis: "FINAL_AMOUNT_AS_CHARGED";
+      readonly unitPriceTaxMode?: never }
+);
+
 /** Solo el importe realmente aplicado a la venta; no el efectivo entregado para vuelto. */
-export interface FiscalPaidSaleV1 {
+export interface FiscalPaidSale {
   readonly status: "PAID";
   readonly paidAmountCents: number;
   readonly paidAt: string;
 }
 
 /** Boleta de crédito autorizada por entrega comprobada, sin afirmar cobro ni saldo financiero. */
-export interface FiscalDeferredSaleV1 {
+export interface FiscalDeferredSale {
   readonly status: "DEFERRED";
   /** Fecha de la entrega verificada; no es fecha de vencimiento ni de emisión. */
   readonly deferredAt: string;
@@ -178,8 +150,9 @@ export interface FiscalDeferredSaleV1 {
 }
 
 /** Hecho canónico congelado por backend tras conciliar Venta y venta_snapshot. */
-export interface FiscalSaleSnapshotV1 {
-  readonly version: typeof FISCAL_SALE_SNAPSHOT_V1_CONTRACT_VERSION;
+export interface FiscalSaleSnapshot {
+  readonly contractKind: typeof FISCAL_SALE_SNAPSHOT_CONTRACT_KIND;
+  readonly schemaVersion: typeof FISCAL_CPE_SCHEMA_VERSION;
   readonly fiscalSnapshotId: string;
   readonly intentId: string;
   readonly tenantId: string;
@@ -189,36 +162,13 @@ export interface FiscalSaleSnapshotV1 {
   readonly issuerLegalName: string;
   readonly taxRegime: FiscalTaxRegime;
   readonly documentType: FiscalCpeDocumentType;
-  readonly buyer: FiscalBuyerV1;
+  readonly buyer: FiscalBuyer;
   readonly currency: FiscalCurrency;
-  readonly lines: readonly FiscalSaleLineV1[];
+  readonly lines: readonly FiscalSaleLine[];
   readonly totalCents: number;
-  readonly payment: FiscalPaidSaleV1;
+  readonly payment: FiscalPaidSale | FiscalDeferredSale;
   readonly frozenAt: string;
 }
-
-/** Snapshot actual: el capability evita que un consumidor V1 lo reinterprete. */
-export interface FiscalSaleSnapshotV2 {
-  readonly version: typeof FISCAL_SALE_SNAPSHOT_CONTRACT_VERSION;
-  readonly capability: typeof FISCAL_SALE_SNAPSHOT_V2_CAPABILITY;
-  readonly fiscalSnapshotId: string;
-  readonly intentId: string;
-  readonly tenantId: string;
-  readonly saleId: string;
-  readonly saleSnapshotId: string;
-  readonly issuerRuc: string;
-  readonly issuerLegalName: string;
-  readonly taxRegime: FiscalTaxRegime;
-  readonly documentType: FiscalCpeDocumentType;
-  readonly buyer: FiscalBuyerV1;
-  readonly currency: FiscalCurrency;
-  readonly lines: readonly FiscalSaleLineV2[];
-  readonly totalCents: number;
-  readonly payment: FiscalPaidSaleV1 | FiscalDeferredSaleV1;
-  readonly frozenAt: string;
-}
-
-export type FiscalSaleSnapshot = FiscalSaleSnapshotV1 | FiscalSaleSnapshotV2;
 
 /** Local y backend tienen ciclos distintos. RECIBIDA_BACKEND tampoco es emitida. */
 export type FiscalLocalState =
@@ -249,7 +199,7 @@ export type FiscalTerminalState =
   | "RECHAZADO";
 
 /** La identidad fiscal se comprueba dentro del CDR, no solo en el HTTP del PSE. */
-export interface FiscalDocumentIdentityV1 {
+export interface FiscalDocumentIdentity {
   readonly issuerRuc: string;
   readonly documentType: FiscalCpeDocumentType;
   readonly series: string;
@@ -257,8 +207,8 @@ export interface FiscalDocumentIdentityV1 {
 }
 
 /** Resultado estructural de parsear CDR y cotejar identidad con el XML enviado. */
-export interface FiscalCdrVerificationV1 {
-  readonly identity: FiscalDocumentIdentityV1;
+export interface FiscalCdrVerification {
+  readonly identity: FiscalDocumentIdentity;
   readonly responseCode: string;
   readonly responseDescription: string;
   readonly status: FiscalTerminalState;
@@ -270,8 +220,9 @@ export interface FiscalCdrVerificationV1 {
 }
 
 /** Referencias y hashes, no tokens, JWT ni XML/CDR crudos en el payload de UI. */
-export interface FiscalEvidenceV1 extends FiscalDocumentIdentityV1 {
-  readonly version: typeof FISCAL_EVIDENCE_CONTRACT_VERSION;
+export interface FiscalEvidence extends FiscalDocumentIdentity {
+  readonly contractKind: typeof FISCAL_EVIDENCE_CONTRACT_KIND;
+  readonly schemaVersion: typeof FISCAL_CPE_SCHEMA_VERSION;
   readonly fiscalDocumentId: string;
   readonly intentId: string;
   readonly tenantId: string;
@@ -301,8 +252,8 @@ export function canAutomaticallySubmitFiscalState(state: FiscalBackendState): bo
 }
 
 export function isSameFiscalDocumentIdentity(
-  expected: FiscalDocumentIdentityV1,
-  actual: FiscalDocumentIdentityV1,
+  expected: FiscalDocumentIdentity,
+  actual: FiscalDocumentIdentity,
 ): boolean {
   return expected.issuerRuc === actual.issuerRuc &&
     expected.documentType === actual.documentType &&
@@ -311,7 +262,8 @@ export function isSameFiscalDocumentIdentity(
 }
 
 const isNonNegativeCents = (value: number): boolean => Number.isSafeInteger(value) && value >= 0;
-const isNonBlank = (value: string): boolean => value.trim().length > 0;
+const isNonBlank = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0;
 
 function isIsoTimestampWithOffset(value: unknown): value is string {
   if (typeof value !== "string") return false;
@@ -374,29 +326,44 @@ function rejectUnknownFields(value: Record<string, unknown>, allowed: readonly s
   }
 }
 
-const INTENT_V1_FIELDS = [
-  "version", "intentId", "idempotencyKey", "tenantId", "actorId", "saleId",
+const INTENT_FIELDS = [
+  "contractKind", "schemaVersion", "intentId", "idempotencyKey", "tenantId", "actorId", "saleId",
   "saleSnapshotId", "requestedDocumentType", "buyer", "occurredAt", "queuedAt",
+  "pricingDeclaration",
 ] as const;
-const INTENT_V2_FIELDS = [...INTENT_V1_FIELDS, "pricingDeclaration"] as const;
-const INTENT_V3_FIELDS = [...INTENT_V1_FIELDS, "pricingDeclaration"] as const;
 const BUYER_FIELDS = ["documentType", "documentNumber", "legalName"] as const;
-const PRICING_DECLARATION_V2_FIELDS = [
-  "unitPriceTaxMode", "taxComputationMode", "currency", "commercialTotalCents",
-] as const;
-const PRICING_DECLARATION_V3_FIELDS = [
+const PRICING_DECLARATION_FIELDS = [
   "taxComputationMode", "currency", "commercialTotalCents", "lines",
 ] as const;
-const PRICE_LINE_EVIDENCE_V3_FIELDS = [
-  "lineId", "presentationId", "unitPriceTaxMode", "agreedUnitPriceCents",
+const PRICE_LINE_EVIDENCE_FIELDS = [
+  "lineId", "presentationId", "unitPriceTaxMode", "commercialAmountBasis",
+  "agreedUnitPriceCents",
   "agreedPriceSourceRef", "pricePolicyRef", "pricePolicyVersion",
   "fiscalPolicyRef", "fiscalPolicyVersion", "agreedAt",
 ] as const;
+const SNAPSHOT_FIELDS = [
+  "contractKind", "schemaVersion", "fiscalSnapshotId", "intentId", "tenantId",
+  "saleId", "saleSnapshotId", "issuerRuc", "issuerLegalName", "taxRegime",
+  "documentType", "buyer", "currency", "lines", "totalCents", "payment", "frozenAt",
+] as const;
+const SNAPSHOT_LINE_FIELDS = [
+  "lineId", "description", "quantity", "unitCode", "unitPriceCents",
+  "discountCents", "totalCents", "tax", "unitPriceTaxMode", "commercialAmountBasis",
+  "commercialGrossBeforeDiscountCents", "commercialGrossDiscountCents",
+  "taxableBaseBeforeDiscountCents", "baseDiscountCents", "discountReasonCode",
+] as const;
+const LINE_TAX_FIELDS = [
+  "category", "affectationCode", "taxScheme", "taxRateBasisPoints",
+  "taxableBaseCents", "taxAmountCents",
+] as const;
+const PAID_FIELDS = ["status", "paidAmountCents", "paidAt"] as const;
+const DEFERRED_FIELDS = ["status", "deferredAt", "deliveryDocumentId", "orderId"] as const;
 
-function validateFiscalIntentCommon(intent: unknown, version: 1 | 2 | 3): string[] {
+function validateFiscalIntentFields(intent: unknown): string[] {
   const errors: string[] = [];
   if (!isRecord(intent)) return ["intent"];
-  if (intent.version !== version) errors.push("version");
+  if (intent.contractKind !== FISCAL_INTENT_CONTRACT_KIND) errors.push("contractKind");
+  if (intent.schemaVersion !== FISCAL_CPE_SCHEMA_VERSION) errors.push("schemaVersion");
   for (const key of ["intentId", "idempotencyKey", "tenantId", "actorId", "saleId", "saleSnapshotId"] as const) {
     if (typeof intent[key] !== "string" || !isNonBlank(intent[key])) errors.push(key);
   }
@@ -428,46 +395,27 @@ function validateFiscalIntentCommon(intent: unknown, version: 1 | 2 | 3): string
       errors.push(key);
     }
   }
-  const allowed = version === 1 ? INTENT_V1_FIELDS :
-    version === 2 ? INTENT_V2_FIELDS : INTENT_V3_FIELDS;
-  rejectUnknownFields(intent, allowed, "", errors);
+  rejectUnknownFields(intent, INTENT_FIELDS, "", errors);
   return errors;
 }
 
-function isRoundedTaxQuota(baseCents: number, taxCents: number,
+function isFloorOrCeilTaxIncludedQuota(grossCents: number, taxCents: number,
   taxRateBasisPoints: number): boolean {
-  if (!isNonNegativeCents(baseCents) || !isNonNegativeCents(taxCents) ||
+  if (!isNonNegativeCents(grossCents) || !isNonNegativeCents(taxCents) ||
       !isNonNegativeCents(taxRateBasisPoints)) return false;
-  const numerator = BigInt(baseCents) * BigInt(taxRateBasisPoints);
-  const denominator = BigInt(10_000);
-  return BigInt(taxCents) >= numerator / denominator &&
-    BigInt(taxCents) <= (numerator + denominator - BigInt(1)) / denominator;
+  const numerator = BigInt(grossCents) * BigInt(taxRateBasisPoints);
+  const denominator = BigInt(10_000) + BigInt(taxRateBasisPoints);
+  const actual = BigInt(taxCents);
+  return actual >= numerator / denominator &&
+    actual <= (numerator + denominator - BigInt(1)) / denominator;
 }
 
-export function validateFiscalIntentV1(intent: FiscalIntentV1): readonly string[] {
-  return validateFiscalIntentCommon(intent, FISCAL_INTENT_CONTRACT_VERSION);
-}
-
-export function validateFiscalIntentV2(intent: FiscalIntentV2): readonly string[] {
-  const errors = validateFiscalIntentCommon(intent, FISCAL_INTENT_V2_CONTRACT_VERSION);
-  if (!isRecord(intent) || !isRecord(intent.pricingDeclaration)) {
-    errors.push("pricingDeclaration");
-    return errors;
-  }
-  const pricing = intent.pricingDeclaration;
-  if (pricing.unitPriceTaxMode !== "TAX_INCLUDED") {
-    errors.push("pricingDeclaration.unitPriceTaxMode");
-  }
-  if (pricing.taxComputationMode !== "NOT_COMPUTED") {
-    errors.push("pricingDeclaration.taxComputationMode");
-  }
-  if (pricing.currency !== "PEN") errors.push("pricingDeclaration.currency");
-  if (typeof pricing.commercialTotalCents !== "number" ||
-    !isNonNegativeCents(pricing.commercialTotalCents)) {
-    errors.push("pricingDeclaration.commercialTotalCents");
-  }
-  rejectUnknownFields(pricing, PRICING_DECLARATION_V2_FIELDS, "pricingDeclaration.", errors);
-  return errors;
+function halfUpTaxIncludedQuota(grossCents: bigint,
+  taxRateBasisPoints: number): bigint {
+  const rate = BigInt(taxRateBasisPoints);
+  const denominator = BigInt(10_000) + rate;
+  return (grossCents * rate * BigInt(2) + denominator) /
+    (denominator * BigInt(2));
 }
 
 /**
@@ -475,8 +423,8 @@ export function validateFiscalIntentV2(intent: FiscalIntentV2): readonly string[
  * exige cotejo independiente de venta, presentación, acuerdo y política
  * histórica por el backend; [] no autoriza emisión.
  */
-export function validateFiscalIntentPricingDeclarationV3(
-  pricing: FiscalIntentPricingDeclarationV3,
+export function validateFiscalIntentPricingDeclaration(
+  pricing: FiscalIntentPricingDeclaration,
 ): readonly string[] {
   const errors: string[] = [];
   if (!isRecord(pricing)) return ["pricingDeclaration"];
@@ -509,9 +457,13 @@ export function validateFiscalIntentPricingDeclarationV3(
           errors.push(`${prefix}${key}`);
         }
       }
-      if (line.unitPriceTaxMode !== "TAX_INCLUDED" &&
-          line.unitPriceTaxMode !== "TAX_EXCLUDED") {
-        errors.push(`${prefix}unitPriceTaxMode`);
+      if (line.commercialAmountBasis === undefined) {
+        if (line.unitPriceTaxMode !== "TAX_INCLUDED") {
+          errors.push(`${prefix}unitPriceTaxMode`);
+        }
+      } else if (line.commercialAmountBasis !== "FINAL_AMOUNT_AS_CHARGED" ||
+          line.unitPriceTaxMode !== undefined) {
+        errors.push(`${prefix}commercialAmountBasis`);
       }
       if (typeof line.agreedUnitPriceCents !== "number" ||
           !isNonNegativeCents(line.agreedUnitPriceCents) ||
@@ -521,34 +473,19 @@ export function validateFiscalIntentPricingDeclarationV3(
       if (!isIsoTimestampWithOffset(line.agreedAt)) {
         errors.push(`${prefix}agreedAt`);
       }
-      rejectUnknownFields(line, PRICE_LINE_EVIDENCE_V3_FIELDS, prefix, errors);
+      rejectUnknownFields(line, PRICE_LINE_EVIDENCE_FIELDS, prefix, errors);
     }
   }
-  rejectUnknownFields(pricing, PRICING_DECLARATION_V3_FIELDS,
+  rejectUnknownFields(pricing, PRICING_DECLARATION_FIELDS,
     "pricingDeclaration.", errors);
   return errors;
 }
 
-export function validateFiscalIntentV3(intent: FiscalIntentV3): readonly string[] {
-  const errors = validateFiscalIntentCommon(intent, FISCAL_INTENT_V3_CONTRACT_VERSION);
-  if (!isRecord(intent)) return errors;
-  errors.push(...validateFiscalIntentPricingDeclarationV3(intent.pricingDeclaration));
-  return errors;
-}
-
-/** Lector discriminado: una versión inválida jamás se reinterpreta como otra. */
 export function validateFiscalIntent(intent: FiscalIntent): readonly string[] {
-  const version = isRecord(intent) ? intent.version : undefined;
-  if (version === FISCAL_INTENT_CONTRACT_VERSION) {
-    return validateFiscalIntentV1(intent as FiscalIntentV1);
-  }
-  if (version === FISCAL_INTENT_V2_CONTRACT_VERSION) {
-    return validateFiscalIntentV2(intent as FiscalIntentV2);
-  }
-  if (version === FISCAL_INTENT_V3_CONTRACT_VERSION) {
-    return validateFiscalIntentV3(intent as FiscalIntentV3);
-  }
-  return ["version"];
+  const errors = validateFiscalIntentFields(intent);
+  if (!isRecord(intent)) return errors;
+  errors.push(...validateFiscalIntentPricingDeclaration(intent.pricingDeclaration));
+  return errors;
 }
 
 /** Replay exacto: la misma clave no autoriza cambiar comprador, venta ni precio. */
@@ -561,27 +498,20 @@ export function validateFiscalIntentReplay(
   const replayErrors = validateFiscalIntent(replay);
   if (replayErrors.length) return replayErrors.map((error) => `replay.${error}`);
   const fields = (intent: FiscalIntent): readonly unknown[] => [
-    intent.version, intent.intentId, intent.idempotencyKey, intent.tenantId,
+    intent.contractKind, intent.schemaVersion, intent.intentId, intent.idempotencyKey, intent.tenantId,
     intent.actorId, intent.saleId, intent.saleSnapshotId, intent.requestedDocumentType,
     intent.buyer.documentType, intent.buyer.documentNumber, intent.buyer.legalName,
     intent.occurredAt, intent.queuedAt,
-    ...(intent.version === FISCAL_INTENT_V2_CONTRACT_VERSION ? [
-      intent.pricingDeclaration.unitPriceTaxMode,
-      intent.pricingDeclaration.taxComputationMode,
-      intent.pricingDeclaration.currency,
-      intent.pricingDeclaration.commercialTotalCents,
-    ] : []),
-    ...(intent.version === FISCAL_INTENT_V3_CONTRACT_VERSION ? [
-      intent.pricingDeclaration.taxComputationMode,
-      intent.pricingDeclaration.currency,
-      intent.pricingDeclaration.commercialTotalCents,
-      intent.pricingDeclaration.lines.map((line) => [
-        line.lineId, line.presentationId, line.unitPriceTaxMode,
-        line.agreedUnitPriceCents, line.agreedPriceSourceRef,
-        line.pricePolicyRef, line.pricePolicyVersion,
-        line.fiscalPolicyRef, line.fiscalPolicyVersion, line.agreedAt,
-      ]),
-    ] : []),
+    intent.pricingDeclaration.taxComputationMode,
+    intent.pricingDeclaration.currency,
+    intent.pricingDeclaration.commercialTotalCents,
+    intent.pricingDeclaration.lines.map((line) => [
+      line.lineId, line.presentationId, line.unitPriceTaxMode,
+      line.commercialAmountBasis,
+      line.agreedUnitPriceCents, line.agreedPriceSourceRef,
+      line.pricePolicyRef, line.pricePolicyVersion,
+      line.fiscalPolicyRef, line.fiscalPolicyVersion, line.agreedAt,
+    ]),
   ];
   return JSON.stringify(fields(original)) === JSON.stringify(fields(replay))
     ? [] : ["replay.payloadMismatch"];
@@ -595,6 +525,25 @@ function validateFiscalSaleSnapshotCommon(
     if (!isNonBlank(snapshot[key])) errors.push(key);
   }
   if (!/^\d{11}$/.test(snapshot.issuerRuc)) errors.push("issuerRuc.format");
+  if (!["NRUS", "RER", "RMT", "REGIMEN_GENERAL"].includes(snapshot.taxRegime)) {
+    errors.push("taxRegime");
+  }
+  if (snapshot.documentType !== "BOLETA" && snapshot.documentType !== "FACTURA") {
+    errors.push("documentType");
+  }
+  if (snapshot.currency !== "PEN") errors.push("currency");
+  if (!["DNI", "RUC", "CE", "PASAPORTE", "SIN_DOCUMENTO"].includes(snapshot.buyer.documentType)) {
+    errors.push("buyer.documentType");
+  }
+  if (!isNonBlank(snapshot.buyer.legalName)) errors.push("buyer.legalName");
+  if (snapshot.buyer.documentType === "SIN_DOCUMENTO") {
+    if (snapshot.buyer.documentNumber !== null) errors.push("buyer.documentNumber");
+  } else if (!isNonBlank(snapshot.buyer.documentNumber)) {
+    errors.push("buyer.documentNumber");
+  }
+  if (snapshot.documentType === "FACTURA" && snapshot.buyer.documentType !== "RUC") {
+    errors.push("buyer.documentTypeForFactura");
+  }
   if (snapshot.taxRegime === "NRUS" && snapshot.documentType === "FACTURA") {
     errors.push("taxRegime.documentType");
   }
@@ -636,22 +585,16 @@ function validateFiscalSaleSnapshotCommon(
     if (!Number.isSafeInteger(line.tax.taxRateBasisPoints) || line.tax.taxRateBasisPoints < 0) {
       errors.push(`${prefix}.tax.taxRateBasisPoints`);
     }
-    // El Nuevo RUS no discrimina IGV u otro impuesto en la boleta. Una tasa
-    // comercial global no puede convertirse silenciosamente en tributo CPE.
+    // El Nuevo RUS no discrimina IGV u otro impuesto en la boleta. La
+    // clasificación GRAVADA/10 se conserva, pero su tasa de emisión es cero.
     if (snapshot.taxRegime === "NRUS" &&
-        (line.tax.taxScheme !== "NONE" || line.tax.taxRateBasisPoints !== 0 ||
-          line.tax.taxAmountCents !== 0)) {
+        (line.tax.taxRateBasisPoints !== 0 || line.tax.taxAmountCents !== 0)) {
       errors.push(`${prefix}.tax.nrusDiscriminatedTax`);
     }
     if (line.tax.category === "GRAVADA") {
       if (line.tax.taxScheme !== "IGV") errors.push(`${prefix}.tax.taxScheme`);
-      if (line.tax.taxRateBasisPoints !== 1800) {
+      if (line.tax.taxRateBasisPoints !== (snapshot.taxRegime === "NRUS" ? 0 : 1800)) {
         errors.push(`${prefix}.tax.taxRateBasisPoints`);
-      }
-      if (snapshot.version === FISCAL_SALE_SNAPSHOT_V1_CONTRACT_VERSION &&
-          line.tax.taxRateBasisPoints === 1800 &&
-          !isRoundedTaxQuota(line.tax.taxableBaseCents, line.tax.taxAmountCents, 1800)) {
-        errors.push(`${prefix}.tax.arithmetic`);
       }
     } else if (line.tax.taxScheme !== "NONE" || line.tax.taxRateBasisPoints !== 0 || line.tax.taxAmountCents !== 0) {
       errors.push(`${prefix}.tax.nonTaxableAmounts`);
@@ -665,53 +608,52 @@ function validateFiscalSaleSnapshotCommon(
   }
 }
 
-const V2_LINE_FIELDS = [
-  "unitPriceTaxMode",
-  "commercialGrossBeforeDiscountCents",
-  "commercialGrossDiscountCents",
-  "taxableBaseBeforeDiscountCents",
-  "baseDiscountCents",
-  "discountReasonCode",
-] as const;
-
-export function validateFiscalSaleSnapshotV1(snapshot: FiscalSaleSnapshotV1): readonly string[] {
+export function validateFiscalSaleSnapshot(snapshot: FiscalSaleSnapshot): readonly string[] {
+  if (!isRecord(snapshot)) return ["snapshot"];
   const errors: string[] = [];
-  if (snapshot.version !== FISCAL_SALE_SNAPSHOT_V1_CONTRACT_VERSION) errors.push("version");
-  if ("capability" in snapshot) errors.push("capability");
-  validateFiscalSaleSnapshotCommon(snapshot, errors);
-  if ((snapshot.payment as { readonly status: unknown }).status !== "PAID") {
-    errors.push("payment.status");
-  }
+  rejectUnknownFields(snapshot, SNAPSHOT_FIELDS, "", errors);
+  if (snapshot.contractKind !== FISCAL_SALE_SNAPSHOT_CONTRACT_KIND) errors.push("contractKind");
+  if (snapshot.schemaVersion !== FISCAL_CPE_SCHEMA_VERSION) errors.push("schemaVersion");
+  if (!isRecord(snapshot.payment)) errors.push("payment");
+  if (!isRecord(snapshot.buyer)) errors.push("buyer");
+  if (!Array.isArray(snapshot.lines)) errors.push("lines");
+  if (errors.includes("payment") || errors.includes("buyer") || errors.includes("lines")) return errors;
+  rejectUnknownFields(snapshot.buyer as unknown as Record<string, unknown>, BUYER_FIELDS,
+    "buyer.", errors);
+  const paymentFields = snapshot.payment.status === "PAID" ? PAID_FIELDS :
+    snapshot.payment.status === "DEFERRED" ? DEFERRED_FIELDS : ["status"];
+  rejectUnknownFields(snapshot.payment as unknown as Record<string, unknown>, paymentFields,
+    "payment.", errors);
   for (const [index, line] of snapshot.lines.entries()) {
-    const record = line as unknown as Record<string, unknown>;
-    for (const key of V2_LINE_FIELDS) {
-      if (key in record) errors.push(`lines[${index}].${key}`);
-    }
-    const gross = fiscalLineGrossCents(line.unitPriceCents, line.quantity);
-    if (gross === null || gross <= 0 || !isNonNegativeCents(line.discountCents) ||
-        line.discountCents >= gross ||
-        gross - line.discountCents !== line.tax.taxableBaseCents) {
-      errors.push(`lines[${index}].unitPriceQuantity`);
-    }
-    if (isNonNegativeCents(line.totalCents) &&
-        isNonNegativeCents(line.tax.taxableBaseCents) &&
-        isNonNegativeCents(line.tax.taxAmountCents) &&
-        BigInt(line.tax.taxableBaseCents) + BigInt(line.tax.taxAmountCents) !==
-          BigInt(line.totalCents)) {
-      errors.push(`lines[${index}].tax.lineTotalMismatch`);
+    if (!isRecord(line) || !isRecord(line.tax)) {
+      errors.push(`lines[${index}]`);
+    } else {
+      rejectUnknownFields(line, SNAPSHOT_LINE_FIELDS, `lines[${index}].`, errors);
+      rejectUnknownFields(line.tax, LINE_TAX_FIELDS, `lines[${index}].tax.`, errors);
     }
   }
-  return errors;
-}
-
-export function validateFiscalSaleSnapshotV2(snapshot: FiscalSaleSnapshotV2): readonly string[] {
-  const errors: string[] = [];
-  if (snapshot.version !== FISCAL_SALE_SNAPSHOT_CONTRACT_VERSION) errors.push("version");
-  if (snapshot.capability !== FISCAL_SALE_SNAPSHOT_V2_CAPABILITY) errors.push("capability");
+  if (errors.some((error) => /^lines\[\d+\]$/.test(error))) return errors;
   validateFiscalSaleSnapshotCommon(snapshot, errors);
+  let gravadaPreGrossCents = BigInt(0);
+  let gravadaPreTaxCents = BigInt(0);
+  let gravadaPostGrossCents = BigInt(0);
+  let gravadaPostTaxCents = BigInt(0);
+  let preAggregateComparable = true;
+  let postAggregateComparable = true;
+  let hasGravada = false;
   for (const [index, line] of snapshot.lines.entries()) {
     const prefix = `lines[${index}]`;
-    if (line.unitPriceTaxMode !== "TAX_INCLUDED") errors.push(`${prefix}.unitPriceTaxMode`);
+    if (line.commercialAmountBasis === undefined) {
+      if (line.unitPriceTaxMode !== "TAX_INCLUDED") errors.push(`${prefix}.unitPriceTaxMode`);
+    } else if (line.commercialAmountBasis !== "FINAL_AMOUNT_AS_CHARGED" ||
+        line.unitPriceTaxMode !== undefined ||
+        !((line.tax.category === "EXONERADA" && line.tax.affectationCode === "20" &&
+          line.tax.taxScheme === "NONE") ||
+          (snapshot.taxRegime === "NRUS" && line.tax.category === "GRAVADA" &&
+            line.tax.affectationCode === "10" && line.tax.taxScheme === "IGV")) ||
+        line.tax.taxRateBasisPoints !== 0 || line.tax.taxAmountCents !== 0) {
+      errors.push(`${prefix}.commercialAmountBasis`);
+    }
     const gross = fiscalLineGrossCents(line.unitPriceCents, line.quantity);
     if (gross === null || gross <= 0 || gross !== line.commercialGrossBeforeDiscountCents ||
         !isNonNegativeCents(line.discountCents) || line.discountCents >= gross) {
@@ -742,20 +684,17 @@ export function validateFiscalSaleSnapshotV2(snapshot: FiscalSaleSnapshotV2): re
           taxableBaseBeforeDiscountCents - baseDiscountCents !== line.tax.taxableBaseCents ||
           !taxLineTotalMatches ||
           taxableBaseBeforeDiscountCents > commercialGrossBeforeDiscountCents ||
-          baseDiscountCents > commercialGrossDiscountCents ||
-          (commercialGrossDiscountCents === 0
-            ? baseDiscountCents !== 0
-            : baseDiscountCents <= 0)) {
+          baseDiscountCents > commercialGrossDiscountCents) {
         errors.push(`${prefix}.taxIncludedBreakdown`);
       }
       const taxBeforeDiscountCents = commercialGrossBeforeDiscountCents -
         taxableBaseBeforeDiscountCents;
       if (line.tax.category === "GRAVADA") {
-        if (!isRoundedTaxQuota(taxableBaseBeforeDiscountCents,
+        if (!isFloorOrCeilTaxIncludedQuota(commercialGrossBeforeDiscountCents,
           taxBeforeDiscountCents, line.tax.taxRateBasisPoints)) {
           errors.push(`${prefix}.preDiscountTaxArithmetic`);
         }
-        if (!isRoundedTaxQuota(line.tax.taxableBaseCents,
+        if (!isFloorOrCeilTaxIncludedQuota(line.totalCents,
           line.tax.taxAmountCents, line.tax.taxRateBasisPoints)) {
           errors.push(`${prefix}.postDiscountTaxArithmetic`);
         }
@@ -765,43 +704,126 @@ export function validateFiscalSaleSnapshotV2(snapshot: FiscalSaleSnapshotV2): re
         errors.push(`${prefix}.postDiscountTaxArithmetic`);
       }
     }
+    if (line.tax.category === "GRAVADA") {
+      hasGravada = true;
+      const rateIsValid = line.tax.taxRateBasisPoints ===
+        (snapshot.taxRegime === "NRUS" ? 0 : 1800);
+      if (rateIsValid && isNonNegativeCents(line.commercialGrossBeforeDiscountCents) &&
+          isNonNegativeCents(line.taxableBaseBeforeDiscountCents) &&
+          line.taxableBaseBeforeDiscountCents <= line.commercialGrossBeforeDiscountCents) {
+        gravadaPreGrossCents += BigInt(line.commercialGrossBeforeDiscountCents);
+        gravadaPreTaxCents += BigInt(line.commercialGrossBeforeDiscountCents -
+          line.taxableBaseBeforeDiscountCents);
+      } else preAggregateComparable = false;
+      if (rateIsValid && isNonNegativeCents(line.totalCents) &&
+          isNonNegativeCents(line.tax.taxAmountCents)) {
+        gravadaPostGrossCents += BigInt(line.totalCents);
+        gravadaPostTaxCents += BigInt(line.tax.taxAmountCents);
+      } else postAggregateComparable = false;
+    }
+  }
+  if (hasGravada && preAggregateComparable &&
+      gravadaPreTaxCents !== halfUpTaxIncludedQuota(gravadaPreGrossCents,
+        snapshot.taxRegime === "NRUS" ? 0 : 1800)) {
+    errors.push("tax.preDiscountAggregateMismatch");
+  }
+  if (hasGravada && postAggregateComparable &&
+      gravadaPostTaxCents !== halfUpTaxIncludedQuota(gravadaPostGrossCents,
+        snapshot.taxRegime === "NRUS" ? 0 : 1800)) {
+    errors.push("tax.postDiscountAggregateMismatch");
   }
   return errors;
 }
 
-/** Lector discriminado: jamás adapta un V2 inválido como si fuera V1. */
-export function validateFiscalSaleSnapshot(snapshot: FiscalSaleSnapshot): readonly string[] {
-  const version = (snapshot as { readonly version: unknown }).version;
-  if (version === FISCAL_SALE_SNAPSHOT_V1_CONTRACT_VERSION) {
-    return validateFiscalSaleSnapshotV1(snapshot as FiscalSaleSnapshotV1);
-  }
-  if (version === FISCAL_SALE_SNAPSHOT_CONTRACT_VERSION) {
-    return validateFiscalSaleSnapshotV2(snapshot as FiscalSaleSnapshotV2);
-  }
-  return ["version"];
-}
-
-export function validateFiscalIntentSnapshotLinkV1(
-  intent: FiscalIntentV1,
+export function validateFiscalIntentSnapshotLink(
+  intent: FiscalIntent,
   snapshot: FiscalSaleSnapshot,
 ): readonly string[] {
+  const intentErrors = validateFiscalIntent(intent);
+  if (intentErrors.length) return intentErrors.map((error) => `intent.${error}`);
+  const snapshotErrors = validateFiscalSaleSnapshot(snapshot);
+  if (snapshotErrors.length) return snapshotErrors.map((error) => `snapshot.${error}`);
   const errors: string[] = [];
   if (intent.intentId !== snapshot.intentId) errors.push("intentId");
   if (intent.tenantId !== snapshot.tenantId) errors.push("tenantId");
   if (intent.saleId !== snapshot.saleId) errors.push("saleId");
   if (intent.saleSnapshotId !== snapshot.saleSnapshotId) errors.push("saleSnapshotId");
   if (intent.requestedDocumentType !== snapshot.documentType) errors.push("documentType");
+  if (intent.buyer.documentType !== snapshot.buyer.documentType ||
+      intent.buyer.documentNumber !== snapshot.buyer.documentNumber ||
+      intent.buyer.legalName !== snapshot.buyer.legalName) errors.push("buyer");
+  if (intent.pricingDeclaration.currency !== snapshot.currency) errors.push("currency");
+  if (intent.pricingDeclaration.commercialTotalCents !== snapshot.totalCents) {
+    errors.push("pricingDeclaration.commercialTotalCents");
+  }
+  const intentLines = new Map(intent.pricingDeclaration.lines.map((line) => [line.lineId, line]));
+  const snapshotLines = new Map(snapshot.lines.map((line) => [line.lineId, line]));
+  if (intentLines.size !== snapshotLines.size ||
+      [...intentLines.keys()].some((lineId) => !snapshotLines.has(lineId))) {
+    errors.push("pricingDeclaration.lines");
+  } else {
+    for (const [lineId, line] of intentLines) {
+      const frozen = snapshotLines.get(lineId)!;
+      if (line.unitPriceTaxMode !== frozen.unitPriceTaxMode) {
+        errors.push(`pricingDeclaration.lines.${lineId}.unitPriceTaxMode`);
+      }
+      if (line.commercialAmountBasis !== frozen.commercialAmountBasis) {
+        errors.push(`pricingDeclaration.lines.${lineId}.commercialAmountBasis`);
+      }
+      if (line.agreedUnitPriceCents !== frozen.unitPriceCents) {
+        errors.push(`pricingDeclaration.lines.${lineId}.agreedUnitPriceCents`);
+      }
+    }
+  }
   return errors;
 }
 
-const isSha256 = (value: string): boolean => /^[a-f\d]{64}$/i.test(value);
+const isSha256 = (value: unknown): boolean =>
+  typeof value === "string" && /^[a-f\d]{64}$/i.test(value);
+const DOCUMENT_IDENTITY_FIELDS = ["issuerRuc", "documentType", "series", "number"] as const;
+const CDR_FIELDS = [
+  "identity", "responseCode", "responseDescription", "status", "observations",
+  "signedXmlStorageRef", "signedXmlSha256", "cdrStorageRef", "cdrSha256",
+] as const;
+const EVIDENCE_FIELDS = [
+  "contractKind", "schemaVersion", ...DOCUMENT_IDENTITY_FIELDS,
+  "fiscalDocumentId", "intentId", "tenantId", "saleId", "status", "issuedAt",
+  "provider", "providerRequestId", "signedXmlStorageRef", "signedXmlSha256",
+  "cdrStorageRef", "cdrSha256", "sunatResponseCode",
+  "sunatResponseDescription", "observations",
+] as const;
 
-export function validateFiscalCdrVerificationV1(
-  cdr: FiscalCdrVerificationV1,
-  expectedIdentity: FiscalDocumentIdentityV1,
-): readonly string[] {
+function validateFiscalDocumentIdentity(identity: FiscalDocumentIdentity): readonly string[] {
+  if (!isRecord(identity)) return ["identity"];
   const errors: string[] = [];
-  if (!isSameFiscalDocumentIdentity(expectedIdentity, cdr.identity)) errors.push("identity");
+  if (typeof identity.issuerRuc !== "string" || !/^\d{11}$/.test(identity.issuerRuc)) {
+    errors.push("issuerRuc");
+  }
+  if (identity.documentType !== "BOLETA" && identity.documentType !== "FACTURA") {
+    errors.push("documentType");
+  }
+  if (!isNonBlank(identity.series)) errors.push("series");
+  if (!Number.isSafeInteger(identity.number) || identity.number < 1) errors.push("number");
+  return errors;
+}
+
+export function validateFiscalCdrVerification(
+  cdr: FiscalCdrVerification,
+  expectedIdentity: FiscalDocumentIdentity,
+): readonly string[] {
+  if (!isRecord(cdr) || !isRecord(cdr.identity)) return ["cdr"];
+  const errors: string[] = [];
+  rejectUnknownFields(cdr, CDR_FIELDS, "", errors);
+  rejectUnknownFields(cdr.identity, DOCUMENT_IDENTITY_FIELDS, "identity.", errors);
+  errors.push(...validateFiscalDocumentIdentity(expectedIdentity)
+    .map((error) => `expectedIdentity.${error}`));
+  errors.push(...validateFiscalDocumentIdentity(cdr.identity)
+    .map((error) => `identity.${error}`));
+  if (isRecord(expectedIdentity) &&
+      !isSameFiscalDocumentIdentity(expectedIdentity, cdr.identity)) errors.push("identity");
+  if (!isFiscalTerminalState(cdr.status)) errors.push("status");
+  if (!Array.isArray(cdr.observations) ||
+      !cdr.observations.every((item) => typeof item === "string")) errors.push("observations");
   if (!isNonBlank(cdr.responseCode)) errors.push("responseCode");
   if (!isNonBlank(cdr.responseDescription)) errors.push("responseDescription");
   if (!isNonBlank(cdr.signedXmlStorageRef)) errors.push("signedXmlStorageRef");
@@ -811,13 +833,22 @@ export function validateFiscalCdrVerificationV1(
   return errors;
 }
 
-export function validateFiscalEvidenceV1(evidence: FiscalEvidenceV1): readonly string[] {
+export function validateFiscalEvidence(evidence: FiscalEvidence): readonly string[] {
+  if (!isRecord(evidence)) return ["evidence"];
   const errors: string[] = [];
-  if (evidence.version !== FISCAL_EVIDENCE_CONTRACT_VERSION) errors.push("version");
-  for (const key of ["fiscalDocumentId", "intentId", "tenantId", "saleId", "issuerRuc", "series", "provider", "signedXmlStorageRef", "cdrStorageRef", "sunatResponseCode", "sunatResponseDescription"] as const) {
+  rejectUnknownFields(evidence, EVIDENCE_FIELDS, "", errors);
+  if (evidence.contractKind !== FISCAL_EVIDENCE_CONTRACT_KIND) errors.push("contractKind");
+  if (evidence.schemaVersion !== FISCAL_CPE_SCHEMA_VERSION) errors.push("schemaVersion");
+  if (!isFiscalTerminalState(evidence.status)) errors.push("status");
+  errors.push(...validateFiscalDocumentIdentity(evidence));
+  if (evidence.providerRequestId !== null && !isNonBlank(evidence.providerRequestId)) {
+    errors.push("providerRequestId");
+  }
+  if (!Array.isArray(evidence.observations) ||
+      !evidence.observations.every((item) => typeof item === "string")) errors.push("observations");
+  for (const key of ["fiscalDocumentId", "intentId", "tenantId", "saleId", "provider", "signedXmlStorageRef", "cdrStorageRef", "sunatResponseCode", "sunatResponseDescription"] as const) {
     if (!isNonBlank(evidence[key])) errors.push(key);
   }
-  if (!Number.isSafeInteger(evidence.number) || evidence.number < 1) errors.push("number");
   if (!isSha256(evidence.signedXmlSha256)) errors.push("signedXmlSha256");
   if (!isSha256(evidence.cdrSha256)) errors.push("cdrSha256");
   if (!Number.isFinite(Date.parse(evidence.issuedAt))) errors.push("issuedAt");
