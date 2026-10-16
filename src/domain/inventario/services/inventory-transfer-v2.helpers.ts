@@ -36,8 +36,9 @@ const numeroFinito = (value: unknown): value is number =>
 const timestampValido = (value: unknown): value is number =>
   typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 
+// Una unidad mínima representable no puede ser indistinguible de cero.
 const casiIguales = (left: number, right: number, precision: number): boolean =>
-  Math.abs(left - right) <= Math.pow(10, -precision) + Number.EPSILON;
+  Math.abs(left - right) < Math.pow(10, -precision) / 2;
 
 const normalizarCero = (value: number, precision: number): number =>
   casiIguales(value, 0, precision) ? 0 : value;
@@ -681,7 +682,7 @@ export const validarTransferenciaInventarioV2 = (
   for (const linea of resumen.lineas) {
     const original = lineasPorId.get(linea.lineaTransferenciaId);
     const precision = original?.conversionSnapshot.precisionCantidadBase ?? 6;
-    if (linea.cantidadBaseEnTransito < -Math.pow(10, -precision)) {
+    if (linea.cantidadBaseEnTransito < -Math.pow(10, -precision) / 2) {
       errores.push(
         `transferencia.linea ${linea.lineaTransferenciaId} excede la cantidad enviada`,
       );

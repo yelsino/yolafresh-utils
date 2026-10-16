@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "artifactVersion": "2.4.8-cpe.7",
+  "supersedes": {
+    "artifactVersion": "2.4.8-cpe.6",
+    "sha256": "5549c3af93958b1d16d91aebbce83555344c5cf8d90d80713a95d2dd27b6fba7",
+    "reason": "El validador fiscal de cpe.7 comprueba Cat07/Cat03 y aritmética decimal por línea antes de aceptar snapshots."
+  },
+  "recordedAtLima": "2026-10-03",
+  "source": {
+    "path": "D:/Proyectos/WEB/yola-fresh-utils",
+    "head": "d1ef1847e926ca9b7256c6949ed0642d12002413",
+    "description": "Fuentes dirty no fiscales preservadas de forma aditiva; el repositorio de origen no se modificó."
+  },
+  "destination": {
+    "path": "D:/Proyectos/YolaFresh-worktrees/facturacion-electronica-utils",
+    "baseHead": "119bd154662791c58bc0d1ff6621350b26932a24"
+  },
+  "files": [
+    { "path": "src/domain/auth/catalogs/permission.catalog.ts", "sha256": "0c63fa18b845e8cb8d70e95a01f80f86d8d5d8d283f2c956989775f5ac272a67" },
+    { "path": "src/domain/auth/catalogs/role.catalog.ts", "sha256": "1b7e124b62d856a9a8a771c5a29c27836b4f5dbcfefdcf87c971a3b4dc7ea050" },
+    { "path": "src/domain/auth/metadata/permission-metadata.catalog.ts", "sha256": "75ccd4132b3be887abc4c13be6f3916c5ba30b8cc9718e02e206eb3267306994" },
+    { "path": "src/domain/auth/tests/helpers.test.ts", "sha256": "e81ea3a745795e6c34be0a043d03cc0fc3ba17e1920611d7594224cc30e03c35" },
+    { "path": "src/domain/auth/version/auth-catalog.version.ts", "sha256": "3ec031d1381d67e43ae7e442779538fa229c07975fe035ae141f3e8ea7acf395" },
+    { "path": "src/domain/inventario/contracts/conteo-inventario.contract.ts", "sha256": "28503a413472b446754e2da667e7de11f0edfce1292d8383cd2c749d81166301" },
+    { "path": "src/domain/inventario/contracts/index.ts", "sha256": "29d9d2066e2877cb41fc0f75ad869574d200bbfb11f3900003cc357890d145f6" },
+    { "path": "src/domain/inventario/contracts/politica-inventario.contract.ts", "sha256": "b05a7b7d4d8b8d18af5c047ea098f5f625fe5c19ea69990215fcb8b7d49d09cd" },
+    { "path": "src/domain/inventario/services/index.ts", "sha256": "4075a8acd09fb0dde3f1fc620cfe18c7578319ba93daf51958f028ec62d85e69" },
+    { "path": "src/domain/inventario/services/inventory-transfer-v2.helpers.ts", "sha256": "ba5ef3a613f5d0044ee0feb432285a1de1f0b2a231602edc4edb427ac14f18fb" },
+    { "path": "src/domain/inventario/services/inventory-v2.helpers.ts", "sha256": "0aa614c50b900d01b4e0d357f9b6d67c864ad8c6e4b320038b1763803eab8a47" },
+    { "path": "src/domain/inventario/tests/inventory-transfer-v2-contract.test.ts", "sha256": "0e4abeef8f32c909f1829cf30b46acd32ca8f7f1bf5cc8d56cbde575c5e67854" },
+    { "path": "src/domain/inventario/tests/inventory-v2-contract.test.ts", "sha256": "e16de414f8e810d5de09eff6934f47fce10788602fa4d48e520fe5211af889f7" },
+    { "path": "src/domain/personas/contracts/permisos.contract.ts", "sha256": "083f8ec5afacc0877e26f31616e3365c178fc1defd661a7afbb399a90487d8e8" },
+    { "path": "src/domain/personas/contracts/rbac-catalogs.contract.ts", "sha256": "c609848aeb0a083f74ea623c886a6e2d5a965d72036773a2f2e15f7755923e6e" },
+    { "path": "src/domain/restaurant/contracts/commands.contract.ts", "sha256": "8061e9522a7c2e7f27f2e9e660a7a86956fa94016b10ba5d3dfd929c46994d3f" },
+    { "path": "src/domain/restaurant/policies/menu.policy.ts", "sha256": "e7a8c67327d5ffd68ec50ce894873b90f65d791d787fddfc59926d84e94a54cf" },
+    { "path": "src/domain/restaurant/tests/restaurant-contracts.test.ts", "sha256": "87a230292975e21a6d7673dd94b29e11b20e9c80bda26118dc3701c991f52fb7" },
+    { "path": "src/domain/inventario/contracts/politica-inventario-revision.contract.ts", "sha256": "60811c2ff2307c43f1f17fcdd02f0fc8267fd16a0d31265745f86981832186be" },
+    { "path": "src/domain/inventario/services/politica-inventario-revision.helpers.ts", "sha256": "5735bd9bc50a34728d86ebd2472b8401804a9ccb6d6f743a9693a3bc8bddc994" },
+    { "path": "src/domain/inventario/tests/politica-inventario-revision.contract.test.ts", "sha256": "1268aaba6bf8542f672c1fda7f4233e936f80b89647207d8dd7e2d28d8ea8110" }
+  ],
+  "localFiscalFiles": [
+    { "path": "src/domain/fiscal/contracts/cpe.contract.ts", "sha256": "5dbe2962af1eb7eaaaa4d2fdf16806f95b71d6bfe630e5248d20e3e155daa245" },
+    { "path": "src/domain/fiscal/tests/cpe-contract.test.ts", "sha256": "e2aeeaea884ff0df0023e2566b24e102422c10487c4c7f88bca0d12c1c89be1d" },
+    { "path": "src/domain/shared/kernel/empresa.contract.ts", "sha256": "f70219c4baa06c343dbeec0cb69ecd81da7d9452ffa6c74dfd4bcff244fc9d66" },
+    { "path": "src/domain/ventas/entities/VentaSnapshot.ts", "sha256": "46e693e05ec877fba946e83cd6b972b1269c0345afdb5affae6f9a5df459e295" },
+    { "path": "src/domain/ventas/tests/venta-contract.test.ts", "sha256": "2585b6d231fd2ad13d909d2e269c76f8b6e942a5b8df6d8bd9f73b0e53e4a608" }
+  ],
+  "merges": [
+    "package.json conserva versión/exports/tests fiscales y añade el test de política de inventario revisionada.",
+    "src/domain/shared/kernel/empresa.contract.ts conserva la variante fiscal del worktree y añade facturacionElectronicaEnabled opt-in por tenant.",
+    "FiscalIntentV2 añade declaración comercial posterior a la venta y replay estricto; no cambia la venta normal.",
+    "VentaSnapshot conserva ofertaComercial opcional e inmutable; los snapshots legacy siguen válidos sin ese campo.",
+    "El snapshot fiscal V1/V2 rechaza códigos Cat07/Cat03 fuera del subconjunto oneroso del piloto y verifica precio unitario por cantidad con decimal exacto; no decide la afectación tributaria a partir de impuesto cero."
+  ]
+}

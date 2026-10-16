@@ -126,6 +126,8 @@ export interface ConfigEmpresa {
     regimenTributario?: RegimenTributarioEmpresa;
     /** Opcional y apagado por ausencia; jamás sustituye los gates del backend/PSE. */
     demo?: ConfigFiscalDemoEmpresa;
+    /** Opt-in por empresa para CPE; ausente o distinto de true permanece apagado. */
+    facturacionElectronicaEnabled?: boolean;
     redondeoPago?: PoliticaRedondeoPago;
     descuentoVenta?: PoliticaDescuentoVenta;
   };

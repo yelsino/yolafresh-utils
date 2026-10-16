@@ -5,6 +5,7 @@ export * from "./inventory-quantity-v2.contract";
 export * from "./stock-producto-base-almacen.contract";
 export * from "./movimiento-inventario-v2.contract";
 export * from "./politica-inventario.contract";
+export * from "./politica-inventario-revision.contract";
 export * from "./conteo-inventario.contract";
 export * from "./ajuste-inventario.contract";
 export * from "./transferencia-inventario-v2.contract";

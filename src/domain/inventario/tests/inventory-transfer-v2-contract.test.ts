@@ -203,6 +203,64 @@ test("transferencia V2 acepta presentacion o captura directa en unidad base", ()
 
 });
 
+test("una unidad enviada con precision cero permanece en transito hasta recibirla", () => {
+  const borrador = crearBorrador(true);
+  borrador.items = [{
+    ...borrador.items[0],
+    presentacionId: undefined,
+    unidadBase: UnidadBaseInventarioV2.UNIDAD,
+    cantidadOperacion: 1,
+    cantidadBase: 1,
+    conversionSnapshot: {
+      productoBaseId: borrador.items[0].productoBaseId,
+      unidadOperacion: UnidadBaseInventarioV2.UNIDAD,
+      unidadBase: UnidadBaseInventarioV2.UNIDAD,
+      factorUnidadBase: 1,
+      precisionCantidadBase: 0,
+      capturadaAt: ahora - 1_000,
+    },
+  }];
+  const enviada = enviar(borrador);
+
+  assert.equal(validarTransferenciaInventarioV2(enviada).valido, true);
+  assert.equal(
+    resumirTransferenciaInventarioV2(enviada).lineas[0].cantidadBaseEnTransito,
+    1,
+  );
+
+  const recibida: TransferenciaInventarioV2 = {
+    ...enviada,
+    version: 3,
+    estado: EstadoTransferenciaInventarioV2.RECIBIDA,
+    recepciones: [recibo(enviada.id, "recibo_unidad", 2, ahora + 2_000, 1)],
+    updatedAt: ahora + 2_000,
+  };
+  assert.equal(validarTransferenciaInventarioV2(recibida).valido, true);
+  assert.equal(
+    resumirTransferenciaInventarioV2(recibida).lineas[0].cantidadBaseEnTransito,
+    0,
+  );
+
+  const sobreRecibida: TransferenciaInventarioV2 = {
+    ...recibida,
+    recepciones: [recibo(enviada.id, "recibo_excesivo", 2, ahora + 2_000, 2)],
+  };
+  assert.match(
+    validarTransferenciaInventarioV2(sobreRecibida).errores.join(" "),
+    /excede la cantidad enviada/,
+  );
+
+  const conversionDesfasada = crearBorrador(true);
+  conversionDesfasada.items = [{
+    ...borrador.items[0],
+    cantidadOperacion: 2,
+  }];
+  assert.match(
+    validarTransferenciaInventarioV2(conversionDesfasada).errores.join(" "),
+    /cantidadBase no coincide con la conversion/,
+  );
+});
+
 test("ciclo permite cancelar solo antes del envio y recibir en varios eventos", () => {
   assert.equal(
     puedeTransicionarTransferenciaInventarioV2(

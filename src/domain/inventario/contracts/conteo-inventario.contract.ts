@@ -5,6 +5,7 @@ import type {
   InventoryV2SchemaVersion,
   UnidadBaseInventarioV2,
 } from "./inventory-quantity-v2.contract";
+import type { PoliticaInventarioResuelta } from "./politica-inventario.contract";
 
 export const CONTEO_INVENTARIO_TYPE = "conteo_inventario" as const;
 export const CONTEO_INVENTARIO_LINEA_TYPE =
@@ -59,6 +60,35 @@ export interface CapturaConteoInventario {
   observacion?: string;
 }
 
+/** Evidencia congelada al enviar una línea con diferencia a revisión. */
+export interface EvaluacionAprobacionConteoSnapshot {
+  capturaId: string;
+  versionProyeccionAlCorte: number;
+  evaluadaAt: UnixMillis;
+  /** Parámetros efectivos tras aplicar la precedencia completa. */
+  politica: Pick<
+    PoliticaInventarioResuelta,
+    | "toleranciaCantidadBase"
+    | "toleranciaPorcentaje"
+    | "requiereAprobacionAjuste"
+    | "umbralAprobacionCantidadBase"
+    | "umbralAprobacionValor"
+  >;
+  /** Todas las fuentes que contribuyeron, en orden de precedencia. */
+  fuentes: Array<{ politicaId: string; version: number }>;
+  /** Nulo si el costo PEN fiable no estaba disponible al evaluar. */
+  diferenciaValorPEN: number | null;
+  requiereAprobacion: boolean;
+  motivos: Array<
+    | "QUANTITY_TOLERANCE"
+    | "PERCENT_TOLERANCE"
+    | "APPROVAL_QUANTITY_THRESHOLD"
+    | "APPROVAL_VALUE_THRESHOLD"
+    | "APPROVAL_VALUE_UNKNOWN"
+    | "APPROVAL_ALL_DIFFERENCES"
+  >;
+}
+
 export interface ConteoInventarioLinea {
   id: string;
   type: typeof CONTEO_INVENTARIO_LINEA_TYPE;
@@ -85,6 +115,7 @@ export interface ConteoInventarioLinea {
   revisadaPor?: ActorInventarioSnapshot;
   revisadaAt?: UnixMillis;
   observacionRevision?: string;
+  evaluacionAprobacion?: EvaluacionAprobacionConteoSnapshot;
   createdAt: UnixMillis;
   updatedAt: UnixMillis;
 }

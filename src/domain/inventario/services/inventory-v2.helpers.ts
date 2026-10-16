@@ -66,8 +66,9 @@ const resultado = (errores: string[]): ResultadoValidacionInventario => ({
   errores,
 });
 
+// Una unidad mínima representable nunca puede equivaler a cero u otra unidad.
 const casiIguales = (left: number, right: number, precision: number): boolean =>
-  Math.abs(left - right) <= Math.pow(10, -precision) + Number.EPSILON;
+  Math.abs(left - right) < Math.pow(10, -precision) / 2;
 
 export const redondearCantidadInventario = (
   cantidad: number,
@@ -317,6 +318,7 @@ export const resolverPoliticaInventario = (
   return {
     modo,
     ...semanticaModo[modo],
+    stockMinimoBase: configuracion.stockMinimoBase,
     inventarioInicialRequerido:
       configuracion.inventarioInicialRequerido ?? false,
     conteoCiego: configuracion.conteoCiego ?? true,
@@ -331,6 +333,10 @@ export const resolverPoliticaInventario = (
     requiereEvidenciaMerma:
       configuracion.requiereEvidenciaMerma ?? false,
     fuentesAplicadas: aplicadas.map((politica) => politica.id),
+    fuentesVersionadasAplicadas: aplicadas.map((politica) => ({
+      politicaId: politica.id,
+      version: politica.version,
+    })),
   };
 };
 
@@ -414,6 +420,13 @@ export const validarPoliticaInventario = (
     errores.push("politica.updatedAt no puede ser anterior a createdAt");
   }
   const cfg = politica.configuracion;
+  if (
+    cfg.stockMinimoBase !== undefined &&
+    politica.alcance.nivel !== NivelPoliticaInventario.PRODUCTO &&
+    politica.alcance.nivel !== NivelPoliticaInventario.PRODUCTO_ALMACEN
+  ) {
+    errores.push("politica.configuracion.stockMinimoBase requiere alcance de producto");
+  }
   if (cfg.modo !== undefined && !Object.values(ModoControlInventario).includes(cfg.modo)) {
     errores.push("politica.configuracion.modo es invalido");
   }
@@ -428,6 +441,7 @@ export const validarPoliticaInventario = (
     }
   }
   for (const [campo, value] of [
+    ["stockMinimoBase", cfg.stockMinimoBase],
     ["toleranciaCantidadBase", cfg.toleranciaCantidadBase],
     ["toleranciaPorcentaje", cfg.toleranciaPorcentaje],
     ["umbralAprobacionCantidadBase", cfg.umbralAprobacionCantidadBase],
@@ -807,6 +821,48 @@ export const validarConteoInventarioLinea = (
   );
   if (linea.capturaVigenteId && !capturaVigente) {
     errores.push("linea.capturaVigenteId no existe en capturas");
+  }
+  const evaluacion = linea.evaluacionAprobacion;
+  if (evaluacion) {
+    if (evaluacion.capturaId !== linea.capturaVigenteId ||
+      evaluacion.versionProyeccionAlCorte !== linea.versionProyeccionAlCorte ||
+      linea.diferenciaBase === 0) {
+      errores.push("linea.evaluacionAprobacion no corresponde al conteo vigente");
+    }
+    if (!Number.isSafeInteger(evaluacion.evaluadaAt) || evaluacion.evaluadaAt <= 0) {
+      errores.push("linea.evaluacionAprobacion.evaluadaAt es inválida");
+    }
+    const politica = evaluacion.politica;
+    if (!politica ||
+      !esNumeroFinito(politica.toleranciaCantidadBase) || politica.toleranciaCantidadBase < 0 ||
+      !esNumeroFinito(politica.toleranciaPorcentaje) || politica.toleranciaPorcentaje < 0 ||
+      typeof politica.requiereAprobacionAjuste !== "boolean" ||
+      (politica.umbralAprobacionCantidadBase != null &&
+        (!esNumeroFinito(politica.umbralAprobacionCantidadBase) || politica.umbralAprobacionCantidadBase < 0)) ||
+      (politica.umbralAprobacionValor != null &&
+        (!esNumeroFinito(politica.umbralAprobacionValor) || politica.umbralAprobacionValor < 0))) {
+      errores.push("linea.evaluacionAprobacion.politica es inválida");
+    }
+    if (evaluacion.diferenciaValorPEN !== null &&
+      (!esNumeroFinito(evaluacion.diferenciaValorPEN) || evaluacion.diferenciaValorPEN < 0)) {
+      errores.push("linea.evaluacionAprobacion.diferenciaValorPEN es inválida");
+    }
+    const fuentes = evaluacion.fuentes;
+    if (!Array.isArray(fuentes) ||
+      fuentes.some((fuente) => !esTextoNoVacio(fuente?.politicaId) ||
+        !Number.isSafeInteger(fuente?.version) || fuente.version < 1) ||
+      new Set(fuentes.map((fuente) => fuente.politicaId)).size !== fuentes.length) {
+      errores.push("linea.evaluacionAprobacion.fuentes son inválidas");
+    }
+    const motivos = evaluacion.motivos;
+    const validMotivos = new Set([
+      "QUANTITY_TOLERANCE", "PERCENT_TOLERANCE", "APPROVAL_QUANTITY_THRESHOLD",
+      "APPROVAL_VALUE_THRESHOLD", "APPROVAL_VALUE_UNKNOWN", "APPROVAL_ALL_DIFFERENCES",
+    ]);
+    if (!Array.isArray(motivos) || motivos.some((motivo) => !validMotivos.has(motivo)) ||
+      evaluacion.requiereAprobacion !== (motivos.length > 0)) {
+      errores.push("linea.evaluacionAprobacion.decision es inválida");
+    }
   }
   if (
     linea.estado !== EstadoLineaConteoInventario.PENDIENTE &&

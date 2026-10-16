@@ -65,6 +65,27 @@ export interface VentaRedondeoSnapshot {
   aplicacion: "EFECTIVO_TOTAL" | "EFECTIVO_MIXTO";
 }
 
+/** Identidad y precio ofertado de una opción elegida, aun cuando sea gratuita. */
+export interface VentaOfertaComercialSeleccionSnapshot {
+  readonly grupoId: string;
+  readonly opcionId: string;
+  readonly grupoNombre: string;
+  readonly opcionNombre: string;
+  readonly cantidad: number;
+  readonly precioExtraUnitario: Readonly<{
+    minorUnits: number;
+    currency: MonedaEmpresa;
+  }>;
+}
+
+/** Hechos de la oferta congelados para que el servidor resuelva su perfil fiscal. */
+export interface VentaOfertaComercialSnapshot {
+  readonly schemaVersion: 1;
+  readonly presentacionId: string;
+  readonly productoRestauranteId?: string;
+  readonly selecciones: readonly VentaOfertaComercialSeleccionSnapshot[];
+}
+
 export interface VentaSnapshotItem {
   id: string;
   presentacionId: string;
@@ -88,6 +109,7 @@ export interface VentaSnapshotItem {
   unidadComercial?: string;
   montoModificado?: boolean;
   descuento?: number;
+  ofertaComercial?: VentaOfertaComercialSnapshot;
 }
 
 /**
@@ -180,6 +202,106 @@ function safeTrim(value?: string | null): string | undefined {
 
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function requireOpaqueId(value: unknown, field: string): string {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`${field} es requerido`);
+  }
+  return value;
+}
+
+function freezeOfertaComercial(
+  raw: unknown,
+  itemPresentacionId: string,
+): VentaOfertaComercialSnapshot {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error("VentaSnapshotItem.ofertaComercial es inválida");
+  }
+  const oferta = raw as Partial<VentaOfertaComercialSnapshot>;
+  if (oferta.schemaVersion !== 1) {
+    throw new Error("VentaSnapshotItem.ofertaComercial.schemaVersion debe ser 1");
+  }
+  const presentacionId = requireOpaqueId(
+    oferta.presentacionId,
+    "VentaSnapshotItem.ofertaComercial.presentacionId",
+  );
+  if (presentacionId !== itemPresentacionId) {
+    throw new Error(
+      "VentaSnapshotItem.ofertaComercial.presentacionId debe coincidir con el item",
+    );
+  }
+  const productoRestauranteId =
+    oferta.productoRestauranteId === undefined
+      ? undefined
+      : requireOpaqueId(
+          oferta.productoRestauranteId,
+          "VentaSnapshotItem.ofertaComercial.productoRestauranteId",
+        );
+  if (!Array.isArray(oferta.selecciones)) {
+    throw new Error("VentaSnapshotItem.ofertaComercial.selecciones debe ser un arreglo");
+  }
+  const selecciones = oferta.selecciones.map((rawSeleccion, index) => {
+    if (!rawSeleccion || typeof rawSeleccion !== "object") {
+      throw new Error(
+        `VentaSnapshotItem.ofertaComercial.selecciones[${index}] es inválida`,
+      );
+    }
+    const seleccion = rawSeleccion as VentaOfertaComercialSeleccionSnapshot;
+    const field = `VentaSnapshotItem.ofertaComercial.selecciones[${index}]`;
+    const grupoId = requireOpaqueId(seleccion.grupoId, `${field}.grupoId`);
+    const opcionId = requireOpaqueId(seleccion.opcionId, `${field}.opcionId`);
+    const grupoNombre = safeTrim(seleccion.grupoNombre);
+    const opcionNombre = safeTrim(seleccion.opcionNombre);
+    if (!grupoNombre || !opcionNombre) {
+      throw new Error(`${field} requiere nombres de grupo y opción`);
+    }
+    if (!Number.isSafeInteger(seleccion.cantidad) || seleccion.cantidad <= 0) {
+      throw new Error(`${field}.cantidad debe ser entero seguro positivo`);
+    }
+    const precio = seleccion.precioExtraUnitario;
+    if (
+      !precio ||
+      !Number.isSafeInteger(precio.minorUnits) ||
+      precio.minorUnits < 0 ||
+      (precio.currency !== "PEN" && precio.currency !== "USD")
+    ) {
+      throw new Error(`${field}.precioExtraUnitario es inválido`);
+    }
+    return Object.freeze({
+      grupoId,
+      opcionId,
+      grupoNombre,
+      opcionNombre,
+      cantidad: seleccion.cantidad,
+      precioExtraUnitario: Object.freeze({
+        minorUnits: precio.minorUnits,
+        currency: precio.currency,
+      }),
+    });
+  });
+  return Object.freeze({
+    schemaVersion: 1,
+    presentacionId,
+    ...(productoRestauranteId !== undefined ? { productoRestauranteId } : {}),
+    selecciones: Object.freeze(selecciones),
+  });
+}
+
+function copyOfertaComercial(
+  oferta: VentaOfertaComercialSnapshot,
+): VentaOfertaComercialSnapshot {
+  return {
+    schemaVersion: oferta.schemaVersion,
+    presentacionId: oferta.presentacionId,
+    ...(oferta.productoRestauranteId !== undefined
+      ? { productoRestauranteId: oferta.productoRestauranteId }
+      : {}),
+    selecciones: oferta.selecciones.map((seleccion) => ({
+      ...seleccion,
+      precioExtraUnitario: { ...seleccion.precioExtraUnitario },
+    })),
+  };
 }
 
 const normalizedIds = (values: unknown): string[] =>
@@ -493,39 +615,55 @@ export class VentaSnapshot implements IVentaSnapshot {
     this.ventaId = data.ventaId;
     this.createdAt = normalizeDate(data.createdAt);
     this.items = Object.freeze(
-      data.items.map((item) => ({
-        ...item,
-        afectaInventario:
-          typeof item.afectaInventario === "boolean"
-            ? item.afectaInventario
-            : undefined,
-        nombre: safeTrim(item.nombre) ?? item.presentacionId,
-        productoBaseId: safeTrim(item.productoBaseId),
-        imagenUrl: safeTrim(item.imagenUrl),
-        unidadComercial: safeTrim(item.unidadComercial),
-        cantidadVendida: Number(item.cantidadVendida ?? 0),
-        unidadBase: safeTrim(item.unidadBase),
-        factorConversionBase:
-          typeof item.factorConversionBase === "number"
-            ? Number(item.factorConversionBase)
-            : undefined,
-        cantidadBase:
-          typeof item.cantidadBase === "number"
-            ? Number(item.cantidadBase)
-            : undefined,
-        versionConversion:
-          typeof item.versionConversion === "number"
-            ? Number(item.versionConversion)
-            : undefined,
-        precioUnitario: roundMoney(Number(item.precioUnitario ?? 0)),
-        total: roundMoney(Number(item.total ?? 0)),
-        montoModificado:
-          typeof item.montoModificado === "boolean" ? item.montoModificado : undefined,
-        descuento:
-          typeof item.descuento === "number"
-            ? roundMoney(Number(item.descuento))
-            : undefined,
-      })),
+      data.items.map((item) => {
+        const { ofertaComercial, ...rest } = item;
+        const normalizedItem: VentaSnapshotItem = {
+          ...rest,
+          afectaInventario:
+            typeof item.afectaInventario === "boolean"
+              ? item.afectaInventario
+              : undefined,
+          nombre: safeTrim(item.nombre) ?? item.presentacionId,
+          productoBaseId: safeTrim(item.productoBaseId),
+          imagenUrl: safeTrim(item.imagenUrl),
+          unidadComercial: safeTrim(item.unidadComercial),
+          cantidadVendida: Number(item.cantidadVendida ?? 0),
+          unidadBase: safeTrim(item.unidadBase),
+          factorConversionBase:
+            typeof item.factorConversionBase === "number"
+              ? Number(item.factorConversionBase)
+              : undefined,
+          cantidadBase:
+            typeof item.cantidadBase === "number"
+              ? Number(item.cantidadBase)
+              : undefined,
+          versionConversion:
+            typeof item.versionConversion === "number"
+              ? Number(item.versionConversion)
+              : undefined,
+          precioUnitario: roundMoney(Number(item.precioUnitario ?? 0)),
+          total: roundMoney(Number(item.total ?? 0)),
+          montoModificado:
+            typeof item.montoModificado === "boolean"
+              ? item.montoModificado
+              : undefined,
+          descuento:
+            typeof item.descuento === "number"
+              ? roundMoney(Number(item.descuento))
+              : undefined,
+          ...(ofertaComercial !== undefined
+            ? {
+                ofertaComercial: freezeOfertaComercial(
+                  ofertaComercial,
+                  item.presentacionId,
+                ),
+              }
+            : {}),
+        };
+        return ofertaComercial !== undefined
+          ? Object.freeze(normalizedItem)
+          : normalizedItem;
+      }),
     ) as VentaSnapshotItem[];
     this.subtotal = roundMoney(Number(data.subtotal ?? 0));
     this.descuentoTotal =
@@ -602,7 +740,15 @@ export class VentaSnapshot implements IVentaSnapshot {
       type: this.type,
       ventaId: this.ventaId,
       createdAt: this.createdAt,
-      items: this.items.map((item) => ({ ...item })),
+      items: this.items.map((item) => {
+        const { ofertaComercial, ...rest } = item;
+        return {
+          ...rest,
+          ...(ofertaComercial
+            ? { ofertaComercial: copyOfertaComercial(ofertaComercial) }
+            : {}),
+        };
+      }),
       subtotal: this.subtotal,
       descuentoTotal: this.descuentoTotal,
       descuentoVenta: this.descuentoVenta
@@ -849,6 +995,16 @@ export class VentaSnapshot implements IVentaSnapshot {
 
       if (!safeTrim(item.nombre)) {
         errores.push(`VentaSnapshot.items[${index}].nombre es requerido`);
+      }
+
+      if (item.ofertaComercial !== undefined) {
+        try {
+          freezeOfertaComercial(item.ofertaComercial, item.presentacionId);
+        } catch (error) {
+          errores.push(
+            error instanceof Error ? error.message : String(error),
+          );
+        }
       }
 
       if (

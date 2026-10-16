@@ -56,6 +56,8 @@ export type AlcancePoliticaInventario =
 
 export interface ConfiguracionPoliticaInventario {
   modo?: ModoControlInventario;
+  /** Mínimo de reposición en unidad base; solo admite alcances PRODUCTO o PRODUCTO_ALMACEN. */
+  stockMinimoBase?: number;
   inventarioInicialRequerido?: boolean;
   conteoCiego?: boolean;
   frecuenciaConteoDias?: number;
@@ -91,6 +93,8 @@ export type AccionStockInsuficiente = "BLOQUEAR" | "ADVERTIR" | "PERMITIR";
 /** Política materializada después de aplicar la precedencia completa. */
 export interface PoliticaInventarioResuelta {
   modo: ModoControlInventario;
+  /** Ausente cuando el producto no tiene un mínimo de reposición configurado. */
+  stockMinimoBase?: number;
   registrarMovimientos: boolean;
   validarStockAntesDeVender: boolean;
   permitirStockNegativo: boolean;
@@ -108,6 +112,8 @@ export interface PoliticaInventarioResuelta {
 
   /** IDs de políticas aplicadas, ordenadas de menor a mayor precedencia. */
   fuentesAplicadas: string[];
+  /** Identidad y versión de cada fuente; permite reconstruir decisiones históricas. */
+  fuentesVersionadasAplicadas?: Array<{ politicaId: string; version: number }>;
 }
 
 export interface ContextoResolucionPoliticaInventario {
