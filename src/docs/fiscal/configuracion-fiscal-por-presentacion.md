@@ -1,5 +1,12 @@
 # Configuración fiscal de presentaciones
 
+> Base conceptual y contrato local previo. El módulo multitenant nuevo
+> requiere conciliar esta publicación con la autoridad backend en una única
+> fuente canónica; véanse el RFC, matriz y plan `10-` a `12-` en
+> `FINANZAS-YOLA-FRESH/docs/facturacion-electronica/`. No interpretar una
+> configuración publicada aquí como certificación de todas las capacidades
+> de XmlPeru/SUNAT.
+
 Estado: negocio implementado y probado sin UI en la biblioteca compartida,
 backend y almacenamiento local. La publicación del paquete y el despliegue
 son pasos separados; no se han realizado como parte de este trabajo.
