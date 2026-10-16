@@ -1,5 +1,7 @@
 {
+  "typescript.tsdk": "node_modules/typescript/lib",
   "files.exclude": {
+    ".archive": true,
     "auth": true,
     "compras": true,
     "contabilidad": true,
