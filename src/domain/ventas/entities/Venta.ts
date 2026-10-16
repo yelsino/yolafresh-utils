@@ -9,6 +9,10 @@ import {
 } from "../../shared/kernel/enums";
 import type { MonedaEmpresa } from "../../shared/kernel/empresa.contract";
 import {
+  validarBeneficiarioEnVenta,
+  type BeneficiarioEnVenta,
+} from "../../personas/contracts/beneficiario.contract";
+import {
   IVentaSnapshot,
   VentaSnapshot,
   VentaSnapshotBuildContext,
@@ -42,6 +46,7 @@ export interface IVenta {
   moneda?: MonedaEmpresa;
   procedencia: ProcedenciaComercialEnum;
   clienteId?: string;
+  beneficiario?: BeneficiarioEnVenta;
   vendedorId?: string;
   codigoVenta?: string;
   numeroVenta?: string;
@@ -130,6 +135,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   public readonly moneda?: MonedaEmpresa;
   public readonly procedencia: ProcedenciaComercialEnum;
   public readonly clienteId?: string;
+  public readonly beneficiario?: BeneficiarioEnVenta;
   public readonly vendedorId?: string;
   public readonly codigoVenta?: string;
   public readonly numeroVenta?: string;
@@ -174,6 +180,9 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     this.moneda = data.moneda;
     this.procedencia = procedencia;
     this.clienteId = data.clienteId;
+    this.beneficiario = data.beneficiario
+      ? Object.freeze({ ...data.beneficiario })
+      : undefined;
     this.vendedorId = data.vendedorId;
     this.codigoVenta = data.codigoVenta;
     this.numeroVenta = data.numeroVenta;
@@ -241,6 +250,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       moneda: this.moneda,
       procedencia: this.procedencia,
       clienteId: this.clienteId,
+      beneficiario: this.beneficiario ? { ...this.beneficiario } : undefined,
       vendedorId: this.vendedorId,
       codigoVenta: this.codigoVenta,
       numeroVenta: this.numeroVenta,
@@ -392,6 +402,10 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     }
     if (data.costoEnvio !== undefined && data.costoEnvio < 0) {
       errores.push("El costo de envío no puede ser negativo");
+    }
+    errores.push(...validarBeneficiarioEnVenta(data.beneficiario));
+    if (data.beneficiario && !data.clienteId) {
+      errores.push("clienteId es requerido cuando existe beneficiario");
     }
 
     return {

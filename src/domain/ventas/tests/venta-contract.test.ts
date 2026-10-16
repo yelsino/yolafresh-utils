@@ -94,6 +94,30 @@ function buildPersonal(): IUsuario {
   };
 }
 
+test("Venta y snapshot congelan el beneficiario sin cambiar el pagador", () => {
+  const venta = new Venta(buildVentaInput({
+    clienteId: "opaque-institution",
+    beneficiario: { vinculoId: "opaque-link", personaId: "opaque-person" },
+  }));
+  const snapshot = venta.toVentaSnapshot({
+    cliente: { id: "opaque-institution", nombre: "Instituto del Pacífico" },
+    beneficiario: {
+      vinculoId: "opaque-link", personaId: "opaque-person", nombre: "Profesora Ana",
+    },
+  });
+  assert.equal(venta.toJSON().clienteId, "opaque-institution");
+  assert.deepEqual(venta.toJSON().beneficiario, {
+    vinculoId: "opaque-link", personaId: "opaque-person",
+  });
+  assert.equal(snapshot.beneficiario?.nombre, "Profesora Ana");
+  assert.throws(() => venta.toVentaSnapshot({
+    cliente: { id: "opaque-institution", nombre: "Instituto del Pacífico" },
+    beneficiario: {
+      vinculoId: "wrong-link", personaId: "opaque-person", nombre: "Profesora Ana",
+    },
+  }), /debe coincidir/);
+});
+
 function buildCarrito(): ICarritoVenta {
   return {
     id: "cart_001",
