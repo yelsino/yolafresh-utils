@@ -16,7 +16,8 @@ const TRUSTED_KEY: FiscalV1TrustedPublisherKey = { keyId: "test-key-2", publicKe
   tenantId: "tenant-sintetico", environment: "DEMO", validFromMs: NOW - 86400000, validToMs: NOW + 86400000 };
 const SOURCE = "fixture-sintetica-fiscal-v1";
 
-type TestMode = { taxRegime?: "RER" | "NRUS"; documentType?: "FACTURA" | "BOLETA" };
+type TestMode = { taxRegime?: "RER" | "NRUS"; documentType?: "FACTURA" | "BOLETA";
+  noteReasonCodes?: readonly string[] };
 function signed(capabilityStatus: "SUPPORTED" | "UNVERIFIED" = "SUPPORTED", mode: TestMode = {}) {
   const taxRegime = mode.taxRegime ?? "RER";
   const documentType = mode.documentType ?? "FACTURA";
@@ -39,7 +40,7 @@ function signed(capabilityStatus: "SUPPORTED" | "UNVERIFIED" = "SUPPORTED", mode
     context: CONTEXT, legalCategories: ["GRAVADA"], see: "SEE_CONTRIBUYENTE", provider: "XmlPeru",
     adapterVersion: "v1", capabilityStatus: "SUPPORTED", evidence };
   const noteCapability: FiscalV1Capability = { ...saleCapability, capabilityId: "note-cap", documentType: "NOTA_CREDITO",
-    capabilityStatus, creditNoteReasonCodes: ["TEST_RETURN"] };
+    capabilityStatus, creditNoteReasonCodes: mode.noteReasonCodes ?? ["TEST_RETURN"] };
   const fingerprinted = <T extends FiscalV1IssuerProfile | FiscalV1PresentationRule | FiscalV1Capability>(item: T): T =>
     ({ ...item, fingerprintSha256: fiscalV1PublicationArtifactFingerprint(item) });
   const payload = { schemaVersion: "fiscal-v1" as const, tenantId: "tenant-sintetico", issuerId: "issuer-sintetico",
@@ -83,7 +84,7 @@ function fixture(capabilityStatus: "SUPPORTED" | "UNVERIFIED" = "SUPPORTED", mod
   const draft: FiscalV1CreditNoteDraft = { noteOperationId: "note-op-1", noteId: "note-1", tenantId: sale.tenantId,
     issuerId: sale.issuerId, issuerRuc: sale.issuerRuc, environment: sale.environment,
     originalDocumentId: document.documentId, originalSnapshotSha256: snapshot.snapshotSha256,
-    reasonCode: "TEST_RETURN", issuedOn: "2026-10-15", recipientId: sale.buyer.documentNumber,
+    reasonCode: mode.noteReasonCodes?.[0] ?? "TEST_RETURN", issuedOn: "2026-10-15", recipientId: sale.buyer.documentNumber,
     ...(sale.documentType === "BOLETA" ? { originalGrant: { recipientId: sale.buyer.documentNumber,
       grantedAtMs: NOW - 1000, evidenceRef: "synthetic-grant" } } : {}),
     lines: [{ originalLineId: "line-1", creditQuantityMilli: 500, creditCents: 590 }] };
@@ -146,6 +147,56 @@ test("nota parcial y total usan importes/regla histórica y respetan saldo por l
   assert.throws(() => prepareFiscalV1CreditNote({ draft: { ...secondDraft, reasonCode: "99" },
     originalSnapshot: snapshot, originalDocument: document, priorCredits, ...publication }),
   /FISCAL_V1_CREDIT_NOTE_CAPABILITY_NOT_SUPPORTED/);
+});
+
+test("causales 01/06 exigen todo el original; 07 permite parcial y agotamiento posterior", () => {
+  const { publication, snapshot, document, draft } = fixture("SUPPORTED",
+    { noteReasonCodes: ["01", "06", "07"] });
+  const full = { ...draft, lines: [{ originalLineId: "line-1", creditQuantityMilli: 1000,
+    creditCents: 1180 }] };
+  for (const reasonCode of ["01", "06"]) {
+    assert.equal(prepareFiscalV1CreditNote({ draft: { ...full, reasonCode },
+      originalSnapshot: snapshot, originalDocument: document,
+      priorCredits: [], ...publication }).totalCents, 1180);
+    assert.throws(() => prepareFiscalV1CreditNote({ draft: { ...draft, reasonCode },
+      originalSnapshot: snapshot, originalDocument: document,
+      priorCredits: [], ...publication }), /FISCAL_V1_CREDIT_NOTE_TOTAL_SCOPE_REQUIRED/);
+  }
+  const partial = { ...draft, reasonCode: "07" };
+  assert.equal(prepareFiscalV1CreditNote({ draft: partial, originalSnapshot: snapshot,
+    originalDocument: document, priorCredits: [], ...publication }).totalCents, 590);
+  const priorCredits = [{ noteId: partial.noteId, operationId: partial.noteOperationId,
+    originalDocumentId: document.documentId, originalSnapshotSha256: snapshot.snapshotSha256,
+    state: "SIGNED" as const, lines: [{ originalLineId: "line-1",
+      creditedQuantityMilli: 500, creditedCents: 590 }] }];
+  const remaining = { ...partial, noteId: "note-2", noteOperationId: "note-op-2" };
+  assert.equal(prepareFiscalV1CreditNote({ draft: remaining, originalSnapshot: snapshot,
+    originalDocument: document, priorCredits, ...publication }).totalCents, 590);
+  for (const reasonCode of ["01", "06"]) {
+    assert.throws(() => prepareFiscalV1CreditNote({ draft: { ...remaining, reasonCode },
+      originalSnapshot: snapshot, originalDocument: document, priorCredits,
+      ...publication }), /FISCAL_V1_CREDIT_NOTE_TOTAL_SCOPE_REQUIRED/);
+  }
+  assert.throws(() => prepareFiscalV1CreditNote({ draft: { ...remaining,
+    lines: [{ originalLineId: "line-1", creditQuantityMilli: 501, creditCents: 591 }] },
+    originalSnapshot: snapshot, originalDocument: document, priorCredits,
+    ...publication }), /FISCAL_V1_CREDIT_NOTE_EXCEEDS_REMAINING/);
+});
+
+test("nota V1 no recalcula un snapshot histórico alterado", () => {
+  const { publication, snapshot, document, draft } = fixture("SUPPORTED",
+    { noteReasonCodes: ["07"] });
+  const alteredSnapshot = { ...snapshot,
+    lineDescriptions: [{ lineId: "line-1", description: "OTRO PRODUCTO" }] };
+  assert.throws(() => prepareFiscalV1CreditNote({ draft, originalSnapshot: alteredSnapshot,
+    originalDocument: document, priorCredits: [], ...publication }),
+  /FISCAL_V1_SNAPSHOT_HASH_INVALID/);
+  const rehashedSnapshot = { ...alteredSnapshot,
+    snapshotSha256: fiscalV1SnapshotFingerprint(alteredSnapshot) };
+  assert.throws(() => prepareFiscalV1CreditNote({ draft,
+    originalSnapshot: rehashedSnapshot, originalDocument: document,
+    priorCredits: [], ...publication }),
+  /FISCAL_V1_DOCUMENT_SNAPSHOT_MISMATCH/);
 });
 
 test("nota no hereda soporte de factura ni permite original solo firmado", () => {

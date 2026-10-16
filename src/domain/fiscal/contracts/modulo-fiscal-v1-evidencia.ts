@@ -233,6 +233,14 @@ export function prepareFiscalV1CreditNote(input: {
       originalLegalCategory: originalLine.legalCategory, originalRuleRef: { ...originalLine.ruleRef },
       originalDisclosure: { ...originalLine.disclosure } };
   });
+  // Motivos 01/06 describen una anulación/devolución total del original. Tras
+  // cualquier nota consumidora previa, solo 07 puede ajustar el saldo restante.
+  // Esta segunda restricción es una política conservadora de este módulo.
+  if (draft.reasonCode === "01" || draft.reasonCode === "06") {
+    if (priorCredits.length || lines.length !== original.lines.length ||
+        lines.some(line => line.creditQuantityMilli !== line.originalQuantityMilli))
+      fail("FISCAL_V1_CREDIT_NOTE_TOTAL_SCOPE_REQUIRED");
+  }
   const categories = [...new Set(lines.map(line => line.originalLegalCategory))].sort().join("|");
   const matching = payload.capabilities.filter((capability: FiscalV1Capability) =>
     capability.status === "PUBLISHED" && effective(capability, issuedOn) &&
