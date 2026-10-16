@@ -1,5 +1,11 @@
 # Modelo de negocio de comprobantes electrónicos
 
+> Antecedente del modelo compartido. Para la implementación del módulo fiscal
+> multitenant nuevo, el alcance y sus gates están en
+> `FINANZAS-YOLA-FRESH/docs/facturacion-electronica/10-rfc-modulo-fiscal-multitenant.md`
+> y los documentos `11-`/`12-` de esa carpeta. Este texto no autoriza un
+> fallback entre contratos de emisión ni demuestra soporte de nota NRUS.
+
 ## Configuración tributaria antes de la venta
 
 La empresa declara si tiene habilitada la facturación electrónica. Si no la
