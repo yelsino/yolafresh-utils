@@ -28,6 +28,8 @@ export {
 export type {
   MotivoDescuentoVenta,
   VentaDescuentoSnapshot,
+  VentaOfertaComercialSeleccionSnapshot,
+  VentaOfertaComercialSnapshot,
   VentaRedondeoSnapshot,
   VentaSnapshotActor,
 } from "./domain/ventas/entities";

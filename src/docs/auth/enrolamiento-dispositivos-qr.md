@@ -19,6 +19,8 @@ import {
   type ClaimDeviceEnrollmentRequest,
   type DeviceEnrollmentStatusResponse,
   type CompleteDeviceEnrollmentRequest,
+  type BackendScopedTenantConnection,
+  type DirectCouchPaymentTenantConnection,
 } from "yola-fresh-utils/auth";
 ```
 
@@ -57,6 +59,17 @@ yf-device-enrollment-v1:<enrollmentId>:<deviceId>:<bootstrapExchangeToken>
 
 `buildDeviceEnrollmentProofChallenge()` evita que los consumidores construyan variantes incompatibles.
 
+## Conexión discriminada por tipo de dispositivo
+
+`DeviceTenantConnection` es una unión discriminada por `syncMode`:
+
+- `backend_scoped`: conserva `backendBaseUrl` y el token de bootstrap por dispositivo para POS, KIOSK, MOBILE y DESKTOP.
+- `direct_couch`: entrega `couchBaseUrl`, `database`, `username` y `password` únicamente a un `PAYMENT_MONITOR` aprobado. La credencial debe ser individual, limitada a pagos y revocable.
+
+El contrato no autoriza incluir credenciales CouchDB dentro del QR, variables públicas del cliente o el binario distribuido. El backend debe emitirlas después de verificar la prueba Ed25519. Para evitar lectura de otros documentos del tenant, la implementación debe conectar el monitor a una base dedicada de pagos o a una frontera equivalente que aplique mínimo privilegio.
+
+El nombre `bootstrapExchangeToken` se mantiene por compatibilidad del protocolo v1. En un `PAYMENT_MONITOR` es solamente el token efímero de finalización; no implica descargar un snapshot/bootstrap ni abrir una sesión IAM.
+
 ## Estados
 
 - `INVITED`: invitación creada, todavía no reclamada.
@@ -71,7 +84,7 @@ Los estados terminales para el flujo de alta son `REJECTED`, `COMPLETED`, `EXPIR
 
 ## Persistencia segura
 
-La clave privada Ed25519 nunca debe salir del almacén seguro del sistema operativo. `pollToken` y `bootstrapExchangeToken` son secretos efímeros; deben persistirse sólo si hace falta tolerar un reinicio y eliminarse al completar o terminar el flujo. `InstalledDeviceEnrollment` representa el dato durable posterior al alta.
+La clave privada Ed25519 nunca debe salir del almacén seguro del sistema operativo. `pollToken` y `bootstrapExchangeToken` son secretos efímeros; deben persistirse sólo si hace falta tolerar un reinicio y eliminarse al completar o terminar el flujo. `InstalledDeviceEnrollment` representa el dato durable posterior al alta. Si contiene una conexión `direct_couch`, todos sus campos deben cifrarse con el almacén seguro y su representación textual debe ocultar usuario y contraseña.
 
 ## Permisos
 

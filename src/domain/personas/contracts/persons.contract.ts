@@ -132,7 +132,7 @@ export interface ContactoEmergencia {
 /**
  * Interfaz para Cliente del sistema
  * 
- * @description Representa a una persona que compra en la tienda
+ * @description Representa a quien compra, tanto personas como organizaciones.
  * Extiende de Entidad para integrarse con el sistema de usuarios y roles
  */
 export interface Cliente extends Entidad {
@@ -172,30 +172,14 @@ export interface Cliente extends Entidad {
     facturacion?: InformacionFacturacion;
   }
 
-/**
- * Titular de una cuenta cliente cuyo sujeto es una organización.
- * No exige ni fabrica atributos de persona física para poder usar crédito.
- */
-export interface ClienteInstitucional extends Entidad {
-  tipoEntidad: "ClienteInstitucional";
-  razonSocial: string;
-  nombreComercial?: string;
-  ruc?: string;
-  celular?: string;
-  correo?: string;
-  direccion?: string;
-  limiteCredito?: number;
-  personaContactoId?: string;
-}
+/** @deprecated Todas las personas y organizaciones usan el contrato Cliente. */
+export type ClienteInstitucional = Cliente;
 
-/** Ambos titulares conservan el mismo identificador de cuenta: `clienteId`. */
-export type TitularCuentaCliente = Cliente | ClienteInstitucional;
+export type TitularCuentaCliente = Cliente;
 
 export function nombreTitularCuentaCliente(titular: TitularCuentaCliente): string {
-  if (titular.tipoEntidad === "ClienteInstitucional") {
-    return String(titular.nombreComercial || titular.razonSocial).trim();
-  }
-  return [titular.nombres, titular.apellidos].filter(Boolean).join(" ").trim();
+  return [titular.nombres, titular.apellidos].filter(Boolean).join(" ").trim() ||
+    titular.pseudonimo || titular.facturacion?.razonSocial || "";
 }
 
 /**

@@ -33,10 +33,14 @@ export {
 export type {
   MotivoDescuentoVenta,
   VentaDescuentoSnapshot,
+  VentaOfertaComercialSeleccionSnapshot,
+  VentaOfertaComercialSnapshot,
   VentaRedondeoSnapshot,
   VentaSnapshotActor,
 } from "./domain/ventas/entities";
 export { RecurrenciaEntity } from "./domain/finanzas/entities";
+export * from "./domain/fiscal/contracts/configuracion-fiscal.contract";
+export * from "./domain/fiscal/contracts/configuracion-fiscal";
 `;
 
 function generateMainIndex() {

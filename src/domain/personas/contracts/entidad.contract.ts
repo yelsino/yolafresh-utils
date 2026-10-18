@@ -8,7 +8,7 @@
 /**
  * Tipos de entidades disponibles en el sistema
  */
-export type EntidadTipo = "Cliente" | "ClienteInstitucional" | "Personal" | "Proveedor";
+export type EntidadTipo = "Cliente" | "Personal" | "Proveedor";
 
 /**
  * Interfaz base para todas las entidades del sistema

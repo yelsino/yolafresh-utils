@@ -59,6 +59,7 @@ test("publica vocabulario estable de estados y errores", () => {
   assert.ok(DEVICE_ENROLLMENT_STATUSES.includes("AWAITING_APPROVAL"));
   assert.ok(DEVICE_ENROLLMENT_STATUSES.includes("COMPLETED"));
   assert.ok(DEVICE_ENROLLMENT_ERROR_CODES.includes("invalid_device_proof"));
+  assert.ok(DEVICE_ENROLLMENT_ERROR_CODES.includes("direct_couch_not_configured"));
 });
 
 test("el contrato instalado admite una credencial bootstrap por dispositivo", () => {
@@ -82,9 +83,39 @@ test("el contrato instalado admite una credencial bootstrap por dispositivo", ()
     },
   };
 
-  assert.equal(
-    installed.tenantConnection.bootstrapAccessToken,
-    "opaque-device-bootstrap-token",
-  );
+  assert.equal(installed.tenantConnection.syncMode, "backend_scoped");
+  if (installed.tenantConnection.syncMode === "backend_scoped") {
+    assert.equal(
+      installed.tenantConnection.bootstrapAccessToken,
+      "opaque-device-bootstrap-token",
+    );
+  }
   assert.equal(installed.deviceBinding.appVersion, "2.18.0");
+  assert.equal(installed.deviceBinding.lastSeenAt, "2026-08-15T12:00:00.000Z");
+});
+
+test("el monitor de pagos admite una conexión CouchDB directa por dispositivo", () => {
+  const installed: InstalledDeviceEnrollment = {
+    deviceBinding: {
+      bindingId: "binding-payment-1",
+      tenantId: "tenant-1",
+      deviceId: "device-payment-1",
+      deviceName: "Monitor de pagos",
+      deviceType: "PAYMENT_MONITOR",
+      allowedSucursalIds: [],
+      createdAt: "2026-08-01T00:00:00.000Z",
+      updatedAt: "2026-08-01T00:00:00.000Z",
+    },
+    tenantConnection: {
+      syncMode: "direct_couch",
+      couchBaseUrl: "https://couch.example.com",
+      database: "tenant-1",
+      username: "yf_pay_device",
+      password: "unique-device-secret",
+    },
+  };
+  assert.equal(installed.tenantConnection.syncMode, "direct_couch");
+  if (installed.tenantConnection.syncMode === "direct_couch") {
+    assert.equal(installed.tenantConnection.database, "tenant-1");
+  }
 });

@@ -926,3 +926,91 @@ test("catálogo publica todos los motivos de descuento de venta", () => {
     "OTRO",
   ]);
 });
+
+test("VentaSnapshot congela la oferta con opción gratuita y extra cobrado", () => {
+  const ofertaComercial = {
+    schemaVersion: 1 as const,
+    presentacionId: "pres_opaca_8b0c",
+    productoRestauranteId: "restaurant_opaco_31",
+    selecciones: [
+      {
+        grupoId: "grupo_opaco_a",
+        opcionId: "opcion_opaca_gratis",
+        grupoNombre: "Término",
+        opcionNombre: "Bien cocido",
+        cantidad: 1,
+        precioExtraUnitario: { minorUnits: 0, currency: "PEN" as const },
+      },
+      {
+        grupoId: "grupo_opaco_b",
+        opcionId: "opcion_opaca_extra",
+        grupoNombre: "Extras",
+        opcionNombre: "Queso",
+        cantidad: 2,
+        precioExtraUnitario: { minorUnits: 150, currency: "PEN" as const },
+      },
+    ],
+  };
+  const snapshot = new VentaSnapshot({
+    id: "snapshot_opaco_17",
+    ventaId: "venta_opaca_42",
+    createdAt: 1,
+    cliente: { id: " cliente / α ", nombre: "Institución vigente" },
+    beneficiario: {
+      vinculoId: "vinculo-opaco",
+      personaId: "persona-opaca",
+      nombre: "Beneficiaria vigente",
+    },
+    items: [buildSnapshotItem({
+      presentacionId: ofertaComercial.presentacionId,
+      ofertaComercial,
+    })],
+    subtotal: 10,
+    impuesto: 0,
+    total: 10,
+  });
+
+  ofertaComercial.selecciones[0].opcionNombre = "Mutado después";
+  assert.equal(snapshot.items[0]?.ofertaComercial?.selecciones[0]?.opcionNombre, "Bien cocido");
+  assert.equal(snapshot.items[0]?.ofertaComercial?.selecciones[1]?.precioExtraUnitario.minorUnits, 150);
+  assert.equal(Object.isFrozen(snapshot.items[0]?.ofertaComercial?.selecciones), true);
+  assert.equal(Object.isFrozen(snapshot.items[0]?.ofertaComercial?.selecciones[0]), true);
+
+  const serialized = snapshot.toJSON();
+  assert.equal(serialized.cliente?.id, " cliente / α ");
+  assert.equal(serialized.beneficiario?.personaId, "persona-opaca");
+  assert.deepEqual(serialized.items[0]?.ofertaComercial?.selecciones.map((selection) =>
+    selection.precioExtraUnitario.minorUnits), [0, 150]);
+  (serialized.items[0]!.ofertaComercial!.selecciones[0] as { opcionNombre: string }).opcionNombre = "Mutado en JSON";
+  assert.equal(snapshot.items[0]?.ofertaComercial?.selecciones[0]?.opcionNombre, "Bien cocido");
+  assert.deepEqual(VentaSnapshot.fromJSON(snapshot.toJSON()).toJSON(), snapshot.toJSON());
+});
+
+test("VentaSnapshot acepta legado sin oferta y rechaza presentación contradictoria", () => {
+  const legacy = new VentaSnapshot({
+    id: "snapshot_legacy",
+    ventaId: "venta_legacy",
+    createdAt: 1,
+    items: [buildSnapshotItem()],
+    subtotal: 10,
+    impuesto: 0,
+    total: 10,
+  });
+  assert.equal("ofertaComercial" in legacy.toJSON().items[0]!, false);
+
+  assert.throws(() => new VentaSnapshot({
+    id: "snapshot_invalido",
+    ventaId: "venta_invalida",
+    createdAt: 1,
+    items: [buildSnapshotItem({
+      ofertaComercial: {
+        schemaVersion: 1,
+        presentacionId: "otra_presentacion",
+        selecciones: [],
+      },
+    })],
+    subtotal: 10,
+    impuesto: 0,
+    total: 10,
+  }), /presentacionId debe coincidir/);
+});

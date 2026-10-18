@@ -15,7 +15,7 @@ export * from "./domain/auth";
 export * from "./domain/personas/contracts";
 export * from "./domain/contabilidad/contracts";
 export { CarritoVenta, ProcedenciaVenta, Venta, VENTA_SNAPSHOT_TYPE, VentaSnapshot, } from "./domain/ventas/entities";
-export type { MotivoDescuentoVenta, VentaDescuentoSnapshot, VentaRedondeoSnapshot, VentaSnapshotActor, } from "./domain/ventas/entities";
+export type { MotivoDescuentoVenta, VentaDescuentoSnapshot, VentaOfertaComercialSeleccionSnapshot, VentaOfertaComercialSnapshot, VentaRedondeoSnapshot, VentaSnapshotActor, } from "./domain/ventas/entities";
 export { RecurrenciaEntity } from "./domain/finanzas/entities";
 export * from "./domain/fiscal/contracts/configuracion-fiscal.contract";
 export * from "./domain/fiscal/contracts/configuracion-fiscal";
