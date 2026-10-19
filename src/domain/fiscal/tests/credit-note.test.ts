@@ -1,6 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { prepareFiscalCreditNote, planCreditNoteSettlement, type FiscalSignedDocument } from "../contracts";
+import { prepareFiscalCreditNote, planCreditNoteSettlement, fiscalCreditQuantity, FiscalCreditNoteError, type FiscalSignedDocument } from "../contracts";
+import { positiveDecimalQuantity, DecimalQuantityError } from "../../shared/value-objects/DecimalQuantity";
+
+test("shared decimal quantities preserve exact scale and fiscal error compatibility", () => {
+  for (const [quantity, expected] of [["0.0000000001", 1n], ["1.25", 12500000000n],
+    ["999999999999.9999999999", 9999999999999999999999n]] as const) {
+    assert.equal(positiveDecimalQuantity(quantity), expected);
+    assert.equal(fiscalCreditQuantity(quantity), expected);
+  }
+  for (const quantity of ["0", "-1", "01", "1e-3", "1.00000000001", "1000000000000", 1, null]) {
+    assert.throws(() => positiveDecimalQuantity(quantity), DecimalQuantityError);
+    assert.throws(() => fiscalCreditQuantity(quantity), (error: unknown) =>
+      error instanceof FiscalCreditNoteError && error.message === "CREDIT_NOTE_QUANTITY_INVALID");
+  }
+});
 
 export function originalFixture(): FiscalSignedDocument {
   const digest = Buffer.alloc(32, 0xab).toString("base64");

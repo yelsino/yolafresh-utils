@@ -1,3 +1,4 @@
+import { positiveDecimalQuantity, DecimalQuantityError, DECIMAL_QUANTITY_SCALE } from "../../shared/value-objects/DecimalQuantity";
 import type { FiscalBuyer, FiscalCurrency, FiscalDocumentIdentity } from "./cpe.contract";
 import { fiscalConfigurationCanonicalJson } from "./configuracion-fiscal";
 import { validateFiscalSignedDocument, type FiscalDocumentLine, type FiscalDocumentTotals, type FiscalSignedDocument } from "./comprobante-electronico.contract";
@@ -35,13 +36,13 @@ export class FiscalCreditNoteError extends Error {}
 const fail = (code: string): never => { throw new FiscalCreditNoteError(code); };
 const text = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
 const cents = (v: unknown): v is number => typeof v === "number" && Number.isSafeInteger(v) && v >= 0;
-const SCALE = 10n ** 10n;
+const SCALE = DECIMAL_QUANTITY_SCALE;
 export function fiscalCreditQuantity(value: unknown): bigint {
-  if (typeof value !== "string" || !/^(?:0|[1-9]\d{0,11})(?:\.\d{1,10})?$/.test(value)) return fail("CREDIT_NOTE_QUANTITY_INVALID");
-  const [whole, fraction = ""] = value.split(".");
-  const result = BigInt(whole) * SCALE + BigInt(fraction.padEnd(10, "0"));
-  if (result <= 0n) return fail("CREDIT_NOTE_QUANTITY_INVALID");
-  return result;
+  try { return positiveDecimalQuantity(value); }
+  catch (error) {
+    if (error instanceof DecimalQuantityError) return fail("CREDIT_NOTE_QUANTITY_INVALID");
+    throw error;
+  }
 }
 const quantityString = (q: bigint): string => {
   const fraction = (q % SCALE).toString().padStart(10, "0").replace(/0+$/, "");

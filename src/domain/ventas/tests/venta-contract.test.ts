@@ -9,6 +9,11 @@ import {
 } from "../../personas/contracts/beneficiario.contract";
 import { IUsuario } from "../../personas/contracts/usuario.contract";
 import {
+  Evidencia,
+  FormatoArchivoEnum,
+  TipoEvidenciaEnum,
+} from "../../shared/kernel/evidencias.contract";
+import {
   CondicionPagoVenta,
   esProcedenciaComercial,
   normalizarProcedenciaComercial,
@@ -63,6 +68,63 @@ function buildVentaInput(
     ...overrides,
   };
 }
+
+test("la explicación opcional sobrevive el transporte de venta y snapshot sin cambiar el texto", () => {
+  const observaciones = "Se entrega mañana.\nEl cliente solicitó cajas pequeñas.";
+  const venta = new Venta(buildVentaInput({ observaciones }));
+  const persistedVenta = JSON.parse(JSON.stringify(venta.toJSON())) as VentaCreateInput;
+  const restoredVenta = new Venta(persistedVenta);
+  const snapshot = venta.toVentaSnapshot();
+  const restoredSnapshot = VentaSnapshot.fromJSON(JSON.parse(JSON.stringify(snapshot)));
+
+  assert.equal(restoredVenta.toJSON().observaciones, observaciones);
+  assert.equal(snapshot.observaciones, observaciones);
+  assert.equal(restoredSnapshot.toJSON().observaciones, observaciones);
+  assert.equal(restoredVenta.total, 10);
+  assert.equal(restoredSnapshot.total, 10);
+});
+
+test("las ventas y snapshots históricos siguen siendo válidos sin explicación", () => {
+  const venta = new Venta(buildVentaInput());
+  const snapshot = VentaSnapshot.fromJSON(venta.toVentaSnapshot());
+
+  assert.equal(venta.observaciones, undefined);
+  assert.equal(snapshot.observaciones, undefined);
+  assert.equal(Object.prototype.hasOwnProperty.call(JSON.parse(JSON.stringify(venta)), "observaciones"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(JSON.parse(JSON.stringify(snapshot)), "observaciones"), false);
+});
+
+test("la explicación de venta y snapshot rechaza valores que no sean texto", () => {
+  const snapshot = new Venta(buildVentaInput()).toVentaSnapshot();
+  for (const invalid of [null, 42, { texto: "nota" }]) {
+    const observaciones = invalid as unknown as string;
+    assert.throws(() => new Venta(buildVentaInput({ observaciones })), /observaciones debe ser texto/);
+    assert.throws(() => VentaSnapshot.fromJSON({ ...snapshot, observaciones }), /observaciones debe ser texto/);
+  }
+});
+
+test("una evidencia de venta puede conservar audio y su MIME concreto en metadata", () => {
+  const evidencia: Evidencia = {
+    _id: "opaque-evidence-A7",
+    type: "evidencia",
+    tipo: TipoEvidenciaEnum.OTRO,
+    formato: FormatoArchivoEnum.AUDIO,
+    nombreArchivo: "explicacion.m4a",
+    url: "https://example.test/explicacion.m4a",
+    entidadReferencia: "VENTA",
+    referenciaId: "opaque-sale-B8",
+    metadata: { mimeType: "audio/mp4" },
+    subidoPorUsuarioId: "opaque-user-C9",
+    fechaSubida: "2026-10-18T15:00:00.000Z",
+    createdAt: new Date("2026-10-18T15:00:00.000Z"),
+    updatedAt: new Date("2026-10-18T15:00:00.000Z"),
+  };
+  const transported = JSON.parse(JSON.stringify(evidencia)) as Evidencia;
+
+  assert.equal(transported.formato, "AUDIO");
+  assert.equal(transported.metadata?.mimeType, "audio/mp4");
+  assert.equal(transported.referenciaId, "opaque-sale-B8");
+});
 
 test("un vínculo activo autoriza únicamente al cliente y persona contractuales", () => {
   const vinculo: VinculoBeneficiario = {

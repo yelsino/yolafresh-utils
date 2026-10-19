@@ -78,6 +78,47 @@ Es el documento de detalle histórico propiedad de la venta. Conserva exactament
 
 No es una segunda versión editable de la venta. Es el detalle inmutable necesario para historial, voucher y reconstrucción visible.
 
+#### Cobro confirmado
+
+`VentaSnapshot.cobro?: VentaCobroSnapshot` agrega los hechos confirmados de un
+cobro al detalle histórico. Su ausencia es válida en documentos anteriores y no
+autoriza inferir importes recibidos ni devoluciones. No cambia el total, impuesto,
+descuento ni redondeo comercial de la venta.
+
+- `pagosDigitales` conserva el importe recibido completo y la parte aplicada a
+  esta venta; el origen distingue captura externa, ingreso manual, confianza y
+  evidencia. Sus claves e identificadores son opacos.
+- `efectivoRecibido` es un importe del cobro, **nunca un documento `Pago`**.
+  Si no se indica, `resolveVentaCobro` usa el saldo restante confirmado por el
+  operador: venta S/30, digital S/25, efectivo S/5.
+- `vueltoRequerido` es recibido menos total. `devoluciones` contiene únicamente
+  entregas confirmadas por el operador, con medio real, identidad estable,
+  momento y actor. Calcular o imprimir vuelto no confirma su entrega.
+- `vueltoDevuelto` suma esas entregas; `vueltoPendiente` conserva lo que aún
+  se debe al cliente. Una devolución parcial no cancela el resto.
+
+`buildVentaCobroMovimientos` produce ingresos por los importes brutos recibidos
+y egresos por devoluciones efectivas. El consumidor persiste esos efectos con
+identidad idempotente y no agrega otro ingreso por el total de la venta.
+
+| Venta | Recibido | Devuelto | Efectivo neto | Digital neto | Pendiente |
+| --- | --- | --- | --- | --- | --- |
+| S/30 | Digital S/25 + efectivo S/5 | S/0 | S/5 | S/25 | S/0 |
+| S/25 | Digital S/30 | Efectivo S/5 | −S/5 | S/30 | S/0 |
+| S/25 | Digital S/30 | Digital S/5 | S/0 | S/25 | S/0 |
+| S/25 | Digital S/30 | S/0 | S/0 | S/30 | S/5 |
+
+El neto de caja de este plan equivale a `totalVenta + vueltoPendiente`, no siempre
+al total comercial. Los pagos reales ya capturados no generan además un segundo
+ingreso al seleccionarlos. La aplicación debe elegir una única contabilización
+de la recepción y reutilizar su identidad durante reintentos.
+
+El snapshot congela lo ocurrido **al confirmar la venta**. Una devolución
+posterior se registra mediante el movimiento de caja existente vinculado a la
+venta, sin reescribir el snapshot histórico. No se crea un tipo remoto nuevo.
+Los cobros locales manuales/de confianza no se convierten en raíces `pago`
+replicables por incluirse como contexto en este snapshot.
+
 ### `Pedido`
 
 `Pedido` pertenece a su propio Domain. Ventas sólo mantiene `pedidoId` cuando una venta nace desde una reserva comercial.

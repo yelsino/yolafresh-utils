@@ -4,3 +4,4 @@
 // Exportaciones de value-objects
 export * from './EmpresaId';
 export * from './SucursalId';
+export * from "./DecimalQuantity";

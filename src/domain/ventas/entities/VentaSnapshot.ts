@@ -12,6 +12,11 @@ import {
 } from "../../shared/kernel/enums";
 import type { MonedaEmpresa } from "../../shared/kernel/empresa.contract";
 import type { IVenta } from "./Venta";
+import {
+  copiarVentaCobro,
+  validarVentaCobro,
+  type VentaCobroSnapshot,
+} from "../contracts/venta-cobro.contract";
 
 export const VENTA_SNAPSHOT_TYPE = "venta_snapshot" as const;
 export const VENTA_INVENTORY_PLAN_SCHEMA = "venta_inventory_plan_v2" as const;
@@ -149,6 +154,8 @@ export interface IVentaSnapshot {
   total: number;
   moneda?: MonedaEmpresa;
   codigoVenta?: string;
+  /** Explicación de la venta congelada al construir el snapshot. */
+  observaciones?: string;
   procedencia?: ProcedenciaComercialEnum;
   cliente?: VentaSnapshotActor;
   beneficiario?: BeneficiarioCongelado;
@@ -157,6 +164,8 @@ export interface IVentaSnapshot {
   almacenOrigenId?: string;
   /** Plan de inventario congelado previo a persistir una venta confirmada. */
   planInventarioV2?: VentaInventoryPlan;
+  /** Cobro confirmado al crear el snapshot; ausente en documentos históricos. */
+  cobro?: VentaCobroSnapshot;
 }
 
 export interface VentaSnapshotBuildContext {
@@ -171,6 +180,7 @@ export interface VentaSnapshotBuildContext {
   moneda?: MonedaEmpresa;
   almacenOrigenId?: string;
   planInventarioV2?: VentaInventoryPlan;
+  cobro?: VentaCobroSnapshot;
 }
 
 export interface VentaSnapshotCreateInput extends Omit<IVentaSnapshot, "type"> {
@@ -616,14 +626,26 @@ export class VentaSnapshot implements IVentaSnapshot {
   public readonly total: number;
   public readonly moneda?: MonedaEmpresa;
   public readonly codigoVenta?: string;
+  public readonly observaciones?: string;
   public readonly procedencia?: ProcedenciaComercialEnum;
   public readonly cliente?: VentaSnapshotActor;
   public readonly beneficiario?: BeneficiarioCongelado;
   public readonly vendedor?: VentaSnapshotActor;
   public readonly almacenOrigenId?: string;
   public readonly planInventarioV2?: VentaInventoryPlan;
+  public readonly cobro?: VentaCobroSnapshot;
 
   constructor(data: VentaSnapshotCreateInput) {
+    if (data.cobro !== undefined) {
+      const validation = validarVentaCobro(data.cobro, data.total);
+      if (!validation.valida) throw new Error(validation.errores.join("; "));
+      const cobro = copiarVentaCobro(data.cobro);
+      this.cobro = Object.freeze({
+        ...cobro,
+        pagosDigitales: Object.freeze(cobro.pagosDigitales.map((digital) => Object.freeze({ ...digital }))),
+        devoluciones: Object.freeze(cobro.devoluciones.map((refund) => Object.freeze({ ...refund }))),
+      });
+    }
     this.id = data.id;
     this.type = data.type ?? VENTA_SNAPSHOT_TYPE;
     this.ventaId = data.ventaId;
@@ -704,6 +726,7 @@ export class VentaSnapshot implements IVentaSnapshot {
     this.total = roundMoney(Number(data.total ?? 0));
     this.moneda = data.moneda;
     this.codigoVenta = safeTrim(data.codigoVenta);
+    this.observaciones = data.observaciones;
     this.procedencia = normalizarProcedenciaComercial(data.procedencia);
     this.cliente = data.cliente ? { ...data.cliente } : undefined;
     this.beneficiario = data.beneficiario
@@ -778,10 +801,12 @@ export class VentaSnapshot implements IVentaSnapshot {
       total: this.total,
       moneda: this.moneda,
       codigoVenta: this.codigoVenta,
+      observaciones: this.observaciones,
       procedencia: this.procedencia,
       cliente: this.cliente ? { ...this.cliente } : undefined,
       beneficiario: this.beneficiario ? { ...this.beneficiario } : undefined,
       vendedor: this.vendedor ? { ...this.vendedor } : undefined,
+      cobro: this.cobro ? copiarVentaCobro(this.cobro) : undefined,
       almacenOrigenId: this.almacenOrigenId,
       planInventarioV2: this.planInventarioV2
           ? {
@@ -847,12 +872,14 @@ export class VentaSnapshot implements IVentaSnapshot {
       total: venta.total,
       moneda: context.moneda ?? venta.moneda,
       codigoVenta: venta.codigoVenta,
+      observaciones: venta.observaciones,
       procedencia: venta.procedencia,
       cliente: mapVentaSnapshotActor(context.cliente),
       beneficiario: context.beneficiario,
       vendedor: mapVentaSnapshotActor(context.vendedor),
       almacenOrigenId: safeTrim(context.almacenOrigenId),
       planInventarioV2: context.planInventarioV2,
+      cobro: context.cobro,
     });
   }
 
@@ -873,6 +900,14 @@ export class VentaSnapshot implements IVentaSnapshot {
     data: Partial<IVentaSnapshot>,
   ): { valida: boolean; errores: string[] } {
     const errores: string[] = [];
+
+    if (data.observaciones !== undefined && typeof data.observaciones !== "string") {
+      errores.push("VentaSnapshot.observaciones debe ser texto");
+    }
+
+    if (data.cobro !== undefined) {
+      errores.push(...validarVentaCobro(data.cobro, data.total).errores);
+    }
 
     if (!safeTrim(data.id)) {
       errores.push("VentaSnapshot.id es requerido");

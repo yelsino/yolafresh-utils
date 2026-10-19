@@ -21,6 +21,7 @@ export enum FormatoArchivoEnum {
   JPG = "JPG",
   PNG = "PNG",
   WEBP = "WEBP",
+  AUDIO = "AUDIO",
 }
 
 
@@ -50,6 +51,8 @@ export interface Evidencia {
   referenciaId: string;
 
   metadata?: {
+    /** MIME real del archivo, por ejemplo audio/mp4 o audio/mpeg. */
+    mimeType?: string;
     serie?: string;
     numero?: string;
     monto?: number;

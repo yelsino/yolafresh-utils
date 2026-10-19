@@ -58,6 +58,11 @@ export type OrigenMovimientoCuentaCliente =
 
 export interface MovimientoCuentaCliente {
   id: string;
+  /** Exact commercial correction provenance; IDs remain opaque. */
+  devolucionNotaCredito?: Readonly<{
+    operationId: string; notaCreditoId: string; ventaId: string;
+    movimientoObjetivoId: string; montoImputadoCents: number;
+  }>;
   /** Opcional unicamente para leer movimientos historicos. */
   ejecucionCobroId?: EjecucionCobroClienteId;
   /** Valor 1 exige una cabecera durable de la misma ejecucion. */
