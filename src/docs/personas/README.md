@@ -11,6 +11,19 @@ Este directorio agrupa documentación vigente del Domain `personas`.
 - relación entre usuario y entidades;
 - direcciones;
 - contratos de cliente, personal y proveedor.
+- contratos de persona beneficiaria, vínculo con cliente y catálogos reutilizables.
+
+## Autoridad de los contratos de beneficiario
+
+[`beneficiario.contract.ts`](../../domain/personas/contracts/beneficiario.contract.ts)
+es la fuente de verdad compartida para móvil y backend. Los consumidores importan
+sus tipos y derivan proyecciones mediante `Pick`/`Omit`; los adaptadores agregan
+únicamente metadata técnica de transporte o almacenamiento. Una copia local no
+redefine campos, estados ni relaciones de negocio.
+
+`PersonaBeneficiaria` no contiene campos de búsqueda derivados. Los vínculos
+nuevos contienen referencias opcionales `etiquetaId` y `grupoId`; los nombres
+pertenecen al catálogo y al snapshot histórico `BeneficiarioCongelado`.
 
 ## Evidencia principal
 
@@ -18,6 +31,7 @@ Este directorio agrupa documentación vigente del Domain `personas`.
 - [entidad.contract.ts](../../domain/personas/contracts/entidad.contract.ts)
 - [usuario.contract.ts](../../domain/personas/contracts/usuario.contract.ts)
 - [direccion.contract.ts](../../domain/personas/contracts/direccion.contract.ts)
+- [beneficiario.contract.ts](../../domain/personas/contracts/beneficiario.contract.ts)
 - [Usuario.ts](../../domain/personas/entities/Usuario.ts)
 
 ## Frontera con `auth`

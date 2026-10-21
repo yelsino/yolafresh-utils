@@ -88,6 +88,36 @@ test("la autorización del beneficiario exige vínculo activo del titular exacto
 });
 
 import { mapVentaSnapshotActor, VentaSnapshot } from "../../ventas/entities/VentaSnapshot";
+import {
+  BENEFICIARIO_CATALOGO_TYPE,
+  validarBeneficiarioCatalogo,
+  type BeneficiarioCatalogoDocument,
+} from "../contracts/beneficiario.contract";
+
+test("catálogo reutilizable valida identidad opaca, clase, revisión y borrado lógico", () => {
+  const document: BeneficiarioCatalogoDocument = {
+    _id: " opción / α ", type: BENEFICIARIO_CATALOGO_TYPE, schemaVersion: 1,
+    clase: "ETIQUETA", nombre: "Alumno", estado: "ACTIVO", revision: 1,
+    createdAt: now.getTime(), updatedAt: now.getTime(),
+    creadoPorId: "actor", actualizadoPorId: "actor",
+  };
+  assert.deepEqual(validarBeneficiarioCatalogo({ ...document, id: document._id }), []);
+  assert.deepEqual(validarBeneficiarioCatalogo({ ...document, id: document._id,
+    estado: "ELIMINADO", revision: 2 }), []);
+  assert.equal(Object.prototype.hasOwnProperty.call(document, "id"), false);
+  assert.ok(validarBeneficiarioCatalogo({ ...document, id: "", revision: 0,
+    clase: "OTRO" as "ETIQUETA", nombre: " " }).length >= 4);
+});
+
+test("snapshot conserva referencias de catálogo y los nombres históricos", () => {
+  const snapshot = new VentaSnapshot({ id: "snapshot-catalogo", ventaId: "venta", createdAt: 1,
+    items: [{ id: "line", presentacionId: "product", nombre: "Producto", cantidadVendida: 1,
+      precioUnitario: 1, total: 1 }], subtotal: 1, impuesto: 0, total: 1,
+    beneficiario: { vinculoId: "vinculo", personaId: "persona", nombre: "Ana",
+      etiquetaId: " etiqueta / α ", grupoId: "grupo", etiqueta: "Alumno", grupo: "3 A" } });
+  assert.deepEqual(snapshot.toJSON().beneficiario, { vinculoId: "vinculo", personaId: "persona",
+    nombre: "Ana", etiquetaId: " etiqueta / α ", grupoId: "grupo", etiqueta: "Alumno", grupo: "3 A" });
+});
 
 test("el snapshot conserva exactamente el identificador opaco del cliente", () => {
   const id = " cliente / α ";
