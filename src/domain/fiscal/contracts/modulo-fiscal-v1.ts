@@ -4,10 +4,11 @@ import { validateFiscalCivilDate } from "./reglas-tributarias";
 import { sha256 as digestSha256 } from "@noble/hashes/sha256";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
 import nacl from "tweetnacl";
-import type { FiscalV1Capability, FiscalV1EffectivePublication, FiscalV1IssuerProfile,
+import { FISCAL_V1_PUBLICATION_DOCUMENT_TYPE } from "./modulo-fiscal-v1.contract";
+import type { FiscalV1Capability, FiscalV1CheckoutContext, FiscalV1EffectivePublication, FiscalV1IssuerProfile,
   FiscalV1LegalCategory, FiscalV1OperationContext, FiscalV1PreparedDecision, FiscalV1PreparedLine,
   FiscalV1PresentationRule, FiscalV1PublicationArtifact, FiscalV1PublicationPayload,
-  FiscalV1SaleInput, FiscalV1SaleLineInput, FiscalV1SignedPublicationBundle,
+  FiscalV1PublicationDocument, FiscalV1SaleInput, FiscalV1SaleLineInput, FiscalV1SignedPublicationBundle,
   FiscalV1TrustedPublisherKey } from "./modulo-fiscal-v1.contract";
 
 const fail = (code: string): never => { throw new Error(code); };
@@ -117,7 +118,7 @@ export function fiscalV1PublicationArtifactFingerprint(artifact: FiscalV1Publica
 /** Bytes exactos que el publicador debe firmar con Ed25519. */
 export function fiscalV1PublicationPayloadMaterial(payload: FiscalV1PublicationPayload): string {
   exactKeys(payload, ["schemaVersion", "tenantId", "issuerId", "environment", "revision", "issuedAtMs", "expiresAtMs",
-    "profiles", "rules", "capabilities"], [], "FISCAL_V1_PUBLICATION_PAYLOAD_INVALID");
+    "profiles", "rules", "capabilities"], ["checkoutContexts"], "FISCAL_V1_PUBLICATION_PAYLOAD_INVALID");
   return canonical(payload);
 }
 
@@ -158,6 +159,112 @@ function context(value: FiscalV1OperationContext): void {
 function sameContext(left: FiscalV1OperationContext, right: FiscalV1OperationContext): boolean {
   return left.establishmentId === right.establishmentId && left.operationKind === right.operationKind &&
     left.buyerUse === right.buyerUse;
+}
+
+function checkoutCapabilities(payload: FiscalV1PublicationPayload, selected: FiscalV1IssuerProfile,
+  checkout: FiscalV1CheckoutContext): FiscalV1Capability[] {
+  return payload.capabilities.filter(row => row.profileVersion === selected.profileVersion &&
+    row.taxRegime === selected.taxRegime && row.documentType === checkout.documentType &&
+    row.tenantId === payload.tenantId && row.issuerId === payload.issuerId && row.environment === payload.environment &&
+    row.provider === selected.provider && row.adapterVersion === selected.adapterVersion && row.see === selected.see &&
+    sameContext(row.context, checkout.context));
+}
+
+function validateCheckoutContexts(payload: FiscalV1PublicationPayload): void {
+  if (payload.checkoutContexts === undefined) return;
+  if (!Array.isArray(payload.checkoutContexts)) fail("FISCAL_V1_CHECKOUT_CONTEXTS_INVALID");
+  const seen = new Set<string>();
+  for (const checkout of payload.checkoutContexts) {
+    exactKeys(checkout, ["profileVersion", "documentType", "series", "context"], ["creditNoteSeries"],
+      "FISCAL_V1_CHECKOUT_CONTEXT_INVALID");
+    exactKeys(checkout.context, ["establishmentId", "operationKind", "buyerUse"], [], "FISCAL_V1_CONTEXT_REQUIRED");
+    context(checkout.context);
+    if (!text(checkout.profileVersion) || !["BOLETA", "FACTURA"].includes(checkout.documentType) ||
+      typeof checkout.series !== "string" || !(checkout.documentType === "FACTURA" ? /^F[A-Z0-9]{3}$/ : /^B[A-Z0-9]{3}$/).test(checkout.series) ||
+      (checkout.documentType === "FACTURA" && checkout.context.buyerUse !== "BUSINESS"))
+      fail("FISCAL_V1_CHECKOUT_CONTEXT_INVALID");
+    if (checkout.creditNoteSeries !== undefined && (typeof checkout.creditNoteSeries !== "string" ||
+      !/^[BF][A-Z0-9]{3}$/.test(checkout.creditNoteSeries) || checkout.creditNoteSeries[0] !== checkout.series[0]))
+      fail("FISCAL_V1_CHECKOUT_CREDIT_SERIES_INVALID");
+    const profiles = payload.profiles.filter(row => row.profileVersion === checkout.profileVersion &&
+      row.tenantId === payload.tenantId && row.issuerId === payload.issuerId && row.environment === payload.environment &&
+      row.establishmentId === checkout.context.establishmentId);
+    if (profiles.length !== 1 || !checkoutCapabilities(payload, profiles[0], checkout).length)
+      fail("FISCAL_V1_CHECKOUT_AUTHORITY_MISMATCH");
+    const identity = canonical({ profileVersion: checkout.profileVersion, documentType: checkout.documentType, context: checkout.context });
+    if (seen.has(identity)) fail("FISCAL_V1_CHECKOUT_CONTEXT_AMBIGUOUS");
+    seen.add(identity);
+  }
+}
+
+/** El caller verifica primero la firma/expiración del payload; no consulta red ni reserva número. */
+export function resolveFiscalV1CheckoutContext(input: {
+  readonly payload: FiscalV1PublicationPayload;
+  readonly documentType: "BOLETA" | "FACTURA";
+  readonly occurredOn: string;
+  readonly context?: FiscalV1OperationContext;
+}): Readonly<{ profile: FiscalV1IssuerProfile; checkout: FiscalV1CheckoutContext }> | null {
+  const { payload, documentType, occurredOn } = input;
+  civilDate(occurredOn, "FISCAL_V1_OPERATION_DATE_INVALID");
+  if (!["BOLETA", "FACTURA"].includes(documentType)) fail("FISCAL_V1_DOCUMENT_TYPE_INVALID");
+  if (input.context) context(input.context);
+  assertFiscalV1IssuerAuthority(payload.profiles);
+  payload.capabilities.forEach(capability);
+  validateCheckoutContexts(payload);
+  const matches: Array<{ profile: FiscalV1IssuerProfile; checkout: FiscalV1CheckoutContext }> = [];
+  for (const checkout of payload.checkoutContexts ?? []) {
+    if (checkout.documentType !== documentType || input.context && !sameContext(input.context, checkout.context)) continue;
+    const profiles = payload.profiles.filter(row => row.profileVersion === checkout.profileVersion &&
+      row.status === "PUBLISHED" && effective(row, occurredOn) && row.environment === payload.environment &&
+      row.tenantId === payload.tenantId && row.issuerId === payload.issuerId &&
+      row.establishmentId === checkout.context.establishmentId && row.provider === "XmlPeru" && row.adapterVersion === "v1");
+    if (profiles.length !== 1) continue;
+    const selected = profiles[0];
+    if (!["NRUS", "RER"].includes(selected.taxRegime) || selected.taxRegime === "NRUS" && documentType === "FACTURA") continue;
+    const capabilities = checkoutCapabilities(payload, selected, checkout).filter(row => row.status === "PUBLISHED" &&
+      row.capabilityStatus === "SUPPORTED" && effective(row, occurredOn));
+    if (capabilities.length !== 1) continue;
+    if (documentType === "FACTURA") {
+      if (!checkout.creditNoteSeries) continue;
+      const saleCapability = capabilities[0];
+      const corrections = payload.capabilities.filter(row => row.status === "PUBLISHED" && row.capabilityStatus === "SUPPORTED" &&
+        effective(row, occurredOn) && row.documentType === "NOTA_CREDITO" && row.profileVersion === selected.profileVersion &&
+        row.taxRegime === selected.taxRegime && row.tenantId === payload.tenantId && row.issuerId === payload.issuerId &&
+        row.environment === payload.environment && row.provider === selected.provider && row.adapterVersion === selected.adapterVersion &&
+        row.see === selected.see && sameContext(row.context, checkout.context) &&
+        ["01", "06", "07"].every(code => row.creditNoteReasonCodes?.includes(code)) &&
+        saleCapability.legalCategories.every(category => row.legalCategories.includes(category)));
+      if (corrections.length !== 1) continue;
+    }
+    matches.push({ profile: selected, checkout });
+  }
+  return matches.length === 1 ? matches[0] : null;
+}
+
+/** Limpia el sobre replicable sin convertirlo en ancla de confianza o comprobar vigencia. */
+export function projectFiscalV1PublicationDocument(value: unknown): FiscalV1PublicationDocument {
+  if (!value || typeof value !== "object" || Array.isArray(value)) fail("FISCAL_V1_PUBLICATION_DOCUMENT_INVALID");
+  const row = value as Record<string, unknown>;
+  if (!text(row._id) || row.type !== FISCAL_V1_PUBLICATION_DOCUMENT_TYPE || !text(row.tenantId) ||
+    (row.environment !== "DEMO" && row.environment !== "PRODUCTION") ||
+    (row._rev !== undefined && !text(row._rev)) ||
+    (row.publishedBy !== undefined && !text(row.publishedBy)) ||
+    (row.publishedAtMs !== undefined && !cents(row.publishedAtMs)) ||
+    (row._conflicts !== undefined && (!Array.isArray(row._conflicts) || row._conflicts.length > 0)))
+    return fail("FISCAL_V1_PUBLICATION_DOCUMENT_INVALID");
+  const bundle = row.bundle as FiscalV1SignedPublicationBundle;
+  exactKeys(bundle, ["payload", "payloadSha256", "signature"], [], "FISCAL_V1_BUNDLE_INVALID");
+  exactKeys(bundle.signature, ["algorithm", "keyId", "signatureBase64"], [], "FISCAL_V1_SIGNATURE_INVALID");
+  fiscalV1PublicationPayloadMaterial(bundle.payload);
+  if (bundle.payload.schemaVersion !== "fiscal-v1" || bundle.payload.tenantId !== row.tenantId ||
+    bundle.payload.environment !== row.environment || !text(bundle.payload.issuerId) || !sha256(bundle.payloadSha256) ||
+    bundle.signature.algorithm !== "Ed25519" || !text(bundle.signature.keyId)) fail("FISCAL_V1_SCOPE_MISMATCH");
+  decodeBase64(bundle.signature.signatureBase64, nacl.sign.signatureLength);
+  return { _id: row._id, ...(row._rev !== undefined ? { _rev: row._rev as string } : {}),
+    type: FISCAL_V1_PUBLICATION_DOCUMENT_TYPE, tenantId: row.tenantId, environment: row.environment as FiscalV1PublicationDocument["environment"],
+    bundle: JSON.parse(canonical(bundle)) as FiscalV1SignedPublicationBundle,
+    ...(row.publishedBy !== undefined ? { publishedBy: row.publishedBy as string } : {}),
+    ...(row.publishedAtMs !== undefined ? { publishedAtMs: row.publishedAtMs as number } : {}) };
 }
 
 function profile(value: FiscalV1IssuerProfile): void {
@@ -280,6 +387,7 @@ export function verifyFiscalV1PublicationBundle(bundle: FiscalV1SignedPublicatio
       fail("FISCAL_V1_PUBLICATION_INTEGRITY_INVALID");
   }
   assertFiscalV1IssuerAuthority(payload.profiles);
+  validateCheckoutContexts(payload);
   return payload;
 }
 

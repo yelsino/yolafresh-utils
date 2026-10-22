@@ -4,6 +4,13 @@
 
 Este documento fija cómo debe modelarse la configuración de empresa en `shared/kernel` sin romper compatibilidad con producción.
 
+Acuerdo de configuración fiscal del 2026-10-22: simplificar las pantallas existentes
+de Empresa/Facturación sin modificar el onboarding del negocio; XmlPeru continúa
+como proveedor de firma, envío y XML/CDR. Las brechas de régimen por vigencia,
+activación y publicación están en el [plan de contratos fiscales](../fiscal/configuracion-fiscal-simple-plan-contratos-2026-10-22.md).
+La implementación local del 22/10 añade el calendario fiscal descrito abajo;
+no cambia el onboarding ni habilita emisión.
+
 ## Evidencia principal
 
 - [empresa.contract.ts](../../domain/shared/kernel/empresa.contract.ts)
@@ -32,6 +39,7 @@ La evolución aplicada en esta librería es aditiva:
 - `empresa.pais?`
 - `perfilNegocio?`
 - `fiscal.entornoEmision?`
+- `fiscal.regimenTributarioVigencias?`
 
 No se cambió el `type`, no se renombraron bloques existentes y no se introdujo un documento nuevo para reemplazar `config_empresa`.
 
@@ -45,6 +53,25 @@ La ausencia del campo no equivale a Demo. Tampoco basta seleccionar `PRODUCCION`
 para convertir una firma de prueba en comprobante válido: el proveedor, las
 credenciales y la ruta de emisión deben corresponder al mismo entorno. Cada
 comprobante conserva el entorno con el que realmente fue firmado.
+
+### Régimen por fecha
+
+`fiscal.regimenTributarioVigencias` conserva decisiones con `decisionId`,
+`regimenTributario`, `effectiveFrom`, `recordedAtMs` y `recordedBy`. El inicio
+de la siguiente decisión delimita el fin de la anterior. Una corrección usa
+`supersedesDecisionId` y `reason`, para el mismo inicio, conservando el original;
+no se aceptan forks ni dos decisiones activas para una misma fecha.
+
+Cuando existe el calendario es la autoridad. El escalar anterior se conserva
+para compatibilidad, pero no resuelve fechas ausentes del calendario. Sin
+calendario, el resolutor devuelve `DECLARED_UNDATED`: sirve para mostrar el dato
+anterior, no para inventar una fecha de vigencia ni publicar un perfil fiscal.
+Registrar el régimen en YolaFresh no cambia el régimen oficial ante SUNAT.
+
+Las reglas puras y el comando administrativo están en
+[`configuracion-fiscal-empresa.ts`](../../domain/fiscal/contracts/configuracion-fiscal-empresa.ts).
+El servidor fija actor/hora y el identificador de decisión a partir de la
+operación idempotente; el caller no puede aportar auditoría ajena.
 
 ## Decisión de modelado
 

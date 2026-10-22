@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import nacl from "tweetnacl";
-import { assertFiscalV1DocumentRecord, assertFiscalV1Snapshot, fiscalV1CanonicalSha256,
+import { assertFiscalV1DocumentRecord, assertFiscalV1Snapshot, assertFiscalV1SnapshotForIssuance, fiscalV1CanonicalSha256,
   fiscalV1PublicationArtifactFingerprint, fiscalV1PublicationPayloadFingerprint, fiscalV1PublicationPayloadMaterial,
   fiscalV1SnapshotFingerprint, prepareFiscalV1CreditNote, prepareFiscalV1Sale,
   type FiscalV1Capability, type FiscalV1CreditNoteDraft, type FiscalV1DocumentRecord,
@@ -121,6 +121,52 @@ test("documento separa firma de aceptación y exige CDR para factura elegible", 
     /FISCAL_V1_DOCUMENT_SNAPSHOT_MISMATCH/);
   assert.doesNotThrow(() => assertFiscalV1DocumentRecord({ ...document, state: "SIGNED_SUBMISSION_PENDING",
     tributaryResult: undefined }, snapshot));
+});
+
+test("snapshot-v2 documenta saldo pendiente menor al total y solo cuotas futuras", () => {
+  const { snapshot } = fixture();
+  const credit = { ...snapshot, schemaVersion: "fiscal-v1-snapshot-v2" as const,
+    paymentTerms: { kind: "CREDITO" as const, netPendingCents: 1000,
+      installments: [{ dueOn: "2026-10-16", amountCents: 500 }, { dueOn: "2026-11-15", amountCents: 500 }] } };
+  const fingerprinted = (value: typeof credit) => ({ ...value, snapshotSha256: fiscalV1SnapshotFingerprint(value) });
+  assert.doesNotThrow(() => assertFiscalV1SnapshotForIssuance(fingerprinted(credit)));
+  for (const paymentTerms of [
+    { ...credit.paymentTerms, netPendingCents: 1181 },
+    { ...credit.paymentTerms, netPendingCents: 0 },
+    { ...credit.paymentTerms, installments: [{ dueOn: "2026-10-15", amountCents: 1000 }] },
+    { ...credit.paymentTerms, installments: [{ dueOn: "2026-10-14", amountCents: 1000 }] },
+    { ...credit.paymentTerms, installments: [{ dueOn: "2026-10-16", amountCents: 1180 }] },
+  ]) assert.throws(() => assertFiscalV1SnapshotForIssuance(fingerprinted({ ...credit, paymentTerms })),
+    /FISCAL_V1_SNAPSHOT_PAYMENT_INVALID/);
+  const missingNet = { ...credit, paymentTerms: { kind: "CREDITO" as const,
+    installments: credit.paymentTerms.installments } };
+  assert.throws(() => assertFiscalV1SnapshotForIssuance({ ...missingNet,
+    snapshotSha256: fiscalV1SnapshotFingerprint(missingNet) }), /FISCAL_V1_SNAPSHOT_PAYMENT_INVALID/);
+});
+
+test("crédito histórico conserva hash y recuperación pero no admite una nueva emisión", () => {
+  const { snapshot } = fixture();
+  const legacy = { ...snapshot, paymentTerms: { kind: "CREDITO" as const,
+    installments: [{ dueOn: snapshot.decision.occurredOn, amountCents: snapshot.decision.totalCents }] } };
+  const historical = { ...legacy, snapshotSha256: fiscalV1SnapshotFingerprint(legacy) };
+  const before = JSON.stringify(historical);
+  assert.doesNotThrow(() => assertFiscalV1Snapshot(historical));
+  assert.throws(() => assertFiscalV1SnapshotForIssuance(historical), /FISCAL_V1_LEGACY_CREDIT_NOT_ADMISSIBLE/);
+  assert.equal(JSON.stringify(historical), before);
+  assert.doesNotThrow(() => assertFiscalV1SnapshotForIssuance(snapshot));
+});
+
+test("CDR rechazada de una nota no libera cantidades firmadas ni altera el resultado del original", () => {
+  const { publication, snapshot, document, draft } = fixture();
+  const prior = { noteId: "prior-note", operationId: "prior-op", originalDocumentId: document.documentId,
+    originalSnapshotSha256: snapshot.snapshotSha256, state: "TRIBUTARY_REJECTED" as const,
+    tributaryResult: { storageRef: "private:note-cdr", sha256: HASH, receivedAtMs: NOW,
+      outcome: "REJECTED" as const, responseCode: "2022", description: "Nota rechazada", observations: [] },
+    lines: [{ originalLineId: "line-1", creditedQuantityMilli: 1000, creditedCents: 1180 }] };
+  const originalBefore = JSON.stringify(document);
+  assert.throws(() => prepareFiscalV1CreditNote({ draft, originalSnapshot: snapshot,
+    originalDocument: document, priorCredits: [prior], ...publication }), /CREDIT_NOTE_EXCEEDS_REMAINING/);
+  assert.equal(JSON.stringify(document), originalBefore);
 });
 
 test("nota parcial y total usan importes/regla histórica y respetan saldo por línea", () => {

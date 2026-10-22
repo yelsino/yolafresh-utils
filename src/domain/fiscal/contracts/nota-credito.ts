@@ -3,7 +3,8 @@ import type { FiscalBuyer, FiscalCurrency, FiscalDocumentIdentity } from "./cpe.
 import { fiscalConfigurationCanonicalJson } from "./configuracion-fiscal";
 import { validateFiscalSignedDocument, type FiscalDocumentLine, type FiscalDocumentTotals, type FiscalSignedDocument } from "./comprobante-electronico.contract";
 
-/** MVP monetary adjustments to boletas; no generic discount/identity correction. */
+/** Monetary adjustments by quantity; no generic discount/identity correction.
+ * This pure calculation does not authorize issuance or establish CDR eligibility. */
 export type FiscalCreditNoteReason = "01" | "06" | "07";
 export interface FiscalCreditNoteCommand {
   readonly operationId: string;
@@ -68,7 +69,9 @@ function totals(lines: readonly FiscalDocumentLine[]): FiscalDocumentTotals {
  */
 export function prepareFiscalCreditNote(original: FiscalSignedDocument, command: FiscalCreditNoteCommand,
   consumingHistory: readonly FiscalCreditNoteSnapshot[]): FiscalCreditNoteSnapshot {
-  if (validateFiscalSignedDocument(original).length || original.origin.kind !== "VENTA" || original.identity.documentType !== "BOLETA")
+  if (validateFiscalSignedDocument(original).length ||
+      !["VENTA", "VENTA_V1"].includes(original.origin.kind) ||
+      !["BOLETA", "FACTURA"].includes(original.identity.documentType))
     return fail("CREDIT_NOTE_ORIGINAL_INVALID");
   if (!command || !["01", "06", "07"].includes(command.reasonCode)) return fail("CREDIT_NOTE_REASON_UNSUPPORTED");
   if (!text(command.operationId) || !text(command.idempotencyKey) || command.idempotencyKey.length > 240 ||

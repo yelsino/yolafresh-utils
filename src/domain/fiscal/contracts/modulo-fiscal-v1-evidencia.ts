@@ -1,4 +1,5 @@
 import { validateFiscalCivilDate } from "./reglas-tributarias";
+import { assertFiscalV1DocumentGrant, assertFiscalV1TributaryResult } from "./modulo-fiscal-v1-resultados";
 import { fiscalV1CanonicalSha256, fiscalV1DecisionFingerprintMaterial,
   verifyFiscalV1PublicationBundle } from "./modulo-fiscal-v1";
 import type { FiscalV1Capability, FiscalV1SignedPublicationBundle, FiscalV1TrustedPublisherKey } from "./modulo-fiscal-v1.contract";
@@ -31,7 +32,7 @@ export function fiscalV1SnapshotFingerprint(snapshot: FiscalV1Snapshot): string 
 }
 
 export function assertFiscalV1Snapshot(snapshot: FiscalV1Snapshot): void {
-  if (!snapshot || snapshot.schemaVersion !== "fiscal-v1-snapshot" || !text(snapshot.snapshotId) ||
+  if (!snapshot || !["fiscal-v1-snapshot", "fiscal-v1-snapshot-v2"].includes(snapshot.schemaVersion) || !text(snapshot.snapshotId) ||
       !text(snapshot.issuerLegalName) || !snapshot.issuerEstablishment ||
       ![snapshot.issuerEstablishment.establishmentId, snapshot.issuerEstablishment.code,
         snapshot.issuerEstablishment.department, snapshot.issuerEstablishment.province,
@@ -87,15 +88,30 @@ export function assertFiscalV1Snapshot(snapshot: FiscalV1Snapshot): void {
     fail("FISCAL_V1_SNAPSHOT_TAX_INVALID");
   if (snapshot.paymentTerms?.kind === "CREDITO") {
     const installments = snapshot.paymentTerms.installments;
+    const current = snapshot.schemaVersion === "fiscal-v1-snapshot-v2";
+    const netPending = snapshot.paymentTerms.netPendingCents;
+    if (current ? !positive(netPending) || netPending > snapshot.decision.totalCents
+      : netPending !== undefined) fail("FISCAL_V1_SNAPSHOT_PAYMENT_INVALID");
     if (!Array.isArray(installments) || !installments.length || installments.some(item =>
-      !item || !positive(item.amountCents) || date(item.dueOn, "FISCAL_V1_CREDIT_DUE_DATE_INVALID") < snapshot.decision.occurredOn) ||
-      safeNumber(installments.reduce((sum, item) => sum + BigInt(item.amountCents), 0n)) !== snapshot.decision.totalCents)
+      !item || !positive(item.amountCents) || (current
+        ? date(item.dueOn, "FISCAL_V1_CREDIT_DUE_DATE_INVALID") <= snapshot.decision.occurredOn
+        : date(item.dueOn, "FISCAL_V1_CREDIT_DUE_DATE_INVALID") < snapshot.decision.occurredOn)) ||
+      safeNumber(installments.reduce((sum, item) => sum + BigInt(item.amountCents), 0n)) !==
+        (current ? netPending : snapshot.decision.totalCents))
       fail("FISCAL_V1_SNAPSHOT_PAYMENT_INVALID");
   } else if (snapshot.paymentTerms?.kind !== "CONTADO") fail("FISCAL_V1_SNAPSHOT_PAYMENT_INVALID");
   if (snapshot.decision.documentType === "FACTURA" && snapshot.decision.buyer?.documentType !== "RUC")
     fail("FISCAL_V1_SNAPSHOT_BUYER_INVALID");
   // Decisión y snapshot se guardan juntos; nadie los completa después de firmar.
   fiscalV1DecisionFingerprintMaterial(snapshot.decision);
+}
+
+/** New issuance must never admit the legacy credit shape. Recovery keeps validating
+ * historical bytes/hashes without changing their dates or inferring a missing balance. */
+export function assertFiscalV1SnapshotForIssuance(snapshot: FiscalV1Snapshot): void {
+  assertFiscalV1Snapshot(snapshot);
+  if (snapshot.paymentTerms.kind === "CREDITO" && snapshot.schemaVersion !== "fiscal-v1-snapshot-v2")
+    fail("FISCAL_V1_LEGACY_CREDIT_NOT_ADMISSIBLE");
 }
 
 export function assertFiscalV1DocumentRecord(document: FiscalV1DocumentRecord, snapshot: FiscalV1Snapshot): void {
@@ -112,12 +128,10 @@ export function assertFiscalV1DocumentRecord(document: FiscalV1DocumentRecord, s
       document.environment !== decision.environment) fail("FISCAL_V1_DOCUMENT_SNAPSHOT_MISMATCH");
   if (document.signedXml !== undefined && (!text(document.signedXml.storageRef) || !sha256(document.signedXml.sha256)))
     fail("FISCAL_V1_SIGNED_XML_INVALID");
-  if (document.tributaryResult !== undefined && (!text(document.tributaryResult.storageRef) ||
-      !sha256(document.tributaryResult.sha256) || !cents(document.tributaryResult.receivedAtMs) ||
-      !["ACCEPTED", "REJECTED"].includes(document.tributaryResult.outcome)))
-    fail("FISCAL_V1_TRIBUTARY_RESULT_INVALID");
+  if (document.tributaryResult !== undefined) assertFiscalV1TributaryResult(document.tributaryResult);
+  if (document.grant !== undefined) assertFiscalV1DocumentGrant(document.grant, snapshot.decision.buyer?.documentNumber);
   if (document.state === "UNKNOWN") {
-    if (document.tributaryResult) fail("FISCAL_V1_DOCUMENT_STATE_CONTRADICTION");
+    if (document.tributaryResult || document.grant) fail("FISCAL_V1_DOCUMENT_STATE_CONTRADICTION");
   } else if (!document.signedXml || !text(document.providerOperationRef))
     fail("FISCAL_V1_DOCUMENT_SIGNED_EVIDENCE_REQUIRED");
   if (document.state === "SIGNED_SUBMISSION_PENDING" && document.tributaryResult)
@@ -181,8 +195,15 @@ export function prepareFiscalV1CreditNote(input: {
         priorIds.has(prior.operationId) || prior.noteId === draft.noteId || prior.operationId === draft.noteOperationId ||
         prior.originalDocumentId !== originalDocument.documentId ||
         prior.originalSnapshotSha256 !== originalSnapshot.snapshotSha256 ||
-        !["RESERVED", "UNKNOWN", "SIGNED", "TRIBUTARY_ACCEPTED"].includes(prior.state) || !Array.isArray(prior.lines))
+        !["RESERVED", "UNKNOWN", "SIGNED", "TRIBUTARY_ACCEPTED", "TRIBUTARY_REJECTED"].includes(prior.state) || !Array.isArray(prior.lines))
       fail("FISCAL_V1_PRIOR_CREDIT_NOTE_INVALID");
+    if (prior.tributaryResult !== undefined) {
+      assertFiscalV1TributaryResult(prior.tributaryResult);
+      if (prior.state === "RESERVED" || prior.state === "UNKNOWN" ||
+          prior.state === "TRIBUTARY_ACCEPTED" && prior.tributaryResult.outcome !== "ACCEPTED" ||
+          prior.state === "TRIBUTARY_REJECTED" && prior.tributaryResult.outcome !== "REJECTED")
+        fail("FISCAL_V1_PRIOR_CREDIT_NOTE_INVALID");
+    }
     priorIds.add(prior.noteId); priorIds.add(prior.operationId);
     const seen = new Set<string>();
     for (const line of prior.lines) {

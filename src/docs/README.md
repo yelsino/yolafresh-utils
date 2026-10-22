@@ -100,6 +100,13 @@ La lectura recomendada va de:
 - [contabilidad/README.md](./contabilidad/README.md)
 - [contabilidad/modelo-vigente.md](./contabilidad/modelo-vigente.md)
 
+### Fiscal
+
+- [fiscal/configuracion-fiscal-simple-plan-contratos-2026-10-22.md](./fiscal/configuracion-fiscal-simple-plan-contratos-2026-10-22.md): decisiones y brechas para configuración fiscal simple desde Empresa/Facturación; onboarding excluido y XmlPeru conservado. Plan documental, sin ampliar capacidades de emisión.
+- [fiscal/configuracion-fiscal-por-presentacion.md](./fiscal/configuracion-fiscal-por-presentacion.md): responsabilidades, decisiones y vigencias del modelo previo.
+- [fiscal/modulo-fiscal-v1-implementacion.md](./fiscal/modulo-fiscal-v1-implementacion.md): corte de implementación del motor y publicaciones V1.
+- [fiscal/modelo-de-comprobantes.md](./fiscal/modelo-de-comprobantes.md): venta, documento firmado, proceso y respuesta tributaria.
+
 ### Restaurante (propuesta de evolución)
 
 - [restaurant/README.md](./restaurant/README.md): índice maestro del análisis gastronómico.

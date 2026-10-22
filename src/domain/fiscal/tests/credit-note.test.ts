@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { prepareFiscalCreditNote, planCreditNoteSettlement, fiscalCreditQuantity, FiscalCreditNoteError, type FiscalSignedDocument } from "../contracts";
+import { prepareFiscalCreditNote, planCreditNoteSettlement, fiscalCreditQuantity, FiscalCreditNoteError,
+  validateFiscalSignedDocument, type FiscalSignedDocument } from "../contracts";
 import { positiveDecimalQuantity, DecimalQuantityError } from "../../shared/value-objects/DecimalQuantity";
 
 test("shared decimal quantities preserve exact scale and fiscal error compatibility", () => {
@@ -44,6 +45,31 @@ test("partial credit preserves historical price, buyer, emitter and actual tax",
   assert.equal(note.originalDocumentId, doc.documentId);
   assert.deepEqual(note.buyer, doc.buyer);
   assert.equal(JSON.stringify(doc), before);
+});
+
+test("factura V1 conserva sus referencias propias al calcular NC01/06/07 sin IDs del piloto", () => {
+  const source = originalFixture();
+  const original: FiscalSignedDocument = { ...source,
+    identity: { ...source.identity, documentType: "FACTURA", series: "F001" },
+    origin: { kind: "VENTA_V1", saleId: "sale opaque", operationId: "operation V1 opaque",
+      fiscalSnapshotId: "fiscal snapshot opaque", fiscalSnapshotSha256: "b".repeat(64) },
+    buyer: { documentType: "RUC", documentNumber: "10123456789", legalName: "Comprador de prueba" },
+    print: { ...source.print, qrPayload: `10770681397|01|F001|118|0.54|3.54|2026-10-11|6|10123456789|${source.signature.digestValue}`,
+      legalLegend: "FACTURA DEMO - SIN VALIDEZ TRIBUTARIA" } };
+  assert.deepEqual(validateFiscalSignedDocument(original), []);
+  const before = JSON.stringify(original);
+  const partial = prepareFiscalCreditNote(original, command(), []);
+  assert.equal(partial.originalIdentity.documentType, "FACTURA");
+  assert.equal(partial.totals.payableCents, 118);
+  assert.deepEqual(partial.buyer, original.buyer);
+  for (const reasonCode of ["01", "06"] as const)
+    assert.deepEqual(prepareFiscalCreditNote(original, { ...command(), reasonCode, selections: [] }, []).totals, original.totals);
+  assert.equal(JSON.stringify(original), before);
+  assert.ok(validateFiscalSignedDocument({ ...original, origin: { ...original.origin,
+    intentId: "invented pilot intent" } }).includes("origin.unknown.intentId"));
+  assert.ok(validateFiscalSignedDocument({ ...original, origin: { ...original.origin,
+    fiscalSnapshotSha256: "invalid" } }).includes("origin.fiscalSnapshotSha256"));
+  assert.throws(() => prepareFiscalCreditNote(original, { ...command(), reasonCode: "13" as never }, []), /REASON_UNSUPPORTED/);
 });
 test("weighted partials conserve every cent through cumulative rounding", () => {
   const source = originalFixture();

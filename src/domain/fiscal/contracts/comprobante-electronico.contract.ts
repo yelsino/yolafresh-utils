@@ -16,6 +16,10 @@ export interface FiscalArtifactReference {
 export type FiscalDocumentOrigin =
   | { readonly kind: "VENTA"; readonly saleId: string; readonly saleSnapshotId: string;
       readonly intentId: string; readonly fiscalSnapshotId: string }
+  /** V1 has an operation and fiscal snapshot, not the pilot's intent. A commercial
+   * snapshot, when needed, is resolved explicitly from the sale outside this projection. */
+  | { readonly kind: "VENTA_V1"; readonly saleId: string; readonly operationId: string;
+      readonly fiscalSnapshotId: string; readonly fiscalSnapshotSha256: string }
   | { readonly kind: "CORRECCION"; readonly originalDocumentId: string;
       readonly originalIdentity: FiscalDocumentIdentity; readonly reasonCode: string;
       readonly reason: string };
@@ -200,6 +204,14 @@ export function validateFiscalSignedDocument(value: unknown): readonly string[] 
       "fiscalSnapshotId"], "origin.", errors);
     for (const key of ["saleId", "saleSnapshotId", "intentId", "fiscalSnapshotId"] as const)
       if (!nonBlank(value.origin[key])) errors.push(`origin.${key}`);
+    if (record(value.identity) && !["BOLETA", "FACTURA"].includes(String(value.identity.documentType)))
+      errors.push("origin.documentType");
+  } else if (value.origin.kind === "VENTA_V1") {
+    rejectUnknown(value.origin, ["kind", "saleId", "operationId", "fiscalSnapshotId",
+      "fiscalSnapshotSha256"], "origin.", errors);
+    for (const key of ["saleId", "operationId", "fiscalSnapshotId"] as const)
+      if (!nonBlank(value.origin[key])) errors.push(`origin.${key}`);
+    if (!hash(value.origin.fiscalSnapshotSha256)) errors.push("origin.fiscalSnapshotSha256");
     if (record(value.identity) && !["BOLETA", "FACTURA"].includes(String(value.identity.documentType)))
       errors.push("origin.documentType");
   } else if (value.origin.kind === "CORRECCION") {

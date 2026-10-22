@@ -1,5 +1,10 @@
 # Configuración fiscal de presentaciones
 
+Actualización de alcance 2026-10-22: el [plan de configuración fiscal simple](./configuracion-fiscal-simple-plan-contratos-2026-10-22.md)
+mantiene XmlPeru, excluye cambios al onboarding de negocio y distingue las reglas
+de este modelo de las publicaciones V1. Una UI más breve no elimina las reglas
+ni convierte una capacidad pendiente en soporte de emisión.
+
 > Base conceptual y contrato local previo. El módulo multitenant nuevo
 > requiere conciliar esta publicación con la autoridad backend en una única
 > fuente canónica; véanse el RFC, matriz y plan `10-` a `12-` en

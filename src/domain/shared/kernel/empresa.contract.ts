@@ -17,6 +17,19 @@ export type MonedaEmpresa = "PEN" | "USD";
 /** Régimen declarado por el emisor; no se infiere del porcentaje comercial de IGV. */
 export type RegimenTributarioEmpresa = "NRUS" | "RER" | "RMT" | "REGIMEN_GENERAL";
 
+/**
+ * Declaración fechada del régimen en YolaFresh. No modifica el régimen ante SUNAT.
+ * El inicio siguiente delimita su fin; una corrección conserva la declaración original.
+ */
+export type FiscalCompanyTaxRegimeDecision = Readonly<{
+  decisionId: string;
+  regimenTributario: RegimenTributarioEmpresa;
+  effectiveFrom: string;
+  recordedAtMs: number;
+  recordedBy: string;
+}> & (Readonly<{ supersedesDecisionId?: never; reason?: string }> |
+  Readonly<{ supersedesDecisionId: string; reason: string }>);
+
 /** Destino fiscal de las nuevas emisiones; no depende del nombre del tenant. */
 export type EntornoEmisionFiscal = "DEMO" | "PRODUCCION";
 
@@ -142,6 +155,11 @@ export interface ConfigEmpresa {
     porcentajeIGV: number;
     incluyeIGVEnPrecios: boolean;
     regimenTributario?: RegimenTributarioEmpresa;
+    /**
+     * Calendario canónico cuando existe. El escalar anterior solo conserva compatibilidad;
+     * no se usa como fallback para una fecha fuera de este calendario.
+     */
+    regimenTributarioVigencias?: readonly FiscalCompanyTaxRegimeDecision[];
     /** Habilitación del vector fiscal por empresa. Ausente o false permanece apagado. */
     facturacionElectronicaEnabled?: boolean;
     /** Domicilio fiscal contrastado por el administrador con SUNAT para el emisor actual. */

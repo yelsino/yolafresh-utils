@@ -10,6 +10,30 @@ Este proyecto adopta versionado semántico:
 
 ## [Unreleased]
 
+## [2.7.15-fiscal-v1.14] - 2026-10-19
+
+### Added
+
+- Evidencia V1 de impresión ligada a hash de XML, QR e identidad de factura,
+  boleta o nota, sin fabricar identificadores del piloto ni afirmar aceptación.
+- Resultado CDR con código, descripción y observaciones opcionales para lectura
+  histórica; las nuevas escrituras exigen el detalle completo. Otorgamiento por
+  documento separado de firma, aceptación y cobro.
+- Respuesta tributaria propia de cada nota. Una nota firmada rechazada mantiene
+  su reserva de cantidades e importes hasta una corrección expresa.
+- Origen `VENTA_V1` con referencias reales de operación/snapshot fiscal, sin IDs
+  del piloto. La política económica de NC01/06/07 admite original factura y
+  conserva aparte la autorización de emisión y efectos comerciales.
+
+### Fixed
+
+- Snapshot `fiscal-v1-snapshot-v2` incorpora saldo neto pendiente de crédito,
+  cuotas que suman ese saldo y vencimientos posteriores a emisión. El contrato
+  histórico conserva su validación y hash para recuperar operaciones existentes;
+  el gate de nueva emisión rechaza crédito con el formato histórico.
+- Los contratos nuevos no habilitan crédito en checkout, otros regímenes,
+  monedas, operaciones especiales ni causal 13.
+
 ## [2.4.0] - 2026-09-12
 
 ### Added

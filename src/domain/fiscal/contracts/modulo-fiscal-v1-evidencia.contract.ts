@@ -1,8 +1,9 @@
 import type { FiscalV1Environment, FiscalV1PreparedDecision } from "./modulo-fiscal-v1.contract";
+import type { FiscalV1DocumentGrant, FiscalV1TributaryResult } from "./modulo-fiscal-v1-resultados.contract";
 
 /** Congela lo aprobado por el motor antes de pedir firma. No es por sí mismo un CPE. */
 export interface FiscalV1Snapshot {
-  readonly schemaVersion: "fiscal-v1-snapshot";
+  readonly schemaVersion: "fiscal-v1-snapshot" | "fiscal-v1-snapshot-v2";
   readonly snapshotId: string;
   readonly decision: FiscalV1PreparedDecision;
   readonly decisionSha256: string;
@@ -23,6 +24,9 @@ export interface FiscalV1Snapshot {
   readonly lineDescriptions: readonly { readonly lineId: string; readonly description: string }[];
   readonly paymentTerms: { readonly kind: "CONTADO" } | {
     readonly kind: "CREDITO";
+    /** Required in snapshot-v2. The legacy snapshot is read-only recovery evidence;
+     * do not reinterpret its installments as a newly verified remaining balance. */
+    readonly netPendingCents?: number;
     readonly installments: readonly { readonly dueOn: string; readonly amountCents: number }[];
   };
   readonly series: string;
@@ -48,8 +52,8 @@ export interface FiscalV1DocumentRecord {
   readonly state: FiscalV1DocumentState;
   readonly providerOperationRef?: string;
   readonly signedXml?: { readonly storageRef: string; readonly sha256: string };
-  readonly tributaryResult?: { readonly storageRef: string; readonly sha256: string;
-    readonly receivedAtMs: number; readonly outcome: "ACCEPTED" | "REJECTED" };
+  readonly tributaryResult?: FiscalV1TributaryResult;
+  readonly grant?: FiscalV1DocumentGrant;
 }
 
 /** Base histórica de una nota. Aún no implica soporte técnico ni reserva correlativo. */
@@ -79,7 +83,9 @@ export interface FiscalV1PriorCreditNote {
   readonly operationId: string;
   readonly originalDocumentId: string;
   readonly originalSnapshotSha256: string;
-  readonly state: "RESERVED" | "UNKNOWN" | "SIGNED" | "TRIBUTARY_ACCEPTED";
+  readonly state: "RESERVED" | "UNKNOWN" | "SIGNED" | "TRIBUTARY_ACCEPTED" | "TRIBUTARY_REJECTED";
+  /** Every note owns its response. A rejection after signing does not release its reservation. */
+  readonly tributaryResult?: FiscalV1TributaryResult;
   readonly lines: readonly { readonly originalLineId: string; readonly creditedQuantityMilli: number;
     readonly creditedCents: number }[];
 }

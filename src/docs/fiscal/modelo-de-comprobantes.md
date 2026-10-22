@@ -12,14 +12,21 @@ La empresa declara si tiene habilitada la facturación electrónica. Si no la
 habilita expresamente, su venta comercial no debe depender del proceso fiscal.
 Esta decisión no clasifica productos ni sustituye los permisos del operador.
 
-El perfil fiscal identifica al emisor, su régimen y el establecimiento, y
-conserva las reglas tributarias por presentación, sus vigencias y el sustento
-de cada decisión. Una regla puede estar pendiente de clasificación; eso no
-equivale a exoneración. Cuando corresponde, se considera también la renuncia
-del emisor a una exoneración.
+`ConfigEmpresa` es dueño de la identidad legal, el régimen y el establecimiento.
+En el modelo de configuración previo, el perfil vinculado conserva las
+condiciones especiales del emisor; cada presentación conserva su configuración
+tributaria, vigencias y decisiones por separado. El contrato V1 incluye un
+perfil fechado para resolver operaciones: no constituye otro maestro editable
+de empresa. Su derivación desde las fuentes canónicas debe cerrarse según el
+plan de transición. Una regla pendiente no equivale a exoneración. Cuando corresponde,
+se considera también la renuncia del emisor a una exoneración.
 
-Producto describe lo vendido; precio conserva el acuerdo comercial; el perfil
-fiscal determina su tratamiento tributario. Son responsabilidades distintas.
+El [plan de configuración fiscal simple del 2026-10-22](./configuracion-fiscal-simple-plan-contratos-2026-10-22.md)
+identifica las brechas de esta transición, conserva XmlPeru para firma/envío y
+XML/CDR y excluye cambios al onboarding del negocio.
+
+Producto describe lo vendido; precio conserva el acuerdo comercial; reglas y
+contexto fiscal determinan su tratamiento tributario. Son responsabilidades distintas.
 Para una venta concreta se resuelve la regla aplicable en esa fecha y se
 congelan base e impuesto en cada línea del comprobante. Una modificación
 posterior del perfil no reescribe comprobantes ya emitidos.

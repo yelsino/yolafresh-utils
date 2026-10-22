@@ -113,6 +113,15 @@ export interface FiscalV1SaleInput {
 
 export type FiscalV1PublicationArtifact = FiscalV1IssuerProfile | FiscalV1PresentationRule | FiscalV1Capability;
 
+/** Contexto y series autorizados; no contienen reservas ni correlativos. */
+export interface FiscalV1CheckoutContext {
+  readonly profileVersion: string;
+  readonly documentType: "BOLETA" | "FACTURA";
+  readonly series: string;
+  readonly creditNoteSeries?: string;
+  readonly context: FiscalV1OperationContext;
+}
+
 /** Publicación íntegra e inmutable, con revisión monotónica por emisor y entorno. */
 export interface FiscalV1PublicationPayload {
   readonly schemaVersion: "fiscal-v1";
@@ -125,6 +134,8 @@ export interface FiscalV1PublicationPayload {
   readonly profiles: readonly FiscalV1IssuerProfile[];
   readonly rules: readonly FiscalV1PresentationRule[];
   readonly capabilities: readonly FiscalV1Capability[];
+  /** Opcional para conservar los bytes/hashes de publicaciones anteriores. */
+  readonly checkoutContexts?: readonly FiscalV1CheckoutContext[];
 }
 
 /** La firma Ed25519 cubre los bytes UTF-8 del JSON canónico de `payload`. */
@@ -136,6 +147,20 @@ export interface FiscalV1SignedPublicationBundle {
     readonly keyId: string;
     readonly signatureBase64: string;
   };
+}
+
+export const FISCAL_V1_PUBLICATION_DOCUMENT_TYPE = "fiscal_v1_signed_publication" as const;
+
+/** Proyección pública de la raíz existente; nunca distribuye historia ni claves de confianza. */
+export interface FiscalV1PublicationDocument {
+  readonly _id: string;
+  readonly _rev?: string;
+  readonly type: typeof FISCAL_V1_PUBLICATION_DOCUMENT_TYPE;
+  readonly tenantId: string;
+  readonly environment: FiscalV1Environment;
+  readonly bundle: FiscalV1SignedPublicationBundle;
+  readonly publishedBy?: string;
+  readonly publishedAtMs?: number;
 }
 
 /** Ancla confiable instalada fuera del bundle; nunca viene de CouchDB ni del request fiscal. */
