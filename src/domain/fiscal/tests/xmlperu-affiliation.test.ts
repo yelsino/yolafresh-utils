@@ -10,7 +10,7 @@ const response: XmlPeruAffiliationResponse = { ok: true, provider: "XmlPeru", te
   procedures: { pse: "done", ose: null }, signing: "provider", destination: "sunat" };
 
 test("Demo sólo acepta vinculación sin credenciales SOL ni autorización tributaria", () => {
-  assert.doesNotThrow(() => assertXmlPeruAffiliationRequest({ ...demo, managementToken: "synthetic|management" }));
+  assert.doesNotThrow(() => assertXmlPeruAffiliationRequest(demo));
   for (const extra of [{ solUsername: "synthetic" }, { solPassword: "synthetic" }, { authorizeProcedures: true },
     { solPassword: undefined }, { authorizeProcedures: false }]) {
     assert.throws(() => assertXmlPeruAffiliationRequest({ ...demo, ...extra }), /DEMO_SOL_FORBIDDEN/);
@@ -26,8 +26,13 @@ test("Producción exige autorización explícita y ambas credenciales; conserva 
 test("el comando no permite autoridad de tenant, URLs, reclamo de cuenta ni secretos no contractuales", () => {
   for (const extra of [{ tenantId: "other" }, { providerUrl: "https://invalid.test" }, { confirm: true }, { accountToken: "synthetic" }])
     assert.throws(() => assertXmlPeruAffiliationRequest({ ...demo, ...extra }), /REQUEST_INVALID/);
-  for (const token of ["", "line\nbreak", "x".repeat(4097)])
-    assert.throws(() => assertXmlPeruAffiliationRequest({ ...demo, managementToken: token }), /REQUEST_INVALID/);
+});
+test("el cliente no puede aportar ni sustituir la credencial multiempresa del integrador", () => {
+  const production = { ...demo, environment: "PRODUCTION", solUsername: "synthetic", solPassword: "synthetic", authorizeProcedures: true };
+  for (const command of [demo, production]) {
+    for (const token of [undefined, "", "synthetic|management", "line\nbreak", "x".repeat(4097)])
+      assert.throws(() => assertXmlPeruAffiliationRequest({ ...command, managementToken: token }), /REQUEST_INVALID/);
+  }
 });
 test("la respuesta pública sólo admite hechos tipados y nunca secretos del proveedor", () => {
   assert.doesNotThrow(() => assertXmlPeruAffiliationResponse(response));

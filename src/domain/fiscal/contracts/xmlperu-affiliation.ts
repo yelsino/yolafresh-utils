@@ -1,11 +1,10 @@
 import type { FiscalV1Environment } from "./modulo-fiscal-v1.contract";
 
-/** Comando online efímero. Sus secretos nunca son un documento ni una operación offline. */
+/** Comando online efímero. Sólo admite credenciales SOL del emisor; la cuenta integradora se configura en el servidor. */
 export interface XmlPeruAffiliationRequest {
   readonly operationId: string;
   readonly expectedIssuerRuc: string;
   readonly environment: FiscalV1Environment;
-  readonly managementToken?: string;
   readonly solUsername?: string;
   readonly solPassword?: string;
   readonly authorizeProcedures?: true;
@@ -25,6 +24,7 @@ export interface XmlPeruAffiliationResponse {
   readonly environment: FiscalV1Environment;
   readonly checkedAtMs: number;
   readonly status: XmlPeruAffiliationState;
+  /** Disponibilidad de la credencial de gestión del integrador; nunca un token aportado por el cliente. */
   readonly managementCredentialConfigured: boolean;
   readonly signingCredentialConfigured: boolean;
   readonly companyRegistered: boolean;
@@ -47,10 +47,9 @@ function invalid(code: string): never { throw new Error(code); }
 export function assertXmlPeruAffiliationRequest(value: unknown): asserts value is XmlPeruAffiliationRequest {
   const code = "XMLPERU_AFFILIATION_REQUEST_INVALID";
   if (!object(value) || Object.keys(value).some(key => !["operationId", "expectedIssuerRuc", "environment",
-    "managementToken", "solUsername", "solPassword", "authorizeProcedures"].includes(key)) ||
+    "solUsername", "solPassword", "authorizeProcedures"].includes(key)) ||
     !text(value.operationId, 128) || typeof value.expectedIssuerRuc !== "string" ||
     !/^\d{11}$/.test(value.expectedIssuerRuc) || !environment(value.environment)) invalid(code);
-  if (value.managementToken !== undefined && (!text(value.managementToken, 4096) || /\s/.test(value.managementToken))) invalid(code);
   if (value.environment === "DEMO") {
     if (Object.prototype.hasOwnProperty.call(value, "solUsername") ||
       Object.prototype.hasOwnProperty.call(value, "solPassword") ||
