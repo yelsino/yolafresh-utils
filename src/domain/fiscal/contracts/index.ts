@@ -8,6 +8,7 @@ export * from "./proceso-fiscal.contract";
 export * from "./configuracion-fiscal.contract";
 export * from "./configuracion-fiscal";
 export * from "./configuracion-fiscal-empresa";
+export * from "./xmlperu-affiliation";
 export * from "./nota-credito";
 export * from "./credit-note-commercial.contract";
 export * from "./credit-note-money-facts";
