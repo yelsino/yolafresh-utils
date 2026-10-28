@@ -5,6 +5,8 @@ export interface XmlPeruAffiliationRequest {
   readonly operationId: string;
   readonly expectedIssuerRuc: string;
   readonly environment: FiscalV1Environment;
+  /** Trámite real ante SUNAT, independiente del entorno de emisión. Requiere consentimiento y SOL. */
+  readonly action?: "AUTHORIZE_SUNAT";
   readonly solUsername?: string;
   readonly solPassword?: string;
   readonly authorizeProcedures?: true;
@@ -46,11 +48,12 @@ function invalid(code: string): never { throw new Error(code); }
 
 export function assertXmlPeruAffiliationRequest(value: unknown): asserts value is XmlPeruAffiliationRequest {
   const code = "XMLPERU_AFFILIATION_REQUEST_INVALID";
-  if (!object(value) || Object.keys(value).some(key => !["operationId", "expectedIssuerRuc", "environment",
+  if (!object(value) || Object.keys(value).some(key => !["operationId", "expectedIssuerRuc", "environment", "action",
     "solUsername", "solPassword", "authorizeProcedures"].includes(key)) ||
     !text(value.operationId, 128) || typeof value.expectedIssuerRuc !== "string" ||
-    !/^\d{11}$/.test(value.expectedIssuerRuc) || !environment(value.environment)) invalid(code);
-  if (value.environment === "DEMO") {
+    !/^\d{11}$/.test(value.expectedIssuerRuc) || !environment(value.environment) ||
+    (Object.prototype.hasOwnProperty.call(value, "action") && value.action !== "AUTHORIZE_SUNAT")) invalid(code);
+  if (value.environment === "DEMO" && value.action !== "AUTHORIZE_SUNAT") {
     if (Object.prototype.hasOwnProperty.call(value, "solUsername") ||
       Object.prototype.hasOwnProperty.call(value, "solPassword") ||
       Object.prototype.hasOwnProperty.call(value, "authorizeProcedures")) invalid("XMLPERU_DEMO_SOL_FORBIDDEN");
