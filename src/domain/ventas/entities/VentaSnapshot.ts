@@ -11,6 +11,8 @@ import {
   VentaState,
 } from "../../shared/kernel/enums";
 import type { MonedaEmpresa } from "../../shared/kernel/empresa.contract";
+import { assertFiscalSaleDocumentSelection, copyFiscalSaleDocumentSelection,
+  type FiscalSaleDocumentSelection } from "../../shared/kernel/fiscal-emission-policy.contract";
 import type { IVenta } from "./Venta";
 import {
   copiarVentaCobro,
@@ -156,6 +158,8 @@ export interface IVentaSnapshot {
   codigoVenta?: string;
   /** Explicación de la venta congelada al construir el snapshot. */
   observaciones?: string;
+  /** Copia de la elección confirmada en Venta; no consulta la política de la empresa. */
+  fiscalDocumentSelection?: FiscalSaleDocumentSelection;
   procedencia?: ProcedenciaComercialEnum;
   cliente?: VentaSnapshotActor;
   beneficiario?: BeneficiarioCongelado;
@@ -627,6 +631,7 @@ export class VentaSnapshot implements IVentaSnapshot {
   public readonly moneda?: MonedaEmpresa;
   public readonly codigoVenta?: string;
   public readonly observaciones?: string;
+  public readonly fiscalDocumentSelection?: FiscalSaleDocumentSelection;
   public readonly procedencia?: ProcedenciaComercialEnum;
   public readonly cliente?: VentaSnapshotActor;
   public readonly beneficiario?: BeneficiarioCongelado;
@@ -727,6 +732,8 @@ export class VentaSnapshot implements IVentaSnapshot {
     this.moneda = data.moneda;
     this.codigoVenta = safeTrim(data.codigoVenta);
     this.observaciones = data.observaciones;
+    this.fiscalDocumentSelection = data.fiscalDocumentSelection === undefined
+      ? undefined : copyFiscalSaleDocumentSelection(data.fiscalDocumentSelection);
     this.procedencia = normalizarProcedenciaComercial(data.procedencia);
     this.cliente = data.cliente ? { ...data.cliente } : undefined;
     this.beneficiario = data.beneficiario
@@ -802,6 +809,7 @@ export class VentaSnapshot implements IVentaSnapshot {
       moneda: this.moneda,
       codigoVenta: this.codigoVenta,
       observaciones: this.observaciones,
+      ...(this.fiscalDocumentSelection ? { fiscalDocumentSelection: copyFiscalSaleDocumentSelection(this.fiscalDocumentSelection) } : {}),
       procedencia: this.procedencia,
       cliente: this.cliente ? { ...this.cliente } : undefined,
       beneficiario: this.beneficiario ? { ...this.beneficiario } : undefined,
@@ -873,6 +881,7 @@ export class VentaSnapshot implements IVentaSnapshot {
       moneda: context.moneda ?? venta.moneda,
       codigoVenta: venta.codigoVenta,
       observaciones: venta.observaciones,
+      fiscalDocumentSelection: venta.fiscalDocumentSelection,
       procedencia: venta.procedencia,
       cliente: mapVentaSnapshotActor(context.cliente),
       beneficiario: context.beneficiario,
@@ -900,6 +909,11 @@ export class VentaSnapshot implements IVentaSnapshot {
     data: Partial<IVentaSnapshot>,
   ): { valida: boolean; errores: string[] } {
     const errores: string[] = [];
+
+    if (data.fiscalDocumentSelection !== undefined) {
+      try { assertFiscalSaleDocumentSelection(data.fiscalDocumentSelection); }
+      catch { errores.push("VentaSnapshot.fiscalDocumentSelection inválida"); }
+    }
 
     if (data.observaciones !== undefined && typeof data.observaciones !== "string") {
       errores.push("VentaSnapshot.observaciones debe ser texto");

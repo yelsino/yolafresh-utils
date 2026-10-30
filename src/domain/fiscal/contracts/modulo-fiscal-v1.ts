@@ -4,6 +4,7 @@ import { validateFiscalCivilDate } from "./reglas-tributarias";
 import { sha256 as digestSha256 } from "@noble/hashes/sha256";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
 import nacl from "tweetnacl";
+import type { FiscalOperationalCajaAssignmentBinding, FiscalResolvedCajaNumberingAssignment } from "./numeracion-caja";
 import { FISCAL_V1_PUBLICATION_DOCUMENT_TYPE } from "./modulo-fiscal-v1.contract";
 import type { FiscalV1Capability, FiscalV1CheckoutContext, FiscalV2CheckoutContext, FiscalV1EffectivePublication, FiscalV1IssuerProfile,
   FiscalV1LegalCategory, FiscalV1OperationContext, FiscalV1PreparedDecision, FiscalV1PreparedLine,
@@ -230,6 +231,95 @@ export function resolveFiscalV2CheckoutContext(input: {
   if (!text(input.cajaId)) fail("FISCAL_V2_CHECKOUT_CAJA_REQUIRED");
   validateCheckoutContextsV2(input.payload);
   return resolveCheckoutContext(input, (input.payload.checkoutContextsV2 ?? []).filter(row => row.cajaId === input.cajaId));
+}
+
+/** Hechos tributarios autorizados, independientes de cualquier serie o caja. */
+export function resolveFiscalOperationalTaxContext(input: {
+  readonly payload: FiscalV1PublicationPayload;
+  readonly documentType: "BOLETA" | "FACTURA";
+  readonly occurredOn: string;
+  readonly establishmentId: string;
+  readonly issuerRuc?: string;
+  readonly context?: FiscalV1OperationContext;
+}): Readonly<{ profile: FiscalV1IssuerProfile; context: FiscalV1OperationContext; capability: FiscalV1Capability }> | null {
+  const { payload, documentType, occurredOn } = input;
+  civilDate(occurredOn, "FISCAL_V1_OPERATION_DATE_INVALID");
+  if (!["BOLETA", "FACTURA"].includes(documentType)) fail("FISCAL_V1_DOCUMENT_TYPE_INVALID");
+  if (!text(input.establishmentId)) fail("FISCAL_V1_CONTEXT_REQUIRED");
+  if (input.context) context(input.context);
+  assertFiscalV1IssuerAuthority(payload.profiles);
+  payload.capabilities.forEach(capability);
+  const matches: Array<{ profile: FiscalV1IssuerProfile; context: FiscalV1OperationContext; capability: FiscalV1Capability }> = [];
+  for (const selected of payload.profiles) {
+    if (selected.status !== "PUBLISHED" || !effective(selected, occurredOn) || selected.tenantId !== payload.tenantId ||
+      selected.issuerId !== payload.issuerId || selected.environment !== payload.environment ||
+      selected.establishmentId !== input.establishmentId || input.issuerRuc !== undefined && selected.issuerRuc !== input.issuerRuc ||
+      selected.provider !== "XmlPeru" || selected.adapterVersion !== "v1" ||
+      !["NRUS", "RER"].includes(selected.taxRegime) || selected.taxRegime === "NRUS" && documentType === "FACTURA") continue;
+    const candidates = payload.capabilities.filter(row => row.profileVersion === selected.profileVersion &&
+      row.documentType === documentType && row.taxRegime === selected.taxRegime && row.status === "PUBLISHED" &&
+      usableCapability(row) && effective(row, occurredOn) && row.tenantId === payload.tenantId &&
+      row.issuerId === payload.issuerId && row.environment === payload.environment && row.provider === selected.provider &&
+      row.adapterVersion === selected.adapterVersion && row.see === selected.see &&
+      row.context.establishmentId === input.establishmentId && (!input.context || sameContext(input.context, row.context)) &&
+      (documentType !== "FACTURA" || row.context.buyerUse === "BUSINESS"));
+    for (const saleCapability of candidates) {
+      if (candidates.filter(row => sameContext(row.context, saleCapability.context)).length !== 1) continue;
+      if (documentType === "FACTURA") {
+        const corrections = payload.capabilities.filter(row => row.status === "PUBLISHED" && row.capabilityStatus === "SUPPORTED" &&
+          effective(row, occurredOn) && row.documentType === "NOTA_CREDITO" && row.profileVersion === selected.profileVersion &&
+          row.taxRegime === selected.taxRegime && row.tenantId === payload.tenantId && row.issuerId === payload.issuerId &&
+          row.environment === payload.environment && row.provider === selected.provider && row.adapterVersion === selected.adapterVersion &&
+          row.see === selected.see && sameContext(row.context, saleCapability.context) &&
+          ["01", "06", "07"].every(code => row.creditNoteReasonCodes?.includes(code)) &&
+          saleCapability.legalCategories.every(category => row.legalCategories.includes(category)));
+        if (corrections.length !== 1) continue;
+      }
+      matches.push({ profile: selected, context: saleCapability.context, capability: saleCapability });
+    }
+  }
+  return matches.length === 1 ? matches[0] : null;
+}
+
+/**
+ * Combina hechos tributarios publicados con la asignación operativa replicada.
+ * El caller verifica primero firma/expiración; el servidor vuelve a contrastar el binding al emitir.
+ * No exige una publicación nueva por caja y no hereda series de checkoutContexts históricos.
+ */
+export function resolveFiscalOperationalCheckoutContext(input: {
+  readonly payload: FiscalV1PublicationPayload;
+  readonly assignment: FiscalResolvedCajaNumberingAssignment;
+  readonly documentType: "BOLETA" | "FACTURA";
+  readonly occurredOn: string;
+  readonly context?: FiscalV1OperationContext;
+}): Readonly<{ profile: FiscalV1IssuerProfile; checkout: FiscalV2CheckoutContext;
+  operationalAssignment: FiscalOperationalCajaAssignmentBinding }> | null {
+  const { payload, assignment, documentType } = input;
+  if (assignment.tenantId !== payload.tenantId || assignment.environment !== payload.environment ||
+    assignment.documentType !== documentType || !text(assignment.cajaId) || !text(assignment.registryId) ||
+    !positive(assignment.assignmentRevision) || !positive(assignment.assignmentVersion) ||
+    !text(assignment.establishmentId) || typeof assignment.issuerRuc !== "string" || !/^\d{11}$/.test(assignment.issuerRuc) ||
+    typeof assignment.series !== "string" || typeof assignment.creditNoteSeries !== "string" ||
+    !(documentType === "BOLETA" ? /^B[A-Z0-9]{3}$/ : /^F[A-Z0-9]{3}$/).test(assignment.series) ||
+    !(documentType === "BOLETA" ? /^B[A-Z0-9]{3}$/ : /^F[A-Z0-9]{3}$/).test(assignment.creditNoteSeries)) return null;
+  const rows = new Map<string, FiscalV2CheckoutContext>();
+  for (const capability of payload.capabilities) {
+    if (capability.documentType !== documentType || capability.tenantId !== payload.tenantId ||
+      capability.issuerId !== payload.issuerId || capability.environment !== payload.environment ||
+      capability.context.establishmentId !== assignment.establishmentId ||
+      !payload.profiles.some(profile => profile.profileVersion === capability.profileVersion &&
+        profile.issuerRuc === assignment.issuerRuc && profile.establishmentId === assignment.establishmentId &&
+        profile.tenantId === payload.tenantId && profile.issuerId === payload.issuerId && profile.environment === payload.environment)) continue;
+    const checkout: FiscalV2CheckoutContext = { profileVersion: capability.profileVersion, documentType,
+      series: assignment.series, creditNoteSeries: assignment.creditNoteSeries, context: capability.context,
+      cajaId: assignment.cajaId, assignmentVersion: assignment.assignmentVersion };
+    rows.set(canonical({ profileVersion: checkout.profileVersion, documentType, context: checkout.context }), checkout);
+  }
+  validateCheckoutRows(payload, [...rows.values()], 2);
+  const resolved = resolveCheckoutContext(input, [...rows.values()]);
+  return resolved ? { ...resolved, operationalAssignment: { cajaId: assignment.cajaId,
+    assignmentVersion: assignment.assignmentVersion, registryId: assignment.registryId,
+    assignmentRevision: assignment.assignmentRevision } } : null;
 }
 
 function resolveCheckoutContext<T extends FiscalV1CheckoutContext>(input: {

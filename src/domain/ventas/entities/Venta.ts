@@ -8,6 +8,8 @@ import {
   VentaState,
 } from "../../shared/kernel/enums";
 import type { MonedaEmpresa } from "../../shared/kernel/empresa.contract";
+import { assertFiscalSaleDocumentSelection, copyFiscalSaleDocumentSelection,
+  type FiscalSaleDocumentSelection } from "../../shared/kernel/fiscal-emission-policy.contract";
 import {
   validarBeneficiarioEnVenta,
   type BeneficiarioEnVenta,
@@ -52,6 +54,8 @@ export interface IVenta {
   numeroVenta?: string;
   /** Explicación opcional de la venta; no modifica importes ni condiciones. */
   observaciones?: string;
+  /** Elección fiscal confirmada; ausente en ventas históricas y nunca recalculada. */
+  fiscalDocumentSelection?: FiscalSaleDocumentSelection;
 }
 
 export interface VentaCreateInput extends Omit<IVenta, "estado" | "condicionPago"> {
@@ -142,6 +146,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
   public readonly codigoVenta?: string;
   public readonly numeroVenta?: string;
   public readonly observaciones?: string;
+  public readonly fiscalDocumentSelection?: FiscalSaleDocumentSelection;
   private readonly snapshotItems?: readonly VentaSnapshotItem[];
 
   constructor(data: VentaCreateInput) {
@@ -190,6 +195,8 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     this.codigoVenta = data.codigoVenta;
     this.numeroVenta = data.numeroVenta;
     this.observaciones = data.observaciones;
+    this.fiscalDocumentSelection = data.fiscalDocumentSelection === undefined
+      ? undefined : copyFiscalSaleDocumentSelection(data.fiscalDocumentSelection);
     this.costoEnvio = data.costoEnvio;
 
     if (this.snapshotItems && this.snapshotItems.length !== this.items) {
@@ -259,6 +266,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       codigoVenta: this.codigoVenta,
       numeroVenta: this.numeroVenta,
       observaciones: this.observaciones,
+      ...(this.fiscalDocumentSelection ? { fiscalDocumentSelection: copyFiscalSaleDocumentSelection(this.fiscalDocumentSelection) } : {}),
       costoEnvio: this.costoEnvio,
     };
   }
@@ -299,6 +307,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       impuesto?: number;
       total?: number;
       moneda?: MonedaEmpresa;
+      fiscalDocumentSelection?: FiscalSaleDocumentSelection;
     },
   ): Venta {
     const ahora = new Date();
@@ -329,6 +338,7 @@ export class Venta extends AggregateRoot<string> implements IVenta {
       total: totalFinal,
       montoRedondeo,
       moneda: options?.moneda,
+      fiscalDocumentSelection: options?.fiscalDocumentSelection,
       procedencia:
         normalizarProcedenciaComercial(carritoJSON.procedencia) ??
         ProcedenciaComercialEnum.TIENDA,
@@ -344,6 +354,11 @@ export class Venta extends AggregateRoot<string> implements IVenta {
     data: Partial<VentaCreateInput>,
   ): { valida: boolean; errores: string[] } {
     const errores: string[] = [];
+
+    if (data.fiscalDocumentSelection !== undefined) {
+      try { assertFiscalSaleDocumentSelection(data.fiscalDocumentSelection); }
+      catch { errores.push("Venta.fiscalDocumentSelection inválida"); }
+    }
 
     if (data.observaciones !== undefined && typeof data.observaciones !== "string") {
       errores.push("Venta.observaciones debe ser texto");

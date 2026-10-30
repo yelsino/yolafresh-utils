@@ -1,5 +1,7 @@
 import type { ISODateString } from "../utils/dates";
 import type { CompatibleProductImage } from "./media.contract";
+import type { PoliticaEmisionEmpresa } from "./fiscal-emission-policy.contract";
+import type { FiscalNumberingByEnvironment } from "../../fiscal/contracts/numeracion-caja";
 
 export type PaisEmpresa =
   | "PERU"
@@ -166,6 +168,10 @@ export interface ConfigEmpresa {
     domicilioFiscalVerificado?: string;
     /** Obligatorio para emitir; puede faltar cuando la facturación está deshabilitada. */
     entornoEmision?: EntornoEmisionFiscal;
+    /** Preferencia inicial por venta; nunca concede autorización de emisión. Ausente conserva MANUAL. */
+    politicaEmision?: PoliticaEmisionEmpresa;
+    /** Proyección exclusiva del servidor. Sin correlativos, tokens ni permisos de emisión. */
+    numeracionPorEntorno?: FiscalNumberingByEnvironment;
     redondeoPago?: PoliticaRedondeoPago;
     descuentoVenta?: PoliticaDescuentoVenta;
   };
