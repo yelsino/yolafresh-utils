@@ -1,4 +1,5 @@
 import { MetodoPago } from "../../finanzas/contracts/finanzas.contract";
+import type { CajaTurnoAuthorityState, TurnoCajaAuthorityConfirmation } from "./caja-turno-authority.contract";
 
 
   export type TipoCaja = 'FIJA' | 'MOVIL' | 'DIGITAL';
@@ -9,6 +10,8 @@ export interface Caja {
   sucursalId?: string;
   activa: boolean;
   createdAt: Date;
+  /** Autoridad central por caja; no se edita desde la réplica ni concede permisos IAM. */
+  turnoAuthority?: CajaTurnoAuthorityState;
 }
 
 export type EstadoTurno =
@@ -50,6 +53,8 @@ export interface TurnoCaja {
 
   createdAt: Date;
   updatedAt: Date;
+  /** Recibos centrales de apertura/cierre. Ausente en turnos anteriores a esta autoridad. */
+  authority?: TurnoCajaAuthorityConfirmation;
 }
 
 export type TipoMovimientoCaja =

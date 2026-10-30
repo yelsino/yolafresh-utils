@@ -1,4 +1,4 @@
-import type { FiscalV1Environment, FiscalV1PreparedDecision } from "./modulo-fiscal-v1.contract";
+import type { FiscalV1Environment, FiscalV1PreparedDecision, FiscalV2CajaAssignment } from "./modulo-fiscal-v1.contract";
 import type { FiscalV1DocumentGrant, FiscalV1TributaryResult } from "./modulo-fiscal-v1-resultados.contract";
 
 /** Congela lo aprobado por el motor antes de pedir firma. No es por sí mismo un CPE. */
@@ -21,6 +21,8 @@ export interface FiscalV1Snapshot {
     readonly countryCode: "PE";
   };
   readonly buyerFiscalAddress?: string;
+  /** Presente sólo para publicaciones con selección explícita por caja; cubierto por la huella. */
+  readonly cajaAssignment?: FiscalV2CajaAssignment;
   readonly lineDescriptions: readonly { readonly lineId: string; readonly description: string }[];
   readonly paymentTerms: { readonly kind: "CONTADO" } | {
     readonly kind: "CREDITO";

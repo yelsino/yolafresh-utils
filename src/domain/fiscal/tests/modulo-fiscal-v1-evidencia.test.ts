@@ -91,6 +91,24 @@ function fixture(capabilityStatus: "SUPPORTED" | "UNVERIFIED" = "SUPPORTED", mod
   return { publication, snapshot, document, draft };
 }
 
+test("el snapshot congela caja y versión sin cambiar el material de snapshots anteriores", () => {
+  const { snapshot } = fixture();
+  const { snapshotSha256: _hash, ...oldMaterial } = snapshot;
+  assert.equal(fiscalV1SnapshotFingerprint(snapshot), fiscalV1CanonicalSha256(oldMaterial));
+  assert.equal("cajaAssignment" in snapshot, false);
+  const material = { ...snapshot, cajaAssignment: { cajaId: "caja/opaca:α", assignmentVersion: 3 } };
+  const assigned = { ...material, snapshotSha256: fiscalV1SnapshotFingerprint(material) };
+  assert.doesNotThrow(() => assertFiscalV1Snapshot(assigned));
+  assert.notEqual(assigned.snapshotSha256, snapshot.snapshotSha256);
+  assert.throws(() => assertFiscalV1Snapshot({ ...assigned,
+    cajaAssignment: { ...assigned.cajaAssignment, cajaId: "otra" } }), /HASH_INVALID/);
+  for (const cajaAssignment of [{ cajaId: "caja", assignmentVersion: 0 }, { cajaId: "caja", assignmentVersion: 1.5 },
+    { cajaId: "", assignmentVersion: 1 }, { cajaId: "caja", assignmentVersion: 1, series: "F001" }]) {
+    const invalid = { ...snapshot, cajaAssignment };
+    assert.throws(() => assertFiscalV1Snapshot({ ...invalid, snapshotSha256: fiscalV1SnapshotFingerprint(invalid) }), /SNAPSHOT_INVALID/);
+  }
+});
+
 test("snapshot congela emisor, dirección, descripciones, pago e identidad sin reparar datos después", () => {
   const { snapshot } = fixture();
   assert.doesNotThrow(() => assertFiscalV1Snapshot(snapshot));

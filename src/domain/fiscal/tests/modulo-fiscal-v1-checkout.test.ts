@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import nacl from "tweetnacl";
 import { FISCAL_V1_PUBLICATION_DOCUMENT_TYPE, fiscalV1PublicationArtifactFingerprint,
   fiscalV1PublicationPayloadFingerprint, fiscalV1PublicationPayloadMaterial,
-  projectFiscalV1PublicationDocument, resolveFiscalV1CheckoutContext, verifyFiscalV1PublicationBundle,
+  projectFiscalV1PublicationDocument, resolveFiscalV1CheckoutContext, resolveFiscalV2CheckoutContext, verifyFiscalV1PublicationBundle,
   type FiscalV1Capability, type FiscalV1CheckoutContext, type FiscalV1PublicationPayload,
   type FiscalV1SignedPublicationBundle, type FiscalV1TrustedPublisherKey } from "../contracts";
 
@@ -128,4 +128,43 @@ test("bootstrap conserva publicaciones expiradas para auditoría sin darles conf
   assert.throws(() => projectFiscalV1PublicationDocument({ ...root, _conflicts: ["rev-conflicto"] }), /DOCUMENT_INVALID/);
   assert.throws(() => projectFiscalV1PublicationDocument({ ...root, tenantId: "otro-tenant" }), /SCOPE_MISMATCH/);
   assert.throws(() => projectFiscalV1PublicationDocument({ ...root, environment: "PRODUCTION" }), /SCOPE_MISMATCH/);
+});
+
+test("dos cajas del mismo establecimiento resuelven su asignación firmada por identidad opaca", () => {
+  const base = invoicePayload(), checkout = base.checkoutContexts![0];
+  const fixture = signed({ ...base, checkoutContextsV2: [
+    { ...checkout, cajaId: "caja/uno:α", assignmentVersion: 1 },
+    { ...checkout, cajaId: "caja/dos:β", assignmentVersion: 3, series: "F004", creditNoteSeries: "FC02" },
+  ] });
+  const payload = verifyFiscalV1PublicationBundle(fixture.bundle, [fixture.trustedKey], fixture.nowMs);
+  const first = resolveFiscalV2CheckoutContext({ payload, cajaId: "caja/uno:α", documentType: "FACTURA", occurredOn: "2026-10-15" });
+  const second = resolveFiscalV2CheckoutContext({ payload, cajaId: "caja/dos:β", documentType: "FACTURA", occurredOn: "2026-10-15" });
+  assert.equal(first?.checkout.series, "F003");
+  assert.equal(second?.checkout.series, "F004");
+  assert.equal(second?.checkout.assignmentVersion, 3);
+  assert.equal(first?.checkout.context.establishmentId, second?.checkout.context.establishmentId);
+  assert.equal(resolveFiscalV2CheckoutContext({ payload, cajaId: "caja-no-asignada", documentType: "FACTURA", occurredOn: "2026-10-15" }), null);
+  assert.equal(resolveFiscalV1CheckoutContext({ payload, documentType: "FACTURA", occurredOn: "2026-10-15" })?.checkout.series, "F003");
+});
+
+test("selección V2 no usa el checkout global V1 y no altera su material histórico", () => {
+  const old = golden(), base = invoicePayload();
+  assert.equal(fiscalV1PublicationPayloadFingerprint(old.bundle.payload), old.bundle.payloadSha256);
+  assert.equal(fiscalV1PublicationPayloadMaterial(old.bundle.payload).includes('"checkoutContextsV2"'), false);
+  assert.equal(resolveFiscalV2CheckoutContext({ payload: base, cajaId: "caja", documentType: "FACTURA", occurredOn: "2026-10-15" }), null);
+  assert.throws(() => resolveFiscalV2CheckoutContext({ payload: base, cajaId: "", documentType: "FACTURA", occurredOn: "2026-10-15" }), /CAJA_REQUIRED/);
+});
+
+test("asignaciones V2 rechazan versiones inválidas, duplicadas y cambios sin nueva firma", () => {
+  const base = invoicePayload(), row = { ...base.checkoutContexts![0], cajaId: "caja", assignmentVersion: 1 };
+  for (const assignmentVersion of [0, -1, 1.5]) {
+    const fixture = signed({ ...base, checkoutContextsV2: [{ ...row, assignmentVersion }] });
+    assert.throws(() => verifyFiscalV1PublicationBundle(fixture.bundle, [fixture.trustedKey], fixture.nowMs), /ASSIGNMENT_INVALID/);
+  }
+  const duplicated = signed({ ...base, checkoutContextsV2: [row, { ...row, assignmentVersion: 2, series: "F005" }] });
+  assert.throws(() => verifyFiscalV1PublicationBundle(duplicated.bundle, [duplicated.trustedKey], duplicated.nowMs), /AMBIGUOUS/);
+  const fixture = signed({ ...base, checkoutContextsV2: [row] });
+  const tampered = { ...fixture.bundle, payload: { ...fixture.bundle.payload,
+    checkoutContextsV2: [{ ...row, cajaId: "otra-caja" }] } };
+  assert.throws(() => verifyFiscalV1PublicationBundle(tampered, [fixture.trustedKey], fixture.nowMs), /PAYLOAD_HASH_INVALID/);
 });

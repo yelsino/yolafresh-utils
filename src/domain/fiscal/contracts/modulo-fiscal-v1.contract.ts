@@ -4,7 +4,8 @@ import type { FiscalTaxRegime } from "./cpe.contract";
 export type FiscalV1Environment = "DEMO" | "PRODUCTION";
 export type FiscalV1DocumentType = "BOLETA" | "FACTURA" | "NOTA_CREDITO";
 export type FiscalV1LegalCategory = "GRAVADA" | "EXONERADA" | "INAFECTA";
-export type FiscalV1CapabilityStatus = "SUPPORTED" | "UNVERIFIED" | "UNSUPPORTED";
+/** DEMO_TEST_ONLY autoriza probar una boleta, no afirma conformidad del proveedor ni de SUNAT. */
+export type FiscalV1CapabilityStatus = "SUPPORTED" | "DEMO_TEST_ONLY" | "UNVERIFIED" | "UNSUPPORTED";
 
 export interface FiscalV1EffectivePublication {
   readonly status: "PUBLISHED" | "SUSPENDED";
@@ -122,6 +123,13 @@ export interface FiscalV1CheckoutContext {
   readonly context: FiscalV1OperationContext;
 }
 
+/** Asignación fiscal publicada para una caja concreta, sin reservas ni correlativos. */
+export interface FiscalV2CajaAssignment {
+  readonly cajaId: string;
+  readonly assignmentVersion: number;
+}
+export interface FiscalV2CheckoutContext extends FiscalV1CheckoutContext, FiscalV2CajaAssignment {}
+
 /** Publicación íntegra e inmutable, con revisión monotónica por emisor y entorno. */
 export interface FiscalV1PublicationPayload {
   readonly schemaVersion: "fiscal-v1";
@@ -136,6 +144,8 @@ export interface FiscalV1PublicationPayload {
   readonly capabilities: readonly FiscalV1Capability[];
   /** Opcional para conservar los bytes/hashes de publicaciones anteriores. */
   readonly checkoutContexts?: readonly FiscalV1CheckoutContext[];
+  /** Selección explícita por caja. Su ausencia conserva los bytes de publicaciones V1. */
+  readonly checkoutContextsV2?: readonly FiscalV2CheckoutContext[];
 }
 
 /** La firma Ed25519 cubre los bytes UTF-8 del JSON canónico de `payload`. */

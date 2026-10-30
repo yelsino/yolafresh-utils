@@ -5,7 +5,7 @@ import { sha256 as digestSha256 } from "@noble/hashes/sha256";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
 import nacl from "tweetnacl";
 import { FISCAL_V1_PUBLICATION_DOCUMENT_TYPE } from "./modulo-fiscal-v1.contract";
-import type { FiscalV1Capability, FiscalV1CheckoutContext, FiscalV1EffectivePublication, FiscalV1IssuerProfile,
+import type { FiscalV1Capability, FiscalV1CheckoutContext, FiscalV2CheckoutContext, FiscalV1EffectivePublication, FiscalV1IssuerProfile,
   FiscalV1LegalCategory, FiscalV1OperationContext, FiscalV1PreparedDecision, FiscalV1PreparedLine,
   FiscalV1PresentationRule, FiscalV1PublicationArtifact, FiscalV1PublicationPayload,
   FiscalV1PublicationDocument, FiscalV1SaleInput, FiscalV1SaleLineInput, FiscalV1SignedPublicationBundle,
@@ -118,7 +118,7 @@ export function fiscalV1PublicationArtifactFingerprint(artifact: FiscalV1Publica
 /** Bytes exactos que el publicador debe firmar con Ed25519. */
 export function fiscalV1PublicationPayloadMaterial(payload: FiscalV1PublicationPayload): string {
   exactKeys(payload, ["schemaVersion", "tenantId", "issuerId", "environment", "revision", "issuedAtMs", "expiresAtMs",
-    "profiles", "rules", "capabilities"], ["checkoutContexts"], "FISCAL_V1_PUBLICATION_PAYLOAD_INVALID");
+    "profiles", "rules", "capabilities"], ["checkoutContexts", "checkoutContextsV2"], "FISCAL_V1_PUBLICATION_PAYLOAD_INVALID");
   return canonical(payload);
 }
 
@@ -170,13 +170,15 @@ function checkoutCapabilities(payload: FiscalV1PublicationPayload, selected: Fis
     sameContext(row.context, checkout.context));
 }
 
-function validateCheckoutContexts(payload: FiscalV1PublicationPayload): void {
-  if (payload.checkoutContexts === undefined) return;
-  if (!Array.isArray(payload.checkoutContexts)) fail("FISCAL_V1_CHECKOUT_CONTEXTS_INVALID");
+function validateCheckoutRows(payload: FiscalV1PublicationPayload,
+  rows: readonly FiscalV1CheckoutContext[] | readonly FiscalV2CheckoutContext[], version: 1 | 2): void {
+  if (!Array.isArray(rows)) fail("FISCAL_V1_CHECKOUT_CONTEXTS_INVALID");
   const seen = new Set<string>();
-  for (const checkout of payload.checkoutContexts) {
-    exactKeys(checkout, ["profileVersion", "documentType", "series", "context"], ["creditNoteSeries"],
+  for (const checkout of rows) {
+    exactKeys(checkout, ["profileVersion", "documentType", "series", "context", ...(version === 2 ? ["cajaId", "assignmentVersion"] : [])], ["creditNoteSeries"],
       "FISCAL_V1_CHECKOUT_CONTEXT_INVALID");
+    if (version === 2 && (!text((checkout as FiscalV2CheckoutContext).cajaId) ||
+        !positive((checkout as FiscalV2CheckoutContext).assignmentVersion))) fail("FISCAL_V2_CHECKOUT_ASSIGNMENT_INVALID");
     exactKeys(checkout.context, ["establishmentId", "operationKind", "buyerUse"], [], "FISCAL_V1_CONTEXT_REQUIRED");
     context(checkout.context);
     if (!text(checkout.profileVersion) || !["BOLETA", "FACTURA"].includes(checkout.documentType) ||
@@ -191,10 +193,19 @@ function validateCheckoutContexts(payload: FiscalV1PublicationPayload): void {
       row.establishmentId === checkout.context.establishmentId);
     if (profiles.length !== 1 || !checkoutCapabilities(payload, profiles[0], checkout).length)
       fail("FISCAL_V1_CHECKOUT_AUTHORITY_MISMATCH");
-    const identity = canonical({ profileVersion: checkout.profileVersion, documentType: checkout.documentType, context: checkout.context });
+    const identity = canonical({ profileVersion: checkout.profileVersion, documentType: checkout.documentType, context: checkout.context,
+      ...(version === 2 ? { cajaId: (checkout as FiscalV2CheckoutContext).cajaId } : {}) });
     if (seen.has(identity)) fail("FISCAL_V1_CHECKOUT_CONTEXT_AMBIGUOUS");
     seen.add(identity);
   }
+}
+
+function validateCheckoutContexts(payload: FiscalV1PublicationPayload): void {
+  if (payload.checkoutContexts !== undefined) validateCheckoutRows(payload, payload.checkoutContexts, 1);
+}
+
+function validateCheckoutContextsV2(payload: FiscalV1PublicationPayload): void {
+  if (payload.checkoutContextsV2 !== undefined) validateCheckoutRows(payload, payload.checkoutContextsV2, 2);
 }
 
 /** El caller verifica primero la firma/expiración del payload; no consulta red ni reserva número. */
@@ -204,15 +215,37 @@ export function resolveFiscalV1CheckoutContext(input: {
   readonly occurredOn: string;
   readonly context?: FiscalV1OperationContext;
 }): Readonly<{ profile: FiscalV1IssuerProfile; checkout: FiscalV1CheckoutContext }> | null {
+  validateCheckoutContexts(input.payload);
+  return resolveCheckoutContext(input, input.payload.checkoutContexts ?? []);
+}
+
+/** Requiere caja explícita; jamás toma una serie global V1 ni la de otra caja. */
+export function resolveFiscalV2CheckoutContext(input: {
+  readonly payload: FiscalV1PublicationPayload;
+  readonly cajaId: string;
+  readonly documentType: "BOLETA" | "FACTURA";
+  readonly occurredOn: string;
+  readonly context?: FiscalV1OperationContext;
+}): Readonly<{ profile: FiscalV1IssuerProfile; checkout: FiscalV2CheckoutContext }> | null {
+  if (!text(input.cajaId)) fail("FISCAL_V2_CHECKOUT_CAJA_REQUIRED");
+  validateCheckoutContextsV2(input.payload);
+  return resolveCheckoutContext(input, (input.payload.checkoutContextsV2 ?? []).filter(row => row.cajaId === input.cajaId));
+}
+
+function resolveCheckoutContext<T extends FiscalV1CheckoutContext>(input: {
+  readonly payload: FiscalV1PublicationPayload;
+  readonly documentType: "BOLETA" | "FACTURA";
+  readonly occurredOn: string;
+  readonly context?: FiscalV1OperationContext;
+}, rows: readonly T[]): Readonly<{ profile: FiscalV1IssuerProfile; checkout: T }> | null {
   const { payload, documentType, occurredOn } = input;
   civilDate(occurredOn, "FISCAL_V1_OPERATION_DATE_INVALID");
   if (!["BOLETA", "FACTURA"].includes(documentType)) fail("FISCAL_V1_DOCUMENT_TYPE_INVALID");
   if (input.context) context(input.context);
   assertFiscalV1IssuerAuthority(payload.profiles);
   payload.capabilities.forEach(capability);
-  validateCheckoutContexts(payload);
-  const matches: Array<{ profile: FiscalV1IssuerProfile; checkout: FiscalV1CheckoutContext }> = [];
-  for (const checkout of payload.checkoutContexts ?? []) {
+  const matches: Array<{ profile: FiscalV1IssuerProfile; checkout: T }> = [];
+  for (const checkout of rows) {
     if (checkout.documentType !== documentType || input.context && !sameContext(input.context, checkout.context)) continue;
     const profiles = payload.profiles.filter(row => row.profileVersion === checkout.profileVersion &&
       row.status === "PUBLISHED" && effective(row, occurredOn) && row.environment === payload.environment &&
@@ -222,7 +255,7 @@ export function resolveFiscalV1CheckoutContext(input: {
     const selected = profiles[0];
     if (!["NRUS", "RER"].includes(selected.taxRegime) || selected.taxRegime === "NRUS" && documentType === "FACTURA") continue;
     const capabilities = checkoutCapabilities(payload, selected, checkout).filter(row => row.status === "PUBLISHED" &&
-      row.capabilityStatus === "SUPPORTED" && effective(row, occurredOn));
+      usableCapability(row) && effective(row, occurredOn));
     if (capabilities.length !== 1) continue;
     if (documentType === "FACTURA") {
       if (!checkout.creditNoteSeries) continue;
@@ -304,8 +337,11 @@ function capability(value: FiscalV1Capability): void {
   if (![value.capabilityId, value.tenantId, value.issuerId, value.profileVersion, value.see,
     value.provider, value.adapterVersion].every(text) || !isFiscalTaxRegime(value.taxRegime) ||
     !["DEMO", "PRODUCTION"].includes(value.environment) || !["BOLETA", "FACTURA", "NOTA_CREDITO"].includes(value.documentType) ||
-    !["SUPPORTED", "UNVERIFIED", "UNSUPPORTED"].includes(value.capabilityStatus))
+    !["SUPPORTED", "DEMO_TEST_ONLY", "UNVERIFIED", "UNSUPPORTED"].includes(value.capabilityStatus))
     fail("FISCAL_V1_CAPABILITY_INVALID");
+  if (value.capabilityStatus === "DEMO_TEST_ONLY" &&
+      (value.environment !== "DEMO" || value.documentType !== "BOLETA" || value.evidence !== undefined))
+    fail("FISCAL_V1_DEMO_TEST_CAPABILITY_INVALID");
   if (value.documentType === "NOTA_CREDITO") {
     if (!Array.isArray(value.creditNoteReasonCodes) || !value.creditNoteReasonCodes.length ||
         value.creditNoteReasonCodes.some(code => !text(code)) ||
@@ -318,6 +354,11 @@ function capability(value: FiscalV1Capability): void {
   if (value.capabilityStatus === "SUPPORTED" && value.taxRegime === "NRUS" &&
       value.documentType === "BOLETA" && value.environment === "PRODUCTION" &&
       !text(value.evidence?.correctiveRouteRef)) fail("FISCAL_V1_CORRECTIVE_ROUTE_REQUIRED");
+}
+
+function usableCapability(value: FiscalV1Capability): boolean {
+  return value.capabilityStatus === "SUPPORTED" || value.capabilityStatus === "DEMO_TEST_ONLY" &&
+    value.environment === "DEMO" && value.documentType === "BOLETA";
 }
 
 function saleLine(value: FiscalV1SaleLineInput): void {
@@ -388,6 +429,7 @@ export function verifyFiscalV1PublicationBundle(bundle: FiscalV1SignedPublicatio
   }
   assertFiscalV1IssuerAuthority(payload.profiles);
   validateCheckoutContexts(payload);
+  validateCheckoutContextsV2(payload);
   return payload;
 }
 
@@ -467,7 +509,7 @@ export function prepareFiscalV1Sale(input: {
     categorySet(value.legalCategories) === legalCategories);
   if (matchingCapabilities.length !== 1) fail("FISCAL_V1_CAPABILITY_NOT_UNIQUE_OR_EFFECTIVE");
   const selectedCapability = matchingCapabilities[0];
-  if (selectedCapability.status !== "PUBLISHED" || selectedCapability.capabilityStatus !== "SUPPORTED")
+  if (selectedCapability.status !== "PUBLISHED" || !usableCapability(selectedCapability))
     fail("FISCAL_V1_CAPABILITY_NOT_SUPPORTED");
   const totalCents = safeNumber(prepared.reduce((sum, line) => sum + BigInt(line.totalCents), 0n));
   const baseCents = selectedProfile.taxRegime === "NRUS" ? null :
