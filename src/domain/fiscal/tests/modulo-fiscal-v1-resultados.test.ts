@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { assertFiscalV1ProviderChannelReceipt, validateFiscalProcess, type FiscalV1ProviderChannelReceipt,
+  type FiscalProcess } from "../contracts";
 import { assertFiscalV1DocumentGrant, assertFiscalV1PrintEvidence,
   assertFiscalV1TributaryResult, fiscalV1TributaryStatus,
   validateFiscalV1PrintEvidence, validateFiscalV1TributaryResult,
@@ -7,6 +9,68 @@ import { assertFiscalV1DocumentGrant, assertFiscalV1PrintEvidence,
   type FiscalV1TributaryResult } from "../contracts";
 
 const HASH = "a".repeat(64);
+const receipt: FiscalV1ProviderChannelReceipt = { schemaVersion: "fiscal-v1-provider-channel-v1",
+  assurance: "PROVIDER_AUTHENTICATED_CHANNEL", provider: "XmlPeru", origin: "https://api.xmlperu.dev",
+  tenantId: "synthetic-tenant", issuerRuc: "20123456789", environment: "PRODUCTION", externalId: "synthetic-external",
+  documentType: "01", series: "F001", number: 12, artifactKind: "SIGNED_XML", artifactSha256: HASH,
+  receivedAtMs: 1792429200000 };
+const receiptBinding = { tenantId: receipt.tenantId, issuerRuc: receipt.issuerRuc, environment: receipt.environment,
+  externalId: receipt.externalId, documentType: receipt.documentType, series: receipt.series, number: receipt.number,
+  artifactKind: receipt.artifactKind, artifactSha256: receipt.artifactSha256 };
+
+test("provider-channel provenance binds scope, fiscal identity and exact bytes without claiming independent X509", () => {
+  assert.doesNotThrow(() => assertFiscalV1ProviderChannelReceipt(receipt, receiptBinding, receipt.receivedAtMs));
+  for (const changed of [{ tenantId: "another-tenant" }, { issuerRuc: "20987654321" }, { environment: "DEMO" },
+    { externalId: "other-external" }, { documentType: "03" }, { series: "F002" }, { number: 13 },
+    { artifactKind: "CDR" }, { artifactSha256: "b".repeat(64) }, { receivedAtMs: receipt.receivedAtMs - 1 },
+    { assurance: "INDEPENDENT_X509" }, { origin: "https://attacker.invalid" }, { token: "never-store-secret" }])
+    assert.throws(() => assertFiscalV1ProviderChannelReceipt({ ...receipt, ...changed }, receiptBinding, receipt.receivedAtMs),
+      /FISCAL_V1_PROVIDER_RECEIPT_INVALID/);
+});
+
+test("a provider CDR receipt cannot be attached to different custody bytes", () => {
+  const result = { storageRef: "opaque-cdr", sha256: HASH, receivedAtMs: receipt.receivedAtMs,
+    outcome: "ACCEPTED", responseCode: "0", description: "Accepted", observations: [],
+    providerReceipt: { ...receipt, artifactKind: "CDR" } };
+  assert.deepEqual(validateFiscalV1TributaryResult(result, { requireDetails: true }), []);
+  assert.ok(validateFiscalV1TributaryResult({ ...result, sha256: "b".repeat(64) }).includes("providerReceipt"));
+  assert.ok(validateFiscalV1TributaryResult({ ...result, providerReceipt: receipt }).includes("providerReceipt"));
+});
+
+test("an authenticated resolved rejection without a CDR remains distinct from unverified provider reports", () => {
+  const receivedAt = new Date(receipt.receivedAtMs).toISOString();
+  const issuedAt = new Date(receipt.receivedAtMs - 1000).toISOString();
+  const process: FiscalProcess = { type: "proceso_fiscal", processId: "opaque-process", tenantId: receipt.tenantId,
+    documentId: "opaque-document", operation: "EMISION", state: "RECHAZADO", createdAt: issuedAt, updatedAt: receivedAt,
+    attemptCount: 1, lastAttemptAt: issuedAt, nextAttemptAt: null, batchRef: null, provider: "XMLPERU_V1",
+    providerRequestId: receipt.externalId, operationXml: null, submittedXmlSha256: HASH,
+    result: { source: "PROVEEDOR_AUTENTICADO", receivedAt, operation: "EMISION",
+      targetIdentity: { issuerRuc: receipt.issuerRuc, documentType: "FACTURA", series: "F001", number: 12 },
+      status: "RECHAZADO", responseCode: "2335", description: "Rejected", observations: [],
+      artifact: { storageRef: "opaque-provider-result", sha256: HASH },
+      providerReceipt: { ...receipt, artifactKind: "PROVIDER_RESULT" } } };
+  assert.deepEqual(validateFiscalProcess(process), []);
+  assert.ok(validateFiscalProcess({ ...process, providerRequestId: "wrong-external-id" }).includes("result.providerReceipt"));
+  assert.ok(validateFiscalProcess({ ...process, result: { ...process.result, providerReceipt: undefined } }).length > 0);
+  assert.ok(validateFiscalProcess({ ...process, state: "ACEPTADO", result: { ...process.result, status: "ACEPTADO", responseCode: "0" } }).length > 0);
+  assert.ok(validateFiscalProcess({ ...process, result: { source: "PROVEEDOR", reportedAt: receivedAt,
+    reportedStatus: "rejected", description: "Unverified" } }).includes("result.stateMismatch"));
+});
+
+test("provider printable digest compatibility requires explicit matching assurance; custody still uses SHA-256", () => {
+  const strictBinding: FiscalV1PrintEvidenceBinding = { environment: "PRODUCTION",
+    identity: { issuerRuc: "20123456789", documentType: "01", series: "F001", number: 12 },
+    issuedOn: "2026-10-19", currency: "PEN", totalCents: 11800, taxCents: 1800,
+    buyer: { documentType: "RUC", documentNumber: "10123456789" }, signedXmlSha256: HASH };
+  const value = { signedXmlSha256: HASH, digestOutsideQr: true, signedAt: "2026-10-19T12:00:00-05:00",
+    qrPayload: "20123456789|01|F001|12|18.00|118.00|2026-10-19|6|10123456789",
+    legalLegend: "FACTURA ELECTRÓNICA", digestValue: Buffer.alloc(20, 4).toString("base64"),
+    evidenceAssurance: "PROVIDER_AUTHENTICATED_CHANNEL" as const };
+  const bound = { ...strictBinding, evidenceAssurance: "PROVIDER_AUTHENTICATED_CHANNEL" as const };
+  assert.deepEqual(validateFiscalV1PrintEvidence(value, bound), []);
+  assert.ok(validateFiscalV1PrintEvidence(value, strictBinding).includes("print.evidenceAssurance"));
+  assert.ok(validateFiscalV1PrintEvidence({ ...value, evidenceAssurance: undefined }, strictBinding).includes("print.digestValue"));
+});
 const binding: FiscalV1PrintEvidenceBinding = {
   environment: "DEMO", identity: { issuerRuc: "20123456789", documentType: "01", series: "F001", number: 12 },
   issuedOn: "2026-10-19", currency: "PEN", totalCents: 11800, taxCents: 1800,

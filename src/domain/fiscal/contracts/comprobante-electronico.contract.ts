@@ -1,5 +1,6 @@
 import { validateFiscalSaleSnapshot } from "./cpe.contract";
 import { fiscalConfigurationCanonicalJson, validateFiscalTaxResolutionSource } from "./configuracion-fiscal";
+import { assertFiscalV1ProviderChannelReceipt, type FiscalV1ProviderChannelReceipt } from "./modulo-fiscal-v1-proveedor.contract";
 import type { FiscalTaxResolutionSource } from "./configuracion-fiscal.contract";
 import type { FiscalBuyer, FiscalCurrency, FiscalDocumentIdentity, FiscalLineTax,
   FiscalSaleSnapshot } from "./cpe.contract";
@@ -77,7 +78,9 @@ export interface FiscalSignedDocument {
   readonly signature: {
     /** Referencia y SHA-256 de los bytes del XML firmado crudo. */
     readonly signedXml: FiscalArtifactReference;
-    /** ds:DigestValue en base64 canónico: Demo admite SHA-1 o SHA-256; producción exige SHA-256. */
+    /** Explicit provider custody; absent records retain independent verification policy. */
+    readonly providerReceipt?: FiscalV1ProviderChannelReceipt;
+    /** ds:DigestValue is a printable provider reference, not custody SHA-256 or proof of trust. */
     readonly digestValue: string;
   };
   readonly print: {
@@ -98,9 +101,9 @@ const hash = (value: unknown): value is string =>
 /** Base64 canónico de 20 o 32 bytes; la tolerancia SHA-1 es exclusiva de Demo. */
 const sha1Digest = /^(?:[A-Za-z0-9+/]{4}){6}[A-Za-z0-9+/]{2}[AEIMQUYcgkosw048]=$/;
 const sha256Digest = /^(?:[A-Za-z0-9+/]{4}){10}[A-Za-z0-9+/]{2}[AEIMQUYcgkosw048]=$/;
-const digest = (value: unknown, environment: unknown): value is string =>
+const digest = (value: unknown, environment: unknown, providerChannel = false): value is string =>
   typeof value === "string" &&
-  (sha256Digest.test(value) || (environment === "DEMO" && sha1Digest.test(value)));
+  (sha256Digest.test(value) || ((environment === "DEMO" || providerChannel) && sha1Digest.test(value)));
 const record = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
 const timestamp = (value: unknown): value is string =>
@@ -320,12 +323,25 @@ export function validateFiscalSignedDocument(value: unknown): readonly string[] 
   }
   if (!record(value.signature) || !record(value.signature.signedXml)) errors.push("signature");
   else {
-    rejectUnknown(value.signature, ["signedXml", "digestValue"], "signature.", errors);
+    rejectUnknown(value.signature, ["signedXml", "digestValue", "providerReceipt"], "signature.", errors);
     rejectUnknown(value.signature.signedXml, ["storageRef", "sha256"],
       "signature.signedXml.", errors);
     if (!nonBlank(value.signature.signedXml.storageRef)) errors.push("signature.signedXml.storageRef");
     if (!hash(value.signature.signedXml.sha256)) errors.push("signature.signedXml.sha256");
-    if (!digest(value.signature.digestValue, value.environment)) errors.push("signature.digestValue");
+    let providerChannel = false;
+    if (value.signature.providerReceipt !== undefined) {
+      try {
+        const receipt = value.signature.providerReceipt as FiscalV1ProviderChannelReceipt;
+        const identity = value.identity as Record<string, unknown>;
+        assertFiscalV1ProviderChannelReceipt(receipt, { tenantId: String(value.tenantId),
+          issuerRuc: String(identity.issuerRuc), environment: value.environment === "PRODUCCION" ? "PRODUCTION" : "DEMO",
+          externalId: receipt.externalId, documentType: identity.documentType === "BOLETA" ? "03" : identity.documentType === "FACTURA" ? "01" : "07",
+          series: String(identity.series), number: Number(identity.number), artifactKind: "SIGNED_XML",
+          artifactSha256: String(value.signature.signedXml.sha256) });
+        providerChannel = true;
+      } catch { errors.push("signature.providerReceipt"); }
+    }
+    if (!digest(value.signature.digestValue, value.environment, providerChannel)) errors.push("signature.digestValue");
   }
   if (!record(value.print)) errors.push("print");
   else {

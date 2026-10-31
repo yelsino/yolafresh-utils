@@ -21,5 +21,6 @@ export * from "./modulo-fiscal-v1-evidencia.contract";
 export * from "./modulo-fiscal-v1-evidencia";
 export * from "./modulo-fiscal-v1-resultados.contract";
 export * from "./modulo-fiscal-v1-resultados";
+export * from "./modulo-fiscal-v1-proveedor.contract";
 export * from "./modulo-fiscal-v1-demo.contract";
 export * from "./modulo-fiscal-v1-demo";

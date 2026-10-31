@@ -1,6 +1,7 @@
 import type { FiscalDocumentIdentity } from "./cpe.contract";
 import { validateFiscalSignedDocument } from "./comprobante-electronico.contract";
 import type { FiscalArtifactReference, FiscalSignedDocument } from "./comprobante-electronico.contract";
+import { assertFiscalV1ProviderChannelReceipt, type FiscalV1ProviderChannelReceipt } from "./modulo-fiscal-v1-proveedor.contract";
 
 export const FISCAL_PROCESS_TYPE = "proceso_fiscal" as const;
 
@@ -34,7 +35,17 @@ export interface FiscalAuthorityResult {
   readonly description: string;
   readonly observations: readonly string[];
   readonly cdr: FiscalArtifactReference;
+  readonly providerReceipt?: FiscalV1ProviderChannelReceipt;
 }
+
+/** A resolved rejection without a CDR, obtained from the authenticated PSE.
+ * The archived JSON is explicitly an API result, never a fabricated CDR. */
+export type FiscalAuthenticatedProviderResult = Omit<FiscalAuthorityResult, "source" | "status" | "cdr" | "providerReceipt"> & {
+  readonly source: "PROVEEDOR_AUTENTICADO";
+  readonly status: "RECHAZADO";
+  readonly artifact: FiscalArtifactReference;
+  readonly providerReceipt: FiscalV1ProviderChannelReceipt;
+};
 
 /** Documento operativo separado del comprobante: admite varios procesos sobre el mismo CPE. */
 export interface FiscalProcess {
@@ -58,7 +69,7 @@ export interface FiscalProcess {
   readonly operationXml: FiscalArtifactReference | null;
   /** SHA-256 de los bytes del XML firmado crudo enviado, nunca del ZIP archivado. */
   readonly submittedXmlSha256: string | null;
-  readonly result: FiscalProviderReport | FiscalAuthorityResult | null;
+  readonly result: FiscalProviderReport | FiscalAuthorityResult | FiscalAuthenticatedProviderResult | null;
 }
 
 const record = (value: unknown): value is Record<string, unknown> =>
@@ -133,9 +144,12 @@ export function validateFiscalProcess(value: unknown): readonly string[] {
         if (!nonBlank(result[key])) errors.push(`result.${key}`);
       if (!nonBlank(value.provider) || !nonBlank(value.providerRequestId))
         errors.push("result.providerRequest");
-    } else if (result.source === "CDR") {
+    } else if (result.source === "CDR" || result.source === "PROVEEDOR_AUTENTICADO") {
+      const providerResult = result.source === "PROVEEDOR_AUTENTICADO";
       rejectUnknown(result, ["source", "receivedAt", "operation", "targetIdentity", "status", "responseCode",
-        "description", "observations", "cdr"], "result.", errors);
+        "description", "observations", "providerReceipt", providerResult ? "artifact" : "cdr"], "result.", errors);
+      if (providerResult && (result.status !== "RECHAZADO" || result.responseCode === "0" || result.providerReceipt === undefined))
+        errors.push("result.providerRejectionRequired");
       if (result.operation !== value.operation) errors.push("result.operation");
       if (!["ACEPTADO", "ACEPTADO_CON_OBSERVACION", "RECHAZADO"].includes(String(result.status)) ||
         value.state !== result.status) errors.push("result.status");
@@ -152,9 +166,22 @@ export function validateFiscalProcess(value: unknown): readonly string[] {
       if (!Array.isArray(result.observations) ||
         !result.observations.every((item: unknown) => typeof item === "string"))
         errors.push("result.observations");
-      if (!record(result.cdr) || !nonBlank(result.cdr.storageRef) || !hash(result.cdr.sha256))
-        errors.push("result.cdr");
-      else rejectUnknown(result.cdr, ["storageRef", "sha256"], "result.cdr.", errors);
+      const artifact = providerResult ? result.artifact : result.cdr;
+      const artifactField = providerResult ? "artifact" : "cdr";
+      if (!record(artifact) || !nonBlank(artifact.storageRef) || !hash(artifact.sha256)) errors.push(`result.${artifactField}`);
+      else rejectUnknown(artifact, ["storageRef", "sha256"], `result.${artifactField}.`, errors);
+      if (result.providerReceipt !== undefined) {
+        try {
+          const receipt = result.providerReceipt as FiscalV1ProviderChannelReceipt;
+          const target = result.targetIdentity as unknown as FiscalDocumentIdentity;
+          assertFiscalV1ProviderChannelReceipt(receipt, { tenantId: String(value.tenantId), issuerRuc: target.issuerRuc,
+            environment: receipt.environment, externalId: String(value.providerRequestId),
+            documentType: target.documentType === "BOLETA" ? "03" : target.documentType === "FACTURA" ? "01" : "07",
+            series: target.series, number: target.number, artifactKind: providerResult ? "PROVIDER_RESULT" : "CDR",
+            artifactSha256: String((artifact as Record<string, unknown>)?.sha256) }, Date.parse(String(value.createdAt)));
+          if (Date.parse(String(result.receivedAt)) < receipt.receivedAtMs) errors.push("result.providerReceipt.receivedAt");
+        } catch { errors.push("result.providerReceipt"); }
+      }
     } else errors.push("result.source");
   }
   if (value.result === null && ["REPORTADO_PROVEEDOR", "ACEPTADO",
@@ -177,13 +204,15 @@ export function validateFiscalProcessDocumentLink(
   if (process.attemptCount > 0 && process.submittedXmlSha256 !==
       (process.operation === "EMISION" ? document.signature.signedXml.sha256 :
         process.operationXml?.sha256)) errors.push("submittedXmlSha256.documentMismatch");
-  if (process.result?.source === "CDR") {
+  if (process.result?.source === "CDR" || process.result?.source === "PROVEEDOR_AUTENTICADO") {
     const actual = process.result.targetIdentity;
     const expected = document.identity;
     if (actual.issuerRuc !== expected.issuerRuc ||
         actual.documentType !== expected.documentType ||
         actual.series !== expected.series || actual.number !== expected.number)
       errors.push("result.targetIdentityMismatch");
+    if (process.result.providerReceipt && process.result.providerReceipt.environment !==
+      (document.environment === "PRODUCCION" ? "PRODUCTION" : "DEMO")) errors.push("result.providerReceipt.environmentMismatch");
   }
   return errors;
 }

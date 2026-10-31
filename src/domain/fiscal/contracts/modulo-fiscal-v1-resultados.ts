@@ -2,6 +2,7 @@ import type { FiscalV1DocumentGrant, FiscalV1PrintEvidence,
   FiscalV1PrintEvidenceBinding, FiscalV1TributaryResult, FiscalV1TributaryStatus } from
   "./modulo-fiscal-v1-resultados.contract";
 import { validateFiscalCivilDate } from "./reglas-tributarias";
+import { assertFiscalV1ProviderChannelReceipt } from "./modulo-fiscal-v1-proveedor.contract";
 
 const record = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
@@ -30,6 +31,20 @@ export function validateFiscalV1TributaryResult(value: unknown,
   if (!hash(value.sha256)) errors.push("sha256");
   if (!cents(value.receivedAtMs)) errors.push("receivedAtMs");
   if (value.outcome !== "ACCEPTED" && value.outcome !== "REJECTED") errors.push("outcome");
+  if (value.evidenceKind !== undefined && value.evidenceKind !== "CDR" && value.evidenceKind !== "PROVIDER_RESULT")
+    errors.push("evidenceKind");
+  if (value.evidenceKind === "PROVIDER_RESULT" && (value.outcome !== "REJECTED" || value.providerReceipt === undefined))
+    errors.push("providerResult.rejectionOnly");
+  if (value.providerReceipt !== undefined) {
+    try {
+      const receipt = value.providerReceipt as import("./modulo-fiscal-v1-proveedor.contract").FiscalV1ProviderChannelReceipt;
+      assertFiscalV1ProviderChannelReceipt(receipt, { tenantId: receipt.tenantId, issuerRuc: receipt.issuerRuc,
+        environment: receipt.environment, externalId: receipt.externalId, documentType: receipt.documentType,
+        series: receipt.series, number: receipt.number, artifactKind: value.evidenceKind === "PROVIDER_RESULT" ? "PROVIDER_RESULT" : "CDR",
+        artifactSha256: String(value.sha256) });
+      if (Number(value.receivedAtMs) < receipt.receivedAtMs) errors.push("providerReceipt.receivedAtMs");
+    } catch { errors.push("providerReceipt"); }
+  }
   const detailKeys = ["responseCode", "description", "observations"];
   if (options.requireDetails || detailKeys.some(key => has(value, key))) {
     if (!detailKeys.every(key => has(value, key))) errors.push("details.required");
@@ -95,8 +110,12 @@ export function validateFiscalV1PrintEvidence(value: unknown,
       identity.documentType === "01" && binding.buyer.documentType !== "RUC") return ["print.binding"];
   if (!hash(value.signedXmlSha256) || value.signedXmlSha256 !== binding.signedXmlSha256)
     errors.push("print.signedXmlSha256");
+  if (value.evidenceAssurance !== binding.evidenceAssurance ||
+      binding.evidenceAssurance !== undefined && binding.evidenceAssurance !== "PROVIDER_AUTHENTICATED_CHANNEL")
+    errors.push("print.evidenceAssurance");
   if (typeof value.digestValue !== "string" ||
-      !(sha256Digest.test(value.digestValue) || binding.environment === "DEMO" && sha1Digest.test(value.digestValue)))
+      !(sha256Digest.test(value.digestValue) || (binding.environment === "DEMO" ||
+        binding.evidenceAssurance === "PROVIDER_AUTHENTICATED_CHANNEL") && sha1Digest.test(value.digestValue)))
     errors.push("print.digestValue");
   if (typeof value.signedAt !== "string" || !date(value.signedAt.slice(0, 10)) ||
       !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value.signedAt) ||

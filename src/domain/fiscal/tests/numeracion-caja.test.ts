@@ -100,8 +100,29 @@ test("contexto tributario operativo rechaza ambigüedad y conserva ruta correcti
     creditNoteReasonCodes: ["01", "06", "07"] };
   const signed = { ...base, profiles: [profile], capabilities: [invoice, correction] };
   const input = { payload: signed, documentType: "FACTURA" as const, occurredOn: "2026-10-15", establishmentId: profile.establishmentId };
-  assert.equal(resolveFiscalOperationalTaxContext(input)?.capability.documentType, "FACTURA");
+  assert.equal(resolveFiscalOperationalTaxContext(input)?.capabilities[0].documentType, "FACTURA");
   assert.equal(resolveFiscalOperationalTaxContext({ ...input, payload: { ...signed, capabilities: [invoice] } }), null);
   assert.equal(resolveFiscalOperationalTaxContext({ ...input, payload: { ...signed,
     capabilities: [invoice, { ...invoice, capabilityId: "otra autorización" }, correction] } }), null);
+});
+
+test("un contexto distingue carritos gravados, exonerados y mixtos sin elegir una capacidad arbitraria", () => {
+  const base = payload(), profile = { ...base.profiles[0], taxRegime: "RER" as const };
+  const context = { ...base.capabilities[0].context, buyerUse: "BUSINESS" as const };
+  const categories = [["GRAVADA"], ["EXONERADA"], ["GRAVADA", "EXONERADA"]] as const;
+  const sales = categories.map((legalCategories, index) => ({ ...base.capabilities[0],
+    capabilityId: `autorización ${index}`, taxRegime: "RER" as const, documentType: "FACTURA" as const,
+    legalCategories: [...legalCategories], context }));
+  const notes = sales.map(row => ({ ...row, capabilityId: `nota ${row.capabilityId}`,
+    documentType: "NOTA_CREDITO" as const, creditNoteReasonCodes: ["01", "06", "07"] }));
+  const signed = { ...base, profiles: [profile], capabilities: [...sales, ...notes] };
+  const input = { payload: signed, documentType: "FACTURA" as const, occurredOn: "2026-10-15", establishmentId: profile.establishmentId };
+  assert.equal(resolveFiscalOperationalTaxContext(input)?.capabilities.length, 3);
+  const assignment = { ...resolveFiscalCajaNumberingAssignment(config(), { ...scope(), documentType: "FACTURA" })!,
+    tenantId: signed.tenantId, issuerRuc: profile.issuerRuc, environment: signed.environment, establishmentId: profile.establishmentId };
+  assert.equal(resolveFiscalOperationalCheckoutContext({ ...input, assignment })?.checkout.series, "F007");
+  for (const capabilities of [ [...sales, notes[2]], [...sales, ...notes, notes[0]], [...sales, sales[0], ...notes] ]) {
+    assert.equal(resolveFiscalOperationalTaxContext({ ...input, payload: { ...signed, capabilities } }), null);
+    assert.equal(resolveFiscalOperationalCheckoutContext({ ...input, assignment, payload: { ...signed, capabilities } }), null);
+  }
 });

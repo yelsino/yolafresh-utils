@@ -96,7 +96,7 @@ function artifactShape(artifact: FiscalV1PublicationArtifact): void {
     exactKeys(artifact, RULE_FIELDS, PUBLICATION_OPTIONAL, "FISCAL_V1_PUBLICATION_ARTIFACT_INVALID");
     exactKeys(artifact.context, ["establishmentId", "operationKind", "buyerUse"], [], "FISCAL_V1_CONTEXT_REQUIRED");
   } else if ("capabilityId" in artifact) {
-    exactKeys(artifact, CAPABILITY_FIELDS, [...PUBLICATION_OPTIONAL, "evidence", "creditNoteReasonCodes"],
+    exactKeys(artifact, CAPABILITY_FIELDS, [...PUBLICATION_OPTIONAL, "evidence", "creditNoteReasonCodes", "providerEvidenceAssurance"],
       "FISCAL_V1_PUBLICATION_ARTIFACT_INVALID");
     exactKeys(artifact.context, ["establishmentId", "operationKind", "buyerUse"], [], "FISCAL_V1_CONTEXT_REQUIRED");
     if (artifact.evidence !== undefined)
@@ -171,6 +171,25 @@ function checkoutCapabilities(payload: FiscalV1PublicationPayload, selected: Fis
     sameContext(row.context, checkout.context));
 }
 
+/** Un contexto puede autorizar carritos distintos; cada conjunto fiscal sigue siendo exacto. */
+export function isFiscalV1CapabilityFamilyUnambiguous(rows: readonly FiscalV1Capability[]): boolean {
+  return rows.length > 0 && new Set(rows.map(row => categorySet(row.legalCategories))).size === rows.length &&
+    rows.every(row => sameContext(row.context, rows[0].context) &&
+      row.providerEvidenceAssurance === rows[0].providerEvidenceAssurance);
+}
+
+function hasCorrectionForEach(payload: FiscalV1PublicationPayload, selected: FiscalV1IssuerProfile,
+  sales: readonly FiscalV1Capability[], occurredOn: string): boolean {
+  return sales.every(sale => payload.capabilities.filter(row => row.status === "PUBLISHED" && usableCapability(row) &&
+    effective(row, occurredOn) && row.documentType === "NOTA_CREDITO" && row.profileVersion === selected.profileVersion &&
+    row.taxRegime === selected.taxRegime && row.tenantId === payload.tenantId && row.issuerId === payload.issuerId &&
+    row.environment === payload.environment && row.provider === selected.provider && row.adapterVersion === selected.adapterVersion &&
+    row.see === selected.see && sameContext(row.context, sale.context) &&
+    row.providerEvidenceAssurance === sale.providerEvidenceAssurance &&
+    ["01", "06", "07"].every(code => row.creditNoteReasonCodes?.includes(code)) &&
+    categorySet(row.legalCategories) === categorySet(sale.legalCategories)).length === 1);
+}
+
 function validateCheckoutRows(payload: FiscalV1PublicationPayload,
   rows: readonly FiscalV1CheckoutContext[] | readonly FiscalV2CheckoutContext[], version: 1 | 2): void {
   if (!Array.isArray(rows)) fail("FISCAL_V1_CHECKOUT_CONTEXTS_INVALID");
@@ -241,7 +260,7 @@ export function resolveFiscalOperationalTaxContext(input: {
   readonly establishmentId: string;
   readonly issuerRuc?: string;
   readonly context?: FiscalV1OperationContext;
-}): Readonly<{ profile: FiscalV1IssuerProfile; context: FiscalV1OperationContext; capability: FiscalV1Capability }> | null {
+}): Readonly<{ profile: FiscalV1IssuerProfile; context: FiscalV1OperationContext; capabilities: readonly FiscalV1Capability[] }> | null {
   const { payload, documentType, occurredOn } = input;
   civilDate(occurredOn, "FISCAL_V1_OPERATION_DATE_INVALID");
   if (!["BOLETA", "FACTURA"].includes(documentType)) fail("FISCAL_V1_DOCUMENT_TYPE_INVALID");
@@ -249,7 +268,7 @@ export function resolveFiscalOperationalTaxContext(input: {
   if (input.context) context(input.context);
   assertFiscalV1IssuerAuthority(payload.profiles);
   payload.capabilities.forEach(capability);
-  const matches: Array<{ profile: FiscalV1IssuerProfile; context: FiscalV1OperationContext; capability: FiscalV1Capability }> = [];
+  const matches: Array<{ profile: FiscalV1IssuerProfile; context: FiscalV1OperationContext; capabilities: readonly FiscalV1Capability[] }> = [];
   for (const selected of payload.profiles) {
     if (selected.status !== "PUBLISHED" || !effective(selected, occurredOn) || selected.tenantId !== payload.tenantId ||
       selected.issuerId !== payload.issuerId || selected.environment !== payload.environment ||
@@ -263,19 +282,12 @@ export function resolveFiscalOperationalTaxContext(input: {
       row.adapterVersion === selected.adapterVersion && row.see === selected.see &&
       row.context.establishmentId === input.establishmentId && (!input.context || sameContext(input.context, row.context)) &&
       (documentType !== "FACTURA" || row.context.buyerUse === "BUSINESS"));
-    for (const saleCapability of candidates) {
-      if (candidates.filter(row => sameContext(row.context, saleCapability.context)).length !== 1) continue;
-      if (documentType === "FACTURA") {
-        const corrections = payload.capabilities.filter(row => row.status === "PUBLISHED" && row.capabilityStatus === "SUPPORTED" &&
-          effective(row, occurredOn) && row.documentType === "NOTA_CREDITO" && row.profileVersion === selected.profileVersion &&
-          row.taxRegime === selected.taxRegime && row.tenantId === payload.tenantId && row.issuerId === payload.issuerId &&
-          row.environment === payload.environment && row.provider === selected.provider && row.adapterVersion === selected.adapterVersion &&
-          row.see === selected.see && sameContext(row.context, saleCapability.context) &&
-          ["01", "06", "07"].every(code => row.creditNoteReasonCodes?.includes(code)) &&
-          saleCapability.legalCategories.every(category => row.legalCategories.includes(category)));
-        if (corrections.length !== 1) continue;
-      }
-      matches.push({ profile: selected, context: saleCapability.context, capability: saleCapability });
+    const contexts = new Map(candidates.map(row => [canonical(row.context), row.context]));
+    for (const operationContext of contexts.values()) {
+      const family = candidates.filter(row => sameContext(row.context, operationContext));
+      if (!isFiscalV1CapabilityFamilyUnambiguous(family)) continue;
+      if (documentType === "FACTURA" && !hasCorrectionForEach(payload, selected, family, occurredOn)) continue;
+      matches.push({ profile: selected, context: operationContext, capabilities: family });
     }
   }
   return matches.length === 1 ? matches[0] : null;
@@ -346,18 +358,10 @@ function resolveCheckoutContext<T extends FiscalV1CheckoutContext>(input: {
     if (!["NRUS", "RER"].includes(selected.taxRegime) || selected.taxRegime === "NRUS" && documentType === "FACTURA") continue;
     const capabilities = checkoutCapabilities(payload, selected, checkout).filter(row => row.status === "PUBLISHED" &&
       usableCapability(row) && effective(row, occurredOn));
-    if (capabilities.length !== 1) continue;
+    if (!isFiscalV1CapabilityFamilyUnambiguous(capabilities)) continue;
     if (documentType === "FACTURA") {
       if (!checkout.creditNoteSeries) continue;
-      const saleCapability = capabilities[0];
-      const corrections = payload.capabilities.filter(row => row.status === "PUBLISHED" && row.capabilityStatus === "SUPPORTED" &&
-        effective(row, occurredOn) && row.documentType === "NOTA_CREDITO" && row.profileVersion === selected.profileVersion &&
-        row.taxRegime === selected.taxRegime && row.tenantId === payload.tenantId && row.issuerId === payload.issuerId &&
-        row.environment === payload.environment && row.provider === selected.provider && row.adapterVersion === selected.adapterVersion &&
-        row.see === selected.see && sameContext(row.context, checkout.context) &&
-        ["01", "06", "07"].every(code => row.creditNoteReasonCodes?.includes(code)) &&
-        saleCapability.legalCategories.every(category => row.legalCategories.includes(category)));
-      if (corrections.length !== 1) continue;
+      if (!hasCorrectionForEach(payload, selected, capabilities, occurredOn)) continue;
     }
     matches.push({ profile: selected, checkout });
   }
@@ -430,8 +434,11 @@ function capability(value: FiscalV1Capability): void {
     !["SUPPORTED", "DEMO_TEST_ONLY", "UNVERIFIED", "UNSUPPORTED"].includes(value.capabilityStatus))
     fail("FISCAL_V1_CAPABILITY_INVALID");
   if (value.capabilityStatus === "DEMO_TEST_ONLY" &&
-      (value.environment !== "DEMO" || value.documentType !== "BOLETA" || value.evidence !== undefined))
+      (value.environment !== "DEMO" || value.documentType !== "BOLETA" && !value.providerEvidenceAssurance || value.evidence !== undefined))
     fail("FISCAL_V1_DEMO_TEST_CAPABILITY_INVALID");
+  if (value.providerEvidenceAssurance !== undefined && (value.providerEvidenceAssurance !== "PROVIDER_AUTHENTICATED_CHANNEL" ||
+      value.provider !== "XmlPeru" || value.adapterVersion !== "v1" || value.taxRegime !== "RER"))
+    fail("FISCAL_V1_PROVIDER_ASSURANCE_INVALID");
   if (value.documentType === "NOTA_CREDITO") {
     if (!Array.isArray(value.creditNoteReasonCodes) || !value.creditNoteReasonCodes.length ||
         value.creditNoteReasonCodes.some(code => !text(code)) ||
@@ -446,10 +453,12 @@ function capability(value: FiscalV1Capability): void {
       !text(value.evidence?.correctiveRouteRef)) fail("FISCAL_V1_CORRECTIVE_ROUTE_REQUIRED");
 }
 
-function usableCapability(value: FiscalV1Capability): boolean {
+/** Status predicate inside an already authenticated publication, not emission authority. */
+export function isFiscalV1CapabilityOperational(value: FiscalV1Capability): boolean {
   return value.capabilityStatus === "SUPPORTED" || value.capabilityStatus === "DEMO_TEST_ONLY" &&
-    value.environment === "DEMO" && value.documentType === "BOLETA";
+    value.environment === "DEMO" && (value.documentType === "BOLETA" || value.providerEvidenceAssurance === "PROVIDER_AUTHENTICATED_CHANNEL");
 }
+const usableCapability = isFiscalV1CapabilityOperational;
 
 function saleLine(value: FiscalV1SaleLineInput): void {
   if (!value || !text(value.lineId) || !text(value.presentationId) ||

@@ -45,6 +45,30 @@ function fixture(environment: FiscalV1Environment = "DEMO") {
     trustedKeys: [trustedKey], nowMs: golden.nowMs };
 }
 
+test("managed PSE Demo can prepare invoice/note capabilities without granting Production authority", () => {
+  const h = fixture();
+  const base = h.payload.capabilities[0];
+  const fingerprint = (row: FiscalV1Capability) => ({ ...row, fingerprintSha256: fiscalV1PublicationArtifactFingerprint(row) });
+  const capabilities: FiscalV1Capability[] = [fingerprint({ ...base, capabilityId: "managed-invoice",
+    documentType: "FACTURA", context: { ...base.context, buyerUse: "BUSINESS" }, providerEvidenceAssurance: "PROVIDER_AUTHENTICATED_CHANNEL" }),
+    fingerprint({ ...base, capabilityId: "managed-credit-note", documentType: "NOTA_CREDITO",
+      creditNoteReasonCodes: ["01", "06", "07"], providerEvidenceAssurance: "PROVIDER_AUTHENTICATED_CHANNEL" })];
+  const payload = { ...h.payload, capabilities: [...h.payload.capabilities, ...capabilities] };
+  assert.doesNotThrow(() => verifyFiscalV1PublicationBundle(h.signPayload(payload), h.trustedKeys, h.nowMs));
+  const live = fixture("PRODUCTION");
+  const livePayload = { ...live.payload, capabilities: live.payload.capabilities.map(row => fingerprint({
+    ...row, providerEvidenceAssurance: "PROVIDER_AUTHENTICATED_CHANNEL" })) };
+  assert.throws(() => verifyFiscalV1PublicationBundle(live.signPayload(livePayload), live.trustedKeys, live.nowMs),
+    /FISCAL_V1_DEMO_TEST_CAPABILITY_INVALID/);
+});
+
+test("changing the declared PSE assurance invalidates the existing publication fingerprint", () => {
+  const h = fixture();
+  const payload = { ...h.payload, capabilities: h.payload.capabilities.map(row => ({
+    ...row, providerEvidenceAssurance: "PROVIDER_AUTHENTICATED_CHANNEL" as const })) };
+  assert.throws(() => verifyFiscalV1PublicationBundle(h.signPayload(payload), h.trustedKeys, h.nowMs));
+});
+
 test("DEMO_TEST_ONLY permite la primera boleta de prueba sin inventar evidencia SUPPORTED", () => {
   const f = fixture();
   const decision = prepareFiscalV1Sale(f);

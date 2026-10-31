@@ -1,9 +1,13 @@
 import type { FiscalV1Environment } from "./modulo-fiscal-v1.contract";
+import type { FiscalV1ProviderChannelReceipt } from "./modulo-fiscal-v1-proveedor.contract";
 
-/** Verified CDR metadata. The XML/signature must be verified by the trusted adapter.
+/** CDR metadata checked by the trusted adapter. Provider-channel custody is
+ * explicit and must never be presented as independent certificate verification.
  * Optional details preserve historical records that only kept the binary outcome.
  * New CDR writes must include all three details; a missing list does not mean no observations. */
 export interface FiscalV1TributaryResult {
+  /** Rejections may have an authenticated provider result without a CDR. */
+  readonly evidenceKind?: "CDR" | "PROVIDER_RESULT";
   readonly storageRef: string;
   readonly sha256: string;
   readonly receivedAtMs: number;
@@ -11,6 +15,7 @@ export interface FiscalV1TributaryResult {
   readonly responseCode?: string;
   readonly description?: string;
   readonly observations?: readonly string[];
+  readonly providerReceipt?: FiscalV1ProviderChannelReceipt;
 }
 
 export type FiscalV1TributaryStatus = "ACCEPTED" | "ACCEPTED_WITH_OBSERVATIONS" | "REJECTED";
@@ -26,6 +31,7 @@ export interface FiscalV1DocumentGrant {
 /** Projection extracted only after the signed XML has passed identity, content and
  * certificate verification. It does not assert SUNAT acceptance or commercial commit. */
 export interface FiscalV1PrintEvidence {
+  readonly evidenceAssurance?: "PROVIDER_AUTHENTICATED_CHANNEL";
   readonly signedXmlSha256: string;
   readonly digestValue: string;
   readonly qrPayload: string;
@@ -36,6 +42,7 @@ export interface FiscalV1PrintEvidence {
 
 /** Frozen facts supplied by the verified sale/note and its ACK, never the live catalogue. */
 export interface FiscalV1PrintEvidenceBinding {
+  readonly evidenceAssurance?: "PROVIDER_AUTHENTICATED_CHANNEL";
   readonly environment: FiscalV1Environment;
   readonly identity: {
     readonly issuerRuc: string;

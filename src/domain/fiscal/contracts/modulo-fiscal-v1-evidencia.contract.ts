@@ -1,5 +1,6 @@
 import type { FiscalV1Environment, FiscalV1PreparedDecision, FiscalV2CajaAssignment } from "./modulo-fiscal-v1.contract";
 import type { FiscalV1DocumentGrant, FiscalV1TributaryResult } from "./modulo-fiscal-v1-resultados.contract";
+import type { FiscalV1ProviderChannelReceipt } from "./modulo-fiscal-v1-proveedor.contract";
 
 /** Congela lo aprobado por el motor antes de pedir firma. No es por sí mismo un CPE. */
 export interface FiscalV1Snapshot {
@@ -53,7 +54,8 @@ export interface FiscalV1DocumentRecord {
   readonly snapshotSha256: string;
   readonly state: FiscalV1DocumentState;
   readonly providerOperationRef?: string;
-  readonly signedXml?: { readonly storageRef: string; readonly sha256: string };
+  readonly signedXml?: { readonly storageRef: string; readonly sha256: string;
+    readonly providerReceipt?: FiscalV1ProviderChannelReceipt };
   readonly tributaryResult?: FiscalV1TributaryResult;
   readonly grant?: FiscalV1DocumentGrant;
 }
@@ -94,6 +96,7 @@ export interface FiscalV1PriorCreditNote {
 
 /** Preparación económica e histórica, no XML firmado ni ajuste automático de caja/stock. */
 export interface FiscalV1PreparedCreditNote {
+  readonly providerEvidenceAssurance?: "PROVIDER_AUTHENTICATED_CHANNEL";
   readonly noteOperationId: string;
   readonly noteId: string;
   readonly originalDocumentId: string;

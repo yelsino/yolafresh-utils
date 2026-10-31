@@ -81,6 +81,8 @@ export interface FiscalV1Capability extends FiscalV1EffectivePublication {
   readonly provider: string;
   readonly adapterVersion: string;
   readonly capabilityStatus: FiscalV1CapabilityStatus;
+  /** Publication-owned verification policy; optional preserves historical bundle bytes. */
+  readonly providerEvidenceAssurance?: "PROVIDER_AUTHENTICATED_CHANNEL";
   /** Obligatorio y exacto solo para NOTA_CREDITO; no se heredan causales de otra capacidad. */
   readonly creditNoteReasonCodes?: readonly string[];
   readonly evidence?: FiscalV1CapabilityEvidence;

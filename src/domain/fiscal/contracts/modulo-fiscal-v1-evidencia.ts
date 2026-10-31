@@ -1,7 +1,8 @@
 import { validateFiscalCivilDate } from "./reglas-tributarias";
 import { assertFiscalV1DocumentGrant, assertFiscalV1TributaryResult } from "./modulo-fiscal-v1-resultados";
+import { assertFiscalV1ProviderChannelReceipt } from "./modulo-fiscal-v1-proveedor.contract";
 import { fiscalV1CanonicalSha256, fiscalV1DecisionFingerprintMaterial,
-  verifyFiscalV1PublicationBundle } from "./modulo-fiscal-v1";
+  verifyFiscalV1PublicationBundle, isFiscalV1CapabilityOperational } from "./modulo-fiscal-v1";
 import type { FiscalV1Capability, FiscalV1SignedPublicationBundle, FiscalV1TrustedPublisherKey } from "./modulo-fiscal-v1.contract";
 import type { FiscalV1CreditNoteDraft, FiscalV1DocumentRecord, FiscalV1PreparedCreditNote,
   FiscalV1PriorCreditNote, FiscalV1Snapshot } from "./modulo-fiscal-v1-evidencia.contract";
@@ -132,6 +133,15 @@ export function assertFiscalV1DocumentRecord(document: FiscalV1DocumentRecord, s
   if (document.signedXml !== undefined && (!text(document.signedXml.storageRef) || !sha256(document.signedXml.sha256)))
     fail("FISCAL_V1_SIGNED_XML_INVALID");
   if (document.tributaryResult !== undefined) assertFiscalV1TributaryResult(document.tributaryResult);
+  for (const [artifactKind, artifact] of [["SIGNED_XML", document.signedXml], ["CDR", document.tributaryResult]] as const) {
+    if (artifact?.providerReceipt !== undefined) assertFiscalV1ProviderChannelReceipt(artifact.providerReceipt, {
+      tenantId: document.tenantId, issuerRuc: document.issuerRuc, environment: document.environment,
+      externalId: document.providerOperationRef!, documentType: snapshot.decision.documentType === "BOLETA" ? "03" : "01",
+      series: snapshot.series, number: snapshot.number,
+      artifactKind: artifactKind === "CDR" && document.tributaryResult?.evidenceKind === "PROVIDER_RESULT" ? "PROVIDER_RESULT" : artifactKind,
+      artifactSha256: artifact.sha256,
+    }, snapshot.createdAtMs);
+  }
   if (document.grant !== undefined) assertFiscalV1DocumentGrant(document.grant, snapshot.decision.buyer?.documentNumber);
   if (document.state === "UNKNOWN") {
     if (document.tributaryResult || document.grant) fail("FISCAL_V1_DOCUMENT_STATE_CONTRADICTION");
@@ -268,7 +278,7 @@ export function prepareFiscalV1CreditNote(input: {
   const categories = [...new Set(lines.map(line => line.originalLegalCategory))].sort().join("|");
   const matching = payload.capabilities.filter((capability: FiscalV1Capability) =>
     capability.status === "PUBLISHED" && effective(capability, issuedOn) &&
-    capability.capabilityStatus === "SUPPORTED" && capability.documentType === "NOTA_CREDITO" &&
+    isFiscalV1CapabilityOperational(capability) && capability.documentType === "NOTA_CREDITO" &&
     capability.profileVersion === profile.profileVersion && capability.taxRegime === profile.taxRegime &&
     capability.environment === profile.environment && capability.see === profile.see &&
     capability.provider === profile.provider && capability.adapterVersion === profile.adapterVersion &&
@@ -278,6 +288,7 @@ export function prepareFiscalV1CreditNote(input: {
   if (matching.length !== 1) fail("FISCAL_V1_CREDIT_NOTE_CAPABILITY_NOT_SUPPORTED");
   const totalCents = safeNumber(lines.reduce((sum, line) => sum + BigInt(line.creditCents), 0n));
   return { noteOperationId: draft.noteOperationId, noteId: draft.noteId,
+    ...(matching[0].providerEvidenceAssurance ? { providerEvidenceAssurance: matching[0].providerEvidenceAssurance } : {}),
     originalDocumentId: originalDocument.documentId, originalSnapshotSha256: originalSnapshot.snapshotSha256,
     tenantId: draft.tenantId, issuerId: draft.issuerId, issuerRuc: draft.issuerRuc,
     environment: draft.environment, issuedOn, reasonCode: draft.reasonCode, recipientId: draft.recipientId,
