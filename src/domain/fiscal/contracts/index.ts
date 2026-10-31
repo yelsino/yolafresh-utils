@@ -19,6 +19,7 @@ export * from "./modulo-fiscal-v1.contract";
 export * from "./modulo-fiscal-v1";
 export * from "./modulo-fiscal-v1-evidencia.contract";
 export * from "./modulo-fiscal-v1-evidencia";
+export * from "./fiscal-registered-sale";
 export * from "./modulo-fiscal-v1-resultados.contract";
 export * from "./modulo-fiscal-v1-resultados";
 export * from "./modulo-fiscal-v1-proveedor.contract";

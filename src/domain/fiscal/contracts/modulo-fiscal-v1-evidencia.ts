@@ -45,6 +45,10 @@ export function assertFiscalV1Snapshot(snapshot: FiscalV1Snapshot): void {
       (snapshot.cajaAssignment !== undefined && (!snapshot.cajaAssignment || typeof snapshot.cajaAssignment !== "object" ||
         Object.keys(snapshot.cajaAssignment).length !== 2 || !text(snapshot.cajaAssignment.cajaId) ||
         !positive(snapshot.cajaAssignment.assignmentVersion))) ||
+      (snapshot.commercialSource !== undefined && (!snapshot.commercialSource ||
+        snapshot.commercialSource.kind !== "REGISTERED_SALE" ||
+        Object.keys(snapshot.commercialSource).length !== 3 ||
+        !text(snapshot.commercialSource.snapshotId) || !sha256(snapshot.commercialSource.snapshotSha256))) ||
       !text(snapshot.series) || !positive(snapshot.number) || !cents(snapshot.createdAtMs) ||
       !sha256(snapshot.decisionSha256) || !sha256(snapshot.publicationPayloadSha256) ||
       !positive(snapshot.publicationRevision) || !sha256(snapshot.snapshotSha256) ||

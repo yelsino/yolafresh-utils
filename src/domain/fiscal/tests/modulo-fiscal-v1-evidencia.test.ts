@@ -7,6 +7,8 @@ import { assertFiscalV1DocumentRecord, assertFiscalV1Snapshot, assertFiscalV1Sna
   type FiscalV1Capability, type FiscalV1CreditNoteDraft, type FiscalV1DocumentRecord,
   type FiscalV1IssuerProfile, type FiscalV1PresentationRule, type FiscalV1SignedPublicationBundle,
   type FiscalV1Snapshot, type FiscalV1TrustedPublisherKey } from "../contracts";
+import { fiscalV1RegisteredSaleSource } from "../contracts";
+import type { IVentaSnapshot } from "../../ventas/contracts/venta-snapshot.contract";
 
 const HASH = "a".repeat(64);
 const NOW = Date.UTC(2026, 9, 15, 14);
@@ -15,6 +17,21 @@ const KEY_PAIR = nacl.sign.keyPair.fromSeed(new Uint8Array(32).fill(9));
 const TRUSTED_KEY: FiscalV1TrustedPublisherKey = { keyId: "test-key-2", publicKeyBase64: Buffer.from(KEY_PAIR.publicKey).toString("base64"),
   tenantId: "tenant-sintetico", environment: "DEMO", validFromMs: NOW - 86400000, validToMs: NOW + 86400000 };
 const SOURCE = "fixture-sintetica-fiscal-v1";
+
+test("la referencia comercial usa identificadores opacos y congela cantidades, precios y descripción", () => {
+  const commercial = { id: "opaque snapshot / α", ventaId: "opaque sale / β", moneda: "PEN", total: 3,
+    items: [{ id: "line", presentacionId: "presentation", nombre: "Producto", cantidadVendida: 1,
+      precioUnitario: 3, total: 3 }] } as IVentaSnapshot;
+  const source = fiscalV1RegisteredSaleSource(commercial);
+  assert.equal(source.snapshotId, commercial.id);
+  assert.deepEqual(fiscalV1RegisteredSaleSource({ ...commercial, items: [{ ...commercial.items[0], imagenUrl: "different" }] }), source);
+  assert.notEqual(fiscalV1RegisteredSaleSource({ ...commercial, total: 4 }).snapshotSha256, source.snapshotSha256);
+  const { snapshot } = fixture();
+  const frozen = { ...snapshot, commercialSource: source };
+  const withSource = { ...frozen, snapshotSha256: fiscalV1SnapshotFingerprint(frozen) };
+  assert.doesNotThrow(() => assertFiscalV1Snapshot(withSource));
+  assert.throws(() => assertFiscalV1Snapshot({ ...withSource, commercialSource: { ...source, snapshotId: "changed" } }), /HASH_INVALID/);
+});
 
 type TestMode = { taxRegime?: "RER" | "NRUS"; documentType?: "FACTURA" | "BOLETA";
   noteReasonCodes?: readonly string[] };

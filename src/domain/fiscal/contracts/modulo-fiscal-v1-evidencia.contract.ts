@@ -24,6 +24,8 @@ export interface FiscalV1Snapshot {
   readonly buyerFiscalAddress?: string;
   /** Presente sólo para publicaciones con selección explícita por caja; cubierto por la huella. */
   readonly cajaAssignment?: FiscalV2CajaAssignment;
+  /** Emisión posterior: referencia inmutable a la venta comercial ya registrada. */
+  readonly commercialSource?: FiscalV1RegisteredSaleSource;
   readonly lineDescriptions: readonly { readonly lineId: string; readonly description: string }[];
   readonly paymentTerms: { readonly kind: "CONTADO" } | {
     readonly kind: "CREDITO";
@@ -38,6 +40,14 @@ export interface FiscalV1Snapshot {
   /** Huella del JSON canónico del snapshot sin este campo. */
   readonly snapshotSha256: string;
 }
+
+export interface FiscalV1RegisteredSaleSource {
+  readonly kind: "REGISTERED_SALE";
+  readonly snapshotId: string;
+  readonly snapshotSha256: string;
+}
+
+export type FiscalV1PaymentTerms = FiscalV1Snapshot["paymentTerms"];
 
 /** Firma, envío y aceptación son hechos diferentes; la venta no se deriva del estado de impresión. */
 export type FiscalV1DocumentState = "UNKNOWN" | "SIGNED_SUBMISSION_PENDING" |
