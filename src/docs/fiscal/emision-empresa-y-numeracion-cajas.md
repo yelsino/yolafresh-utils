@@ -6,6 +6,8 @@ Decisión de negocio: 30 de octubre de 2026. Contratos canónicos en `yola-fresh
 
 La empresa configura su emisor, entorno e integración fiscal una sola vez. Su política comercial define la selección inicial de comprobante; no autoriza por sí misma una firma ni sustituye la preparación tributaria.
 
+La [afiliación XmlPeru y la confianza técnica](./integracion-xmlperu-y-confianza.md) tienen responsables distintos: con firma PSE, la empresa no tiene que entregar certificados públicos; YolaFresh mantiene la confianza del proveedor por entorno.
+
 La caja identifica desde dónde se vende. No contiene un contador fiscal editable, un certificado, un token ni una publicación tributaria propia. Un turno puede ocupar una caja; abrirlo o cerrarlo no crea ni reinicia series.
 
 El servidor administra las asignaciones y los correlativos. El dispositivo vende con sus datos locales y conserva la solicitud fiscal para continuar al reconectar. Crear una caja offline no inventa una serie global.
