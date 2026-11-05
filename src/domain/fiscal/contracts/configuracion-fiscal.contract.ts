@@ -69,6 +69,8 @@ export interface FiscalIssuerTaxProfileDocument extends FiscalTaxConfigurationRo
 export interface FiscalPresentationTaxConfigurationDocument extends FiscalTaxConfigurationRoot<FiscalPresentationTaxRule> {
   type: typeof FISCAL_PRESENTATION_TAX_CONFIGURATION_TYPE;
   presentationId: string;
+  /** Ausencia = configuración particular histórica, nunca herencia inferida. */
+  catalogAssignment?: import("./catalog-tax-policy.contract").FiscalPresentationCatalogAssignment;
 }
 export type FiscalTaxConfigurationDocument = FiscalIssuerTaxProfileDocument | FiscalPresentationTaxConfigurationDocument;
 

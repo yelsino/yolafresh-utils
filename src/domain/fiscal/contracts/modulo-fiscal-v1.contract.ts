@@ -1,5 +1,6 @@
 /** Contrato canónico del módulo nuevo. No reutiliza el snapshot del piloto. */
 import type { FiscalTaxRegime } from "./cpe.contract";
+import type { FiscalCatalogResolvedTaxSource } from "./catalog-tax-policy.contract";
 
 export type FiscalV1Environment = "DEMO" | "PRODUCTION";
 export type FiscalV1DocumentType = "BOLETA" | "FACTURA" | "NOTA_CREDITO";
@@ -54,6 +55,7 @@ export type FiscalV1PresentationRule = FiscalV1EffectivePublication & FiscalV1Ta
   readonly issuerId: string;
   readonly presentationId: string;
   readonly catalogSemanticFingerprintSha256: string;
+  readonly catalogSource?: FiscalCatalogResolvedTaxSource;
   readonly unitCode: "NIU" | "KGM" | "LTR" | "ZZ";
   readonly context: FiscalV1OperationContext;
 };
@@ -201,6 +203,7 @@ export interface FiscalV1PreparedLine {
   /** El código documental/UBL se define y verifica en el adaptador, nunca a partir de esta categoría. */
   readonly disclosure: FiscalV1LineDisclosure;
   readonly ruleRef: {
+    readonly catalogSource?: FiscalCatalogResolvedTaxSource;
     readonly configurationDocumentId: string;
     readonly decisionId: string;
     readonly ruleId: string;

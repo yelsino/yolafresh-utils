@@ -1,4 +1,5 @@
 import { isFiscalTaxRegime } from "./cpe.contract";
+import { assertFiscalCatalogResolvedTaxSource } from "./catalog-tax-policy.schema";
 import { fiscalConfigurationCanonicalJson } from "./configuracion-fiscal";
 import { validateFiscalCivilDate } from "./reglas-tributarias";
 import { sha256 as digestSha256 } from "@noble/hashes/sha256";
@@ -93,7 +94,8 @@ function artifactShape(artifact: FiscalV1PublicationArtifact): void {
   if (!artifact || typeof artifact !== "object") fail("FISCAL_V1_PUBLICATION_ARTIFACT_INVALID");
   if ("profileId" in artifact) exactKeys(artifact, PROFILE_FIELDS, PUBLICATION_OPTIONAL, "FISCAL_V1_PUBLICATION_ARTIFACT_INVALID");
   else if ("ruleId" in artifact) {
-    exactKeys(artifact, RULE_FIELDS, PUBLICATION_OPTIONAL, "FISCAL_V1_PUBLICATION_ARTIFACT_INVALID");
+    exactKeys(artifact, RULE_FIELDS, [...PUBLICATION_OPTIONAL, "catalogSource"], "FISCAL_V1_PUBLICATION_ARTIFACT_INVALID");
+    if (artifact.catalogSource !== undefined) assertFiscalCatalogResolvedTaxSource(artifact.catalogSource);
     exactKeys(artifact.context, ["establishmentId", "operationKind", "buyerUse"], [], "FISCAL_V1_CONTEXT_REQUIRED");
   } else if ("capabilityId" in artifact) {
     exactKeys(artifact, CAPABILITY_FIELDS, [...PUBLICATION_OPTIONAL, "evidence", "creditNoteReasonCodes", "providerEvidenceAssurance"],
@@ -408,6 +410,7 @@ function profile(value: FiscalV1IssuerProfile): void {
 
 function rule(value: FiscalV1PresentationRule): void {
   publication(value); context(value.context);
+  if (value.catalogSource !== undefined) assertFiscalCatalogResolvedTaxSource(value.catalogSource);
   if (![value.configurationDocumentId, value.decisionId, value.ruleId, value.tenantId, value.issuerId,
     value.presentationId].every(text) || !sha256(value.catalogSemanticFingerprintSha256) ||
     !["NIU", "KGM", "LTR", "ZZ"].includes(value.unitCode)) fail("FISCAL_V1_RULE_INVALID");
@@ -597,7 +600,8 @@ export function prepareFiscalV1Sale(input: {
       unitPriceCents: line.unitPriceCents, discountCents: line.discountCents, totalCents,
       unitCode: selected.unitCode, legalCategory: selected.legalCategory,
       disclosure, ruleRef: { configurationDocumentId: selected.configurationDocumentId, decisionId: selected.decisionId,
-        ruleId: selected.ruleId, fingerprintSha256: selected.fingerprintSha256 } };
+        ruleId: selected.ruleId, fingerprintSha256: selected.fingerprintSha256,
+        ...(selected.catalogSource ? { catalogSource: JSON.parse(JSON.stringify(selected.catalogSource)) } : {}) } };
   });
   const legalCategories = categorySet([...new Set(prepared.map(line => line.legalCategory))]);
   const matchingCapabilities = capabilities.filter(value => effective(value, date) &&

@@ -4,6 +4,7 @@ import type { FiscalCatalogSemanticInput, FiscalConfigurationActor, FiscalIssuer
   FiscalTaxConfigurationDocument, FiscalTaxConfigurationRoot, FiscalTaxEvidence, FiscalTaxResolutionSource } from "./configuracion-fiscal.contract";
 import { FISCAL_ISSUER_TAX_PROFILE_TYPE, FISCAL_PRESENTATION_TAX_CONFIGURATION_TYPE } from "./configuracion-fiscal.contract";
 import { validateFiscalCivilDate } from "./reglas-tributarias";
+import { projectFiscalPresentationCatalogAssignment } from "./catalog-tax-policy.schema";
 
 const fail = (code: string): never => { throw new Error(code); };
 const object = (value: unknown): Record<string, any> => value && typeof value === "object" && !Array.isArray(value)
@@ -120,7 +121,9 @@ export function projectFiscalTaxConfigurationDocument(value: unknown): FiscalTax
   if (new Set(receipts.map((op: any) => op.operationId)).size !== receipts.length) fail("FISCAL_OPERATION_DUPLICATED");
   return { ...pick(r, ["_id", "_rev", "type", "tenantId", "issuerRuc", presentation ? "presentationId" : "companyDocumentId",
     "status", "creationOperationId", "publishedDecisionId"]), audit: pick(audit, ["createdBy", "createdAt", "updatedBy", "updatedAt"]),
-    draft, decisionHistory: history, operationReceipts: receipts } as FiscalTaxConfigurationDocument;
+    draft, decisionHistory: history, operationReceipts: receipts,
+    ...(presentation && r.catalogAssignment !== undefined
+      ? { catalogAssignment: projectFiscalPresentationCatalogAssignment(r.catalogAssignment) } : {}) } as FiscalTaxConfigurationDocument;
 }
 export function fiscalCatalogSemanticFingerprintMaterial(input: FiscalCatalogSemanticInput): string {
   for (const key of ["tenantId", "presentationId", "productBaseId", "tipoVenta", "unidadContenido", "unidadBaseInventario"] as const) requireText(input[key]);
@@ -236,5 +239,14 @@ export function validateFiscalTaxConfigurationTransition(previous: FiscalTaxConf
   for (const field of ["decisionHistory", "operationReceipts"] as const) {
     if (next[field].length < previous[field].length || fiscalConfigurationCanonicalJson(next[field].slice(0, previous[field].length)) !==
       fiscalConfigurationCanonicalJson(previous[field])) fail("FISCAL_CONFIGURATION_HISTORY_IMMUTABLE");
+  }
+  if (previous.type === FISCAL_PRESENTATION_TAX_CONFIGURATION_TYPE && previous.catalogAssignment) {
+    const assignment = next.type === FISCAL_PRESENTATION_TAX_CONFIGURATION_TYPE ? next.catalogAssignment : undefined;
+    if (!assignment) throw new Error("FISCAL_CATALOG_ASSIGNMENT_HISTORY_IMMUTABLE");
+    const before = previous.catalogAssignment.decisionHistory;
+    const after = assignment.decisionHistory;
+    if (after.length < before.length ||
+        fiscalConfigurationCanonicalJson(after.slice(0, before.length)) !== fiscalConfigurationCanonicalJson(before))
+      fail("FISCAL_CATALOG_ASSIGNMENT_HISTORY_IMMUTABLE");
   }
 }

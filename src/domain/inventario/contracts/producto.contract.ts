@@ -93,6 +93,8 @@ export type UnidadBaseInterna = "kilogramo" | "litro" | "unidad" | "metro";
 export interface ProductoBase {
   id: string;
   type: "producto_base";
+  /** Referencia explícita por emisor a herencia/política o excepción del producto. */
+  fiscalProductConfigurationRefs?: import("../../fiscal/contracts/catalog-tax-policy.contract").FiscalCatalogConfigurationReference[];
   nombre: string;
   descripcion?: string;
   /** Consideraciones de uso, almacenamiento o manipulación. */

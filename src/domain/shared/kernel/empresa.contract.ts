@@ -150,6 +150,8 @@ export interface ConfigEmpresa {
   fiscal: {
     /** Referencia canónica al perfil de decisiones del emisor. No contiene reglas por producto. */
     taxProfileDocumentId?: string;
+    /** Política del catálogo elegida por el contribuyente; ausencia no implica una tasa. */
+    catalogDefaultPolicyDocumentId?: string;
     /** Código de establecimiento fiscal, configurado explícitamente por la empresa. */
     codigoEstablecimiento?: string;
     moneda: MonedaEmpresa;

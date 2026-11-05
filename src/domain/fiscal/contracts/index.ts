@@ -6,6 +6,8 @@ export * from "./configuracion-tributaria";
 export * from "./comprobante-electronico.contract";
 export * from "./proceso-fiscal.contract";
 export * from "./configuracion-fiscal.contract";
+export * from "./catalog-tax-policy.contract";
+export * from "./catalog-tax-policy.schema";
 export * from "./configuracion-fiscal";
 export * from "./configuracion-fiscal-empresa";
 export * from "./xmlperu-affiliation";
