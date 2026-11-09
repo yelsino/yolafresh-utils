@@ -65,6 +65,7 @@ export interface FiscalTaxConfigurationRoot<Rule> {
 export interface FiscalIssuerTaxProfileDocument extends FiscalTaxConfigurationRoot<FiscalIssuerTaxPosture> {
   type: typeof FISCAL_ISSUER_TAX_PROFILE_TYPE;
   companyDocumentId: string;
+  amazonia?: import("./fiscal-amazonia-issuer.contract").FiscalAmazoniaIssuerConfiguration;
 }
 export interface FiscalPresentationTaxConfigurationDocument extends FiscalTaxConfigurationRoot<FiscalPresentationTaxRule> {
   type: typeof FISCAL_PRESENTATION_TAX_CONFIGURATION_TYPE;

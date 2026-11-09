@@ -5,6 +5,7 @@ import type { FiscalCatalogSemanticInput, FiscalConfigurationActor, FiscalIssuer
 import { FISCAL_ISSUER_TAX_PROFILE_TYPE, FISCAL_PRESENTATION_TAX_CONFIGURATION_TYPE } from "./configuracion-fiscal.contract";
 import { validateFiscalCivilDate } from "./reglas-tributarias";
 import { projectFiscalPresentationCatalogAssignment } from "./catalog-tax-policy.schema";
+import { projectFiscalAmazoniaIssuerConfiguration } from "./fiscal-amazonia-issuer.contract";
 
 const fail = (code: string): never => { throw new Error(code); };
 const object = (value: unknown): Record<string, any> => value && typeof value === "object" && !Array.isArray(value)
@@ -122,6 +123,8 @@ export function projectFiscalTaxConfigurationDocument(value: unknown): FiscalTax
   return { ...pick(r, ["_id", "_rev", "type", "tenantId", "issuerRuc", presentation ? "presentationId" : "companyDocumentId",
     "status", "creationOperationId", "publishedDecisionId"]), audit: pick(audit, ["createdBy", "createdAt", "updatedBy", "updatedAt"]),
     draft, decisionHistory: history, operationReceipts: receipts,
+    ...(!presentation && r.amazonia !== undefined
+      ? { amazonia: projectFiscalAmazoniaIssuerConfiguration(r.amazonia) } : {}),
     ...(presentation && r.catalogAssignment !== undefined
       ? { catalogAssignment: projectFiscalPresentationCatalogAssignment(r.catalogAssignment) } : {}) } as FiscalTaxConfigurationDocument;
 }

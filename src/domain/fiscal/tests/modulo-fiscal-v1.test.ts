@@ -324,3 +324,40 @@ test("decisión serializada conserva nulidad y material canónico estable", () =
   assert.equal(JSON.parse(encoded).taxCents, null);
   assert.equal(JSON.stringify(args), before);
 });
+
+
+test("Amazonia freezes confirmed facts and preserves final cents under the signed Demo capability", () => {
+  const buyer = { documentType: "DNI", documentNumber: "12345678", legalName: "Cliente Demo" } as const;
+  const facts = { transfer: { status: "CONFIRMED", ubigeo: "120601", evidenceRef: "local-1" },
+    consumption: { status: "CONFIRMED", ubigeo: "120601", evidenceRef: "CASHIER_DECLARATION" } } as const;
+  const regionalSale = sale({ issuerRuc: "20123456789", buyer, amazoniaFacts: facts });
+  const profile = issuer({ issuerRuc: regionalSale.issuerRuc });
+  const ordinaryRule = rule("queso", "GRAVADA");
+  const exemptCapability = capability(["EXONERADA"], { amazoniaSale: "DEMO_PILOT", amazoniaTransferUbigeo: "120601" });
+  const signed = signedBundle({ sale: regionalSale, profiles: [profile], rules: [ordinaryRule],
+    capabilities: [capability(["EXONERADA"], { capabilityId: "ordinary-exemption" }), exemptCapability] });
+  const amazonia = { facts, decision: { kind: "EXEMPT", basis: "LEY_27037_ART_13_1_A",
+    approvalId: "opaque-approval", territoryVersion: "pilot-v1" } } as const;
+  const input = { sale: regionalSale, ...signed, amazonia };
+  const prepared = prepareFiscalV1SaleCore(input);
+  assert.equal(prepared.totalCents, 1180);
+  assert.equal(prepared.baseCents, 1180);
+  assert.equal(prepared.taxCents, 0);
+  assert.equal(prepared.lines[0].legalCategory, "EXONERADA");
+  assert.equal(prepared.lines[0].ruleRef.ruleId, ordinaryRule.ruleId);
+  assert.deepEqual(prepared.amazonia, amazonia);
+  assert.throws(() => prepareFiscalV1SaleCore({ ...input, ...signedBundle({ sale: regionalSale,
+    profiles: [profile], rules: [ordinaryRule], capabilities: [{ ...exemptCapability, amazoniaTransferUbigeo: "150101" }] }) }),
+  /AMAZONIA_ESTABLISHMENT_MISMATCH/);
+  assert.throws(() => prepareFiscalV1SaleCore({ ...input, ...signedBundle({ sale: regionalSale,
+    profiles: [profile], rules: [ordinaryRule], capabilities: [capability(["EXONERADA"], { amazoniaSale: "DEMO_PILOT" })] }) }),
+  /AMAZONIA_CAPABILITY_INVALID/);
+  assert.throws(() => prepareFiscalV1SaleCore({ sale: regionalSale, ...signed }), /AMAZONIA_AUTHORITY_REQUIRED/);
+  assert.throws(() => prepareFiscalV1SaleCore({ ...input, sale: { ...regionalSale,
+    amazoniaFacts: { ...facts, consumption: { status: "CONFIRMED", ubigeo: "150101", evidenceRef: "CASHIER_DECLARATION" } } } }),
+  /AMAZONIA_AUTHORITY_REQUIRED/);
+  assert.throws(() => prepareFiscalV1SaleCore({ ...input, ...signedBundle({ sale: regionalSale,
+    profiles: [profile], rules: [ordinaryRule], capabilities: [capability(["EXONERADA"])] }) }), /AMAZONIA_CAPABILITY_REQUIRED/);
+  assert.throws(() => prepareFiscalV1SaleCore({ ...input, ...signedBundle({ sale: regionalSale,
+    profiles: [profile], rules: [rule("queso", "EXONERADA")], capabilities: [exemptCapability] }) }), /AMAZONIA_LINE_SCOPE_UNSUPPORTED/);
+});

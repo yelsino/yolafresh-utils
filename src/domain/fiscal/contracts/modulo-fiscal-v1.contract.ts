@@ -1,4 +1,5 @@
 /** Contrato canónico del módulo nuevo. No reutiliza el snapshot del piloto. */
+import type { FiscalAmazoniaDemoUbigeo, FiscalAmazoniaPreparedSale, FiscalAmazoniaSaleFacts } from "./fiscal-amazonia-sale.contract";
 import type { FiscalTaxRegime } from "./cpe.contract";
 import type { FiscalCatalogResolvedTaxSource } from "./catalog-tax-policy.contract";
 
@@ -85,6 +86,10 @@ export interface FiscalV1Capability extends FiscalV1EffectivePublication {
   readonly capabilityStatus: FiscalV1CapabilityStatus;
   /** Publication-owned verification policy; optional preserves historical bundle bytes. */
   readonly providerEvidenceAssurance?: "PROVIDER_AUTHENTICATED_CHANNEL";
+  /** Permiso firmado para la venta exonerada de bienes en el piloto Demo. */
+  readonly amazoniaSale?: "DEMO_PILOT";
+  /** Ubigeo del establecimiento autorizado, parte de los bytes firmados. */
+  readonly amazoniaTransferUbigeo?: FiscalAmazoniaDemoUbigeo;
   /** Obligatorio y exacto solo para NOTA_CREDITO; no se heredan causales de otra capacidad. */
   readonly creditNoteReasonCodes?: readonly string[];
   readonly evidence?: FiscalV1CapabilityEvidence;
@@ -114,6 +119,7 @@ export interface FiscalV1SaleInput {
   readonly buyer?: { readonly documentType: "RUC" | "DNI"; readonly documentNumber: string; readonly legalName: string };
   readonly context: FiscalV1OperationContext;
   readonly lines: readonly FiscalV1SaleLineInput[];
+  readonly amazoniaFacts?: FiscalAmazoniaSaleFacts;
 }
 
 export type FiscalV1PublicationArtifact = FiscalV1IssuerProfile | FiscalV1PresentationRule | FiscalV1Capability;
@@ -228,6 +234,7 @@ export interface FiscalV1PreparedDecision {
   readonly profileRef: { readonly profileId: string; readonly profileVersion: string; readonly fingerprintSha256: string };
   readonly capabilityRef: { readonly capabilityId: string; readonly fingerprintSha256: string };
   readonly lines: readonly FiscalV1PreparedLine[];
+  readonly amazonia?: FiscalAmazoniaPreparedSale;
   readonly totalCents: number;
   /** null = no discriminado; 0 solo significa impuesto calculado y conocido igual a cero. */
   readonly baseCents: number | null;

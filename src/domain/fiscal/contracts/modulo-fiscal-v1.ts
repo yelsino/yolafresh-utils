@@ -2,6 +2,7 @@ import { isFiscalTaxRegime } from "./cpe.contract";
 import { assertFiscalCatalogResolvedTaxSource } from "./catalog-tax-policy.schema";
 import { fiscalConfigurationCanonicalJson } from "./configuracion-fiscal";
 import { validateFiscalCivilDate } from "./reglas-tributarias";
+import { assertFiscalAmazoniaSaleFacts, FISCAL_AMAZONIA_DEMO_DISTRICTS, type FiscalAmazoniaPreparedSale } from "./fiscal-amazonia-sale.contract";
 import { sha256 as digestSha256 } from "@noble/hashes/sha256";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
 import nacl from "tweetnacl";
@@ -98,7 +99,7 @@ function artifactShape(artifact: FiscalV1PublicationArtifact): void {
     if (artifact.catalogSource !== undefined) assertFiscalCatalogResolvedTaxSource(artifact.catalogSource);
     exactKeys(artifact.context, ["establishmentId", "operationKind", "buyerUse"], [], "FISCAL_V1_CONTEXT_REQUIRED");
   } else if ("capabilityId" in artifact) {
-    exactKeys(artifact, CAPABILITY_FIELDS, [...PUBLICATION_OPTIONAL, "evidence", "creditNoteReasonCodes", "providerEvidenceAssurance"],
+    exactKeys(artifact, CAPABILITY_FIELDS, [...PUBLICATION_OPTIONAL, "evidence", "creditNoteReasonCodes", "providerEvidenceAssurance", "amazoniaSale", "amazoniaTransferUbigeo"],
       "FISCAL_V1_PUBLICATION_ARTIFACT_INVALID");
     exactKeys(artifact.context, ["establishmentId", "operationKind", "buyerUse"], [], "FISCAL_V1_CONTEXT_REQUIRED");
     if (artifact.evidence !== undefined)
@@ -175,14 +176,14 @@ function checkoutCapabilities(payload: FiscalV1PublicationPayload, selected: Fis
 
 /** Un contexto puede autorizar carritos distintos; cada conjunto fiscal sigue siendo exacto. */
 export function isFiscalV1CapabilityFamilyUnambiguous(rows: readonly FiscalV1Capability[]): boolean {
-  return rows.length > 0 && new Set(rows.map(row => categorySet(row.legalCategories))).size === rows.length &&
+  return rows.length > 0 && new Set(rows.map(row => `${row.amazoniaSale ?? "ORDINARY"}:${categorySet(row.legalCategories)}`)).size === rows.length &&
     rows.every(row => sameContext(row.context, rows[0].context) &&
       row.providerEvidenceAssurance === rows[0].providerEvidenceAssurance);
 }
 
 function hasCorrectionForEach(payload: FiscalV1PublicationPayload, selected: FiscalV1IssuerProfile,
   sales: readonly FiscalV1Capability[], occurredOn: string): boolean {
-  return sales.every(sale => payload.capabilities.filter(row => row.status === "PUBLISHED" && usableCapability(row) &&
+  return sales.every(sale => sale.amazoniaSale === "DEMO_PILOT" || payload.capabilities.filter(row => row.status === "PUBLISHED" && usableCapability(row) &&
     effective(row, occurredOn) && row.documentType === "NOTA_CREDITO" && row.profileVersion === selected.profileVersion &&
     row.taxRegime === selected.taxRegime && row.tenantId === payload.tenantId && row.issuerId === payload.issuerId &&
     row.environment === payload.environment && row.provider === selected.provider && row.adapterVersion === selected.adapterVersion &&
@@ -442,6 +443,12 @@ function capability(value: FiscalV1Capability): void {
   if (value.providerEvidenceAssurance !== undefined && (value.providerEvidenceAssurance !== "PROVIDER_AUTHENTICATED_CHANNEL" ||
       value.provider !== "XmlPeru" || value.adapterVersion !== "v1" || value.taxRegime !== "RER"))
     fail("FISCAL_V1_PROVIDER_ASSURANCE_INVALID");
+  if ((value.amazoniaSale !== undefined || value.amazoniaTransferUbigeo !== undefined) &&
+      (value.amazoniaSale !== "DEMO_PILOT" ||
+      !FISCAL_AMAZONIA_DEMO_DISTRICTS.some(district => district.ubigeo === value.amazoniaTransferUbigeo) ||
+      value.environment !== "DEMO" || value.taxRegime !== "RER" || value.provider !== "XmlPeru" ||
+      value.adapterVersion !== "v1" || value.documentType === "NOTA_CREDITO" ||
+      categorySet(value.legalCategories) !== "EXONERADA")) fail("FISCAL_V1_AMAZONIA_CAPABILITY_INVALID");
   if (value.documentType === "NOTA_CREDITO") {
     if (!Array.isArray(value.creditNoteReasonCodes) || !value.creditNoteReasonCodes.length ||
         value.creditNoteReasonCodes.some(code => !text(code)) ||
@@ -541,12 +548,34 @@ export function prepareFiscalV1Sale(input: {
   readonly bundle: FiscalV1SignedPublicationBundle;
   readonly trustedKeys: readonly FiscalV1TrustedPublisherKey[];
   readonly nowMs: number;
+  /** The server supplies this only after resolving trusted issuer and sale evidence. */
+  readonly amazonia?: FiscalAmazoniaPreparedSale;
 }): FiscalV1PreparedDecision {
-  const { sale, bundle, trustedKeys, nowMs } = input;
+  const { sale, bundle, trustedKeys, nowMs, amazonia } = input;
   if (!sale || ![sale.operationId, sale.saleId, sale.tenantId, sale.issuerId].every(text) ||
       !/^\d{11}$/.test(sale.issuerRuc) || !["DEMO", "PRODUCTION"].includes(sale.environment) || sale.currency !== "PEN" ||
       !["BOLETA", "FACTURA"].includes(sale.documentType) || !Array.isArray(sale.lines) || !sale.lines.length)
     fail("FISCAL_V1_SALE_INVALID");
+  if (sale.amazoniaFacts !== undefined) {
+    assertFiscalAmazoniaSaleFacts(sale.amazoniaFacts);
+    if (!amazonia || fiscalConfigurationCanonicalJson(amazonia.facts) !== fiscalConfigurationCanonicalJson(sale.amazoniaFacts))
+      fail("FISCAL_V1_AMAZONIA_AUTHORITY_REQUIRED");
+  } else if (amazonia !== undefined) fail("FISCAL_V1_AMAZONIA_AUTHORITY_REQUIRED");
+  if (amazonia) {
+    exactKeys(amazonia, ["facts", "decision"], [], "FISCAL_V1_AMAZONIA_DECISION_INVALID");
+    const result = amazonia.decision;
+    if (result?.kind === "ORDINARY") {
+      exactKeys(result, ["kind", "reason"], [], "FISCAL_V1_AMAZONIA_DECISION_INVALID");
+      if (result.reason !== "DISABLED" && result.reason !== "OUTSIDE") fail("FISCAL_V1_AMAZONIA_DECISION_INVALID");
+    } else {
+      exactKeys(result, ["kind", "basis", "approvalId", "territoryVersion"], [], "FISCAL_V1_AMAZONIA_DECISION_INVALID");
+      if (result.kind !== "EXEMPT" || result.basis !== "LEY_27037_ART_13_1_A" ||
+          !text(result.approvalId) || !text(result.territoryVersion) ||
+          amazonia.facts.transfer.status !== "CONFIRMED" || amazonia.facts.consumption.status !== "CONFIRMED")
+        fail("FISCAL_V1_AMAZONIA_DECISION_INVALID");
+    }
+  }
+  const regionalExemption = amazonia?.decision.kind === "EXEMPT";
   const payload = verifyFiscalV1PublicationBundle(bundle, trustedKeys, nowMs);
   const { profiles, rules, capabilities } = payload;
   if (sale.tenantId !== payload.tenantId || sale.issuerId !== payload.issuerId ||
@@ -571,6 +600,8 @@ export function prepareFiscalV1Sale(input: {
   if (selectedProfile.taxRegime === "NRUS" && sale.documentType !== "BOLETA") fail("FISCAL_V1_NRUS_FACTURA_FORBIDDEN");
   if (sale.documentType === "FACTURA" && (sale.context.buyerUse !== "BUSINESS" ||
       sale.buyer?.documentType !== "RUC")) fail("FISCAL_V1_FACTURA_BUYER_REQUIRED");
+  if (regionalExemption && (selectedProfile.taxRegime !== "RER" || sale.environment !== "DEMO" ||
+      !sale.issuerRuc.startsWith("20") || !sale.buyer)) fail("FISCAL_V1_AMAZONIA_SALE_SCOPE_UNSUPPORTED");
   const ids = new Set<string>();
   const prepared: FiscalV1PreparedLine[] = sale.lines.map(line => {
     saleLine(line); if (ids.has(line.lineId)) fail("FISCAL_V1_LINE_DUPLICATED"); ids.add(line.lineId);
@@ -586,19 +617,22 @@ export function prepareFiscalV1Sale(input: {
     const discounted = gross - BigInt(line.discountCents);
     if (discounted === 0n) fail("FISCAL_V1_FREE_LINE_NOT_MODELED");
     const totalCents = safeNumber(discounted);
+    if (regionalExemption && selected.legalCategory !== "GRAVADA") fail("FISCAL_V1_AMAZONIA_LINE_SCOPE_UNSUPPORTED");
+    const legalCategory = regionalExemption ? "EXONERADA" : selected.legalCategory;
+    const taxRateBasisPoints = regionalExemption ? 0 : selected.taxRateBasisPoints;
     const disclosure = selectedProfile.taxRegime === "NRUS"
       ? { kind: "NOT_ITEMIZED_BY_ISSUER" as const, baseCents: null, taxCents: null, appliedRateBasisPoints: null }
       : (() => {
-          const base = selected.legalCategory === "GRAVADA"
-            ? (discounted * 10000n + BigInt(10000 + selected.taxRateBasisPoints) / 2n) /
-              BigInt(10000 + selected.taxRateBasisPoints)
+          const base = legalCategory === "GRAVADA"
+            ? (discounted * 10000n + BigInt(10000 + taxRateBasisPoints) / 2n) /
+              BigInt(10000 + taxRateBasisPoints)
             : discounted;
           return { kind: "ITEMIZED" as const, baseCents: safeNumber(base),
-            taxCents: safeNumber(discounted - base), appliedRateBasisPoints: selected.taxRateBasisPoints };
+            taxCents: safeNumber(discounted - base), appliedRateBasisPoints: taxRateBasisPoints };
         })();
     return { lineId: line.lineId, presentationId: line.presentationId, quantityMilli: line.quantityMilli,
       unitPriceCents: line.unitPriceCents, discountCents: line.discountCents, totalCents,
-      unitCode: selected.unitCode, legalCategory: selected.legalCategory,
+      unitCode: selected.unitCode, legalCategory,
       disclosure, ruleRef: { configurationDocumentId: selected.configurationDocumentId, decisionId: selected.decisionId,
         ruleId: selected.ruleId, fingerprintSha256: selected.fingerprintSha256,
         ...(selected.catalogSource ? { catalogSource: JSON.parse(JSON.stringify(selected.catalogSource)) } : {}) } };
@@ -609,9 +643,14 @@ export function prepareFiscalV1Sale(input: {
     value.environment === selectedProfile.environment && value.documentType === sale.documentType &&
     value.see === selectedProfile.see && value.provider === selectedProfile.provider &&
     value.adapterVersion === selectedProfile.adapterVersion && sameContext(value.context, sale.context) &&
-    categorySet(value.legalCategories) === legalCategories);
+    categorySet(value.legalCategories) === legalCategories &&
+    value.amazoniaSale === (regionalExemption ? "DEMO_PILOT" : undefined));
+  if (regionalExemption && !matchingCapabilities.length) fail("FISCAL_V1_AMAZONIA_CAPABILITY_REQUIRED");
   if (matchingCapabilities.length !== 1) fail("FISCAL_V1_CAPABILITY_NOT_UNIQUE_OR_EFFECTIVE");
   const selectedCapability = matchingCapabilities[0];
+  if (amazonia?.decision.kind === "EXEMPT" && (amazonia.facts.transfer.status !== "CONFIRMED" ||
+      selectedCapability.amazoniaTransferUbigeo !== amazonia.facts.transfer.ubigeo))
+    fail("FISCAL_V1_AMAZONIA_ESTABLISHMENT_MISMATCH");
   if (selectedCapability.status !== "PUBLISHED" || !usableCapability(selectedCapability))
     fail("FISCAL_V1_CAPABILITY_NOT_SUPPORTED");
   const totalCents = safeNumber(prepared.reduce((sum, line) => sum + BigInt(line.totalCents), 0n));
@@ -628,7 +667,8 @@ export function prepareFiscalV1Sale(input: {
     profileRef: { profileId: selectedProfile.profileId, profileVersion: selectedProfile.profileVersion,
       fingerprintSha256: selectedProfile.fingerprintSha256 },
     capabilityRef: { capabilityId: selectedCapability.capabilityId, fingerprintSha256: selectedCapability.fingerprintSha256 },
-    lines: prepared, totalCents, baseCents, taxCents };
+    lines: prepared, totalCents, baseCents, taxCents,
+    ...(amazonia ? { amazonia: JSON.parse(fiscalConfigurationCanonicalJson(amazonia)) } : {}) };
 }
 
 /** Material estable para que el adaptador calcule SHA-256, sin importar crypto en dominio. */
