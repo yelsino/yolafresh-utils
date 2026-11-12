@@ -2,7 +2,8 @@ import { isFiscalTaxRegime } from "./cpe.contract";
 import { assertFiscalCatalogResolvedTaxSource } from "./catalog-tax-policy.schema";
 import { fiscalConfigurationCanonicalJson } from "./configuracion-fiscal";
 import { validateFiscalCivilDate } from "./reglas-tributarias";
-import { assertFiscalAmazoniaSaleFacts, FISCAL_AMAZONIA_DEMO_DISTRICTS, type FiscalAmazoniaPreparedSale } from "./fiscal-amazonia-sale.contract";
+import { assertFiscalAmazoniaSaleFacts, assertFiscalAmazoniaLineDecisions,
+  FISCAL_AMAZONIA_DEMO_DISTRICTS, type FiscalAmazoniaPreparedSale } from "./fiscal-amazonia-sale.contract";
 import { sha256 as digestSha256 } from "@noble/hashes/sha256";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
 import nacl from "tweetnacl";
@@ -189,6 +190,7 @@ function hasCorrectionForEach(payload: FiscalV1PublicationPayload, selected: Fis
     row.environment === payload.environment && row.provider === selected.provider && row.adapterVersion === selected.adapterVersion &&
     row.see === selected.see && sameContext(row.context, sale.context) &&
     row.providerEvidenceAssurance === sale.providerEvidenceAssurance &&
+    row.amazoniaSale === sale.amazoniaSale &&
     ["01", "06", "07"].every(code => row.creditNoteReasonCodes?.includes(code)) &&
     categorySet(row.legalCategories) === categorySet(sale.legalCategories)).length === 1);
 }
@@ -443,12 +445,18 @@ function capability(value: FiscalV1Capability): void {
   if (value.providerEvidenceAssurance !== undefined && (value.providerEvidenceAssurance !== "PROVIDER_AUTHENTICATED_CHANNEL" ||
       value.provider !== "XmlPeru" || value.adapterVersion !== "v1" || value.taxRegime !== "RER"))
     fail("FISCAL_V1_PROVIDER_ASSURANCE_INVALID");
-  if ((value.amazoniaSale !== undefined || value.amazoniaTransferUbigeo !== undefined) &&
-      (value.amazoniaSale !== "DEMO_PILOT" ||
-      !FISCAL_AMAZONIA_DEMO_DISTRICTS.some(district => district.ubigeo === value.amazoniaTransferUbigeo) ||
-      value.environment !== "DEMO" || value.taxRegime !== "RER" || value.provider !== "XmlPeru" ||
-      value.adapterVersion !== "v1" || value.documentType === "NOTA_CREDITO" ||
-      categorySet(value.legalCategories) !== "EXONERADA")) fail("FISCAL_V1_AMAZONIA_CAPABILITY_INVALID");
+  if (value.amazoniaSale !== undefined || value.amazoniaTransferUbigeo !== undefined) {
+    const legacy = value.amazoniaSale === "DEMO_PILOT";
+    const territorialScope = typeof value.amazoniaTransferUbigeo === "string" &&
+      /^\d{6}$/.test(value.amazoniaTransferUbigeo) && value.amazoniaTransferUbigeo !== "000000";
+    if ((!legacy && value.amazoniaSale !== "ONEROUS_GOODS") || !territorialScope ||
+        value.taxRegime !== "RER" || value.provider !== "XmlPeru" || value.adapterVersion !== "v1" ||
+        (legacy ? value.environment !== "DEMO" || value.documentType === "NOTA_CREDITO" ||
+          !FISCAL_AMAZONIA_DEMO_DISTRICTS.some(district => district.ubigeo === value.amazoniaTransferUbigeo) ||
+          categorySet(value.legalCategories) !== "EXONERADA"
+          : value.legalCategories.some(category => category !== "EXONERADA" && category !== "INAFECTA")))
+      fail("FISCAL_V1_AMAZONIA_CAPABILITY_INVALID");
+  }
   if (value.documentType === "NOTA_CREDITO") {
     if (!Array.isArray(value.creditNoteReasonCodes) || !value.creditNoteReasonCodes.length ||
         value.creditNoteReasonCodes.some(code => !text(code)) ||
@@ -562,17 +570,19 @@ export function prepareFiscalV1Sale(input: {
       fail("FISCAL_V1_AMAZONIA_AUTHORITY_REQUIRED");
   } else if (amazonia !== undefined) fail("FISCAL_V1_AMAZONIA_AUTHORITY_REQUIRED");
   if (amazonia) {
-    exactKeys(amazonia, ["facts", "decision"], [], "FISCAL_V1_AMAZONIA_DECISION_INVALID");
+    exactKeys(amazonia, ["facts", "decision"], ["lineDecisions"], "FISCAL_V1_AMAZONIA_DECISION_INVALID");
     const result = amazonia.decision;
     if (result?.kind === "ORDINARY") {
       exactKeys(result, ["kind", "reason"], [], "FISCAL_V1_AMAZONIA_DECISION_INVALID");
       if (result.reason !== "DISABLED" && result.reason !== "OUTSIDE") fail("FISCAL_V1_AMAZONIA_DECISION_INVALID");
+      if (amazonia.lineDecisions !== undefined) fail("FISCAL_V1_AMAZONIA_DECISION_INVALID");
     } else {
       exactKeys(result, ["kind", "basis", "approvalId", "territoryVersion"], [], "FISCAL_V1_AMAZONIA_DECISION_INVALID");
       if (result.kind !== "EXEMPT" || result.basis !== "LEY_27037_ART_13_1_A" ||
           !text(result.approvalId) || !text(result.territoryVersion) ||
           amazonia.facts.transfer.status !== "CONFIRMED" || amazonia.facts.consumption.status !== "CONFIRMED")
         fail("FISCAL_V1_AMAZONIA_DECISION_INVALID");
+      if (amazonia.lineDecisions !== undefined) assertFiscalAmazoniaLineDecisions(amazonia.lineDecisions);
     }
   }
   const regionalExemption = amazonia?.decision.kind === "EXEMPT";
@@ -600,8 +610,13 @@ export function prepareFiscalV1Sale(input: {
   if (selectedProfile.taxRegime === "NRUS" && sale.documentType !== "BOLETA") fail("FISCAL_V1_NRUS_FACTURA_FORBIDDEN");
   if (sale.documentType === "FACTURA" && (sale.context.buyerUse !== "BUSINESS" ||
       sale.buyer?.documentType !== "RUC")) fail("FISCAL_V1_FACTURA_BUYER_REQUIRED");
-  if (regionalExemption && (selectedProfile.taxRegime !== "RER" || sale.environment !== "DEMO" ||
-      !sale.issuerRuc.startsWith("20") || !sale.buyer)) fail("FISCAL_V1_AMAZONIA_SALE_SCOPE_UNSUPPORTED");
+  const regionalMode = regionalExemption ? amazonia.lineDecisions === undefined ? "DEMO_PILOT" : "ONEROUS_GOODS" : undefined;
+  if (regionalExemption && (selectedProfile.taxRegime !== "RER" ||
+      regionalMode === "DEMO_PILOT" && (!sale.buyer || sale.environment !== "DEMO" || !sale.issuerRuc.startsWith("20"))))
+    fail("FISCAL_V1_AMAZONIA_SALE_SCOPE_UNSUPPORTED");
+  if (amazonia?.lineDecisions !== undefined && (amazonia.lineDecisions.length !== sale.lines.length ||
+      amazonia.lineDecisions.some(line => !sale.lines.some(saleLine => saleLine.lineId === line.lineId))))
+    fail("FISCAL_V1_AMAZONIA_LINE_DECISION_MISMATCH");
   const ids = new Set<string>();
   const prepared: FiscalV1PreparedLine[] = sale.lines.map(line => {
     saleLine(line); if (ids.has(line.lineId)) fail("FISCAL_V1_LINE_DUPLICATED"); ids.add(line.lineId);
@@ -617,9 +632,15 @@ export function prepareFiscalV1Sale(input: {
     const discounted = gross - BigInt(line.discountCents);
     if (discounted === 0n) fail("FISCAL_V1_FREE_LINE_NOT_MODELED");
     const totalCents = safeNumber(discounted);
-    if (regionalExemption && selected.legalCategory !== "GRAVADA") fail("FISCAL_V1_AMAZONIA_LINE_SCOPE_UNSUPPORTED");
-    const legalCategory = regionalExemption ? "EXONERADA" : selected.legalCategory;
-    const taxRateBasisPoints = regionalExemption ? 0 : selected.taxRateBasisPoints;
+    const lineDecision = amazonia?.lineDecisions?.find(row => row.lineId === line.lineId);
+    if (lineDecision && (lineDecision.ordinaryCategory !== selected.legalCategory ||
+        lineDecision.ordinaryTaxRateBasisPoints !== selected.taxRateBasisPoints))
+      fail("FISCAL_V1_AMAZONIA_LINE_DECISION_MISMATCH");
+    if (regionalMode === "DEMO_PILOT" && selected.legalCategory !== "GRAVADA")
+      fail("FISCAL_V1_AMAZONIA_LINE_SCOPE_UNSUPPORTED");
+    const appliedRegionalExemption = regionalMode === "DEMO_PILOT" || lineDecision?.basis === "LEY_27037_ART_13_1_A";
+    const legalCategory = appliedRegionalExemption ? "EXONERADA" : selected.legalCategory;
+    const taxRateBasisPoints = appliedRegionalExemption ? 0 : selected.taxRateBasisPoints;
     const disclosure = selectedProfile.taxRegime === "NRUS"
       ? { kind: "NOT_ITEMIZED_BY_ISSUER" as const, baseCents: null, taxCents: null, appliedRateBasisPoints: null }
       : (() => {
@@ -644,7 +665,7 @@ export function prepareFiscalV1Sale(input: {
     value.see === selectedProfile.see && value.provider === selectedProfile.provider &&
     value.adapterVersion === selectedProfile.adapterVersion && sameContext(value.context, sale.context) &&
     categorySet(value.legalCategories) === legalCategories &&
-    value.amazoniaSale === (regionalExemption ? "DEMO_PILOT" : undefined));
+    value.amazoniaSale === regionalMode);
   if (regionalExemption && !matchingCapabilities.length) fail("FISCAL_V1_AMAZONIA_CAPABILITY_REQUIRED");
   if (matchingCapabilities.length !== 1) fail("FISCAL_V1_CAPABILITY_NOT_UNIQUE_OR_EFFECTIVE");
   const selectedCapability = matchingCapabilities[0];

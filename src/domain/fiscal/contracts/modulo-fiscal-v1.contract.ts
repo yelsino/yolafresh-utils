@@ -87,9 +87,9 @@ export interface FiscalV1Capability extends FiscalV1EffectivePublication {
   /** Publication-owned verification policy; optional preserves historical bundle bytes. */
   readonly providerEvidenceAssurance?: "PROVIDER_AUTHENTICATED_CHANNEL";
   /** Permiso firmado para la venta exonerada de bienes en el piloto Demo. */
-  readonly amazoniaSale?: "DEMO_PILOT";
+  readonly amazoniaSale?: "DEMO_PILOT" | "ONEROUS_GOODS";
   /** Ubigeo del establecimiento autorizado, parte de los bytes firmados. */
-  readonly amazoniaTransferUbigeo?: FiscalAmazoniaDemoUbigeo;
+  readonly amazoniaTransferUbigeo?: FiscalAmazoniaDemoUbigeo | string;
   /** Obligatorio y exacto solo para NOTA_CREDITO; no se heredan causales de otra capacidad. */
   readonly creditNoteReasonCodes?: readonly string[];
   readonly evidence?: FiscalV1CapabilityEvidence;

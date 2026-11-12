@@ -47,6 +47,23 @@ test("partial credit preserves historical price, buyer, emitter and actual tax",
   assert.equal(JSON.stringify(doc), before);
 });
 
+test("devolución regional preserva el fundamento original y rechaza su alteración en el historial", () => {
+  const source = originalFixture();
+  const fiscalTreatment = { basis: "LEY_27037_ART_13_1_A" as const,
+    ordinaryCategory: "GRAVADA" as const, ordinaryTaxRateBasisPoints: 1800 };
+  const doc: FiscalSignedDocument = { ...source, lines: [{ ...source.lines[0], fiscalTreatment,
+    tax: { category: "EXONERADA", affectationCode: "20", taxScheme: "NONE", taxRateBasisPoints: 0,
+      taxableBaseCents: 354, taxAmountCents: 0 } }],
+    totals: { taxableBaseCents: 0, exemptCents: 354, unaffectedCents: 0, taxCents: 0, payableCents: 354 },
+    print: { ...source.print, qrPayload: source.print.qrPayload.replace("|0.54|", "|0.00|") } };
+  const note = prepareFiscalCreditNote(doc, command(), []);
+  assert.deepEqual(note.lines[0].fiscalTreatment, fiscalTreatment);
+  assert.equal(note.totals.taxCents, 0);
+  assert.throws(() => prepareFiscalCreditNote(doc, { ...command(), operationId: "next", idempotencyKey: "next" },
+    [{ ...note, lines: [{ ...note.lines[0], fiscalTreatment: { basis: "APPENDIX_I",
+      ordinaryCategory: "EXONERADA", ordinaryTaxRateBasisPoints: 0 } }] }]), /HISTORY_INVALID/);
+});
+
 test("factura V1 conserva sus referencias propias al calcular NC01/06/07 sin IDs del piloto", () => {
   const source = originalFixture();
   const original: FiscalSignedDocument = { ...source,

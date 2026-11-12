@@ -70,6 +70,19 @@ const pending: FiscalProcess = {
 };
 const now = "2026-10-08T10:00:02-05:00";
 
+test("la proyección preserva el fundamento regional separado de la categoría fiscal ordinaria", () => {
+  const regional = { ...document, lines: [{ ...document.lines[0], fiscalTreatment: {
+    basis: "LEY_27037_ART_13_1_A", ordinaryCategory: "GRAVADA", ordinaryTaxRateBasisPoints: 1800 } }] };
+  assert.deepEqual(validateFiscalSignedDocument(regional), []);
+  const appendix = { ...regional, lines: [{ ...regional.lines[0], fiscalTreatment: {
+    basis: "APPENDIX_I", ordinaryCategory: "EXONERADA", ordinaryTaxRateBasisPoints: 0 } }] };
+  assert.deepEqual(validateFiscalSignedDocument(appendix), []);
+  assert.ok(validateFiscalSignedDocument({ ...regional, lines: [{ ...regional.lines[0], fiscalTreatment: {
+    basis: "APPENDIX_I", ordinaryCategory: "GRAVADA", ordinaryTaxRateBasisPoints: 1800 } }] }).includes("lines[0].fiscalTreatment"));
+  assert.ok(validateFiscalSignedDocument({ ...regional, lines: [{ ...regional.lines[0], fiscalTreatment: {
+    basis: "ORDINARY_UNAFFECTED", ordinaryCategory: "INAFECTA", ordinaryTaxRateBasisPoints: 0 } }] }).includes("lines[0].fiscalTreatment"));
+});
+
 const { grossCents: _grossCents, ...frozenLine } = document.lines[0];
 const snapshot: FiscalSaleSnapshot = {
   contractKind: FISCAL_SALE_SNAPSHOT_CONTRACT_KIND,

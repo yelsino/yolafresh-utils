@@ -1,5 +1,6 @@
 /** Configuración fiscal actual. Identidades opacas; sin precios, XML o credenciales. */
 import type { FiscalOfficialLegalSource } from "./catalogo-tributario.contract";
+import type { FiscalAmazoniaIssuerCommand } from "./fiscal-amazonia-issuer.contract";
 
 export const FISCAL_ISSUER_TAX_PROFILE_TYPE = "fiscal_issuer_tax_profile" as const;
 export const FISCAL_PRESENTATION_TAX_CONFIGURATION_TYPE = "fiscal_presentation_tax_configuration" as const;
@@ -115,7 +116,7 @@ export type FiscalTaxConfigurationCommand<Rule> = FiscalSaveConfigurationDraftCo
 /** Petición administrativa durable; viaja por outbox, nunca como documento de CouchDB. */
 export type FiscalConfigurationWriteRequest =
   | { action: "CREATE"; command: FiscalCreateConfigurationCommand }
-  | { action: "EXECUTE"; rootId: string; command: FiscalTaxConfigurationCommand<FiscalPresentationTaxRule | FiscalIssuerTaxPosture> };
+  | { action: "EXECUTE"; rootId: string; command: FiscalTaxConfigurationCommand<FiscalPresentationTaxRule | FiscalIssuerTaxPosture> | FiscalAmazoniaIssuerCommand };
 /** Scope autenticado. Un comando no puede declarar ni suplantar la auditoría. */
 export interface FiscalConfigurationActor {
   tenantId: string; actorId: string; canEdit: boolean; canPublish: boolean;

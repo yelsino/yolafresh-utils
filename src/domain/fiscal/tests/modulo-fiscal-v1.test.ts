@@ -361,3 +361,36 @@ test("Amazonia freezes confirmed facts and preserves final cents under the signe
   assert.throws(() => prepareFiscalV1SaleCore({ ...input, ...signedBundle({ sale: regionalSale,
     profiles: [profile], rules: [rule("queso", "EXONERADA")], capabilities: [exemptCapability] }) }), /AMAZONIA_LINE_SCOPE_UNSUPPORTED/);
 });
+
+test("Amazonía RER RUC10/20 en Producción conserva ApéndiceI, otras exoneraciones e inafectación por línea", () => {
+  for (const issuerRuc of ["10123456789", "20123456789"]) {
+    const facts = { transfer: { status: "CONFIRMED", ubigeo: "120601", evidenceRef: "local-1" },
+      consumption: { status: "CONFIRMED", ubigeo: "120602", evidenceRef: "CASHIER_DECLARATION" } } as const;
+    const regionalSale = sale({ environment: "PRODUCTION", issuerRuc, amazoniaFacts: facts,
+      buyer: { documentType: "DNI", documentNumber: "12345678", legalName: "Synthetic buyer" },
+      lines: ["g", "e", "o", "i"].map(lineId => ({ ...sale().lines[0], lineId, presentationId: lineId })) });
+    const rows = [
+      { lineId: "g", basis: "LEY_27037_ART_13_1_A", ordinaryCategory: "GRAVADA", ordinaryTaxRateBasisPoints: 1800 },
+      { lineId: "e", basis: "APPENDIX_I", ordinaryCategory: "EXONERADA", ordinaryTaxRateBasisPoints: 0 },
+      { lineId: "o", basis: "ORDINARY_EXEMPTION", ordinaryCategory: "EXONERADA", ordinaryTaxRateBasisPoints: 0 },
+      { lineId: "i", basis: "ORDINARY_UNAFFECTED", ordinaryCategory: "INAFECTA", ordinaryTaxRateBasisPoints: 0 },
+    ] as const;
+    const signed = signedBundle({ sale: regionalSale, profiles: [issuer({ issuerRuc, environment: "PRODUCTION" })],
+      rules: [rule("g", "GRAVADA"), rule("e", "EXONERADA"), rule("o", "EXONERADA"), rule("i", "INAFECTA")],
+      capabilities: [capability(["EXONERADA", "INAFECTA"], { environment: "PRODUCTION",
+        amazoniaSale: "ONEROUS_GOODS", amazoniaTransferUbigeo: "120601" })] });
+    const amazonia = { facts, lineDecisions: rows, decision: { kind: "EXEMPT", basis: "LEY_27037_ART_13_1_A",
+      approvalId: "approved", territoryVersion: "SATIPO-2026-11-11" } } as const;
+    const input = { sale: regionalSale, ...signed, amazonia };
+    const result = prepareFiscalV1SaleCore(input);
+    assert.equal(result.totalCents, 4720);
+    assert.equal(result.taxCents, 0);
+    assert.deepEqual(result.lines.map(row => row.legalCategory), ["EXONERADA", "EXONERADA", "EXONERADA", "INAFECTA"]);
+    assert.deepEqual(result.amazonia, amazonia);
+    assert.equal(signed.bundle.payload.rules[0].legalCategory, "GRAVADA");
+    assert.throws(() => prepareFiscalV1SaleCore({ ...input, amazonia: { ...amazonia, lineDecisions: rows.slice(1) } }),
+      /LINE_DECISION_MISMATCH/);
+    assert.throws(() => prepareFiscalV1SaleCore({ ...input, amazonia: { ...amazonia,
+      lineDecisions: [{ ...rows[0], ordinaryTaxRateBasisPoints: 1000 }, ...rows.slice(1)] } }), /LINE_DECISION_MISMATCH/);
+  }
+});

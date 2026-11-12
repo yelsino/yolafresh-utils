@@ -2,6 +2,7 @@ import { validateFiscalSaleSnapshot } from "./cpe.contract";
 import { fiscalConfigurationCanonicalJson, validateFiscalTaxResolutionSource } from "./configuracion-fiscal";
 import { assertFiscalV1ProviderChannelReceipt, type FiscalV1ProviderChannelReceipt } from "./modulo-fiscal-v1-proveedor.contract";
 import type { FiscalTaxResolutionSource } from "./configuracion-fiscal.contract";
+import { assertFiscalAmazoniaLineDecisions, type FiscalAmazoniaLineDecision } from "./fiscal-amazonia-sale.contract";
 import type { FiscalBuyer, FiscalCurrency, FiscalDocumentIdentity, FiscalLineTax,
   FiscalSaleSnapshot } from "./cpe.contract";
 
@@ -28,6 +29,8 @@ export type FiscalDocumentOrigin =
 /** Proyección de impresión conciliada con snapshot y XML; cantidad decimal exacta. */
 export interface FiscalDocumentLine {
   readonly taxSource?: FiscalTaxResolutionSource;
+  /** Fundamento histórico aplicado, independiente de la categoría ordinaria del catálogo. */
+  readonly fiscalTreatment?: Omit<FiscalAmazoniaLineDecision, "lineId">;
   readonly lineId: string;
   readonly description: string;
   readonly quantity: string;
@@ -264,8 +267,15 @@ export function validateFiscalSignedDocument(value: unknown): readonly string[] 
       const prefix = `lines[${index}]`;
       if (!record(line) || !record(line.tax)) { errors.push(prefix); return; }
       rejectUnknown(line, ["lineId", "description", "quantity", "unitCode", "unitPriceCents",
-        "grossCents", "roundingAdjustmentCents", "discountCents", "totalCents", "tax", "taxSource"], `${prefix}.`, errors);
+        "grossCents", "roundingAdjustmentCents", "discountCents", "totalCents", "tax", "taxSource", "fiscalTreatment"], `${prefix}.`, errors);
       if (line.taxSource !== undefined && !validateFiscalTaxResolutionSource(line.taxSource)) errors.push(`${prefix}.taxSource`);
+      if (line.fiscalTreatment !== undefined) {
+        try {
+          if (!record(line.fiscalTreatment) || Object.keys(line.fiscalTreatment).length !== 3) throw Error();
+          assertFiscalAmazoniaLineDecisions([{ ...line.fiscalTreatment, lineId: line.lineId }]);
+          if (line.tax.category !== (line.fiscalTreatment.basis === "ORDINARY_UNAFFECTED" ? "INAFECTA" : "EXONERADA")) throw Error();
+        } catch { errors.push(`${prefix}.fiscalTreatment`); }
+      }
       rejectUnknown(line.tax, ["category", "affectationCode", "taxScheme",
         "taxRateBasisPoints", "taxableBaseCents", "taxAmountCents"], `${prefix}.tax.`, errors);
       if (!nonBlank(line.lineId) || seen.has(line.lineId)) errors.push(`${prefix}.lineId`);

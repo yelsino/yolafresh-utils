@@ -16,7 +16,7 @@ export type FiscalAmazoniaIssuerAssessment = AssessmentScope & (
     readonly status: "ENABLED";
     readonly requirements: {
       readonly domicileAndHeadOffice: "MET";
-      readonly publicRegistration: "MET";
+      readonly publicRegistration: "MET" | "NOT_APPLICABLE";
       readonly fixedAssets: {
         readonly status: "MET";
         readonly basisPoints: number;
@@ -91,16 +91,30 @@ export function projectFiscalAmazoniaIssuerAssessment(value: unknown): FiscalAma
   const fixedAssets = exact(requirements.fixedAssets, ["status", "basisPoints", "allProductionMeansInZone", "cutoffOn"]);
   const production = exact(requirements.production, ["status"]);
   const cutoffOn = validateFiscalCivilDate(fixedAssets.cutoffOn, "FISCAL_AMAZONIA_ASSESSMENT_DATE_INVALID");
-  if (requirements.domicileAndHeadOffice !== "MET" || requirements.publicRegistration !== "MET" ||
+  if (requirements.domicileAndHeadOffice !== "MET" ||
+      (requirements.publicRegistration !== "MET" && requirements.publicRegistration !== "NOT_APPLICABLE") ||
       fixedAssets.status !== "MET" || fixedAssets.allProductionMeansInZone !== true ||
       typeof fixedAssets.basisPoints !== "number" || !Number.isSafeInteger(fixedAssets.basisPoints) ||
       fixedAssets.basisPoints < 7000 || fixedAssets.basisPoints > 10000 || cutoffOn > assessedOn ||
       (production.status !== "MET" && production.status !== "NOT_APPLICABLE")) return invalid();
   return { ...scope, status, requirements: {
-    domicileAndHeadOffice: "MET", publicRegistration: "MET",
+    domicileAndHeadOffice: "MET", publicRegistration: requirements.publicRegistration,
     fixedAssets: { status: "MET", basisPoints: fixedAssets.basisPoints, allProductionMeansInZone: true, cutoffOn },
     production: { status: production.status },
   } };
+}
+
+/** Sobre administrativo validado sin decidir si el emisor reúne los requisitos legales. */
+export function projectFiscalAmazoniaIssuerCommand(value: unknown): FiscalAmazoniaIssuerCommand {
+  const raw = exact(value, ["subject", "action", "operationId", "expectedRevision"], ["assessment", "reason", "decisionId"]);
+  if (raw.subject !== "AMAZONIA" || raw.expectedRevision !== null && typeof raw.expectedRevision !== "string") return invalid();
+  const common = { subject: "AMAZONIA" as const, operationId: text(raw.operationId),
+    expectedRevision: raw.expectedRevision === null ? null : text(raw.expectedRevision) };
+  if (raw.action === "SAVE_DRAFT" && raw.decisionId === undefined) return { ...common, action: "SAVE_DRAFT",
+    assessment: projectFiscalAmazoniaIssuerAssessment(raw.assessment), reason: text(raw.reason) };
+  if (raw.action === "PUBLISH" && raw.assessment === undefined && raw.reason === undefined)
+    return { ...common, action: "PUBLISH", decisionId: text(raw.decisionId) };
+  return invalid();
 }
 
 export function projectFiscalAmazoniaIssuerConfiguration(value: unknown): FiscalAmazoniaIssuerConfiguration {

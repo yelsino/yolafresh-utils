@@ -1,6 +1,7 @@
 import type { FiscalV1Environment, FiscalV1PreparedDecision, FiscalV2CajaAssignment } from "./modulo-fiscal-v1.contract";
 import type { FiscalV1DocumentGrant, FiscalV1TributaryResult } from "./modulo-fiscal-v1-resultados.contract";
 import type { FiscalV1ProviderChannelReceipt } from "./modulo-fiscal-v1-proveedor.contract";
+import type { FiscalAmazoniaLineDecision } from "./fiscal-amazonia-sale.contract";
 
 /** Congela lo aprobado por el motor antes de pedir firma. No es por sí mismo un CPE. */
 export interface FiscalV1Snapshot {
@@ -93,6 +94,8 @@ export interface FiscalV1CreditNoteDraft {
 
 /** Toda reserva/firma/aceptación previa consume saldo; solo un rechazo inequívoco antes del efecto no lo hace. */
 export interface FiscalV1PriorCreditNote {
+  /** Ausente conserva el prorrateo por nota de la primera versión. */
+  readonly quantityProration?: "CUMULATIVE";
   readonly noteId: string;
   readonly operationId: string;
   readonly originalDocumentId: string;
@@ -106,6 +109,8 @@ export interface FiscalV1PriorCreditNote {
 
 /** Preparación económica e histórica, no XML firmado ni ajuste automático de caja/stock. */
 export interface FiscalV1PreparedCreditNote {
+  /** Redondea el acumulado devuelto y resta lo ya consumido; ausencia = reserva histórica. */
+  readonly quantityProration?: "CUMULATIVE";
   readonly providerEvidenceAssurance?: "PROVIDER_AUTHENTICATED_CHANNEL";
   readonly noteOperationId: string;
   readonly noteId: string;
@@ -124,12 +129,16 @@ export interface FiscalV1PreparedCreditNote {
     readonly originalLineId: string;
     readonly creditQuantityMilli: number;
     readonly creditCents: number;
+    /** Residuo de prorrateo acumulado respecto al precio unitario histórico; solo ±1 céntimo. */
+    readonly roundingAdjustmentCents?: number;
     readonly originalQuantityMilli: number;
     readonly originalUnitPriceCents: number;
     readonly originalDiscountCents: number;
     readonly originalLegalCategory: FiscalV1PreparedDecision["lines"][number]["legalCategory"];
     readonly originalRuleRef: FiscalV1PreparedDecision["lines"][number]["ruleRef"];
     readonly originalDisclosure: FiscalV1PreparedDecision["lines"][number]["disclosure"];
+    /** Fundamento congelado del original; nunca se recalcula con el beneficio vigente al devolver. */
+    readonly originalAmazoniaLineDecision?: FiscalAmazoniaLineDecision;
   }[];
   readonly totalCents: number;
 }

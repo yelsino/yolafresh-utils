@@ -4,3 +4,4 @@ export * from "./inventory-transfer.helpers";
 export * from "./legacy-inventory-symbols";
 export * from "./almacen-predeterminado.policy";
 export * from "./presentacion-conversion.policy";
+export * from "./presentacion-medidas.policy";

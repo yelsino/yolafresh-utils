@@ -99,6 +99,7 @@ export function prepareFiscalCreditNote(original: FiscalSignedDocument, command:
       const source = originalLines.get(line.lineId);
       if (!source || !line.tax || priorLines.has(line.lineId) || line.description !== source.description || line.unitCode !== source.unitCode ||
           line.unitPriceCents !== source.unitPriceCents || line.tax.category !== source.tax.category ||
+          fiscalConfigurationCanonicalJson(line.fiscalTreatment ?? null) !== fiscalConfigurationCanonicalJson(source.fiscalTreatment ?? null) ||
           line.tax.affectationCode !== source.tax.affectationCode || line.tax.taxRateBasisPoints !== source.tax.taxRateBasisPoints ||
           line.tax.taxScheme !== source.tax.taxScheme || line.tax.taxableBaseCents !== line.totalCents - line.tax.taxAmountCents ||
           [line.grossCents, line.discountCents, line.totalCents, line.tax.taxAmountCents].some(v => !cents(v)))

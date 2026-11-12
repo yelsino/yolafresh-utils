@@ -164,11 +164,16 @@ export function prepareFiscalV1CreditNote(input: {
   readonly originalSnapshot: FiscalV1Snapshot;
   readonly originalDocument: FiscalV1DocumentRecord;
   readonly priorCredits: readonly FiscalV1PriorCreditNote[];
+  /** LEGACY sólo revalida reservas previas; toda preparación nueva usa acumulados. */
+  readonly quantityProration?: "CUMULATIVE" | "LEGACY";
   readonly bundle: FiscalV1SignedPublicationBundle;
   readonly trustedKeys: readonly FiscalV1TrustedPublisherKey[];
   readonly nowMs: number;
 }): FiscalV1PreparedCreditNote {
   const { draft, originalSnapshot, originalDocument, priorCredits, bundle, trustedKeys, nowMs } = input;
+  const cumulativeProration = input.quantityProration !== "LEGACY";
+  if (input.quantityProration !== undefined && input.quantityProration !== "CUMULATIVE" && input.quantityProration !== "LEGACY")
+    fail("FISCAL_V1_CREDIT_NOTE_INVALID");
   assertFiscalV1DocumentRecord(originalDocument, originalSnapshot);
   const payload = verifyFiscalV1PublicationBundle(bundle, trustedKeys, nowMs);
   if (!draft || ![draft.noteOperationId, draft.noteId, draft.tenantId, draft.issuerId,
@@ -212,7 +217,8 @@ export function prepareFiscalV1CreditNote(input: {
         priorIds.has(prior.operationId) || prior.noteId === draft.noteId || prior.operationId === draft.noteOperationId ||
         prior.originalDocumentId !== originalDocument.documentId ||
         prior.originalSnapshotSha256 !== originalSnapshot.snapshotSha256 ||
-        !["RESERVED", "UNKNOWN", "SIGNED", "TRIBUTARY_ACCEPTED", "TRIBUTARY_REJECTED"].includes(prior.state) || !Array.isArray(prior.lines))
+        !["RESERVED", "UNKNOWN", "SIGNED", "TRIBUTARY_ACCEPTED", "TRIBUTARY_REJECTED"].includes(prior.state) ||
+        prior.quantityProration !== undefined && prior.quantityProration !== "CUMULATIVE" || !Array.isArray(prior.lines))
       fail("FISCAL_V1_PRIOR_CREDIT_NOTE_INVALID");
     if (prior.tributaryResult !== undefined) {
       assertFiscalV1TributaryResult(prior.tributaryResult);
@@ -236,7 +242,10 @@ export function prepareFiscalV1CreditNote(input: {
       const nextCents = alreadyCents + BigInt(line.creditedCents);
       if (nextQuantity > BigInt(originalLine.quantityMilli) || nextCents > BigInt(originalLine.totalCents))
         fail("FISCAL_V1_PRIOR_CREDIT_NOTE_INVALID");
-      const expected = nextQuantity === BigInt(originalLine.quantityMilli)
+      const expected = prior.quantityProration === "CUMULATIVE"
+        ? (BigInt(originalLine.totalCents) * nextQuantity + BigInt(originalLine.quantityMilli) / 2n) /
+          BigInt(originalLine.quantityMilli) - alreadyCents
+        : nextQuantity === BigInt(originalLine.quantityMilli)
         ? BigInt(originalLine.totalCents) - alreadyCents
         : (BigInt(originalLine.totalCents) * BigInt(line.creditedQuantityMilli) +
             BigInt(originalLine.quantityMilli) / 2n) / BigInt(originalLine.quantityMilli);
@@ -259,17 +268,28 @@ export function prepareFiscalV1CreditNote(input: {
         alreadyQuantity + BigInt(line.creditQuantityMilli) > BigInt(originalLine.quantityMilli))
       fail("FISCAL_V1_CREDIT_NOTE_EXCEEDS_REMAINING");
     const finalQuantity = alreadyQuantity + BigInt(line.creditQuantityMilli) === BigInt(originalLine.quantityMilli);
-    const expectedCents = finalQuantity
+    const expectedCents = cumulativeProration
+      ? (BigInt(originalLine.totalCents) * (alreadyQuantity + BigInt(line.creditQuantityMilli)) +
+          BigInt(originalLine.quantityMilli) / 2n) / BigInt(originalLine.quantityMilli) - alreadyCents
+      : finalQuantity
       ? BigInt(originalLine.totalCents) - alreadyCents
       : (BigInt(originalLine.totalCents) * BigInt(line.creditQuantityMilli) +
           BigInt(originalLine.quantityMilli) / 2n) / BigInt(originalLine.quantityMilli);
     if (BigInt(line.creditCents) !== expectedCents || expectedCents <= 0n)
       fail("FISCAL_V1_CREDIT_NOTE_QUANTITY_AMOUNT_MISMATCH");
+    const roundingAdjustmentCents = line.creditCents - safeNumber(
+      (BigInt(originalLine.unitPriceCents) * BigInt(line.creditQuantityMilli) + 500n) / 1000n);
+    if (Math.abs(roundingAdjustmentCents) > 1) fail("FISCAL_V1_CREDIT_NOTE_QUANTITY_AMOUNT_MISMATCH");
+    const originalAmazoniaLineDecision = original.amazonia?.lineDecisions?.find(value => value.lineId === line.originalLineId);
     return { originalLineId: line.originalLineId, creditQuantityMilli: line.creditQuantityMilli,
       creditCents: line.creditCents, originalQuantityMilli: originalLine.quantityMilli,
+      ...(cumulativeProration && roundingAdjustmentCents ? { roundingAdjustmentCents } : {}),
       originalUnitPriceCents: originalLine.unitPriceCents, originalDiscountCents: originalLine.discountCents,
       originalLegalCategory: originalLine.legalCategory, originalRuleRef: { ...originalLine.ruleRef },
-      originalDisclosure: { ...originalLine.disclosure } };
+      originalDisclosure: { ...originalLine.disclosure },
+      ...(originalAmazoniaLineDecision
+        ? { originalAmazoniaLineDecision: { ...originalAmazoniaLineDecision } }
+        : {}) };
   });
   // Motivos 01/06 describen una anulación/devolución total del original. Tras
   // cualquier nota consumidora previa, solo 07 puede ajustar el saldo restante.
@@ -286,12 +306,15 @@ export function prepareFiscalV1CreditNote(input: {
     capability.profileVersion === profile.profileVersion && capability.taxRegime === profile.taxRegime &&
     capability.environment === profile.environment && capability.see === profile.see &&
     capability.provider === profile.provider && capability.adapterVersion === profile.adapterVersion &&
+    (original.amazonia?.decision.kind === "EXEMPT"
+      ? capability.amazoniaSale === "ONEROUS_GOODS" : capability.amazoniaSale === undefined) &&
     sameContext(capability.context, original.context) &&
     [...capability.legalCategories].sort().join("|") === categories &&
     capability.creditNoteReasonCodes?.includes(draft.reasonCode));
   if (matching.length !== 1) fail("FISCAL_V1_CREDIT_NOTE_CAPABILITY_NOT_SUPPORTED");
   const totalCents = safeNumber(lines.reduce((sum, line) => sum + BigInt(line.creditCents), 0n));
   return { noteOperationId: draft.noteOperationId, noteId: draft.noteId,
+    ...(cumulativeProration ? { quantityProration: "CUMULATIVE" as const } : {}),
     ...(matching[0].providerEvidenceAssurance ? { providerEvidenceAssurance: matching[0].providerEvidenceAssurance } : {}),
     originalDocumentId: originalDocument.documentId, originalSnapshotSha256: originalSnapshot.snapshotSha256,
     tenantId: draft.tenantId, issuerId: draft.issuerId, issuerRuc: draft.issuerRuc,

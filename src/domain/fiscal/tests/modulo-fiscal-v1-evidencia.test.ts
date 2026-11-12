@@ -108,6 +108,106 @@ function fixture(capabilityStatus: "SUPPORTED" | "UNVERIFIED" = "SUPPORTED", mod
   return { publication, snapshot, document, draft };
 }
 
+function regionalNoteFixture() {
+  const input = fixture("SUPPORTED", { noteReasonCodes: ["01", "06", "07"] });
+  const original = input.snapshot.decision.lines[0];
+  const line = { ...original, quantityMilli: 3000, unitPriceCents: 100, totalCents: 300,
+    legalCategory: "EXONERADA" as const,
+    disclosure: { kind: "ITEMIZED" as const, baseCents: 300, taxCents: 0, appliedRateBasisPoints: 0 } };
+  const location = { status: "CONFIRMED" as const, ubigeo: "120601", evidenceRef: "historical-delivery" };
+  const decision = { ...input.snapshot.decision, lines: [line], totalCents: 300, baseCents: 300, taxCents: 0,
+    amazonia: { facts: { transfer: location, consumption: location },
+      decision: { kind: "EXEMPT" as const, basis: "LEY_27037_ART_13_1_A" as const,
+        approvalId: "historical-approval", territoryVersion: "historical-territory" },
+      lineDecisions: [{ lineId: line.lineId, basis: "LEY_27037_ART_13_1_A" as const,
+        ordinaryCategory: "GRAVADA" as const, ordinaryTaxRateBasisPoints: 1800 }] } };
+  const material = { ...input.snapshot, decision, decisionSha256: fiscalV1CanonicalSha256(decision) };
+  const snapshot = { ...material, snapshotSha256: fiscalV1SnapshotFingerprint(material) };
+  const payload = { ...input.publication.bundle.payload, capabilities: input.publication.bundle.payload.capabilities.flatMap(cap => {
+    if (cap.documentType !== "NOTA_CREDITO") return [cap];
+    const regional = { ...cap, capabilityId: "regional-note", legalCategories: ["EXONERADA" as const],
+      amazoniaSale: "ONEROUS_GOODS" as const, amazoniaTransferUbigeo: "120601" };
+    return [cap, { ...regional, fingerprintSha256: fiscalV1PublicationArtifactFingerprint(regional) }];
+  }) };
+  const bundle = { payload, payloadSha256: fiscalV1PublicationPayloadFingerprint(payload),
+    signature: { ...input.publication.bundle.signature, signatureBase64: Buffer.from(nacl.sign.detached(
+      Buffer.from(fiscalV1PublicationPayloadMaterial(payload)), KEY_PAIR.secretKey)).toString("base64") } };
+  return { ...input, snapshot, document: { ...input.document, snapshotSha256: snapshot.snapshotSha256 },
+    publication: { ...input.publication, bundle },
+    draft: { ...input.draft, originalSnapshotSha256: snapshot.snapshotSha256, reasonCode: "07",
+      lines: [{ originalLineId: line.lineId, creditQuantityMilli: 1000, creditCents: 100 }] } };
+}
+
+test("nota regional conserva fundamento y tasa ordinaria aunque no exista autorización amazónica actual", () => {
+  const { draft, snapshot, document, publication } = regionalNoteFixture();
+  const prepared = prepareFiscalV1CreditNote({ draft, originalSnapshot: snapshot, originalDocument: document,
+    priorCredits: [], ...publication });
+  assert.equal(prepared.capabilityRef.capabilityId, "regional-note");
+  assert.equal(prepared.lines[0].originalLegalCategory, "EXONERADA");
+  assert.deepEqual(prepared.lines[0].originalAmazoniaLineDecision, snapshot.decision.amazonia!.lineDecisions![0]);
+  assert.equal(prepared.lines[0].originalDisclosure.taxCents, 0);
+  assert.equal("roundingAdjustmentCents" in prepared.lines[0], false);
+  const second = prepareFiscalV1CreditNote({ draft: { ...draft, noteId: "second", noteOperationId: "second-op",
+    lines: [{ originalLineId: "line-1", creditQuantityMilli: 2000, creditCents: 200 }] },
+    originalSnapshot: snapshot, originalDocument: document, ...publication,
+    priorCredits: [{ noteId: prepared.noteId, operationId: prepared.noteOperationId,
+      originalDocumentId: document.documentId, originalSnapshotSha256: snapshot.snapshotSha256, state: "UNKNOWN",
+      lines: [{ originalLineId: "line-1", creditedQuantityMilli: 1000, creditedCents: 100 }] }] });
+  assert.equal(prepared.totalCents + second.totalCents, snapshot.decision.totalCents);
+  assert.throws(() => prepareFiscalV1CreditNote({ draft: { ...draft, noteId: "over", noteOperationId: "over-op" },
+    originalSnapshot: snapshot, originalDocument: document, ...publication,
+    priorCredits: [{ noteId: "prior", operationId: "prior-op", originalDocumentId: document.documentId,
+      originalSnapshotSha256: snapshot.snapshotSha256, state: "TRIBUTARY_REJECTED",
+      lines: [{ originalLineId: "line-1", creditedQuantityMilli: 3000, creditedCents: 300 }] }] }), /EXCEEDS_REMAINING/);
+});
+
+test("devolución final absorbe el céntimo residual sin crear descuentos ni alterar el original", () => {
+  const { draft, snapshot, document, publication } = regionalNoteFixture();
+  const decision = { ...snapshot.decision, lines: [{ ...snapshot.decision.lines[0], quantityMilli: 3000,
+    unitPriceCents: 1, totalCents: 3, disclosure: { kind: "ITEMIZED" as const, baseCents: 3, taxCents: 0, appliedRateBasisPoints: 0 } }],
+    totalCents: 3, baseCents: 3 };
+  const material = { ...snapshot, decision, decisionSha256: fiscalV1CanonicalSha256(decision) };
+  const frozen = { ...material, snapshotSha256: fiscalV1SnapshotFingerprint(material) };
+  const prepared = prepareFiscalV1CreditNote({ draft: { ...draft, originalSnapshotSha256: frozen.snapshotSha256,
+    lines: [{ originalLineId: "line-1", creditQuantityMilli: 1500, creditCents: 1 }] }, originalSnapshot: frozen,
+    originalDocument: { ...document, snapshotSha256: frozen.snapshotSha256 }, ...publication,
+    priorCredits: [{ noteId: "prior", operationId: "prior-op", originalDocumentId: document.documentId,
+      originalSnapshotSha256: frozen.snapshotSha256, state: "SIGNED",
+      lines: [{ originalLineId: "line-1", creditedQuantityMilli: 1500, creditedCents: 2 }] }] });
+  assert.equal(prepared.lines[0].roundingAdjustmentCents, -1);
+  assert.equal(prepared.totalCents, 1);
+});
+
+test("tres devoluciones acumulan 2+1+2 céntimos y las reservas antiguas mantienen 2+2+1", () => {
+  const input = regionalNoteFixture(), source = input.snapshot;
+  const decision = { ...source.decision, lines: [{ ...source.decision.lines[0], quantityMilli: 1000,
+    unitPriceCents: 5, totalCents: 5, disclosure: { kind: "ITEMIZED" as const,
+      baseCents: 5, taxCents: 0, appliedRateBasisPoints: 0 } }], totalCents: 5, baseCents: 5 };
+  const material = { ...source, decision, decisionSha256: fiscalV1CanonicalSha256(decision) };
+  const snapshot = { ...material, snapshotSha256: fiscalV1SnapshotFingerprint(material) };
+  for (const mode of ["CUMULATIVE", "LEGACY"] as const) {
+    const priorCredits: import("../contracts").FiscalV1PriorCreditNote[] = [];
+    const amounts = mode === "CUMULATIVE" ? [2, 1, 2] : [2, 2, 1];
+    for (const [index, creditQuantityMilli] of [333, 333, 334].entries()) {
+      const args = { draft: { ...input.draft, originalSnapshotSha256: snapshot.snapshotSha256,
+        noteId: `note-${index}`, noteOperationId: `operation-${index}`,
+        lines: [{ originalLineId: "line-1", creditQuantityMilli, creditCents: amounts[index] }] },
+        originalSnapshot: snapshot, originalDocument: { ...input.document, snapshotSha256: snapshot.snapshotSha256 },
+        ...input.publication, priorCredits, quantityProration: mode };
+      const prepared = prepareFiscalV1CreditNote(args);
+      assert.equal(prepared.totalCents, amounts[index]);
+      assert.equal(prepared.quantityProration, mode === "CUMULATIVE" ? "CUMULATIVE" : undefined);
+      assert.deepEqual(prepareFiscalV1CreditNote(args), prepared, "retry does not change the reservation");
+      if (mode === "LEGACY") assert.equal("roundingAdjustmentCents" in prepared.lines[0], false);
+      priorCredits.push({ noteId: prepared.noteId, operationId: prepared.noteOperationId,
+        originalDocumentId: prepared.originalDocumentId, originalSnapshotSha256: snapshot.snapshotSha256,
+        ...(prepared.quantityProration ? { quantityProration: prepared.quantityProration } : {}), state: "SIGNED",
+        lines: [{ originalLineId: "line-1", creditedQuantityMilli: creditQuantityMilli, creditedCents: prepared.totalCents }] });
+    }
+    assert.equal(priorCredits.reduce((sum, prior) => sum + prior.lines[0].creditedCents, 0), 5);
+  }
+});
+
 test("el snapshot congela caja y versión sin cambiar el material de snapshots anteriores", () => {
   const { snapshot } = fixture();
   const { snapshotSha256: _hash, ...oldMaterial } = snapshot;
