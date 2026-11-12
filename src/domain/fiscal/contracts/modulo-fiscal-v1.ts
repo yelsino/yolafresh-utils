@@ -10,7 +10,7 @@ import nacl from "tweetnacl";
 import type { FiscalOperationalCajaAssignmentBinding, FiscalResolvedCajaNumberingAssignment } from "./numeracion-caja";
 import { FISCAL_V1_PUBLICATION_DOCUMENT_TYPE } from "./modulo-fiscal-v1.contract";
 import type { FiscalV1Capability, FiscalV1CheckoutContext, FiscalV2CheckoutContext, FiscalV1EffectivePublication, FiscalV1IssuerProfile,
-  FiscalV1LegalCategory, FiscalV1OperationContext, FiscalV1PreparedDecision, FiscalV1PreparedLine,
+  FiscalV1LegalCategory, FiscalV1OperationContext, FiscalV1OrdinaryFiscalTreatment, FiscalV1PreparedDecision, FiscalV1PreparedLine,
   FiscalV1PresentationRule, FiscalV1PublicationArtifact, FiscalV1PublicationPayload,
   FiscalV1PublicationDocument, FiscalV1SaleInput, FiscalV1SaleLineInput, FiscalV1SignedPublicationBundle,
   FiscalV1TrustedPublisherKey } from "./modulo-fiscal-v1.contract";
@@ -96,7 +96,7 @@ function artifactShape(artifact: FiscalV1PublicationArtifact): void {
   if (!artifact || typeof artifact !== "object") fail("FISCAL_V1_PUBLICATION_ARTIFACT_INVALID");
   if ("profileId" in artifact) exactKeys(artifact, PROFILE_FIELDS, PUBLICATION_OPTIONAL, "FISCAL_V1_PUBLICATION_ARTIFACT_INVALID");
   else if ("ruleId" in artifact) {
-    exactKeys(artifact, RULE_FIELDS, [...PUBLICATION_OPTIONAL, "catalogSource"], "FISCAL_V1_PUBLICATION_ARTIFACT_INVALID");
+    exactKeys(artifact, RULE_FIELDS, [...PUBLICATION_OPTIONAL, "catalogSource", "ordinaryFiscalTreatment"], "FISCAL_V1_PUBLICATION_ARTIFACT_INVALID");
     if (artifact.catalogSource !== undefined) assertFiscalCatalogResolvedTaxSource(artifact.catalogSource);
     exactKeys(artifact.context, ["establishmentId", "operationKind", "buyerUse"], [], "FISCAL_V1_CONTEXT_REQUIRED");
   } else if ("capabilityId" in artifact) {
@@ -411,6 +411,15 @@ function profile(value: FiscalV1IssuerProfile): void {
     fail("FISCAL_V1_NRUS_ISSUER_TYPE_FORBIDDEN");
 }
 
+export function assertFiscalV1OrdinaryFiscalTreatment(value: unknown): asserts value is FiscalV1OrdinaryFiscalTreatment {
+  const code = "FISCAL_V1_ORDINARY_FISCAL_TREATMENT_INVALID";
+  exactKeys(value, ["basis", "ordinaryCategory", "ordinaryTaxRateBasisPoints"], [], code);
+  const row = value as FiscalV1OrdinaryFiscalTreatment;
+  if (row.ordinaryTaxRateBasisPoints !== 0 || (row.ordinaryCategory === "EXONERADA"
+    ? row.basis !== "APPENDIX_I" && row.basis !== "ORDINARY_EXEMPTION"
+    : row.ordinaryCategory !== "INAFECTA" || row.basis !== "ORDINARY_UNAFFECTED")) fail(code);
+}
+
 function rule(value: FiscalV1PresentationRule): void {
   publication(value); context(value.context);
   if (value.catalogSource !== undefined) assertFiscalCatalogResolvedTaxSource(value.catalogSource);
@@ -423,6 +432,11 @@ function rule(value: FiscalV1PresentationRule): void {
       ? value.taxRateBasisPoints === 0
       : value.legalCategory === "INAFECTA" && value.taxRateBasisPoints === 0;
   if (!taxValid) fail("FISCAL_V1_TAX_REPRESENTATION_INVALID");
+  if (value.ordinaryFiscalTreatment !== undefined) {
+    assertFiscalV1OrdinaryFiscalTreatment(value.ordinaryFiscalTreatment);
+    if (value.ordinaryFiscalTreatment.ordinaryCategory !== value.legalCategory || value.taxRateBasisPoints !== 0)
+      fail("FISCAL_V1_ORDINARY_FISCAL_TREATMENT_MISMATCH");
+  }
 }
 
 function categorySet(values: readonly FiscalV1LegalCategory[]): string {
@@ -654,6 +668,7 @@ export function prepareFiscalV1Sale(input: {
     return { lineId: line.lineId, presentationId: line.presentationId, quantityMilli: line.quantityMilli,
       unitPriceCents: line.unitPriceCents, discountCents: line.discountCents, totalCents,
       unitCode: selected.unitCode, legalCategory,
+      ...(selected.ordinaryFiscalTreatment === undefined ? {} : { ordinaryFiscalTreatment: { ...selected.ordinaryFiscalTreatment } }),
       disclosure, ruleRef: { configurationDocumentId: selected.configurationDocumentId, decisionId: selected.decisionId,
         ruleId: selected.ruleId, fingerprintSha256: selected.fingerprintSha256,
         ...(selected.catalogSource ? { catalogSource: JSON.parse(JSON.stringify(selected.catalogSource)) } : {}) } };

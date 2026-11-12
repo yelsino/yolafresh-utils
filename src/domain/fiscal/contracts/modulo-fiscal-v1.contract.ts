@@ -47,6 +47,13 @@ export type FiscalV1TaxAssessment =
   | { readonly legalCategory: "EXONERADA"; readonly taxRateBasisPoints: 0 }
   | { readonly legalCategory: "INAFECTA"; readonly taxRateBasisPoints: 0 };
 
+/** Ordinary basis confirmed at publication time; independent from a regional exemption. */
+export type FiscalV1OrdinaryFiscalTreatment =
+  | { readonly basis: "APPENDIX_I" | "ORDINARY_EXEMPTION"; readonly ordinaryCategory: "EXONERADA";
+      readonly ordinaryTaxRateBasisPoints: 0 }
+  | { readonly basis: "ORDINARY_UNAFFECTED"; readonly ordinaryCategory: "INAFECTA";
+      readonly ordinaryTaxRateBasisPoints: 0 };
+
 export type FiscalV1PresentationRule = FiscalV1EffectivePublication & FiscalV1TaxAssessment & {
   /** Identidad técnica opaca del documento de publicación; no contiene semántica. */
   readonly configurationDocumentId: string;
@@ -57,6 +64,8 @@ export type FiscalV1PresentationRule = FiscalV1EffectivePublication & FiscalV1Ta
   readonly presentationId: string;
   readonly catalogSemanticFingerprintSha256: string;
   readonly catalogSource?: FiscalCatalogResolvedTaxSource;
+  /** Optional so publications issued before this evidence was frozen keep their exact bytes. */
+  readonly ordinaryFiscalTreatment?: FiscalV1OrdinaryFiscalTreatment;
   readonly unitCode: "NIU" | "KGM" | "LTR" | "ZZ";
   readonly context: FiscalV1OperationContext;
 };
@@ -206,6 +215,8 @@ export interface FiscalV1PreparedLine {
   readonly totalCents: number;
   readonly unitCode: FiscalV1PresentationRule["unitCode"];
   readonly legalCategory: FiscalV1LegalCategory;
+  /** Copied only from the selected signed rule; never reconstructed from affectation or a current catalogue. */
+  readonly ordinaryFiscalTreatment?: FiscalV1OrdinaryFiscalTreatment;
   /** El código documental/UBL se define y verifica en el adaptador, nunca a partir de esta categoría. */
   readonly disclosure: FiscalV1LineDisclosure;
   readonly ruleRef: {

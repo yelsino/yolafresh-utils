@@ -101,6 +101,41 @@ test("fixture dorado firmado produce exactamente la misma decisión serializada"
     fiscalV1DecisionFingerprintMaterial(fixture.expectedDecision));
 });
 
+test("ordinary basis is frozen from the signed rule without inventing a regional exemption outside Amazonía", () => {
+  const ordinaryFiscalTreatment = { basis: "APPENDIX_I", ordinaryCategory: "EXONERADA", ordinaryTaxRateBasisPoints: 0 } as const;
+  const input = { sale: sale(), profiles: [issuer()], rules: [rule("queso", "EXONERADA", { ordinaryFiscalTreatment })],
+    capabilities: [capability(["EXONERADA"])] };
+  const ordinary = prepareFiscalV1Sale(input);
+  assert.deepEqual(ordinary.lines[0].ordinaryFiscalTreatment, ordinaryFiscalTreatment);
+  assert.equal(Object.prototype.hasOwnProperty.call(ordinary, "amazonia"), false);
+  const facts = { transfer: { status: "CONFIRMED", ubigeo: "120601", evidenceRef: "opaque establishment" },
+    consumption: { status: "OUTSIDE", evidenceRef: "opaque evidence" } } as const;
+  const regionalSale = { ...input.sale, amazoniaFacts: facts };
+  const outside = prepareFiscalV1SaleCore({ sale: regionalSale, ...signedBundle({ ...input, sale: regionalSale }),
+    amazonia: { facts, decision: { kind: "ORDINARY", reason: "OUTSIDE" } } });
+  assert.deepEqual(outside.lines[0].ordinaryFiscalTreatment, ordinaryFiscalTreatment);
+  assert.equal(outside.amazonia?.decision.kind, "ORDINARY");
+  assert.equal(Object.prototype.hasOwnProperty.call(outside.amazonia!, "lineDecisions"), false);
+  const legacy = prepareFiscalV1Sale({ ...input, rules: [rule("queso", "EXONERADA")] });
+  assert.equal(Object.prototype.hasOwnProperty.call(legacy.lines[0], "ordinaryFiscalTreatment"), false);
+  assert.notEqual(fiscalV1DecisionFingerprintMaterial(ordinary), fiscalV1DecisionFingerprintMaterial(legacy));
+});
+
+test("signed ordinary basis rejects regional law, incompatible category, extra fields and a nonzero ordinary rate", () => {
+  for (const ordinaryFiscalTreatment of [
+    { basis: "LEY_27037_ART_13_1_A", ordinaryCategory: "EXONERADA", ordinaryTaxRateBasisPoints: 0 },
+    { basis: "APPENDIX_I", ordinaryCategory: "INAFECTA", ordinaryTaxRateBasisPoints: 0 },
+    { basis: "APPENDIX_I", ordinaryCategory: "EXONERADA", ordinaryTaxRateBasisPoints: 1800 },
+    { basis: "APPENDIX_I", ordinaryCategory: "EXONERADA", ordinaryTaxRateBasisPoints: 0, inferred: true },
+  ]) assert.throws(() => prepareFiscalV1Sale({ sale: sale(), profiles: [issuer()],
+    rules: [rule("queso", "EXONERADA", { ordinaryFiscalTreatment } as any)], capabilities: [capability(["EXONERADA"])] }),
+    /FISCAL_V1_ORDINARY_FISCAL_TREATMENT_INVALID/);
+  assert.throws(() => prepareFiscalV1Sale({ sale: sale(), profiles: [issuer()],
+    rules: [rule("queso", "GRAVADA", { ordinaryFiscalTreatment: {
+      basis: "APPENDIX_I", ordinaryCategory: "EXONERADA", ordinaryTaxRateBasisPoints: 0 } })], capabilities: [capability(["GRAVADA"])] }),
+    /FISCAL_V1_ORDINARY_FISCAL_TREATMENT_MISMATCH/);
+});
+
 test("NRUS conserva la categoría legal gravada, pero jamás inventa IGV 0 ni base 0", () => {
   const decision = prepareFiscalV1Sale({ sale: sale(), profiles: [issuer({ taxRegime: "NRUS" })],
     rules: [rule("queso", "GRAVADA")], capabilities: [capability(["GRAVADA"], { taxRegime: "NRUS" })] });

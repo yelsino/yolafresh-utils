@@ -18,6 +18,15 @@ const TRUSTED_KEY: FiscalV1TrustedPublisherKey = { keyId: "test-key-2", publicKe
   tenantId: "tenant-sintetico", environment: "DEMO", validFromMs: NOW - 86400000, validToMs: NOW + 86400000 };
 const SOURCE = "fixture-sintetica-fiscal-v1";
 
+test("a valid snapshot hash cannot disguise ordinary basis inconsistent with its frozen line", () => {
+  const original = fixture().snapshot;
+  const decision = { ...original.decision, lines: original.decision.lines.map(line => ({ ...line,
+    ordinaryFiscalTreatment: { basis: "APPENDIX_I", ordinaryCategory: "EXONERADA", ordinaryTaxRateBasisPoints: 0 } as const })) };
+  const snapshot = { ...original, decision, decisionSha256: fiscalV1CanonicalSha256(decision) };
+  const frozen = { ...snapshot, snapshotSha256: fiscalV1SnapshotFingerprint(snapshot) };
+  assert.throws(() => assertFiscalV1Snapshot(frozen), /FISCAL_V1_ORDINARY_FISCAL_TREATMENT_MISMATCH/);
+});
+
 test("la referencia comercial usa identificadores opacos y congela cantidades, precios y descripción", () => {
   const commercial = { id: "opaque snapshot / α", ventaId: "opaque sale / β", moneda: "PEN", total: 3,
     items: [{ id: "line", presentacionId: "presentation", nombre: "Producto", cantidadVendida: 1,

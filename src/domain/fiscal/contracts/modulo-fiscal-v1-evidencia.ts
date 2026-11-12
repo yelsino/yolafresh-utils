@@ -3,6 +3,7 @@ import { assertFiscalV1DocumentGrant, assertFiscalV1TributaryResult } from "./mo
 import { assertFiscalV1ProviderChannelReceipt } from "./modulo-fiscal-v1-proveedor.contract";
 import { fiscalV1CanonicalSha256, fiscalV1DecisionFingerprintMaterial,
   verifyFiscalV1PublicationBundle, isFiscalV1CapabilityOperational } from "./modulo-fiscal-v1";
+import { assertFiscalV1OrdinaryFiscalTreatment } from "./modulo-fiscal-v1";
 import type { FiscalV1Capability, FiscalV1SignedPublicationBundle, FiscalV1TrustedPublisherKey } from "./modulo-fiscal-v1.contract";
 import type { FiscalV1CreditNoteDraft, FiscalV1DocumentRecord, FiscalV1PreparedCreditNote,
   FiscalV1PriorCreditNote, FiscalV1Snapshot } from "./modulo-fiscal-v1-evidencia.contract";
@@ -81,6 +82,13 @@ export function assertFiscalV1Snapshot(snapshot: FiscalV1Snapshot): void {
           line.disclosure.baseCents !== null || line.disclosure.taxCents !== null ||
           line.disclosure.appliedRateBasisPoints !== null)))
     fail("FISCAL_V1_SNAPSHOT_TAX_INVALID");
+  for (const line of snapshot.decision.lines) {
+    if (line.ordinaryFiscalTreatment === undefined) continue;
+    assertFiscalV1OrdinaryFiscalTreatment(line.ordinaryFiscalTreatment);
+    if (line.ordinaryFiscalTreatment.ordinaryCategory !== line.legalCategory ||
+        line.disclosure.kind === "ITEMIZED" && line.disclosure.appliedRateBasisPoints !== 0)
+      fail("FISCAL_V1_ORDINARY_FISCAL_TREATMENT_MISMATCH");
+  }
   if (snapshot.decision.baseCents === null || snapshot.decision.taxCents === null) {
     if (snapshot.decision.baseCents !== null || snapshot.decision.taxCents !== null ||
         snapshot.decision.taxRegime !== "NRUS" ||
