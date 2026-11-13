@@ -23,6 +23,25 @@ const positive = (value: unknown): value is number => cents(value) && Number(val
 const MAX_SAFE = BigInt(Number.MAX_SAFE_INTEGER);
 const BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
+export const FISCAL_V1_ANONYMOUS_BOLETA_MAX_CENTS = 70_000;
+
+/** A missing buyer means an unidentified final consumer, never a fabricated DNI. */
+export function assertFiscalV1BuyerForIssuance(
+  decision: Pick<FiscalV1PreparedDecision, "documentType" | "buyer" | "totalCents">,
+): void {
+  const buyer = decision.buyer;
+  if (buyer !== undefined && (!buyer || !text(buyer.legalName) ||
+      typeof buyer.documentNumber !== "string" ||
+      !(buyer.documentType === "RUC" && /^\d{11}$/.test(buyer.documentNumber)) &&
+      !(buyer.documentType === "DNI" && /^\d{8}$/.test(buyer.documentNumber))))
+    fail("FISCAL_V1_BUYER_INVALID");
+  if (decision.documentType === "FACTURA" && buyer?.documentType !== "RUC")
+    fail("FISCAL_V1_FACTURA_BUYER_REQUIRED");
+  if (decision.documentType === "BOLETA" && buyer === undefined &&
+      (!cents(decision.totalCents) || decision.totalCents > FISCAL_V1_ANONYMOUS_BOLETA_MAX_CENTS))
+    fail("FISCAL_BUYER_IDENTIFICATION_REQUIRED");
+}
+
 function exactKeys(value: unknown, required: readonly string[], optional: readonly string[], code: string): void {
   if (!value || typeof value !== "object" || Array.isArray(value)) return fail(code);
   const keys = Object.keys(value as object);
@@ -606,10 +625,6 @@ export function prepareFiscalV1Sale(input: {
       sale.environment !== payload.environment) fail("FISCAL_V1_SCOPE_MISMATCH");
   const date = civilDate(sale.occurredOn, "FISCAL_V1_OPERATION_DATE_INVALID");
   context(sale.context);
-  if (sale.buyer && (!text(sale.buyer.legalName) ||
-      !(sale.buyer.documentType === "RUC" && /^\d{11}$/.test(sale.buyer.documentNumber)) &&
-      !(sale.buyer.documentType === "DNI" && /^\d{8}$/.test(sale.buyer.documentNumber))))
-    fail("FISCAL_V1_BUYER_INVALID");
   if (profiles.some(value => value.tenantId !== sale.tenantId || value.issuerId !== sale.issuerId ||
       value.issuerRuc !== sale.issuerRuc || value.environment !== sale.environment) ||
       rules.some(value => value.tenantId !== sale.tenantId || value.issuerId !== sale.issuerId) ||
@@ -690,6 +705,7 @@ export function prepareFiscalV1Sale(input: {
   if (selectedCapability.status !== "PUBLISHED" || !usableCapability(selectedCapability))
     fail("FISCAL_V1_CAPABILITY_NOT_SUPPORTED");
   const totalCents = safeNumber(prepared.reduce((sum, line) => sum + BigInt(line.totalCents), 0n));
+  assertFiscalV1BuyerForIssuance({ documentType: sale.documentType, buyer: sale.buyer, totalCents });
   const baseCents = selectedProfile.taxRegime === "NRUS" ? null :
     safeNumber(prepared.reduce((sum, line) => sum + BigInt(line.disclosure.baseCents ?? 0), 0n));
   const taxCents = selectedProfile.taxRegime === "NRUS" ? null :

@@ -71,11 +71,11 @@ test("provider printable digest compatibility requires explicit matching assuran
   assert.ok(validateFiscalV1PrintEvidence(value, strictBinding).includes("print.evidenceAssurance"));
   assert.ok(validateFiscalV1PrintEvidence({ ...value, evidenceAssurance: undefined }, strictBinding).includes("print.digestValue"));
 });
-const binding: FiscalV1PrintEvidenceBinding = {
+const binding = {
   environment: "DEMO", identity: { issuerRuc: "20123456789", documentType: "01", series: "F001", number: 12 },
   issuedOn: "2026-10-19", currency: "PEN", totalCents: 11800, taxCents: 1800,
   buyer: { documentType: "RUC", documentNumber: "10123456789" }, signedXmlSha256: HASH,
-};
+} satisfies FiscalV1PrintEvidenceBinding;
 const print: FiscalV1PrintEvidence = { signedXmlSha256: HASH,
   digestValue: Buffer.alloc(32, 4).toString("base64"), digestOutsideQr: true,
   signedAt: "2026-10-19T12:00:00-05:00", legalLegend: "DEMO - SIN VALIDEZ TRIBUTARIA",
@@ -132,6 +132,28 @@ test("boleta y nota de boleta admiten DNI sin ampliar factura a comprador DNI", 
       buyer: { documentType: "DNI" as const, documentNumber: "12345678" } };
     const evidence = { ...print, qrPayload: `20123456789|${documentType}|B001|12|18.00|118.00|19/10/2026|1|12345678` };
     assert.deepEqual(validateFiscalV1PrintEvidence(evidence, scoped), []);
+  }
+});
+
+test("boleta anónima usa únicamente QR 0/- sin fabricar una identidad", () => {
+  const { buyer: _buyer, ...withoutBuyer } = binding;
+  for (const environment of ["DEMO", "PRODUCTION"] as const) {
+    for (const totalCents of [1100, 70_000]) {
+      const scoped = { ...withoutBuyer, environment, totalCents, taxCents: 0,
+        identity: { ...binding.identity, documentType: "03" as const, series: "B001" } };
+      const evidence = { ...print, legalLegend: environment === "DEMO" ? print.legalLegend : "Representación impresa",
+        qrPayload: `20123456789|03|B001|12|0.00|${(totalCents / 100).toFixed(2)}|2026-10-19|0|-` };
+      assert.deepEqual(validateFiscalV1PrintEvidence(evidence, scoped), []);
+      for (const identity of ["1|12345678", "6|20123456789", "0|", "0|12345678"]) {
+        assert.ok(validateFiscalV1PrintEvidence({ ...evidence,
+          qrPayload: evidence.qrPayload.replace(/0\|-$/, identity) }, scoped).includes("print.qrPayload.buyerMismatch"));
+      }
+      assert.deepEqual(validateFiscalV1PrintEvidence(evidence, { ...scoped, totalCents: 70_001 }), ["print.binding"]);
+      assert.deepEqual(validateFiscalV1PrintEvidence(evidence, { ...scoped,
+        identity: { ...scoped.identity, documentType: "07" } }), ["print.binding"]);
+      assert.deepEqual(validateFiscalV1PrintEvidence(evidence, { ...scoped,
+        identity: { ...scoped.identity, documentType: "01", series: "F001" } }), ["print.binding"]);
+    }
   }
 });
 

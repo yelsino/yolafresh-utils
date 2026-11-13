@@ -300,6 +300,27 @@ test("crédito histórico conserva hash y recuperación pero no admite una nueva
   assert.doesNotThrow(() => assertFiscalV1SnapshotForIssuance(snapshot));
 });
 
+test("emisión anónima exige boleta al contado y respeta el umbral aun con hashes válidos", () => {
+  const { snapshot } = fixture("SUPPORTED", { taxRegime: "NRUS", documentType: "BOLETA" });
+  const { buyer: _buyer, ...anonymous } = snapshot.decision;
+  const freeze = (totalCents: number, credit = false): FiscalV1Snapshot => {
+    const decision = { ...anonymous, totalCents, lines: anonymous.lines.map(line => ({ ...line,
+      unitPriceCents: totalCents, totalCents })) };
+    const material = { ...snapshot, decision, decisionSha256: fiscalV1CanonicalSha256(decision),
+      ...(credit ? { schemaVersion: "fiscal-v1-snapshot-v2" as const,
+        paymentTerms: { kind: "CREDITO" as const, netPendingCents: totalCents,
+          installments: [{ dueOn: "2026-10-16", amountCents: totalCents }] } } : {}) };
+    return { ...material, snapshotSha256: fiscalV1SnapshotFingerprint(material) };
+  };
+  assert.doesNotThrow(() => assertFiscalV1SnapshotForIssuance(freeze(1100)));
+  assert.doesNotThrow(() => assertFiscalV1SnapshotForIssuance(freeze(70_000)));
+  const overLimit = freeze(70_001), historicalBytes = JSON.stringify(overLimit);
+  assert.throws(() => assertFiscalV1SnapshotForIssuance(overLimit), /FISCAL_BUYER_IDENTIFICATION_REQUIRED/);
+  assert.doesNotThrow(() => assertFiscalV1Snapshot(overLimit));
+  assert.equal(JSON.stringify(overLimit), historicalBytes);
+  assert.throws(() => assertFiscalV1SnapshotForIssuance(freeze(1100, true)), /FISCAL_V1_SNAPSHOT_BUYER_INVALID/);
+});
+
 test("CDR rechazada de una nota no libera cantidades firmadas ni altera el resultado del original", () => {
   const { publication, snapshot, document, draft } = fixture();
   const prior = { noteId: "prior-note", operationId: "prior-op", originalDocumentId: document.documentId,

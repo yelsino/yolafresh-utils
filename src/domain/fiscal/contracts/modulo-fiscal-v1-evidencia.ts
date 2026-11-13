@@ -2,7 +2,8 @@ import { validateFiscalCivilDate } from "./reglas-tributarias";
 import { assertFiscalV1DocumentGrant, assertFiscalV1TributaryResult } from "./modulo-fiscal-v1-resultados";
 import { assertFiscalV1ProviderChannelReceipt } from "./modulo-fiscal-v1-proveedor.contract";
 import { fiscalV1CanonicalSha256, fiscalV1DecisionFingerprintMaterial,
-  verifyFiscalV1PublicationBundle, isFiscalV1CapabilityOperational } from "./modulo-fiscal-v1";
+  verifyFiscalV1PublicationBundle, isFiscalV1CapabilityOperational,
+  assertFiscalV1BuyerForIssuance } from "./modulo-fiscal-v1";
 import { assertFiscalV1OrdinaryFiscalTreatment } from "./modulo-fiscal-v1";
 import type { FiscalV1Capability, FiscalV1SignedPublicationBundle, FiscalV1TrustedPublisherKey } from "./modulo-fiscal-v1.contract";
 import type { FiscalV1CreditNoteDraft, FiscalV1DocumentRecord, FiscalV1PreparedCreditNote,
@@ -126,6 +127,9 @@ export function assertFiscalV1Snapshot(snapshot: FiscalV1Snapshot): void {
  * historical bytes/hashes without changing their dates or inferring a missing balance. */
 export function assertFiscalV1SnapshotForIssuance(snapshot: FiscalV1Snapshot): void {
   assertFiscalV1Snapshot(snapshot);
+  assertFiscalV1BuyerForIssuance(snapshot.decision);
+  if (snapshot.paymentTerms.kind === "CREDITO" && snapshot.decision.buyer === undefined)
+    fail("FISCAL_V1_SNAPSHOT_BUYER_INVALID");
   if (snapshot.paymentTerms.kind === "CREDITO" && snapshot.schemaVersion !== "fiscal-v1-snapshot-v2")
     fail("FISCAL_V1_LEGACY_CREDIT_NOT_ADMISSIBLE");
 }

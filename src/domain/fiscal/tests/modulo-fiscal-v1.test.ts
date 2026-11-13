@@ -349,6 +349,41 @@ test("V1 exige PEN, comprador RUC en factura y rechaza gratuidad no modelada", (
     /FISCAL_V1_FREE_LINE_NOT_MODELED/);
 });
 
+test("boleta de consumidor final conserva buyer ausente hasta S/700 en Demo y Producción", () => {
+  for (const environment of ["DEMO", "PRODUCTION"] as const) {
+    for (const totalCents of [1100, 70_000]) {
+      const decision = prepareFiscalV1Sale({
+        sale: sale({ environment, lines: [{ ...sale().lines[0], unitPriceCents: totalCents }] }),
+        profiles: [issuer({ environment })], rules: [rule("queso", "GRAVADA")],
+        capabilities: [capability(["GRAVADA"], { environment })],
+      });
+      assert.equal(decision.totalCents, totalCents);
+      assert.equal(Object.prototype.hasOwnProperty.call(decision, "buyer"), false);
+      assert.equal(fiscalV1DecisionFingerprintMaterial(decision).includes('"buyer"'), false);
+    }
+  }
+});
+
+test("S/700.01 exige identificación sin bloquear la boleta identificada", () => {
+  const common = { profiles: [issuer()], rules: [rule("queso", "GRAVADA")],
+    capabilities: [capability(["GRAVADA"])] };
+  const overLimit = sale({ lines: [{ ...sale().lines[0], unitPriceCents: 70_001 }] });
+  assert.throws(() => prepareFiscalV1Sale({ ...common, sale: overLimit }), /FISCAL_BUYER_IDENTIFICATION_REQUIRED/);
+  const buyer = { documentType: "DNI", documentNumber: "12345678", legalName: "CLIENTE SINTÉTICO" } as const;
+  assert.deepEqual(prepareFiscalV1Sale({ ...common, sale: { ...overLimit, buyer } }).buyer, buyer);
+});
+
+test("un comprador malformado no se convierte en consumidor final", () => {
+  const common = { profiles: [issuer()], rules: [rule("queso", "GRAVADA")],
+    capabilities: [capability(["GRAVADA"])] };
+  for (const buyer of [null, { documentType: "SIN_DOCUMENTO", documentNumber: null, legalName: "Consumidor final" },
+    { documentType: "DNI", documentNumber: "123", legalName: "Cliente" },
+    { documentType: "DNI", documentNumber: 12345678, legalName: "Cliente" },
+    { documentType: "RUC", documentNumber: "20123456789", legalName: "" }]) {
+    assert.throws(() => prepareFiscalV1Sale({ ...common, sale: sale({ buyer: buyer as never }) }), /FISCAL_V1_BUYER_INVALID/);
+  }
+});
+
 test("decisión serializada conserva nulidad y material canónico estable", () => {
   const args = { sale: sale(), profiles: [issuer({ taxRegime: "NRUS" })], rules: [rule("queso", "GRAVADA")],
     capabilities: [capability(["GRAVADA"], { taxRegime: "NRUS" })] };

@@ -2,6 +2,7 @@ import type { FiscalV1DocumentGrant, FiscalV1PrintEvidence,
   FiscalV1PrintEvidenceBinding, FiscalV1TributaryResult, FiscalV1TributaryStatus } from
   "./modulo-fiscal-v1-resultados.contract";
 import { validateFiscalCivilDate } from "./reglas-tributarias";
+import { FISCAL_V1_ANONYMOUS_BOLETA_MAX_CENTS } from "./modulo-fiscal-v1";
 import { assertFiscalV1ProviderChannelReceipt } from "./modulo-fiscal-v1-proveedor.contract";
 
 const record = (value: unknown): value is Record<string, unknown> =>
@@ -95,6 +96,8 @@ export function validateFiscalV1PrintEvidence(value: unknown,
   if (!record(value)) return ["print"];
   const errors: string[] = [];
   const identity = binding?.identity;
+  const anonymousBoleta = binding?.buyer === undefined && identity?.documentType === "03" &&
+    cents(binding.totalCents) && binding.totalCents <= FISCAL_V1_ANONYMOUS_BOLETA_MAX_CENTS;
   if (!binding || !["DEMO", "PRODUCTION"].includes(binding.environment) || !identity ||
       !/^\d{11}$/.test(identity.issuerRuc) || !["01", "03", "07"].includes(identity.documentType) ||
       !/^[FB][A-Z0-9]{3}$/.test(identity.series) ||
@@ -104,10 +107,10 @@ export function validateFiscalV1PrintEvidence(value: unknown,
       !date(binding.issuedOn) || binding.currency !== "PEN" ||
       !cents(binding.totalCents) || !cents(binding.taxCents) ||
       binding.taxCents > binding.totalCents || !hash(binding.signedXmlSha256) ||
-      !binding.buyer || !(binding.buyer.documentType === "RUC"
+      !anonymousBoleta && (!binding.buyer || typeof binding.buyer.documentNumber !== "string" || !(binding.buyer.documentType === "RUC"
         ? /^\d{11}$/.test(binding.buyer.documentNumber)
-        : binding.buyer.documentType === "DNI" && /^\d{8}$/.test(binding.buyer.documentNumber)) ||
-      identity.documentType === "01" && binding.buyer.documentType !== "RUC") return ["print.binding"];
+        : binding.buyer.documentType === "DNI" && /^\d{8}$/.test(binding.buyer.documentNumber))) ||
+      identity.documentType === "01" && binding.buyer?.documentType !== "RUC") return ["print.binding"];
   if (!hash(value.signedXmlSha256) || value.signedXmlSha256 !== binding.signedXmlSha256)
     errors.push("print.signedXmlSha256");
   if (value.evidenceAssurance !== binding.evidenceAssurance ||
@@ -140,8 +143,8 @@ export function validateFiscalV1PrintEvidence(value: unknown,
   const qrDate = /^\d{2}\/\d{2}\/\d{4}$/.test(parts[6])
     ? `${parts[6].slice(6)}-${parts[6].slice(3, 5)}-${parts[6].slice(0, 2)}` : parts[6];
   if (qrDate !== binding.issuedOn) errors.push("print.qrPayload.issueDateMismatch");
-  if (parts[7] !== (binding.buyer.documentType === "RUC" ? "6" : "1") ||
-      parts[8] !== binding.buyer.documentNumber) errors.push("print.qrPayload.buyerMismatch");
+  if (parts[7] !== (anonymousBoleta ? "0" : binding.buyer!.documentType === "RUC" ? "6" : "1") ||
+      parts[8] !== (anonymousBoleta ? "-" : binding.buyer!.documentNumber)) errors.push("print.qrPayload.buyerMismatch");
   if (parts.length === 10) {
     if (parts[9] !== value.digestValue || value.digestOutsideQr !== false)
       errors.push("print.qrPayload.digestMismatch");

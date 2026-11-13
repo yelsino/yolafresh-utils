@@ -54,7 +54,8 @@ export interface FiscalV1PrintEvidenceBinding {
   readonly currency: "PEN";
   readonly totalCents: number;
   readonly taxCents: number;
-  readonly buyer: { readonly documentType: "RUC" | "DNI"; readonly documentNumber: string };
+  /** Omitted only for an unidentified final-consumer boleta of up to S/700. */
+  readonly buyer?: { readonly documentType: "RUC" | "DNI"; readonly documentNumber: string };
   readonly signedXmlSha256: string;
 }
 

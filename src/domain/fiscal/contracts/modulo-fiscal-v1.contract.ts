@@ -124,7 +124,7 @@ export interface FiscalV1SaleInput {
   readonly currency: "PEN";
   readonly occurredOn: string;
   readonly documentType: Exclude<FiscalV1DocumentType, "NOTA_CREDITO">;
-  /** Factura exige RUC y razón social del adquirente; boleta puede identificarlo también. */
+  /** Factura exige RUC; la ausencia identifica una boleta de consumidor final de hasta S/700. */
   readonly buyer?: { readonly documentType: "RUC" | "DNI"; readonly documentNumber: string; readonly legalName: string };
   readonly context: FiscalV1OperationContext;
   readonly lines: readonly FiscalV1SaleLineInput[];
