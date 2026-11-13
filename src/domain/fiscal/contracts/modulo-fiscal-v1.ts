@@ -2,6 +2,7 @@ import { isFiscalTaxRegime } from "./cpe.contract";
 import { assertFiscalCatalogResolvedTaxSource } from "./catalog-tax-policy.schema";
 import { fiscalConfigurationCanonicalJson } from "./configuracion-fiscal";
 import { validateFiscalCivilDate } from "./reglas-tributarias";
+import { assertFiscalCashPaymentRounding } from "./cash-payment-rounding.contract";
 import { assertFiscalAmazoniaSaleFacts, assertFiscalAmazoniaLineDecisions,
   FISCAL_AMAZONIA_DEMO_DISTRICTS, type FiscalAmazoniaPreparedSale } from "./fiscal-amazonia-sale.contract";
 import { sha256 as digestSha256 } from "@noble/hashes/sha256";
@@ -27,9 +28,18 @@ export const FISCAL_V1_ANONYMOUS_BOLETA_MAX_CENTS = 70_000;
 
 /** A missing buyer means an unidentified final consumer, never a fabricated DNI. */
 export function assertFiscalV1BuyerForIssuance(
-  decision: Pick<FiscalV1PreparedDecision, "documentType" | "buyer" | "totalCents">,
+  decision: Pick<FiscalV1PreparedDecision, "documentType" | "buyer" | "totalCents"> &
+    Partial<Pick<FiscalV1PreparedDecision, "lines" | "cashPaymentRounding">>,
 ): void {
   const buyer = decision.buyer;
+  let identificationTotal = decision.totalCents;
+  if (decision.cashPaymentRounding !== undefined) {
+    const lines = decision.lines ?? fail("FISCAL_CASH_PAYMENT_ROUNDING_INVALID");
+    if (!Array.isArray(lines) || lines.some(line => !cents(line.totalCents)))
+      fail("FISCAL_CASH_PAYMENT_ROUNDING_INVALID");
+    identificationTotal = safeNumber(lines.reduce((sum, line) => sum + BigInt(line.totalCents), 0n));
+    assertFiscalCashPaymentRounding(decision.cashPaymentRounding, identificationTotal, decision.totalCents);
+  }
   if (buyer !== undefined && (!buyer || !text(buyer.legalName) ||
       typeof buyer.documentNumber !== "string" ||
       !(buyer.documentType === "RUC" && /^\d{11}$/.test(buyer.documentNumber)) &&
@@ -38,7 +48,7 @@ export function assertFiscalV1BuyerForIssuance(
   if (decision.documentType === "FACTURA" && buyer?.documentType !== "RUC")
     fail("FISCAL_V1_FACTURA_BUYER_REQUIRED");
   if (decision.documentType === "BOLETA" && buyer === undefined &&
-      (!cents(decision.totalCents) || decision.totalCents > FISCAL_V1_ANONYMOUS_BOLETA_MAX_CENTS))
+      (!cents(identificationTotal) || identificationTotal > FISCAL_V1_ANONYMOUS_BOLETA_MAX_CENTS))
     fail("FISCAL_BUYER_IDENTIFICATION_REQUIRED");
 }
 
@@ -515,6 +525,9 @@ function saleLine(value: FiscalV1SaleLineInput): void {
   if (!value || !text(value.lineId) || !text(value.presentationId) ||
       !sha256(value.catalogSemanticFingerprintSha256) || !positive(value.quantityMilli) ||
       !positive(value.unitPriceCents) || !cents(value.discountCents)) fail("FISCAL_V1_LINE_INVALID");
+  if (value.manualGrossTotalCents !== undefined &&
+      (!positive(value.manualGrossTotalCents) || value.discountCents !== 0))
+    fail("FISCAL_V1_MANUAL_GROSS_TOTAL_INVALID");
 }
 
 /** Límite de publicación V1; una identidad técnica de CouchDB no decide la autoridad. */
@@ -597,6 +610,12 @@ export function prepareFiscalV1Sale(input: {
       !/^\d{11}$/.test(sale.issuerRuc) || !["DEMO", "PRODUCTION"].includes(sale.environment) || sale.currency !== "PEN" ||
       !["BOLETA", "FACTURA"].includes(sale.documentType) || !Array.isArray(sale.lines) || !sale.lines.length)
     fail("FISCAL_V1_SALE_INVALID");
+  if (sale.documentType !== "BOLETA" && (sale.cashPaymentRounding !== undefined ||
+      sale.lines.some(line => line?.manualGrossTotalCents !== undefined)))
+    fail("FISCAL_V1_COMMERCIAL_ADJUSTMENT_UNSUPPORTED");
+  if ((sale.cashPaymentRounding !== undefined || sale.lines.some(line => line?.manualGrossTotalCents !== undefined)) &&
+      sale.lines.some(line => line?.discountCents !== 0))
+    fail("FISCAL_V1_COMMERCIAL_ADJUSTMENT_UNSUPPORTED");
   if (sale.amazoniaFacts !== undefined) {
     assertFiscalAmazoniaSaleFacts(sale.amazoniaFacts);
     if (!amazonia || fiscalConfigurationCanonicalJson(amazonia.facts) !== fiscalConfigurationCanonicalJson(sale.amazoniaFacts))
@@ -656,7 +675,9 @@ export function prepareFiscalV1Sale(input: {
     if (selected.status !== "PUBLISHED") fail("FISCAL_V1_RULE_NOT_PUBLISHED");
     if (selected.catalogSemanticFingerprintSha256 !== line.catalogSemanticFingerprintSha256)
       fail("FISCAL_V1_CATALOG_RULE_OUTDATED");
-    const gross = (BigInt(line.quantityMilli) * BigInt(line.unitPriceCents) + 500n) / 1000n;
+    const gross = line.manualGrossTotalCents === undefined
+      ? (BigInt(line.quantityMilli) * BigInt(line.unitPriceCents) + 500n) / 1000n
+      : BigInt(line.manualGrossTotalCents);
     if (BigInt(line.discountCents) > gross) fail("FISCAL_V1_DISCOUNT_EXCEEDS_GROSS");
     const discounted = gross - BigInt(line.discountCents);
     if (discounted === 0n) fail("FISCAL_V1_FREE_LINE_NOT_MODELED");
@@ -682,6 +703,7 @@ export function prepareFiscalV1Sale(input: {
         })();
     return { lineId: line.lineId, presentationId: line.presentationId, quantityMilli: line.quantityMilli,
       unitPriceCents: line.unitPriceCents, discountCents: line.discountCents, totalCents,
+      ...(line.manualGrossTotalCents === undefined ? {} : { manualGrossTotalCents: line.manualGrossTotalCents }),
       unitCode: selected.unitCode, legalCategory,
       ...(selected.ordinaryFiscalTreatment === undefined ? {} : { ordinaryFiscalTreatment: { ...selected.ordinaryFiscalTreatment } }),
       disclosure, ruleRef: { configurationDocumentId: selected.configurationDocumentId, decisionId: selected.decisionId,
@@ -704,15 +726,16 @@ export function prepareFiscalV1Sale(input: {
     fail("FISCAL_V1_AMAZONIA_ESTABLISHMENT_MISMATCH");
   if (selectedCapability.status !== "PUBLISHED" || !usableCapability(selectedCapability))
     fail("FISCAL_V1_CAPABILITY_NOT_SUPPORTED");
-  const totalCents = safeNumber(prepared.reduce((sum, line) => sum + BigInt(line.totalCents), 0n));
-  assertFiscalV1BuyerForIssuance({ documentType: sale.documentType, buyer: sale.buyer, totalCents });
+  const lineTotalCents = safeNumber(prepared.reduce((sum, line) => sum + BigInt(line.totalCents), 0n));
+  if (sale.cashPaymentRounding !== undefined) assertFiscalCashPaymentRounding(sale.cashPaymentRounding, lineTotalCents);
+  const totalCents = lineTotalCents + (sale.cashPaymentRounding?.amountCents ?? 0);
   const baseCents = selectedProfile.taxRegime === "NRUS" ? null :
     safeNumber(prepared.reduce((sum, line) => sum + BigInt(line.disclosure.baseCents ?? 0), 0n));
   const taxCents = selectedProfile.taxRegime === "NRUS" ? null :
     safeNumber(prepared.reduce((sum, line) => sum + BigInt(line.disclosure.taxCents ?? 0), 0n));
-  if (baseCents !== null && taxCents !== null && baseCents + taxCents !== totalCents)
+  if (baseCents !== null && taxCents !== null && baseCents + taxCents !== lineTotalCents)
     fail("FISCAL_V1_TOTAL_MISMATCH");
-  return { operationId: sale.operationId, saleId: sale.saleId, tenantId: sale.tenantId, issuerId: sale.issuerId,
+  const decision: FiscalV1PreparedDecision = { operationId: sale.operationId, saleId: sale.saleId, tenantId: sale.tenantId, issuerId: sale.issuerId,
     issuerRuc: sale.issuerRuc, taxRegime: selectedProfile.taxRegime, environment: sale.environment,
     currency: sale.currency, occurredOn: date, documentType: sale.documentType,
     ...(sale.buyer ? { buyer: { ...sale.buyer } } : {}), context: { ...sale.context },
@@ -720,7 +743,12 @@ export function prepareFiscalV1Sale(input: {
       fingerprintSha256: selectedProfile.fingerprintSha256 },
     capabilityRef: { capabilityId: selectedCapability.capabilityId, fingerprintSha256: selectedCapability.fingerprintSha256 },
     lines: prepared, totalCents, baseCents, taxCents,
+    ...(sale.cashPaymentRounding === undefined ? {} : { cashPaymentRounding: { ...sale.cashPaymentRounding } }),
     ...(amazonia ? { amazonia: JSON.parse(fiscalConfigurationCanonicalJson(amazonia)) } : {}) };
+  // Validate the capture itself: a malformed null buyer must not disappear in
+  // the optional output spread and become an anonymous consumer.
+  assertFiscalV1BuyerForIssuance({ ...decision, buyer: sale.buyer });
+  return decision;
 }
 
 /** Material estable para que el adaptador calcule SHA-256, sin importar crypto en dominio. */

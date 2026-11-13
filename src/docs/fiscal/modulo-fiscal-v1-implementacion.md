@@ -26,3 +26,36 @@ El backend mantiene la clave privada fuera del proceso API, autoriza la publicac
 El backend ya ofrece publicación autenticada, registro de claves y verificación pura de preparación/snapshot. El móvil ya puede descargar y verificar la publicación fuera del checkout y preparar una decisión local. Su refresco aún es opt-in y no hay cutover de ventas. Antes de reservar correlativo, firmar o enviar habrá que verificar perfil, reglas, capacidad, huellas, tenant, emisor y comprador; ligar fecha de emisión a una política de tiempo confiable; reservar serie/número de forma durable e idempotente; archivar el XML firmado; y superar los ensayos reales del proveedor. El adaptador XmlPeru aislado valida vectores sintéticos pero no se invoca para emitir. Ninguna ausencia de perfil o capacidad se resuelve con una tasa, código o configuración global predeterminada.
 
 Descuentos globales, redondeo de efectivo, precios unitarios modificados, operaciones gratuitas y reanudación/idempotencia de la emisión requieren contratos y pruebas propios antes de activar el módulo en el POS. La nota necesita además causal oficial/versión de catálogo y prueba real XML/resultado para cada capacidad; el test sintético no concede esa admisión.
+
+## Compatibilidad de importes comerciales: snapshot V3
+
+Los lectores de Utils 42 deben distribuirse antes de habilitar escritores de
+`fiscal-v1-snapshot-v3`. Los lectores 40/41 rechazan los nuevos campos o la
+aritmética distinta; no se deben entregar documentos V3 a esos lectores.
+
+V3 se usa únicamente cuando existe `cashPaymentRounding` o una línea con
+`manualGrossTotalCents`. Los snapshots V1/V2 conservan sus campos, sus bytes y
+sus hashes: no se agregan valores predeterminados ni se reinterpretan al leer.
+Los documentos comerciales también exigen el campo explícito versionado
+`cashPaymentRounding.schemaVersion: 1` para admitir que el pagable difiera de
+la suma de líneas. Sin ese hecho, se conserva la igualdad anterior.
+
+El carril inicial admite solo boleta al contado en PEN. El ajuste de cobro
+declara la política opaca y su versión, el paso de diez céntimos, el importe
+negativo exacto del resto, la dirección a favor del cliente y la aplicación a
+efectivo total. No representa un descuento ni altera bases o IGV. En el caso
+de 1104 céntimos en líneas y un ajuste de -4, el pagable es 1100. El residuo
+de un céntimo del proveedor y el prorrateo de notas son contratos distintos.
+
+El bruto manual explícito conserva precio de catálogo y cantidad en la
+decisión; no deduce un descuento desde su diferencia. Inicialmente exige
+importe entero positivo y descuento cero. El adaptador deriva y comprueba el
+unitario documental representable. El documento impreso mantiene su propia
+igualdad entre cantidad, unitario documental e importe; el campo manual no
+permite mostrar una igualdad falsa como `1 × 15 = 1`.
+
+V3 no amplía factura, crédito, efectivo mixto ni notas de crédito. Como límite
+técnico inicial de este carril, una boleta anónima debe quedar dentro de
+S/700 antes del ajuste de cobro. Esta restricción de implementación no es una
+regla tributaria adicional. La habilitación de un escritor requiere lectores
+compatibles y evidencia del proveedor para la representación documental.

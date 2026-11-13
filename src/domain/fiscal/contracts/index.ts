@@ -4,6 +4,7 @@ export * from "./clasificacion-tributaria.contract";
 export * from "./reglas-tributarias";
 export * from "./configuracion-tributaria";
 export * from "./comprobante-electronico.contract";
+export * from "./cash-payment-rounding.contract";
 export * from "./proceso-fiscal.contract";
 export * from "./configuracion-fiscal.contract";
 export * from "./catalog-tax-policy.contract";

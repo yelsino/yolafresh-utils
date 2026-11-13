@@ -70,6 +70,43 @@ const pending: FiscalProcess = {
 };
 const now = "2026-10-08T10:00:02-05:00";
 
+test("V1 distingue el ajuste cash versionado de las bases y conserva el documento histórico", () => {
+  const amounts = [522, 128, 168, 186, 100];
+  const cash: FiscalSignedDocument = { ...document,
+    origin: { kind: "VENTA_V1", saleId: "opaque sale", operationId: "opaque operation",
+      fiscalSnapshotId: "opaque V3 snapshot", fiscalSnapshotSha256: "b".repeat(64) },
+    lines: amounts.map((amount, index) => ({ ...document.lines[0], lineId: `opaque line / ${index}`,
+      unitPriceCents: amount, grossCents: amount, totalCents: amount,
+      ...(index === 4 ? { manualGrossTotalCents: 100 } : {}),
+      tax: { ...document.lines[0].tax, taxableBaseCents: amount } })),
+    totals: { ...document.totals, exemptCents: 1104, payableCents: 1100 },
+    cashPaymentRounding: { schemaVersion: 1, amountCents: -4, policyId: "opaque policy / ñ", policyVersion: 1,
+      currency: "PEN", stepCents: 10, direction: "A_FAVOR_CLIENTE", application: "EFECTIVO_TOTAL" },
+    print: { ...document.print, digestOutsideQr: true,
+      qrPayload: "10770681397|03|B001|24|0.00|11.00|2026-10-08|0|-" } };
+  const bytes = JSON.stringify(cash), historicalBytes = JSON.stringify(document);
+  assert.deepEqual(validateFiscalSignedDocument(cash), []);
+  assert.equal(cash.lines.reduce((sum, line) => sum + line.totalCents, 0), 1104);
+  assert.equal(cash.totals.payableCents, 1100);
+  const { cashPaymentRounding: _rounding, ...withoutExplicitFact } = cash;
+  assert.ok(validateFiscalSignedDocument(withoutExplicitFact).includes("totals.payableCents.linesMismatch"));
+  assert.ok(validateFiscalSignedDocument({ ...cash, cashPaymentRounding: { ...cash.cashPaymentRounding,
+    schemaVersion: 2 } }).includes("cashPaymentRounding"));
+  assert.ok(validateFiscalSignedDocument({ ...cash, cashPaymentRounding: { ...cash.cashPaymentRounding,
+    amountCents: -3 } }).includes("cashPaymentRounding"));
+  assert.ok(validateFiscalSignedDocument({ ...cash, identity: { ...cash.identity, documentType: "FACTURA" } })
+    .includes("cashPaymentRounding"));
+  assert.ok(validateFiscalSignedDocument({ ...cash, origin: document.origin }).includes("cashPaymentRounding"));
+  assert.ok(validateFiscalSignedDocument({ ...cash, lines: cash.lines.map((line, index) => index !== 4 ? line :
+    { ...line, unitPriceCents: 1500 }) }).includes("lines[4].unitPriceQuantityMismatch"));
+  assert.ok(validateFiscalSignedDocument({ ...cash, lines: cash.lines.map((line, index) => index !== 4 ? line :
+    { ...line, manualGrossTotalCents: 99 }) }).includes("lines[4].manualGrossTotalCents"));
+  assert.deepEqual(validateFiscalSignedDocument(document), []);
+  assert.equal(JSON.stringify(document), historicalBytes);
+  assert.equal(JSON.stringify(cash), bytes);
+  assert.equal(Object.prototype.hasOwnProperty.call(document, "cashPaymentRounding"), false);
+});
+
 test("la proyección preserva el fundamento regional separado de la categoría fiscal ordinaria", () => {
   const regional = { ...document, lines: [{ ...document.lines[0], fiscalTreatment: {
     basis: "LEY_27037_ART_13_1_A", ordinaryCategory: "GRAVADA", ordinaryTaxRateBasisPoints: 1800 } }] };

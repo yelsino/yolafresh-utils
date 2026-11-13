@@ -321,6 +321,68 @@ test("emisión anónima exige boleta al contado y respeta el umbral aun con hash
   assert.throws(() => assertFiscalV1SnapshotForIssuance(freeze(1100, true)), /FISCAL_V1_SNAPSHOT_BUYER_INVALID/);
 });
 
+test("snapshot V3 exige hechos monetarios explícitos y no cambia los bytes de V1 ni V2", () => {
+  const legacy = fixture("SUPPORTED", { documentType: "BOLETA" }).snapshot;
+  const freeze = (value: FiscalV1Snapshot): FiscalV1Snapshot => ({ ...value,
+    decisionSha256: fiscalV1CanonicalSha256(value.decision), snapshotSha256: fiscalV1SnapshotFingerprint({ ...value,
+      decisionSha256: fiscalV1CanonicalSha256(value.decision) }) });
+  const rounding = { schemaVersion: 1, amountCents: -4, policyId: "opaque policy / ñ", policyVersion: 1,
+    currency: "PEN", stepCents: 10, direction: "A_FAVOR_CLIENTE", application: "EFECTIVO_TOTAL" } as const;
+  const line = { ...legacy.decision.lines[0], unitPriceCents: 1104, totalCents: 1104,
+    legalCategory: "EXONERADA" as const, disclosure: { kind: "ITEMIZED" as const,
+      baseCents: 1104, taxCents: 0, appliedRateBasisPoints: 0 } };
+  const modern = freeze({ ...legacy, schemaVersion: "fiscal-v1-snapshot-v3",
+    decision: { ...legacy.decision, lines: [line], baseCents: 1104, taxCents: 0,
+      totalCents: 1100, cashPaymentRounding: rounding } });
+  assert.doesNotThrow(() => assertFiscalV1SnapshotForIssuance(modern));
+  assert.equal(modern.decision.lines[0].totalCents, 1104);
+  assert.equal(modern.decision.totalCents, 1100);
+  for (const schemaVersion of ["fiscal-v1-snapshot", "fiscal-v1-snapshot-v2"] as const)
+    assert.throws(() => assertFiscalV1Snapshot(freeze({ ...modern, schemaVersion })), /FISCAL_V1_SNAPSHOT_VERSION_INVALID/);
+  assert.throws(() => assertFiscalV1Snapshot({ ...modern, decision: { ...modern.decision,
+    cashPaymentRounding: { ...rounding, policyVersion: 2 } } }), /FISCAL_V1_SNAPSHOT_HASH_INVALID/);
+  assert.throws(() => assertFiscalV1Snapshot(freeze({ ...modern, decision: { ...modern.decision,
+    cashPaymentRounding: { ...rounding, amountCents: -3 } } })), /FISCAL_CASH_PAYMENT_ROUNDING_INVALID/);
+  assert.throws(() => assertFiscalV1Snapshot(freeze({ ...modern, paymentTerms: { kind: "CREDITO", netPendingCents: 1100,
+    installments: [{ dueOn: "2026-10-16", amountCents: 1100 }] } })), /FISCAL_V1_COMMERCIAL_ADJUSTMENT_UNSUPPORTED/);
+  assert.throws(() => assertFiscalV1Snapshot(freeze({ ...legacy, schemaVersion: "fiscal-v1-snapshot-v3" })),
+    /FISCAL_V1_SNAPSHOT_VERSION_INVALID/);
+  const oldCredit = freeze({ ...legacy, schemaVersion: "fiscal-v1-snapshot-v2",
+    paymentTerms: { kind: "CREDITO", netPendingCents: 1180,
+      installments: [{ dueOn: "2026-10-16", amountCents: 1180 }] } });
+  for (const historical of [legacy, oldCredit]) {
+    const bytes = JSON.stringify(historical), hash = historical.snapshotSha256;
+    assertFiscalV1Snapshot(historical);
+    assertFiscalV1SnapshotForIssuance(historical);
+    assert.equal(historical.snapshotSha256, hash);
+    assert.equal(fiscalV1SnapshotFingerprint(historical), hash);
+    assert.equal(JSON.stringify(historical), bytes);
+  }
+});
+
+test("un importe manual conserva el precio fuente y exige V3 sin extender notas de crédito", () => {
+  const source = fixture("SUPPORTED", { documentType: "BOLETA" });
+  const line = { ...source.snapshot.decision.lines[0], unitPriceCents: 1500, manualGrossTotalCents: 100,
+    totalCents: 100, legalCategory: "EXONERADA" as const,
+    disclosure: { kind: "ITEMIZED" as const, baseCents: 100, taxCents: 0, appliedRateBasisPoints: 0 } };
+  const decision = { ...source.snapshot.decision, lines: [line], totalCents: 100, baseCents: 100, taxCents: 0 };
+  const material: FiscalV1Snapshot = { ...source.snapshot, schemaVersion: "fiscal-v1-snapshot-v3", decision,
+    decisionSha256: fiscalV1CanonicalSha256(decision) };
+  const snapshot = { ...material, snapshotSha256: fiscalV1SnapshotFingerprint(material) };
+  assert.doesNotThrow(() => assertFiscalV1SnapshotForIssuance(snapshot));
+  assert.equal(snapshot.decision.lines[0].unitPriceCents, 1500);
+  assert.throws(() => prepareFiscalV1CreditNote({ ...source, originalSnapshot: snapshot,
+    originalDocument: { ...source.document, snapshotSha256: snapshot.snapshotSha256 }, priorCredits: [],
+    ...source.publication } as never), /FISCAL_V1_CREDIT_NOTE_COMMERCIAL_ADJUSTMENT_UNSUPPORTED/);
+  const { manualGrossTotalCents: _manual, ...undisclosed } = line;
+  const oldDecision = { ...decision, lines: [undisclosed] };
+  const oldMaterial: FiscalV1Snapshot = { ...material, schemaVersion: "fiscal-v1-snapshot", decision: oldDecision,
+    decisionSha256: fiscalV1CanonicalSha256(oldDecision) };
+  const historical = { ...oldMaterial, snapshotSha256: fiscalV1SnapshotFingerprint(oldMaterial) };
+  assert.doesNotThrow(() => assertFiscalV1Snapshot(historical));
+  assert.throws(() => assertFiscalV1SnapshotForIssuance(historical), /FISCAL_V1_SNAPSHOT_TOTAL_INVALID/);
+});
+
 test("CDR rechazada de una nota no libera cantidades firmadas ni altera el resultado del original", () => {
   const { publication, snapshot, document, draft } = fixture();
   const prior = { noteId: "prior-note", operationId: "prior-op", originalDocumentId: document.documentId,

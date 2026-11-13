@@ -73,6 +73,8 @@ export function prepareFiscalCreditNote(original: FiscalSignedDocument, command:
       !["VENTA", "VENTA_V1"].includes(original.origin.kind) ||
       !["BOLETA", "FACTURA"].includes(original.identity.documentType))
     return fail("CREDIT_NOTE_ORIGINAL_INVALID");
+  if (original.cashPaymentRounding !== undefined || original.lines.some(line => line.manualGrossTotalCents !== undefined))
+    return fail("CREDIT_NOTE_COMMERCIAL_ADJUSTMENT_UNSUPPORTED");
   if (!command || !["01", "06", "07"].includes(command.reasonCode)) return fail("CREDIT_NOTE_REASON_UNSUPPORTED");
   if (!text(command.operationId) || !text(command.idempotencyKey) || command.idempotencyKey.length > 240 ||
       !text(command.reason) || command.reason.length > 500 || !Array.isArray(command.selections)) return fail("CREDIT_NOTE_COMMAND_INVALID");

@@ -5,7 +5,7 @@ import type { FiscalAmazoniaLineDecision } from "./fiscal-amazonia-sale.contract
 
 /** Congela lo aprobado por el motor antes de pedir firma. No es por sí mismo un CPE. */
 export interface FiscalV1Snapshot {
-  readonly schemaVersion: "fiscal-v1-snapshot" | "fiscal-v1-snapshot-v2";
+  readonly schemaVersion: "fiscal-v1-snapshot" | "fiscal-v1-snapshot-v2" | "fiscal-v1-snapshot-v3";
   readonly snapshotId: string;
   readonly decision: FiscalV1PreparedDecision;
   readonly decisionSha256: string;

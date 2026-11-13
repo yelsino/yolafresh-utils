@@ -2,6 +2,7 @@
 import type { FiscalAmazoniaDemoUbigeo, FiscalAmazoniaPreparedSale, FiscalAmazoniaSaleFacts } from "./fiscal-amazonia-sale.contract";
 import type { FiscalTaxRegime } from "./cpe.contract";
 import type { FiscalCatalogResolvedTaxSource } from "./catalog-tax-policy.contract";
+import type { FiscalCashPaymentRounding } from "./cash-payment-rounding.contract";
 
 export type FiscalV1Environment = "DEMO" | "PRODUCTION";
 export type FiscalV1DocumentType = "BOLETA" | "FACTURA" | "NOTA_CREDITO";
@@ -111,6 +112,8 @@ export interface FiscalV1SaleLineInput {
   readonly catalogSemanticFingerprintSha256: string;
   readonly quantityMilli: number;
   readonly unitPriceCents: number;
+  /** Explicit operator-captured gross amount; catalogue unit price and quantity stay unchanged. */
+  readonly manualGrossTotalCents?: number;
   readonly discountCents: number;
 }
 
@@ -128,6 +131,7 @@ export interface FiscalV1SaleInput {
   readonly buyer?: { readonly documentType: "RUC" | "DNI"; readonly documentNumber: string; readonly legalName: string };
   readonly context: FiscalV1OperationContext;
   readonly lines: readonly FiscalV1SaleLineInput[];
+  readonly cashPaymentRounding?: FiscalCashPaymentRounding;
   readonly amazoniaFacts?: FiscalAmazoniaSaleFacts;
 }
 
@@ -211,6 +215,7 @@ export interface FiscalV1PreparedLine {
   readonly presentationId: string;
   readonly quantityMilli: number;
   readonly unitPriceCents: number;
+  readonly manualGrossTotalCents?: number;
   readonly discountCents: number;
   readonly totalCents: number;
   readonly unitCode: FiscalV1PresentationRule["unitCode"];
@@ -250,4 +255,6 @@ export interface FiscalV1PreparedDecision {
   /** null = no discriminado; 0 solo significa impuesto calculado y conocido igual a cero. */
   readonly baseCents: number | null;
   readonly taxCents: number | null;
+  /** Present only when the collected payable differs from the unchanged fiscal line total. */
+  readonly cashPaymentRounding?: FiscalCashPaymentRounding;
 }

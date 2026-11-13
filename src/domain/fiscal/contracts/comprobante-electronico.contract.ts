@@ -2,6 +2,7 @@ import { validateFiscalSaleSnapshot } from "./cpe.contract";
 import { fiscalConfigurationCanonicalJson, validateFiscalTaxResolutionSource } from "./configuracion-fiscal";
 import { assertFiscalV1ProviderChannelReceipt, type FiscalV1ProviderChannelReceipt } from "./modulo-fiscal-v1-proveedor.contract";
 import type { FiscalTaxResolutionSource } from "./configuracion-fiscal.contract";
+import { assertFiscalCashPaymentRounding, type FiscalCashPaymentRounding } from "./cash-payment-rounding.contract";
 import { assertFiscalAmazoniaLineDecisions, type FiscalAmazoniaLineDecision } from "./fiscal-amazonia-sale.contract";
 import type { FiscalBuyer, FiscalCurrency, FiscalDocumentIdentity, FiscalLineTax,
   FiscalSaleSnapshot } from "./cpe.contract";
@@ -37,6 +38,8 @@ export interface FiscalDocumentLine {
   readonly unitCode: string;
   readonly unitPriceCents: number;
   readonly grossCents: number;
+  /** Explicit manual amount carried from V1; unitPriceCents remains the documentary unit price here. */
+  readonly manualGrossTotalCents?: number;
   /** Exact cumulative proration residue, only on corrections; maximum one cent. */
   readonly roundingAdjustmentCents?: number;
   readonly discountCents: number;
@@ -78,6 +81,7 @@ export interface FiscalSignedDocument {
   /** Snapshot suficiente para reproducir el papel sin red ni catálogo actual. */
   readonly lines: readonly FiscalDocumentLine[];
   readonly totals: FiscalDocumentTotals;
+  readonly cashPaymentRounding?: FiscalCashPaymentRounding;
   readonly signature: {
     /** Referencia y SHA-256 de los bytes del XML firmado crudo. */
     readonly signedXml: FiscalArtifactReference;
@@ -197,7 +201,7 @@ export function validateFiscalSignedDocument(value: unknown): readonly string[] 
   const errors: string[] = [];
   rejectUnknown(value, ["_id", "_rev", "type", "documentId", "tenantId", "environment", "identity",
     "origin", "issuer", "buyer", "currency", "issueDate", "issuedAt", "signedAt",
-    "lines", "totals", "signature", "print"], "", errors);
+    "lines", "totals", "cashPaymentRounding", "signature", "print"], "", errors);
   if (value.type !== FISCAL_DOCUMENT_TYPE) errors.push("type");
   for (const key of ["documentId", "tenantId"] as const)
     if (!nonBlank(value[key])) errors.push(key);
@@ -267,7 +271,7 @@ export function validateFiscalSignedDocument(value: unknown): readonly string[] 
       const prefix = `lines[${index}]`;
       if (!record(line) || !record(line.tax)) { errors.push(prefix); return; }
       rejectUnknown(line, ["lineId", "description", "quantity", "unitCode", "unitPriceCents",
-        "grossCents", "roundingAdjustmentCents", "discountCents", "totalCents", "tax", "taxSource", "fiscalTreatment"], `${prefix}.`, errors);
+        "grossCents", "manualGrossTotalCents", "roundingAdjustmentCents", "discountCents", "totalCents", "tax", "taxSource", "fiscalTreatment"], `${prefix}.`, errors);
       if (line.taxSource !== undefined && !validateFiscalTaxResolutionSource(line.taxSource)) errors.push(`${prefix}.taxSource`);
       if (line.fiscalTreatment !== undefined) {
         try {
@@ -291,6 +295,11 @@ export function validateFiscalSignedDocument(value: unknown): readonly string[] 
       if (cents(line.grossCents) && cents(line.discountCents) && cents(line.totalCents) &&
         line.grossCents - line.discountCents !== line.totalCents)
         errors.push(`${prefix}.grossDiscountMismatch`);
+      if (line.manualGrossTotalCents !== undefined && (!cents(line.manualGrossTotalCents) || line.manualGrossTotalCents <= 0 ||
+          line.manualGrossTotalCents !== line.grossCents || line.discountCents !== 0 ||
+          !record(value.origin) || value.origin.kind !== "VENTA_V1" ||
+          !record(value.identity) || value.identity.documentType !== "BOLETA" || value.currency !== "PEN"))
+        errors.push(`${prefix}.manualGrossTotalCents`);
       const expectedGross = expectedGrossCents(line.unitPriceCents as number, String(line.quantity));
       const residue = line.roundingAdjustmentCents ?? 0;
       if (!Number.isInteger(residue) || Math.abs(Number(residue)) > 1 ||
@@ -323,6 +332,21 @@ export function validateFiscalSignedDocument(value: unknown): readonly string[] 
       }
     });
   }
+  const preCashTotal = sums.payableCents;
+  if (value.cashPaymentRounding !== undefined) {
+    try {
+      assertFiscalCashPaymentRounding(value.cashPaymentRounding, Number(preCashTotal),
+        record(value.totals) ? value.totals.payableCents as number : undefined);
+      if (!record(value.origin) || value.origin.kind !== "VENTA_V1" ||
+          !record(value.identity) || value.identity.documentType !== "BOLETA" || value.currency !== "PEN") throw Error();
+      sums.payableCents += BigInt(value.cashPaymentRounding.amountCents);
+    } catch { errors.push("cashPaymentRounding"); }
+  }
+  const manualV1 = Array.isArray(value.lines) && value.lines.some(line => record(line) && line.manualGrossTotalCents !== undefined);
+  // Technical limit for the initial V3 lane, not an additional identification rule for legacy documents.
+  if ((value.cashPaymentRounding !== undefined || manualV1) && record(value.buyer) &&
+      value.buyer.documentType === "SIN_DOCUMENTO" && preCashTotal > 70_000n)
+    errors.push("buyer.identificationRequiredBeforeCashRounding");
   if (!record(value.totals)) errors.push("totals");
   else {
     rejectUnknown(value.totals, Object.keys(sums), "totals.", errors);

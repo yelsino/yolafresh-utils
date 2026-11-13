@@ -4,19 +4,22 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import nacl from "tweetnacl";
 import * as publicApi from "../../../index";
-import { assertFiscalV1IssuerAuthority, fiscalV1DecisionFingerprintMaterial,
+import { assertFiscalCashPaymentRounding, assertFiscalV1IssuerAuthority, fiscalV1DecisionFingerprintMaterial,
   fiscalV1PublicationArtifactFingerprint, fiscalV1PublicationPayloadFingerprint, fiscalV1PublicationPayloadMaterial,
   prepareFiscalV1Sale as prepareFiscalV1SaleCore,
   verifyFiscalV1PublicationBundle,
   type FiscalV1Capability, type FiscalV1IssuerProfile, type FiscalV1LegalCategory,
   type FiscalV1PresentationRule, type FiscalV1SaleInput, type FiscalV1SignedPublicationBundle,
-  type FiscalV1TrustedPublisherKey } from "../contracts";
+  type FiscalV1TrustedPublisherKey, type FiscalCashPaymentRounding } from "../contracts";
 
 const HASH = "a".repeat(64);
 const CONTEXT = { establishmentId: "local-1", operationKind: "DOMESTIC_RETAIL", buyerUse: "FINAL_CONSUMER" } as const;
 const SOURCE = "fixture-sintetica:revisar-fuente-y-vigencia-antes-de-produccion";
 const NOW = Date.UTC(2026, 9, 15);
 const KEY_PAIR = nacl.sign.keyPair.fromSeed(new Uint8Array(32).fill(7));
+const CASH_ROUNDING: FiscalCashPaymentRounding = { schemaVersion: 1, amountCents: -4,
+  policyId: "opaque cash policy / ñ", policyVersion: 1, currency: "PEN", stepCents: 10,
+  direction: "A_FAVOR_CLIENTE", application: "EFECTIVO_TOTAL" };
 const KEY: FiscalV1TrustedPublisherKey = { keyId: "llave-sintetica-v1",
   publicKeyBase64: Buffer.from(KEY_PAIR.publicKey).toString("base64"), tenantId: "tenant-a", environment: "DEMO",
   validFromMs: Date.UTC(2026, 9, 1), validToMs: Date.UTC(2026, 11, 1) };
@@ -382,6 +385,74 @@ test("un comprador malformado no se convierte en consumidor final", () => {
     { documentType: "RUC", documentNumber: "20123456789", legalName: "" }]) {
     assert.throws(() => prepareFiscalV1Sale({ ...common, sale: sale({ buyer: buyer as never }) }), /FISCAL_V1_BUYER_INVALID/);
   }
+});
+
+test("ajuste cash explícito conserva las cinco líneas, el precio de catálogo y la base antes del cobro", () => {
+  for (const environment of ["DEMO", "PRODUCTION"] as const) {
+    const amounts = [522, 128, 168, 186, 100];
+    const lines = amounts.map((amount, index) => ({ ...sale().lines[0], lineId: `opaque line / ${index}`,
+      presentationId: `opaque presentation / ${index}`, unitPriceCents: index === 4 ? 1500 : amount,
+      ...(index === 4 ? { manualGrossTotalCents: 100 } : {}) }));
+    const input = { sale: sale({ environment, lines, cashPaymentRounding: CASH_ROUNDING }),
+      profiles: [issuer({ environment })], rules: lines.map(line => rule(line.presentationId, "EXONERADA")),
+      capabilities: [capability(["EXONERADA"], { environment })] };
+    const sourceBytes = JSON.stringify(input);
+    const decision = prepareFiscalV1Sale(input);
+    assert.deepEqual(decision.lines.map(line => line.totalCents), amounts);
+    assert.equal(decision.lines[4].unitPriceCents, 1500);
+    assert.equal(decision.lines[4].quantityMilli, 1000);
+    assert.equal(decision.lines[4].manualGrossTotalCents, 100);
+    assert.ok(decision.lines.every(line => line.discountCents === 0));
+    assert.equal(decision.baseCents, 1104);
+    assert.equal(decision.taxCents, 0);
+    assert.equal(decision.totalCents, 1100);
+    assert.deepEqual(decision.cashPaymentRounding, CASH_ROUNDING);
+    assert.equal(JSON.stringify(input), sourceBytes);
+    assert.deepEqual(prepareFiscalV1Sale(input), decision);
+    const changedPolicy = prepareFiscalV1Sale({ ...input, sale: { ...input.sale,
+      cashPaymentRounding: { ...CASH_ROUNDING, policyVersion: 2 } } });
+    assert.notEqual(fiscalV1DecisionFingerprintMaterial(changedPolicy), fiscalV1DecisionFingerprintMaterial(decision));
+  }
+});
+
+test("cash exige metadatos exactos y el resto decimal real, sin aceptar ajustes mixtos o descuentos", () => {
+  for (let remainder = 1; remainder <= 9; remainder++)
+    assert.doesNotThrow(() => assertFiscalCashPaymentRounding({ ...CASH_ROUNDING, amountCents: -remainder }, 1100 + remainder, 1100));
+  for (const changed of [{ schemaVersion: 2 }, { amountCents: 0 }, { amountCents: 4 }, { amountCents: -10 },
+    { amountCents: -3 }, { policyId: "" }, { policyVersion: 0 }, { currency: "USD" }, { stepCents: 5 },
+    { direction: "A_FAVOR_COMERCIO" }, { application: "EFECTIVO_MIXTO" }, { extra: true }])
+    assert.throws(() => assertFiscalCashPaymentRounding({ ...CASH_ROUNDING, ...changed }, 1104, 1100),
+      /FISCAL_CASH_PAYMENT_ROUNDING_INVALID/);
+  for (const [pre, payable] of [[1104, 1101], [1100, 1100], [4, 0], [1104.1, 1100]])
+    assert.throws(() => assertFiscalCashPaymentRounding(CASH_ROUNDING, pre, payable), /FISCAL_CASH_PAYMENT_ROUNDING_INVALID/);
+  const common = { profiles: [issuer()], rules: [rule("queso", "EXONERADA")], capabilities: [capability(["EXONERADA"])] };
+  const cashSale = sale({ cashPaymentRounding: CASH_ROUNDING,
+    lines: [{ ...sale().lines[0], unitPriceCents: 1104 }] });
+  assert.throws(() => prepareFiscalV1Sale({ ...common, sale: { ...cashSale, documentType: "FACTURA" } }),
+    /FISCAL_V1_COMMERCIAL_ADJUSTMENT_UNSUPPORTED/);
+  assert.throws(() => prepareFiscalV1Sale({ ...common, sale: { ...cashSale,
+    lines: [{ ...cashSale.lines[0], discountCents: 1 }] } }), /FISCAL_V1_COMMERCIAL_ADJUSTMENT_UNSUPPORTED/);
+});
+
+test("bruto manual exige captura positiva y sin descuento; no añade redondeo ni cambia el catálogo", () => {
+  const common = { profiles: [issuer()], rules: [rule("queso", "EXONERADA")], capabilities: [capability(["EXONERADA"])] };
+  const manual = sale({ lines: [{ ...sale().lines[0], unitPriceCents: 1500, manualGrossTotalCents: 100 }] });
+  const decision = prepareFiscalV1Sale({ ...common, sale: manual });
+  assert.equal(decision.totalCents, 100);
+  assert.equal(decision.lines[0].unitPriceCents, 1500);
+  assert.equal(decision.lines[0].manualGrossTotalCents, 100);
+  assert.equal(Object.prototype.hasOwnProperty.call(decision, "cashPaymentRounding"), false);
+  for (const amount of [0, -1, 0.1, NaN])
+    assert.throws(() => prepareFiscalV1Sale({ ...common, sale: { ...manual,
+      lines: [{ ...manual.lines[0], manualGrossTotalCents: amount }] } }), /FISCAL_V1_MANUAL_GROSS_TOTAL_INVALID/);
+});
+
+test("el límite técnico inicial de anonimato V3 usa el importe anterior al ajuste", () => {
+  const common = { profiles: [issuer()], rules: [rule("queso", "EXONERADA")], capabilities: [capability(["EXONERADA"])] };
+  const rounded = sale({ lines: [{ ...sale().lines[0], unitPriceCents: 70_004 }], cashPaymentRounding: CASH_ROUNDING });
+  assert.throws(() => prepareFiscalV1Sale({ ...common, sale: rounded }), /FISCAL_BUYER_IDENTIFICATION_REQUIRED/);
+  assert.equal(prepareFiscalV1Sale({ ...common, sale: { ...rounded,
+    buyer: { documentType: "DNI", documentNumber: "12345678", legalName: "SYNTHETIC BUYER" } } }).totalCents, 70_000);
 });
 
 test("decisión serializada conserva nulidad y material canónico estable", () => {

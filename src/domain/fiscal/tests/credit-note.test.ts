@@ -47,6 +47,20 @@ test("partial credit preserves historical price, buyer, emitter and actual tax",
   assert.equal(JSON.stringify(doc), before);
 });
 
+test("la proyección V3 no amplía notas a importes manuales ni redondeo de cobro", () => {
+  const source = originalFixture();
+  const base: FiscalSignedDocument = { ...source, origin: { kind: "VENTA_V1", saleId: "opaque sale",
+    operationId: "opaque operation", fiscalSnapshotId: "opaque V3 snapshot", fiscalSnapshotSha256: "b".repeat(64) } };
+  const manual: FiscalSignedDocument = { ...base, lines: [{ ...base.lines[0], manualGrossTotalCents: 354 }] };
+  const cash: FiscalSignedDocument = { ...base,
+    cashPaymentRounding: { schemaVersion: 1, amountCents: -4, policyId: "opaque cash policy", policyVersion: 1,
+      currency: "PEN", stepCents: 10, direction: "A_FAVOR_CLIENTE", application: "EFECTIVO_TOTAL" },
+    totals: { ...base.totals, payableCents: 350 },
+    print: { ...base.print, qrPayload: base.print.qrPayload.replace("|3.54|", "|3.50|") } };
+  for (const original of [manual, cash])
+    assert.throws(() => prepareFiscalCreditNote(original, command(), []), /CREDIT_NOTE_COMMERCIAL_ADJUSTMENT_UNSUPPORTED/);
+});
+
 test("devolución regional preserva el fundamento original y rechaza su alteración en el historial", () => {
   const source = originalFixture();
   const fiscalTreatment = { basis: "LEY_27037_ART_13_1_A" as const,
