@@ -7,7 +7,9 @@ import { assertFiscalV1DocumentRecord, assertFiscalV1Snapshot, assertFiscalV1Sna
   type FiscalV1Capability, type FiscalV1CreditNoteDraft, type FiscalV1DocumentRecord,
   type FiscalV1IssuerProfile, type FiscalV1PresentationRule, type FiscalV1SignedPublicationBundle,
   type FiscalV1Snapshot, type FiscalV1TrustedPublisherKey } from "../contracts";
-import { fiscalV1RegisteredSaleSource } from "../contracts";
+import { assertFiscalV1RegisteredCashSaleSnapshot, fiscalV1RegisteredCashEvidenceSha256, fiscalV1RegisteredCashSaleSource, fiscalV1RegisteredSaleSource,
+  type FiscalV1RegisteredCashEvidence } from "../contracts";
+import { resolveVentaCobro } from "../../ventas/contracts/venta-cobro.contract";
 import type { IVentaSnapshot } from "../../ventas/contracts/venta-snapshot.contract";
 
 const HASH = "a".repeat(64);
@@ -17,6 +19,10 @@ const KEY_PAIR = nacl.sign.keyPair.fromSeed(new Uint8Array(32).fill(9));
 const TRUSTED_KEY: FiscalV1TrustedPublisherKey = { keyId: "test-key-2", publicKeyBase64: Buffer.from(KEY_PAIR.publicKey).toString("base64"),
   tenantId: "tenant-sintetico", environment: "DEMO", validFromMs: NOW - 86400000, validToMs: NOW + 86400000 };
 const SOURCE = "fixture-sintetica-fiscal-v1";
+const cashEvidence = (saleId: string, amountCents = 1100): FiscalV1RegisteredCashEvidence => ({
+  schemaVersion: 1, tenantId: "tenant", saleId, cajaId: "caja", currency: "PEN", netAmountCents: amountCents,
+  movements: [{ movementId: "movement / α", createdAtMs: NOW, type: "INGRESO", subtype: "VENTA", referenceType: "VENTA",
+    referenceId: saleId, cajaId: "caja", currency: "PEN", method: "EFECTIVO", state: "ACTIVO", amountCents }] });
 
 test("a valid snapshot hash cannot disguise ordinary basis inconsistent with its frozen line", () => {
   const original = fixture().snapshot;
@@ -40,6 +46,87 @@ test("la referencia comercial usa identificadores opacos y congela cantidades, p
   const withSource = { ...frozen, snapshotSha256: fiscalV1SnapshotFingerprint(frozen) };
   assert.doesNotThrow(() => assertFiscalV1Snapshot(withSource));
   assert.throws(() => assertFiscalV1Snapshot({ ...withSource, commercialSource: { ...source, snapshotId: "changed" } }), /HASH_INVALID/);
+});
+
+test("registered cash source freezes original payment, date and explicit manual/rounding facts", () => {
+  const commercial = { id: "cash snapshot / α", ventaId: "cash sale / β", createdAt: NOW,
+    moneda: "PEN", subtotal: 11.04, descuentoTotal: 0, impuesto: 0, montoRedondeo: -0.04,
+    total: 11, cobro: { schemaVersion: 1, totalVenta: 11, efectivoRecibido: 11 },
+    redondeoPago: { schemaVersion: 1, monto: -0.04, politicaId: "policy", politicaVersion: 1 },
+    items: [{ id: "line", presentacionId: "presentation", nombre: "Producto", cantidadVendida: 1,
+      precioUnitario: 15, total: 11.04, montoModificado: true, descuento: 0 }] } as IVentaSnapshot;
+  const evidence = cashEvidence(commercial.ventaId);
+  const source = fiscalV1RegisteredCashSaleSource(commercial, evidence);
+  assert.deepEqual(Object.keys(source).sort(), ["cashEvidenceSha256", "kind", "snapshotId", "snapshotSha256"]);
+  assert.equal(source.kind, "REGISTERED_CASH_SALE");
+  assert.equal(source.snapshotId, commercial.id);
+  assert.deepEqual(fiscalV1RegisteredCashSaleSource({ ...commercial, items: [{ ...commercial.items[0], imagenUrl: "new" }] }, evidence), source);
+  for (const changed of [
+    { ...commercial, createdAt: NOW + 1 }, { ...commercial, subtotal: 11.03 },
+    { ...commercial, impuesto: 0.01 }, { ...commercial, montoRedondeo: -0.03 },
+    { ...commercial, cobro: { ...commercial.cobro!, efectivoRecibido: 12 } },
+    { ...commercial, redondeoPago: { ...commercial.redondeoPago!, politicaVersion: 2 } },
+    { ...commercial, items: [{ ...commercial.items[0], montoModificado: false }] },
+    { ...commercial, items: [{ ...commercial.items[0], descuento: 1 }] },
+  ]) assert.notEqual(fiscalV1RegisteredCashSaleSource(changed, evidence).snapshotSha256, source.snapshotSha256);
+  assert.throws(() => fiscalV1RegisteredCashSaleSource({ ...commercial, createdAt: NaN }, evidence), /SOURCE_INVALID/);
+  assert.notEqual(source.snapshotSha256, fiscalV1RegisteredSaleSource(commercial).snapshotSha256);
+});
+
+test("registered cash requires V3 even without a price adjustment and cannot masquerade as credit/factura", () => {
+  const { snapshot } = fixture("SUPPORTED", { documentType: "BOLETA" });
+  const source = { kind: "REGISTERED_CASH_SALE" as const, snapshotId: "cash / original", snapshotSha256: HASH, cashEvidenceSha256: HASH };
+  const freeze = (value: FiscalV1Snapshot): FiscalV1Snapshot => ({ ...value, snapshotSha256: fiscalV1SnapshotFingerprint(value) });
+  const cash = freeze({ ...snapshot, schemaVersion: "fiscal-v1-snapshot-v3", commercialSource: source });
+  assert.doesNotThrow(() => assertFiscalV1SnapshotForIssuance(cash));
+  assert.throws(() => assertFiscalV1Snapshot(freeze({ ...cash, schemaVersion: "fiscal-v1-snapshot" })), /VERSION_INVALID/);
+  assert.throws(() => assertFiscalV1Snapshot(freeze({ ...cash, paymentTerms: { kind: "CREDITO", netPendingCents: 1180,
+    installments: [{ dueOn: "2026-11-01", amountCents: 1180 }] } })), /COMMERCIAL_ADJUSTMENT_UNSUPPORTED/);
+  const invoice = fixture().snapshot;
+  assert.throws(() => assertFiscalV1Snapshot(freeze({ ...invoice, schemaVersion: "fiscal-v1-snapshot-v3", commercialSource: source })), /COMMERCIAL_ADJUSTMENT_UNSUPPORTED/);
+});
+
+test("registered cash snapshot admits exact cash/manual gross/rounding and rejects fabricated financial facts", () => {
+  const snapshot = { id: "snapshot", type: "venta_snapshot", ventaId: "sale", createdAt: NOW,
+    moneda: "PEN", subtotal: 11.04, impuesto: 0, descuentoTotal: 0, montoRedondeo: -0.04, total: 11,
+    redondeoPago: { schemaVersion: 1, monto: -0.04, politicaId: "cash-policy", politicaVersion: 1,
+      moneda: "PEN", paso: 0.1, direccion: "A_FAVOR_CLIENTE", aplicacion: "EFECTIVO_TOTAL" },
+    cobro: resolveVentaCobro({ totalVenta: 11 }),
+    items: [{ id: "line", presentacionId: "product", nombre: "Producto", cantidadVendida: 1,
+      precioUnitario: 15, total: 11.04, montoModificado: true, descuento: 0 }] } as IVentaSnapshot;
+  const before = structuredClone(snapshot);
+  assert.doesNotThrow(() => assertFiscalV1RegisteredCashSaleSnapshot(snapshot));
+  assert.deepEqual(snapshot, before);
+  const returned = resolveVentaCobro({ totalVenta: 11, efectivoRecibido: 20,
+    devoluciones: [{ id: "change fact", metodoPago: "EFECTIVO", monto: 9, confirmadoAt: NOW, operadorId: "operator" }] });
+  assert.doesNotThrow(() => assertFiscalV1RegisteredCashSaleSnapshot({ ...snapshot, cobro: returned }));
+  assert.equal(returned.efectivoAplicado, 11);
+  assert.equal(returned.vueltoDevuelto, 9);
+  for (const invalid of [
+    { ...snapshot, items: [{ ...snapshot.items[0], montoModificado: false }] },
+    { ...snapshot, subtotal: 15 }, { ...snapshot, impuesto: 0.01 },
+    { ...snapshot, descuentoTotal: 0.01 }, { ...snapshot, redondeoPago: undefined },
+    { ...snapshot, cobro: undefined },
+    { ...snapshot, cobro: resolveVentaCobro({ totalVenta: 11, efectivoRecibido: 12 }) },
+  ]) assert.throws(() => assertFiscalV1RegisteredCashSaleSnapshot(invalid), /CASH_SNAPSHOT_INVALID/);
+});
+
+test("registered cash evidence freezes exact opaque movement identities and semantics independent of order", () => {
+  const original = cashEvidence("sale");
+  const evidence: FiscalV1RegisteredCashEvidence = { ...original, movements: [
+    { ...original.movements[0], amountCents: 2000 },
+    { ...original.movements[0], movementId: "change / β", type: "EGRESO", amountCents: 900 }] };
+  const hash = fiscalV1RegisteredCashEvidenceSha256(evidence);
+  assert.equal(fiscalV1RegisteredCashEvidenceSha256({ ...evidence, movements: [...evidence.movements].reverse() }), hash);
+  assert.notEqual(fiscalV1RegisteredCashEvidenceSha256({ ...evidence,
+    movements: [{ ...evidence.movements[0], movementId: "replacement same money" }, evidence.movements[1]] }), hash);
+  assert.notEqual(fiscalV1RegisteredCashEvidenceSha256({ ...evidence,
+    movements: [{ ...evidence.movements[0], createdAtMs: NOW + 1 }, evidence.movements[1]] }), hash);
+  for (const invalid of [
+    { ...evidence, netAmountCents: 2000 }, { ...evidence, movements: [evidence.movements[0], evidence.movements[0]] },
+    { ...evidence, movements: [{ ...evidence.movements[0], referenceId: "other sale" }, evidence.movements[1]] },
+    { ...evidence, movements: [{ ...evidence.movements[0], cajaId: "other caja" }, evidence.movements[1]] },
+  ]) assert.throws(() => fiscalV1RegisteredCashEvidenceSha256(invalid), /CASH_EVIDENCE_INVALID/);
 });
 
 type TestMode = { taxRegime?: "RER" | "NRUS"; documentType?: "FACTURA" | "BOLETA";

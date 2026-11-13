@@ -26,7 +26,7 @@ export interface FiscalV1Snapshot {
   /** Presente sólo para publicaciones con selección explícita por caja; cubierto por la huella. */
   readonly cajaAssignment?: FiscalV2CajaAssignment;
   /** Emisión posterior: referencia inmutable a la venta comercial ya registrada. */
-  readonly commercialSource?: FiscalV1RegisteredSaleSource;
+  readonly commercialSource?: FiscalV1CommercialSource;
   readonly lineDescriptions: readonly { readonly lineId: string; readonly description: string }[];
   readonly paymentTerms: { readonly kind: "CONTADO" } | {
     readonly kind: "CREDITO";
@@ -47,6 +47,26 @@ export interface FiscalV1RegisteredSaleSource {
   readonly snapshotId: string;
   readonly snapshotSha256: string;
 }
+/** Fiscal-only issuance for an already confirmed cash sale; never a new sale. */
+export interface FiscalV1RegisteredCashSaleSource {
+  readonly kind: "REGISTERED_CASH_SALE";
+  readonly snapshotId: string;
+  readonly snapshotSha256: string;
+  readonly cashEvidenceSha256: string;
+}
+
+export interface FiscalV1RegisteredCashEvidence {
+  readonly schemaVersion: 1;
+  readonly tenantId: string;
+  readonly saleId: string;
+  readonly cajaId: string;
+  readonly currency: "PEN";
+  readonly netAmountCents: number;
+  readonly movements: readonly Readonly<{ movementId: string; createdAtMs: number;
+    type: "INGRESO" | "EGRESO"; subtype: "VENTA"; referenceType: "VENTA"; referenceId: string;
+    cajaId: string; currency: "PEN"; method: "EFECTIVO"; state: "ACTIVO"; amountCents: number }>[];
+}
+export type FiscalV1CommercialSource = FiscalV1RegisteredSaleSource | FiscalV1RegisteredCashSaleSource;
 
 export type FiscalV1PaymentTerms = FiscalV1Snapshot["paymentTerms"];
 

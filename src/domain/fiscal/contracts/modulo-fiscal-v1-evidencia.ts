@@ -49,8 +49,9 @@ export function assertFiscalV1Snapshot(snapshot: FiscalV1Snapshot): void {
         Object.keys(snapshot.cajaAssignment).length !== 2 || !text(snapshot.cajaAssignment.cajaId) ||
         !positive(snapshot.cajaAssignment.assignmentVersion))) ||
       (snapshot.commercialSource !== undefined && (!snapshot.commercialSource ||
-        snapshot.commercialSource.kind !== "REGISTERED_SALE" ||
-        Object.keys(snapshot.commercialSource).length !== 3 ||
+        !["REGISTERED_SALE", "REGISTERED_CASH_SALE"].includes(snapshot.commercialSource.kind) ||
+        Object.keys(snapshot.commercialSource).length !== (snapshot.commercialSource.kind === "REGISTERED_CASH_SALE" ? 4 : 3) ||
+        snapshot.commercialSource.kind === "REGISTERED_CASH_SALE" && !sha256(snapshot.commercialSource.cashEvidenceSha256) ||
         !text(snapshot.commercialSource.snapshotId) || !sha256(snapshot.commercialSource.snapshotSha256))) ||
       !text(snapshot.series) || !positive(snapshot.number) || !cents(snapshot.createdAtMs) ||
       !sha256(snapshot.decisionSha256) || !sha256(snapshot.publicationPayloadSha256) ||
@@ -70,7 +71,8 @@ export function assertFiscalV1Snapshot(snapshot: FiscalV1Snapshot): void {
   const modern = snapshot.schemaVersion === "fiscal-v1-snapshot-v3";
   const hasManualGross = snapshot.decision.lines.some(line => line.manualGrossTotalCents !== undefined);
   const rounding = snapshot.decision.cashPaymentRounding;
-  if (modern !== (hasManualGross || rounding !== undefined)) fail("FISCAL_V1_SNAPSHOT_VERSION_INVALID");
+  const registeredCash = snapshot.commercialSource?.kind === "REGISTERED_CASH_SALE";
+  if (modern !== (hasManualGross || rounding !== undefined || registeredCash)) fail("FISCAL_V1_SNAPSHOT_VERSION_INVALID");
   if (modern && (snapshot.decision.documentType !== "BOLETA" || snapshot.decision.currency !== "PEN" ||
       snapshot.paymentTerms?.kind !== "CONTADO" || snapshot.decision.lines.some(line => line.discountCents !== 0)))
     fail("FISCAL_V1_COMMERCIAL_ADJUSTMENT_UNSUPPORTED");
