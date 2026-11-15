@@ -8,6 +8,7 @@ import { assertFiscalAmazoniaSaleFacts, assertFiscalAmazoniaLineDecisions,
 import { sha256 as digestSha256 } from "@noble/hashes/sha256";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
 import nacl from "tweetnacl";
+import { FiscalV1PublicationProofMemo } from "./fiscal-v1-publication-proof-memo";
 import type { FiscalOperationalCajaAssignmentBinding, FiscalResolvedCajaNumberingAssignment } from "./numeracion-caja";
 import { FISCAL_V1_PUBLICATION_DOCUMENT_TYPE } from "./modulo-fiscal-v1.contract";
 import type { FiscalV1Capability, FiscalV1CheckoutContext, FiscalV2CheckoutContext, FiscalV1EffectivePublication, FiscalV1IssuerProfile,
@@ -549,8 +550,8 @@ export function assertFiscalV1IssuerAuthority(profiles: readonly FiscalV1IssuerP
   }
 }
 
-/** Valida una publicación completa; la clave confiable se fija fuera del payload remoto. */
-export function verifyFiscalV1PublicationBundle(bundle: FiscalV1SignedPublicationBundle,
+/** Complete validation remains the only source of successful proof entries. */
+function verifyFiscalV1PublicationBundleFully(bundle: FiscalV1SignedPublicationBundle,
   trustedKeys: readonly FiscalV1TrustedPublisherKey[], nowMs: number): FiscalV1PublicationPayload {
   exactKeys(bundle, ["payload", "payloadSha256", "signature"], [], "FISCAL_V1_BUNDLE_INVALID");
   exactKeys(bundle.signature, ["algorithm", "keyId", "signatureBase64"], [], "FISCAL_V1_SIGNATURE_INVALID");
@@ -594,6 +595,15 @@ export function verifyFiscalV1PublicationBundle(bundle: FiscalV1SignedPublicatio
   validateCheckoutContexts(payload);
   validateCheckoutContextsV2(payload);
   return payload;
+}
+
+const publicationProofMemo = new FiscalV1PublicationProofMemo(verifyFiscalV1PublicationBundleFully);
+
+/** Validates current caller data and trust. Only a bounded exact-byte proof of a
+ * prior successful validation may be reused within its original validity window. */
+export function verifyFiscalV1PublicationBundle(bundle: FiscalV1SignedPublicationBundle,
+  trustedKeys: readonly FiscalV1TrustedPublisherKey[], nowMs: number): FiscalV1PublicationPayload {
+  return publicationProofMemo.verify(bundle, trustedKeys, nowMs);
 }
 
 /** Sin reloj, red, persistencia ni asignación de correlativos. */

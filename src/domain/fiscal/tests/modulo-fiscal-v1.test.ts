@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import nacl from "tweetnacl";
+import { FiscalV1PublicationProofMemo } from "../contracts/fiscal-v1-publication-proof-memo";
 import * as publicApi from "../../../index";
 import { assertFiscalCashPaymentRounding, assertFiscalV1IssuerAuthority, fiscalV1DecisionFingerprintMaterial,
   fiscalV1PublicationArtifactFingerprint, fiscalV1PublicationPayloadFingerprint, fiscalV1PublicationPayloadMaterial,
@@ -91,6 +92,150 @@ function sale(overrides: Partial<FiscalV1SaleInput> = {}): FiscalV1SaleInput {
 test("el núcleo nuevo queda exportado por la API pública", () => {
   assert.equal(publicApi.prepareFiscalV1Sale, prepareFiscalV1SaleCore);
   assert.equal(publicApi.verifyFiscalV1PublicationBundle, verifyFiscalV1PublicationBundle);
+});
+
+function proofFixture(label: string) {
+  const fixture = JSON.parse(readFileSync(resolve(process.cwd(),
+    "src/docs/fiscal/fixtures/fiscal-v1-signed-golden.json"), "utf8")) as {
+      sale: FiscalV1SaleInput; bundle: FiscalV1SignedPublicationBundle;
+      trustedKey: FiscalV1TrustedPublisherKey; nowMs: number;
+    };
+  // keyId is opaque signature metadata, outside the already signed payload.
+  const keyId = "opaque publisher / " + label;
+  return { ...fixture, bundle: { ...fixture.bundle, signature: { ...fixture.bundle.signature, keyId } },
+    trustedKeys: [{ ...fixture.trustedKey, keyId }] };
+}
+const copyProof = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+
+test("prepare reuses exact publication proof but still evaluates each current sale and returns caller data", t => {
+  const fixture = proofFixture("prepare reuse"), calls = t.mock.method(nacl.sign.detached, "verify");
+  const first = prepareFiscalV1SaleCore(fixture);
+  const currentBundle = copyProof(fixture.bundle);
+  assert.equal(verifyFiscalV1PublicationBundle(currentBundle, copyProof(fixture.trustedKeys), fixture.nowMs + 1), currentBundle.payload);
+  const secondSale = { ...fixture.sale, saleId: "another opaque sale", operationId: "another opaque operation",
+    lines: fixture.sale.lines.map(line => ({ ...line, quantityMilli: line.quantityMilli * 2 })) };
+  const second = prepareFiscalV1SaleCore({ ...fixture, bundle: currentBundle, sale: secondSale, nowMs: fixture.nowMs + 2 });
+  assert.equal(second.totalCents, first.totalCents * 2);
+  assert.equal(second.saleId, secondSale.saleId);
+  assert.throws(() => prepareFiscalV1SaleCore({ ...fixture,
+    sale: { ...fixture.sale, lines: [{ ...fixture.sale.lines[0], quantityMilli: 0 }] } }), /FISCAL_V1_/);
+  assert.throws(() => prepareFiscalV1SaleCore({ ...fixture,
+    sale: { ...fixture.sale, occurredOn: "2000-01-01" } }), /FISCAL_V1_/);
+  assert.equal(calls.mock.callCount(), 1);
+});
+
+test("the SDK proof never trusts advertised hashes after payload, signature, scope or public key replacement", () => {
+  for (const kind of ["payload", "signature", "tenant", "environment", "publicKey", "revoked"] as const) {
+    const fixture = proofFixture("tamper " + kind);
+    verifyFiscalV1PublicationBundle(fixture.bundle, fixture.trustedKeys, fixture.nowMs);
+    const changed = copyProof(fixture.bundle) as any;
+    let supplied = copyProof(fixture.trustedKeys);
+    if (kind === "payload") changed.payload.issuerId = "substituted opaque issuer";
+    if (kind === "signature") changed.signature.signatureBase64 =
+      (changed.signature.signatureBase64[0] === "A" ? "B" : "A") + changed.signature.signatureBase64.slice(1);
+    if (kind === "tenant") changed.payload.tenantId = "other tenant";
+    if (kind === "environment") changed.payload.environment = "PRODUCTION";
+    if (kind === "publicKey") supplied = [{ ...supplied[0],
+      publicKeyBase64: Buffer.from(nacl.sign.keyPair.fromSeed(new Uint8Array(32).fill(31)).publicKey).toString("base64") }];
+    if (kind === "revoked") supplied = [];
+    assert.equal(changed.payloadSha256, fixture.bundle.payloadSha256);
+    assert.throws(() => verifyFiscalV1PublicationBundle(changed, supplied, fixture.nowMs + 1), /FISCAL_V1_/);
+  }
+});
+
+test("publication proof is not an object identity cache and cannot conceal caller mutation", () => {
+  const fixture = proofFixture("mutable data"), original = copyProof(fixture.bundle);
+  verifyFiscalV1PublicationBundle(original, fixture.trustedKeys, fixture.nowMs);
+  (original.payload as any).issuerId = "mutated after proof";
+  assert.throws(() => verifyFiscalV1PublicationBundle(original, fixture.trustedKeys, fixture.nowMs + 1), /PAYLOAD_HASH_INVALID/);
+  const current = copyProof(fixture.bundle);
+  assert.equal(verifyFiscalV1PublicationBundle(current, fixture.trustedKeys, fixture.nowMs + 2), current.payload);
+});
+
+test("proof validity is bounded by publication/key expiry and never reads a wall clock", t => {
+  const fixture = proofFixture("time validity");
+  t.mock.method(Date, "now", () => { throw Error("wall clock must not be read"); });
+  verifyFiscalV1PublicationBundle(fixture.bundle, fixture.trustedKeys, fixture.nowMs);
+  assert.throws(() => verifyFiscalV1PublicationBundle(fixture.bundle, fixture.trustedKeys, fixture.bundle.payload.expiresAtMs), /NOT_CURRENT/);
+  const shortKeys = [{ ...fixture.trustedKeys[0], validToMs: fixture.nowMs + 1000 }];
+  verifyFiscalV1PublicationBundle(fixture.bundle, shortKeys, fixture.nowMs);
+  assert.throws(() => verifyFiscalV1PublicationBundle(fixture.bundle, shortKeys, fixture.nowMs + 1000), /KEY_NOT_CURRENT/);
+  assert.throws(() => verifyFiscalV1PublicationBundle(fixture.bundle, fixture.trustedKeys, NaN), /PAYLOAD_INVALID/);
+});
+
+test("internal memo keeps interleaved reader times but rechecks TTL, future key boundaries and rollback", () => {
+  const fixture = proofFixture("internal time"), checks: number[] = [];
+  const memo = new FiscalV1PublicationProofMemo((bundle, _keys, now) => { checks.push(now); return bundle.payload; });
+  const supplied = [...fixture.trustedKeys, { ...fixture.trustedKeys[0], keyId: "future opaque key",
+    validFromMs: fixture.nowMs + 1000, validToMs: fixture.nowMs + 2000 }];
+  memo.verify(fixture.bundle, supplied, fixture.nowMs);
+  memo.verify(copyProof(fixture.bundle), copyProof(supplied), fixture.nowMs + 2);
+  memo.verify(copyProof(fixture.bundle), copyProof(supplied), fixture.nowMs + 1);
+  assert.equal(checks.length, 1);
+  memo.verify(fixture.bundle, supplied, fixture.nowMs + 1000);
+  memo.verify(fixture.bundle, supplied, fixture.nowMs + 2000);
+  assert.equal(checks.length, 3);
+  memo.verify(fixture.bundle, supplied, fixture.nowMs + 302000);
+  assert.equal(checks.length, 4);
+  memo.verify(fixture.bundle, supplied, fixture.nowMs + 301999);
+  assert.equal(checks.length, 5);
+  memo.verify(fixture.bundle, supplied, NaN);
+  memo.verify(fixture.bundle, supplied, fixture.nowMs + 302001);
+  assert.equal(checks.length, 7);
+});
+
+test("internal memo does not retain failures or transformed verifier projections", () => {
+  const fixture = proofFixture("errors"); let failures = 0, transformations = 0;
+  const failing = new FiscalV1PublicationProofMemo(() => { failures++; throw Error("expected rejection"); });
+  for (let i = 0; i < 2; i++) assert.throws(() => failing.verify(fixture.bundle, fixture.trustedKeys, fixture.nowMs), /expected rejection/);
+  const projecting = new FiscalV1PublicationProofMemo(bundle => { transformations++; return copyProof(bundle.payload); });
+  projecting.verify(fixture.bundle, fixture.trustedKeys, fixture.nowMs);
+  projecting.verify(fixture.bundle, fixture.trustedKeys, fixture.nowMs + 1);
+  assert.equal(failures, 2); assert.equal(transformations, 2);
+});
+
+test("memo eligibility never executes accessors or hides non-JSON/exotic descriptor values", () => {
+  const fixture = proofFixture("descriptor guard");
+  for (const kind of ["getter", "toJSON", "hidden", "undefined", "symbol", "function", "NaN", "negativeZero", "prototype", "sparse", "cycle"]) {
+    let fullChecks = 0, getterCalls = 0, toJsonCalls = 0;
+    const memo = new FiscalV1PublicationProofMemo(bundle => { fullChecks++; return bundle.payload; });
+    memo.verify(fixture.bundle, fixture.trustedKeys, fixture.nowMs);
+    const changed = copyProof(fixture.bundle) as any;
+    if (kind === "getter") Object.defineProperty(changed, "extra", { enumerable: true, get: () => { getterCalls++; return undefined; } });
+    if (kind === "toJSON") Object.defineProperty(changed, "toJSON", { get: () => { toJsonCalls++; return () => fixture.bundle; } });
+    if (kind === "hidden") Object.defineProperty(changed, "extra", { value: "hidden", enumerable: false });
+    if (kind === "undefined") changed.extra = undefined;
+    if (kind === "symbol") changed[Symbol("extra")] = true;
+    if (kind === "function") changed.extra = () => undefined;
+    if (kind === "NaN") changed.extra = NaN;
+    if (kind === "negativeZero") changed.extra = -0;
+    if (kind === "prototype") Object.setPrototypeOf(changed, { inherited: true });
+    if (kind === "sparse") changed.extra = new Array(1);
+    if (kind === "cycle") changed.extra = changed;
+    memo.verify(changed, fixture.trustedKeys, fixture.nowMs + 1);
+    memo.verify(changed, fixture.trustedKeys, fixture.nowMs + 2);
+    assert.equal(fullChecks, 3, kind); assert.equal(getterCalls, 0, kind); assert.equal(toJsonCalls, 0, kind);
+  }
+});
+
+test("internal memo bounds successful proof count and serialized UTF16 memory", () => {
+  const fixture = proofFixture("budgets"); let checks = 0;
+  const memo = new FiscalV1PublicationProofMemo(bundle => { checks++; return bundle.payload; });
+  memo.verify(fixture.bundle, fixture.trustedKeys, fixture.nowMs);
+  for (let i = 0; i < 8; i++) memo.verify(fixture.bundle,
+    [...fixture.trustedKeys, { ...fixture.trustedKeys[0], keyId: "opaque additional " + i }], fixture.nowMs);
+  memo.verify(fixture.bundle, fixture.trustedKeys, fixture.nowMs + 1);
+  assert.equal(checks, 10);
+  const oversized = [{ ...fixture.trustedKeys[0], publicKeyBase64: "x".repeat(2 * 1024 * 1024) }];
+  memo.verify(fixture.bundle, oversized, fixture.nowMs + 2);
+  memo.verify(fixture.bundle, oversized, fixture.nowMs + 3);
+  assert.equal(checks, 12);
+  const large = [0, 1, 2].map(i => [{ ...fixture.trustedKeys[0], publicKeyBase64: i + "x".repeat(1536 * 1024) }]);
+  for (const supplied of large) memo.verify(fixture.bundle, supplied, fixture.nowMs + 4);
+  memo.verify(fixture.bundle, large[2], fixture.nowMs + 5);
+  assert.equal(checks, 15);
+  memo.verify(fixture.bundle, large[0], fixture.nowMs + 6);
+  assert.equal(checks, 16);
 });
 
 test("fixture dorado firmado produce exactamente la misma decisión serializada", () => {
