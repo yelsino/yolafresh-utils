@@ -264,6 +264,17 @@ export function prepareFiscalV1CreditNote(input: {
   const profile = profiles[0];
   if (!["NRUS", "RER"].includes(profile.taxRegime)) fail("FISCAL_V1_REGIME_NOT_IMPLEMENTED");
   const originalLines = new Map(original.lines.map(line => [line.lineId, line]));
+  // A discount is commercial consideration, never a rounding residual. This
+  // new path applies only to cumulative discounted lines; historical modes and
+  // undiscounted reservations keep their exact prior arithmetic/bytes.
+  const discountedOriginalGross = new Map<string, bigint>();
+  if (cumulativeProration) for (const line of original.lines) {
+    if (line.discountCents === 0) continue;
+    const gross = calculateSaleLineGrossCents(line);
+    if (gross > MAX_SAFE || gross !== BigInt(line.totalCents) + BigInt(line.discountCents))
+      fail("FISCAL_V1_CREDIT_NOTE_ORIGINAL_LINE_AMOUNT_INVALID");
+    discountedOriginalGross.set(line.lineId, gross);
+  }
   const credited = new Map<string, bigint>();
   const creditedQuantities = new Map<string, bigint>();
   const priorIds = new Set<string>();
@@ -332,8 +343,30 @@ export function prepareFiscalV1CreditNote(input: {
           BigInt(originalLine.quantityMilli) / 2n) / BigInt(originalLine.quantityMilli);
     if (BigInt(line.creditCents) !== expectedCents || expectedCents <= 0n)
       fail("FISCAL_V1_CREDIT_NOTE_QUANTITY_AMOUNT_MISMATCH");
-    const roundingAdjustmentCents = line.creditCents - safeNumber(
-      calculateSaleLineGrossCents({ unitPriceCents: originalLine.unitPriceCents, quantityMilli: line.creditQuantityMilli }));
+    const gross = discountedOriginalGross.get(line.originalLineId);
+    let grossPortion = BigInt(line.creditCents);
+    if (gross !== undefined) {
+      const quantity = BigInt(originalLine.quantityMilli);
+      const previousGross = (gross * alreadyQuantity + quantity / 2n) / quantity;
+      grossPortion = (gross * (alreadyQuantity + BigInt(line.creditQuantityMilli)) + quantity / 2n) / quantity - previousGross;
+      const previousDiscount = previousGross - alreadyCents;
+      const discountPortion = grossPortion - BigInt(line.creditCents);
+      if (previousDiscount < 0n || discountPortion < 0n ||
+          previousDiscount + discountPortion > BigInt(originalLine.discountCents))
+        fail("FISCAL_V1_CREDIT_NOTE_QUANTITY_AMOUNT_MISMATCH");
+      // Current provider/read contracts represent itemized taxable corrections
+      // only with exact historical base/tax proration. Do not invent tax cents.
+      if (originalLine.legalCategory === "GRAVADA" && originalLine.disclosure.kind === "ITEMIZED") {
+        const tax = BigInt(originalLine.disclosure.taxCents) * BigInt(line.creditQuantityMilli);
+        const base = BigInt(originalLine.disclosure.baseCents) * BigInt(line.creditQuantityMilli);
+        if (tax % quantity !== 0n || base % quantity !== 0n ||
+            (tax + base) / quantity !== BigInt(line.creditCents))
+          fail("FISCAL_V1_CREDIT_NOTE_TAX_PRORATION_UNREPRESENTABLE");
+      }
+    }
+    const unitGross = calculateSaleLineGrossCents({ unitPriceCents: originalLine.unitPriceCents, quantityMilli: line.creditQuantityMilli });
+    const roundingAdjustmentCents = gross === undefined
+      ? line.creditCents - safeNumber(unitGross) : Number(grossPortion - unitGross);
     if (Math.abs(roundingAdjustmentCents) > 1) fail("FISCAL_V1_CREDIT_NOTE_QUANTITY_AMOUNT_MISMATCH");
     const originalAmazoniaLineDecision = original.amazonia?.lineDecisions?.find(value => value.lineId === line.originalLineId);
     return { originalLineId: line.originalLineId, creditQuantityMilli: line.creditQuantityMilli,

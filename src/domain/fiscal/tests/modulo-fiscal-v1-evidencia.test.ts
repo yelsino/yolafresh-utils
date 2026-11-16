@@ -1,12 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import nacl from "tweetnacl";
+import { createHash } from "node:crypto";
 import { assertFiscalV1DocumentRecord, assertFiscalV1Snapshot, assertFiscalV1SnapshotForIssuance, fiscalV1CanonicalSha256,
   fiscalV1PublicationArtifactFingerprint, fiscalV1PublicationPayloadFingerprint, fiscalV1PublicationPayloadMaterial,
   fiscalV1SnapshotFingerprint, prepareFiscalV1CreditNote, prepareFiscalV1Sale,
   type FiscalV1Capability, type FiscalV1CreditNoteDraft, type FiscalV1DocumentRecord,
   type FiscalV1IssuerProfile, type FiscalV1PresentationRule, type FiscalV1SignedPublicationBundle,
-  type FiscalV1Snapshot, type FiscalV1TrustedPublisherKey } from "../contracts";
+  type FiscalV1Snapshot, type FiscalV1TrustedPublisherKey,
+  fiscalV1PreparedCreditLineEconomics, prepareFiscalCreditNote, validateFiscalSignedDocument,
+  type FiscalSignedDocument, type FiscalV1PriorCreditNote } from "../contracts";
 import { assertFiscalV1RegisteredCashSaleSnapshot, fiscalV1RegisteredCashEvidenceSha256, fiscalV1RegisteredCashSaleSource, fiscalV1RegisteredSaleSource,
   type FiscalV1RegisteredCashEvidence } from "../contracts";
 import { resolveVentaCobro } from "../../ventas/contracts/venta-cobro.contract";
@@ -339,6 +342,207 @@ test("tres devoluciones acumulan 2+1+2 céntimos y las reservas antiguas mantien
         lines: [{ originalLineId: "line-1", creditedQuantityMilli: creditQuantityMilli, creditedCents: prepared.totalCents }] });
     }
     assert.equal(priorCredits.reduce((sum, prior) => sum + prior.lines[0].creditedCents, 0), 5);
+  }
+});
+
+function discountedNoteFixture(quantityMilli = 1000, unitPriceCents = 1180, discountCents = 118, taxable = false) {
+  const input = taxable ? fixture("SUPPORTED", { noteReasonCodes: ["01", "06", "07"] }) : regionalNoteFixture();
+  const gross = Number((BigInt(quantityMilli) * BigInt(unitPriceCents) + 500n) / 1000n);
+  const total = gross - discountCents, tax = taxable ? Number((BigInt(total) * 1800n + 5900n) / 11800n) : 0;
+  const lineId = " ? opaque original line / 零 ";
+  const line = { ...input.snapshot.decision.lines[0], lineId, quantityMilli, unitPriceCents, discountCents,
+    totalCents: total, disclosure: { kind: "ITEMIZED" as const, baseCents: total - tax,
+      taxCents: tax, appliedRateBasisPoints: taxable ? 1800 : 0 } };
+  const decision = { ...input.snapshot.decision, lines: [line], totalCents: total, baseCents: total - tax, taxCents: tax,
+    ...(input.snapshot.decision.amazonia ? { amazonia: { ...input.snapshot.decision.amazonia,
+      lineDecisions: input.snapshot.decision.amazonia.lineDecisions!.map(item => ({ ...item, lineId })) } } : {}) };
+  const material = { ...input.snapshot, decision, decisionSha256: fiscalV1CanonicalSha256(decision),
+    lineDescriptions: [{ lineId, description: "Synthetic historical discounted line" }] };
+  const snapshot = { ...material, snapshotSha256: fiscalV1SnapshotFingerprint(material) };
+  return { ...input, snapshot, document: { ...input.document, snapshotSha256: snapshot.snapshotSha256 },
+    draft: { ...input.draft, originalSnapshotSha256: snapshot.snapshotSha256, reasonCode: "07",
+      lines: [{ originalLineId: lineId, creditQuantityMilli: quantityMilli, creditCents: total }] } };
+}
+
+function genericDiscountOriginal(input: ReturnType<typeof discountedNoteFixture>): FiscalSignedDocument {
+  const { snapshot, document } = input, d = snapshot.decision, source = d.lines[0];
+  const digest = Buffer.alloc(32, 0xab).toString("base64"), tax = source.disclosure.taxCents!;
+  const total = source.totalCents, taxable = source.legalCategory === "GRAVADA";
+  const generic: FiscalSignedDocument = { type: "comprobante_electronico", documentId: document.documentId, tenantId: d.tenantId, environment: "DEMO",
+    identity: { issuerRuc: d.issuerRuc, documentType: d.documentType, series: snapshot.series, number: snapshot.number },
+    origin: { kind: "VENTA", saleId: d.saleId, saleSnapshotId: "opaque sale snapshot",
+      intentId: "opaque intent", fiscalSnapshotId: snapshot.snapshotId },
+    issuer: { legalName: snapshot.issuerLegalName, fiscalAddress: snapshot.issuerEstablishment.address, establishmentCode: "0000" },
+    buyer: { documentType: "RUC", documentNumber: d.buyer!.documentNumber, legalName: d.buyer!.legalName },
+    currency: "PEN", issueDate: d.occurredOn, issuedAt: new Date(NOW).toISOString(), signedAt: new Date(NOW).toISOString(),
+    lines: [{ lineId: source.lineId, description: snapshot.lineDescriptions[0].description,
+      quantity: String(source.quantityMilli / 1000), unitCode: source.unitCode, unitPriceCents: source.unitPriceCents,
+      grossCents: source.totalCents + source.discountCents, discountCents: source.discountCents, totalCents: source.totalCents,
+      tax: taxable ? { category: "GRAVADA", affectationCode: "10", taxScheme: "IGV",
+        taxRateBasisPoints: 1800, taxableBaseCents: total - tax, taxAmountCents: tax }
+        : { category: "EXONERADA", affectationCode: "20", taxScheme: "NONE", taxRateBasisPoints: 0,
+          taxableBaseCents: total, taxAmountCents: 0 } }],
+    totals: { taxableBaseCents: taxable ? total - tax : 0, exemptCents: taxable ? 0 : total,
+      unaffectedCents: 0, taxCents: tax, payableCents: total },
+    signature: { signedXml: document.signedXml!, digestValue: digest },
+    print: { qrPayload: `${d.issuerRuc}|${d.documentType === "BOLETA" ? "03" : "01"}|${snapshot.series}|${snapshot.number}|${(tax / 100).toFixed(2)}|${(total / 100).toFixed(2)}|${d.occurredOn}|6|${d.buyer!.documentNumber}|${digest}`,
+      digestOutsideQr: false, legalLegend: "DEMO — SIN VALIDEZ TRIBUTARIA" } };
+  assert.deepEqual(validateFiscalSignedDocument(generic), [], "generic comparison fixture must be valid");
+  return generic;
+}
+
+test("discounted V1 full credit separates 1180 gross, 118 discount and 1062 net without a discount-sized residue", () => {
+  for (const taxable of [false, true]) for (const reasonCode of ["01", "06", "07"]) {
+    const input = discountedNoteFixture(1000, 1180, 118, taxable), bytes = JSON.stringify(input.snapshot);
+    const prepared = prepareFiscalV1CreditNote({ draft: { ...input.draft, reasonCode }, originalSnapshot: input.snapshot,
+      originalDocument: input.document, priorCredits: [], ...input.publication });
+    assert.equal(prepared.lines[0].originalDiscountCents, 118);
+    assert.equal("roundingAdjustmentCents" in prepared.lines[0], false);
+    assert.deepEqual(fiscalV1PreparedCreditLineEconomics(prepared.lines[0], prepared.quantityProration),
+      { grossCents: 1180, discountCents: 118, totalCents: 1062 });
+    assert.equal(JSON.stringify(input.snapshot), bytes);
+  }
+});
+
+test("discounted V1 three partial credits close gross/discount/net cents against the generic credit policy", () => {
+  const input = discountedNoteFixture(3, 33300, 10), original = genericDiscountOriginal(input);
+  const v1History: FiscalV1PriorCreditNote[] = [], genericHistory: ReturnType<typeof prepareFiscalCreditNote>[] = [];
+  const parts: ReturnType<typeof fiscalV1PreparedCreditLineEconomics>[] = [], residues: number[] = [];
+  for (let index = 0; index < 3; index++) {
+    const note = prepareFiscalV1CreditNote({ ...input.publication, originalSnapshot: input.snapshot,
+      originalDocument: input.document, priorCredits: v1History, draft: { ...input.draft,
+        noteId: `opaque note ${index}`, noteOperationId: `opaque operation ${index}`,
+        lines: [{ originalLineId: input.draft.lines[0].originalLineId, creditQuantityMilli: 1, creditCents: 30 }] } });
+    const generic = prepareFiscalCreditNote(original, { operationId: note.noteOperationId, idempotencyKey: note.noteId,
+      reasonCode: "07", reason: "Synthetic return", selections: [{ originalLineId: original.lines[0].lineId, quantity: "0.001" }] }, genericHistory);
+    const economics = fiscalV1PreparedCreditLineEconomics(note.lines[0], note.quantityProration);
+    assert.deepEqual(economics, { grossCents: generic.lines[0].grossCents,
+      discountCents: generic.lines[0].discountCents, totalCents: generic.lines[0].totalCents });
+    parts.push(economics); residues.push(note.lines[0].roundingAdjustmentCents ?? 0); genericHistory.push(generic);
+    v1History.push({ noteId: note.noteId, operationId: note.noteOperationId, originalDocumentId: note.originalDocumentId,
+      originalSnapshotSha256: note.originalSnapshotSha256, quantityProration: "CUMULATIVE", state: "UNKNOWN",
+      lines: [{ originalLineId: note.lines[0].originalLineId, creditedQuantityMilli: 1, creditedCents: 30 }] });
+  }
+  assert.deepEqual(parts, [{ grossCents: 33, discountCents: 3, totalCents: 30 },
+    { grossCents: 34, discountCents: 4, totalCents: 30 }, { grossCents: 33, discountCents: 3, totalCents: 30 }]);
+  assert.deepEqual(residues, [0, 1, 0]);
+});
+
+test("deterministic exonerated partitions agree with generic cumulative gross/net/discount/tax and close every admitted series", () => {
+  let admitted = 0, rejected = 0;
+  for (const quantityMilli of [3, 7, 1000, 3000]) for (const unitPriceCents of [1, 5, 1180, 33300]) {
+    const gross = Number((BigInt(quantityMilli) * BigInt(unitPriceCents) + 500n) / 1000n);
+    for (const discount of [...new Set([1, Math.max(1, Math.floor(gross / 10))])]) {
+      if (gross <= discount) continue;
+      const input = discountedNoteFixture(quantityMilli, unitPriceCents, discount), original = genericDiscountOriginal(input);
+      const third = Math.floor(quantityMilli / 3), half = Math.floor(quantityMilli / 2);
+      for (const partition of [[quantityMilli], [half, quantityMilli - half], [third, third, quantityMilli - 2 * third],
+        [1, quantityMilli - 1], [1, 1, quantityMilli - 2]]) {
+        const v1History: FiscalV1PriorCreditNote[] = [], genericHistory: ReturnType<typeof prepareFiscalCreditNote>[] = [];
+        let consumed = 0, net = 0, sumGross = 0, sumDiscount = 0, supported = true;
+        for (const [index, quantity] of partition.entries()) {
+          const next = consumed + quantity;
+          const creditCents = Number((BigInt(input.snapshot.decision.totalCents) * BigInt(next) + BigInt(quantityMilli) / 2n) /
+            BigInt(quantityMilli)) - net;
+          const prepare = () => prepareFiscalV1CreditNote({ ...input.publication, originalSnapshot: input.snapshot,
+            originalDocument: input.document, priorCredits: v1History, draft: { ...input.draft,
+              noteId: `opaque grid note ${index}`, noteOperationId: `opaque grid operation ${index}`,
+              lines: [{ originalLineId: input.draft.lines[0].originalLineId, creditQuantityMilli: quantity, creditCents }] } });
+          let generic: ReturnType<typeof prepareFiscalCreditNote>;
+          try { generic = prepareFiscalCreditNote(original, { operationId: `opaque grid operation ${index}`, idempotencyKey: `opaque grid note ${index}`,
+            reasonCode: "07", reason: "Synthetic return", selections: [{ originalLineId: original.lines[0].lineId,
+              quantity: String(quantity / 1000) }] }, genericHistory); }
+          catch { assert.throws(prepare); rejected++; supported = false; break; }
+          const prepared = prepare(), actual = fiscalV1PreparedCreditLineEconomics(prepared.lines[0], prepared.quantityProration);
+          assert.deepEqual(actual, { grossCents: generic.lines[0].grossCents,
+            discountCents: generic.lines[0].discountCents, totalCents: generic.lines[0].totalCents });
+          assert.equal(generic.lines[0].tax.taxAmountCents, 0);
+          assert.ok(Math.abs(prepared.lines[0].roundingAdjustmentCents ?? 0) <= 1);
+          genericHistory.push(generic); consumed = next; net += actual.totalCents;
+          sumGross += actual.grossCents; sumDiscount += actual.discountCents;
+          v1History.push({ noteId: prepared.noteId, operationId: prepared.noteOperationId, originalDocumentId: prepared.originalDocumentId,
+            originalSnapshotSha256: prepared.originalSnapshotSha256, quantityProration: "CUMULATIVE", state: "SIGNED",
+            lines: [{ originalLineId: prepared.lines[0].originalLineId, creditedQuantityMilli: quantity, creditedCents: actual.totalCents }] });
+        }
+        if (supported) { admitted++; assert.equal(consumed, quantityMilli); assert.equal(sumGross, gross);
+          assert.equal(sumDiscount, discount); assert.equal(net, gross - discount); }
+      }
+    }
+  }
+  assert.ok(admitted > 50); assert.ok(rejected > 0);
+});
+
+test("discounted taxable credit admits exact halves and full return but rejects unrepresentable historical tax fractions", () => {
+  const input = discountedNoteFixture(1000, 1180, 118, true), genericOriginal = genericDiscountOriginal(input);
+  const history: FiscalV1PriorCreditNote[] = [], genericHistory: ReturnType<typeof prepareFiscalCreditNote>[] = [];
+  for (let index = 0; index < 2; index++) {
+    const note = prepareFiscalV1CreditNote({ ...input.publication, originalSnapshot: input.snapshot,
+      originalDocument: input.document, priorCredits: history, draft: { ...input.draft,
+        noteId: `taxable note ${index}`, noteOperationId: `taxable op ${index}`,
+        lines: [{ originalLineId: input.draft.lines[0].originalLineId, creditQuantityMilli: 500, creditCents: 531 }] } });
+    const generic = prepareFiscalCreditNote(genericOriginal, { operationId: note.noteOperationId, idempotencyKey: note.noteId,
+      reasonCode: "07", reason: "Synthetic return", selections: [{ originalLineId: note.lines[0].originalLineId, quantity: "0.5" }] }, genericHistory);
+    assert.deepEqual(fiscalV1PreparedCreditLineEconomics(note.lines[0], note.quantityProration),
+      { grossCents: 590, discountCents: 59, totalCents: 531 });
+    assert.equal(generic.lines[0].tax.taxAmountCents, 81); assert.equal(generic.lines[0].tax.taxableBaseCents, 450);
+    genericHistory.push(generic); history.push({ noteId: note.noteId, operationId: note.noteOperationId,
+      originalDocumentId: note.originalDocumentId, originalSnapshotSha256: note.originalSnapshotSha256,
+      quantityProration: "CUMULATIVE", state: "TRIBUTARY_REJECTED",
+      lines: [{ originalLineId: note.lines[0].originalLineId, creditedQuantityMilli: 500, creditedCents: 531 }] });
+  }
+  assert.equal(genericHistory.reduce((sum, note) => sum + note.totals.taxCents, 0), 162);
+  assert.throws(() => prepareFiscalV1CreditNote({ ...input.publication, originalSnapshot: input.snapshot,
+    originalDocument: input.document, priorCredits: [], draft: { ...input.draft,
+      lines: [{ originalLineId: input.draft.lines[0].originalLineId, creditQuantityMilli: 333, creditCents: 354 }] } }),
+  /FISCAL_V1_CREDIT_NOTE_TAX_PRORATION_UNREPRESENTABLE/);
+});
+
+test("discounted cumulative notes reject forged history or rehashed original gross/discount inconsistency", () => {
+  const input = discountedNoteFixture(1000, 1180, 118), id = input.draft.lines[0].originalLineId;
+  const prior: FiscalV1PriorCreditNote = { noteId: "opaque prior note", operationId: "opaque prior op",
+    originalDocumentId: input.document.documentId, originalSnapshotSha256: input.snapshot.snapshotSha256,
+    quantityProration: "CUMULATIVE", state: "SIGNED", lines: [{ originalLineId: id, creditedQuantityMilli: 500, creditedCents: 531 }] };
+  const args = { ...input.publication, originalSnapshot: input.snapshot, originalDocument: input.document,
+    draft: { ...input.draft, lines: [{ originalLineId: id, creditQuantityMilli: 500, creditCents: 531 }] } };
+  for (const changed of [{ ...prior, originalSnapshotSha256: "f".repeat(64) },
+    { ...prior, lines: [{ ...prior.lines[0], creditedCents: 530 }] },
+    { ...prior, lines: [{ ...prior.lines[0], creditedQuantityMilli: 499 }] },
+    { ...prior, lines: [{ ...prior.lines[0], originalLineId: "another opaque line" }] }])
+    assert.throws(() => prepareFiscalV1CreditNote({ ...args, priorCredits: [changed] }), /PRIOR_CREDIT_NOTE_INVALID/);
+  const decision = { ...input.snapshot.decision, lines: [{ ...input.snapshot.decision.lines[0], discountCents: 117 }] };
+  const material = { ...input.snapshot, decision, decisionSha256: fiscalV1CanonicalSha256(decision) };
+  const snapshot = { ...material, snapshotSha256: fiscalV1SnapshotFingerprint(material) };
+  assert.throws(() => prepareFiscalV1CreditNote({ ...args, originalSnapshot: snapshot,
+    originalDocument: { ...input.document, snapshotSha256: snapshot.snapshotSha256 },
+    draft: { ...args.draft, originalSnapshotSha256: snapshot.snapshotSha256 }, priorCredits: [] }),
+  /FISCAL_V1_CREDIT_NOTE_ORIGINAL_LINE_AMOUNT_INVALID/);
+});
+
+test("prepared-line economics refuses invalid bounds and never authorizes a discounted legacy line", () => {
+  const input = discountedNoteFixture();
+  const note = prepareFiscalV1CreditNote({ ...input.publication, draft: input.draft,
+    originalSnapshot: input.snapshot, originalDocument: input.document, priorCredits: [] });
+  const line = note.lines[0];
+  for (const changed of [{ ...line, creditQuantityMilli: 0 }, { ...line, creditQuantityMilli: -1 },
+    { ...line, creditQuantityMilli: 1001 }, { ...line, originalQuantityMilli: Number.MAX_SAFE_INTEGER + 1 },
+    { ...line, originalQuantityMilli: 0 }, { ...line, originalUnitPriceCents: -1 },
+    { ...line, originalUnitPriceCents: Number.MAX_SAFE_INTEGER }, { ...line, creditCents: 1063 },
+    { ...line, creditCents: 1061 }, { ...line, originalDiscountCents: -1 },
+    { ...line, originalDiscountCents: 1181 }, { ...line, roundingAdjustmentCents: 2 },
+    { ...line, roundingAdjustmentCents: -2 }, { ...line, roundingAdjustmentCents: 0.5 }])
+    assert.throws(() => fiscalV1PreparedCreditLineEconomics(changed, "CUMULATIVE"), /ECONOMICS_INVALID/);
+  assert.throws(() => fiscalV1PreparedCreditLineEconomics(line), /ECONOMICS_INVALID/);
+  assert.throws(() => fiscalV1PreparedCreditLineEconomics(line, "LEGACY" as never), /ECONOMICS_INVALID/);
+});
+
+test("golden prepared bytes from e5e9cd7 stay identical for no-discount and legacy reservations", () => {
+  const cases = [[fixture(), "CUMULATIVE", "893cad294da277c604379d73389bd890b6501788910b3cb1a44bcc6353599072"],
+    [fixture(), "LEGACY", "43066c87a452888e77ee01174cadd71cf1f61be4c231fca9ed122fd75db7d9f6"],
+    [discountedNoteFixture(1000, 1180, 1), "LEGACY", "cbb1ca3e14cb29d2ef32698e9ea7d842b3dd7a1794cbb22e5d4574efbd6edaee"]] as const;
+  for (const [input, quantityProration, expected] of cases) {
+    const value = prepareFiscalV1CreditNote({ ...input.publication, draft: input.draft,
+      originalSnapshot: input.snapshot, originalDocument: input.document, priorCredits: [], quantityProration });
+    assert.equal(createHash("sha256").update(JSON.stringify(value)).digest("hex"), expected);
   }
 });
 

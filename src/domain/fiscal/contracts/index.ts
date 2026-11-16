@@ -25,6 +25,7 @@ export * from "./fiscal-amazonia-issuer.contract";
 export * from "./modulo-fiscal-v1";
 export * from "./modulo-fiscal-v1-evidencia.contract";
 export * from "./modulo-fiscal-v1-evidencia";
+export * from "./modulo-fiscal-v1-credit-economics";
 export * from "./fiscal-registered-sale";
 export * from "./modulo-fiscal-v1-resultados.contract";
 export * from "./modulo-fiscal-v1-resultados";

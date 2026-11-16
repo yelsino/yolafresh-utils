@@ -149,7 +149,7 @@ export interface FiscalV1PreparedCreditNote {
     readonly originalLineId: string;
     readonly creditQuantityMilli: number;
     readonly creditCents: number;
-    /** Residuo de prorrateo acumulado respecto al precio unitario histórico; solo ±1 céntimo. */
+    /** Residuo BRUTO acumulado respecto al precio unitario histórico; solo ±1 céntimo, nunca descuento. */
     readonly roundingAdjustmentCents?: number;
     readonly originalQuantityMilli: number;
     readonly originalUnitPriceCents: number;
