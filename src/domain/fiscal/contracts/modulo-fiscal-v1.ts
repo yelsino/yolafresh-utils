@@ -4,6 +4,7 @@ import { fiscalConfigurationCanonicalJson } from "./configuracion-fiscal";
 import { validateFiscalCivilDate } from "./reglas-tributarias";
 import { assertFiscalCashPaymentRounding } from "./cash-payment-rounding.contract";
 import { assertFiscalV1GlobalDiscount } from "./global-discount.contract";
+import { calculateSaleLineGrossCents } from "../../ventas/contracts/sale-line-money";
 import { assertFiscalAmazoniaSaleFacts, assertFiscalAmazoniaLineDecisions,
   FISCAL_AMAZONIA_DEMO_DISTRICTS, type FiscalAmazoniaPreparedSale } from "./fiscal-amazonia-sale.contract";
 import { sha256 as digestSha256 } from "@noble/hashes/sha256";
@@ -691,7 +692,7 @@ export function prepareFiscalV1Sale(input: {
     if (selected.catalogSemanticFingerprintSha256 !== line.catalogSemanticFingerprintSha256)
       fail("FISCAL_V1_CATALOG_RULE_OUTDATED");
     const gross = line.manualGrossTotalCents === undefined
-      ? (BigInt(line.quantityMilli) * BigInt(line.unitPriceCents) + 500n) / 1000n
+      ? calculateSaleLineGrossCents(line)
       : BigInt(line.manualGrossTotalCents);
     if (BigInt(line.discountCents) > gross) fail("FISCAL_V1_DISCOUNT_EXCEEDS_GROSS");
     const discounted = gross - BigInt(line.discountCents);

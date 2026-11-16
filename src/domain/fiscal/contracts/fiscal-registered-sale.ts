@@ -3,6 +3,7 @@ import type { FiscalV1RegisteredCashEvidence, FiscalV1RegisteredCashSaleSource, 
 import { fiscalV1CanonicalSha256 } from "./modulo-fiscal-v1";
 import { validarVentaCobro } from "../../ventas/contracts/venta-cobro.contract";
 import { assertFiscalCashPaymentRounding } from "./cash-payment-rounding.contract";
+import { calculateSaleLineGrossCents } from "../../ventas/contracts/sale-line-money";
 
 /** Fiscal source projection. Excludes storage envelopes, images and mutable client data.
  * CouchDB callers map opaque `_id` to `id` at the adapter boundary. */
@@ -92,7 +93,7 @@ export function assertFiscalV1RegisteredCashSaleSnapshot(snapshot: IVentaSnapsho
         !Number.isSafeInteger(quantity) || quantity <= 0 || unit <= 0 || amount <= 0 ||
         Math.abs(item.cantidadVendida * 1000 - quantity) > 0.000001 || cents(item.descuento ?? 0) !== 0 ||
         item.montoModificado !== undefined && typeof item.montoModificado !== "boolean" ||
-        item.montoModificado !== true && Number((BigInt(quantity) * BigInt(unit) + 500n) / 1000n) !== amount) fail();
+        item.montoModificado !== true && Number(calculateSaleLineGrossCents({ quantityMilli: quantity, unitPriceCents: unit })) !== amount) fail();
     ids.add(item.id);
     gross += amount;
     if (!Number.isSafeInteger(gross)) fail();

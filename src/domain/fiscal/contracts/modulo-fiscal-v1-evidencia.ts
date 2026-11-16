@@ -1,6 +1,7 @@
 import { validateFiscalCivilDate } from "./reglas-tributarias";
 import { assertFiscalCashPaymentRounding } from "./cash-payment-rounding.contract";
 import { assertFiscalV1GlobalDiscount } from "./global-discount.contract";
+import { calculateSaleLineGrossCents } from "../../ventas/contracts/sale-line-money";
 import { assertFiscalV1DocumentGrant, assertFiscalV1TributaryResult } from "./modulo-fiscal-v1-resultados";
 import { assertFiscalV1ProviderChannelReceipt } from "./modulo-fiscal-v1-proveedor.contract";
 import { fiscalV1CanonicalSha256, fiscalV1DecisionFingerprintMaterial,
@@ -113,7 +114,7 @@ export function assertFiscalV1Snapshot(snapshot: FiscalV1Snapshot): void {
           line.discountCents !== 0 || line.manualGrossTotalCents !== line.totalCents))
         fail("FISCAL_V1_MANUAL_GROSS_TOTAL_INVALID");
       const gross = line.manualGrossTotalCents === undefined
-        ? (BigInt(line.unitPriceCents) * BigInt(line.quantityMilli) + 500n) / 1000n
+        ? calculateSaleLineGrossCents(line)
         : BigInt(line.manualGrossTotalCents);
       if (gross - BigInt(line.discountCents) !== BigInt(line.totalCents)) fail("FISCAL_V1_SNAPSHOT_TOTAL_INVALID");
     }
@@ -163,7 +164,7 @@ export function assertFiscalV1SnapshotForIssuance(snapshot: FiscalV1Snapshot): v
   assertFiscalV1Snapshot(snapshot);
   for (const line of snapshot.decision.lines) {
     const gross = line.manualGrossTotalCents === undefined
-      ? (BigInt(line.unitPriceCents) * BigInt(line.quantityMilli) + 500n) / 1000n
+      ? calculateSaleLineGrossCents(line)
       : BigInt(line.manualGrossTotalCents);
     if (gross - BigInt(line.discountCents) !== BigInt(line.totalCents)) fail("FISCAL_V1_SNAPSHOT_TOTAL_INVALID");
   }
@@ -332,7 +333,7 @@ export function prepareFiscalV1CreditNote(input: {
     if (BigInt(line.creditCents) !== expectedCents || expectedCents <= 0n)
       fail("FISCAL_V1_CREDIT_NOTE_QUANTITY_AMOUNT_MISMATCH");
     const roundingAdjustmentCents = line.creditCents - safeNumber(
-      (BigInt(originalLine.unitPriceCents) * BigInt(line.creditQuantityMilli) + 500n) / 1000n);
+      calculateSaleLineGrossCents({ unitPriceCents: originalLine.unitPriceCents, quantityMilli: line.creditQuantityMilli }));
     if (Math.abs(roundingAdjustmentCents) > 1) fail("FISCAL_V1_CREDIT_NOTE_QUANTITY_AMOUNT_MISMATCH");
     const originalAmazoniaLineDecision = original.amazonia?.lineDecisions?.find(value => value.lineId === line.originalLineId);
     return { originalLineId: line.originalLineId, creditQuantityMilli: line.creditQuantityMilli,

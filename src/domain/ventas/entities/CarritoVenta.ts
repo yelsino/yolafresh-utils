@@ -17,6 +17,13 @@ import { generarUlid } from "../../shared/utils/dates";
 import { Cliente } from "../../personas/contracts/persons.contract";
 import { IUsuario } from "../../personas/contracts/usuario.contract";
 import { Presentacion, TipoVentaEnum } from "../../inventario/contracts/producto.contract";
+import { calculateSaleLineGrossAmount } from "../contracts/sale-line-money";
+
+export interface CalculatedLineTotalDelta {
+  readonly lineId: string;
+  readonly previousTotal: number | undefined;
+  readonly nextTotal: number;
+}
 
 interface CarritoVentaImageSnapshot {
   sizes: {
@@ -584,10 +591,29 @@ export class CarritoVenta implements ICarritoVenta {
     );
     const qty = carItem.quantity ?? 0;
     
-    // Cálculo directo: Precio * Cantidad (cantidad ya es kg o unidad)
-    const base = unit * qty;
-    
-    return this.redondearMoneda(base);
+    return calculateSaleLineGrossAmount(unit, qty);
+  }
+
+  /** Explicit recalculation for an editable cart. Hydration never calls this.
+   * Only computed amounts change; manual amounts and all price/quantity/identity
+   * facts remain untouched. The caller owns eligibility and visible review. */
+  recalculateCalculatedLineTotals(lineIds?: readonly string[]): readonly CalculatedLineTotalDelta[] {
+    const selected = lineIds === undefined ? undefined : new Set(lineIds);
+    const changes: CalculatedLineTotalDelta[] = [];
+    const nextItems = this._items.map(item => {
+      if (item.montoModificado === true || selected && !selected.has(item.id)) return item;
+      const nextTotal = this.calcularTotalLinea(item);
+      if (item.montoTotal === nextTotal) return item;
+      changes.push(Object.freeze({ lineId: item.id, previousTotal: item.montoTotal, nextTotal }));
+      return { ...item, montoTotal: nextTotal };
+    });
+    // Compute the entire plan before changing any line, even if a later product
+    // is invalid. Aggregate headers continue to use the existing getters.
+    if (changes.length > 0) {
+      this._items = nextItems;
+      this.touch();
+    }
+    return Object.freeze(changes);
   }
 
 
