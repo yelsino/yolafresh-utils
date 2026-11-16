@@ -70,6 +70,35 @@ const pending: FiscalProcess = {
 };
 const now = "2026-10-08T10:00:02-05:00";
 
+test("V1 projects global code03 before cash rounding with unchanged exempt line/base and conservative buyer threshold", () => {
+  const globalDiscount = { schemaVersion: 1, amountCents: 10, baseCents: 115, reasonCode: "03", affectsTaxBase: false } as const;
+  const adjusted: FiscalSignedDocument = { ...document,
+    origin: { kind: "VENTA_V1", saleId: "opaque sale / α", operationId: "opaque operation / β",
+      fiscalSnapshotId: "opaque V4 snapshot", fiscalSnapshotSha256: "b".repeat(64) },
+    lines: [{ ...document.lines[0], unitPriceCents: 115, grossCents: 115, totalCents: 115,
+      tax: { ...document.lines[0].tax, taxableBaseCents: 115 } }],
+    globalDiscount, totals: { ...document.totals, exemptCents: 115, payableCents: 100 },
+    cashPaymentRounding: { schemaVersion: 1, amountCents: -5, policyId: "opaque cash policy", policyVersion: 1,
+      currency: "PEN", stepCents: 10, direction: "A_FAVOR_CLIENTE", application: "EFECTIVO_TOTAL" },
+    print: { ...document.print, digestOutsideQr: true, qrPayload: "10770681397|03|B001|24|0.00|1.00|2026-10-08|0|-" } };
+  assert.deepEqual(validateFiscalSignedDocument(adjusted), []);
+  assert.equal(adjusted.lines[0].totalCents, 115); assert.equal(adjusted.totals.exemptCents, 115);
+  const { globalDiscount: _discount, ...withoutGlobal } = adjusted;
+  assert.ok(validateFiscalSignedDocument(withoutGlobal).includes("totals.payableCents.linesMismatch"));
+  assert.ok(validateFiscalSignedDocument({ ...adjusted, globalDiscount: { ...globalDiscount, reasonCode: "02" } }).includes("globalDiscount"));
+  assert.ok(validateFiscalSignedDocument({ ...adjusted, origin: document.origin }).includes("globalDiscount"));
+  assert.ok(validateFiscalSignedDocument({ ...adjusted, lines: [{ ...adjusted.lines[0], tax: {
+    ...adjusted.lines[0].tax, category: "GRAVADA" } }] }).includes("globalDiscount"));
+  const { cashPaymentRounding: _rounding, ...digital } = adjusted;
+  assert.deepEqual(validateFiscalSignedDocument({ ...digital, totals: { ...digital.totals, payableCents: 105 },
+    print: { ...digital.print, qrPayload: "10770681397|03|B001|24|0.00|1.05|2026-10-08|0|-" } }), []);
+  const large = { ...digital, lines: [{ ...digital.lines[0], unitPriceCents: 70001, grossCents: 70001, totalCents: 70001,
+    tax: { ...digital.lines[0].tax, taxableBaseCents: 70001 } }], globalDiscount: { ...globalDiscount, amountCents: 2, baseCents: 70001 },
+    totals: { ...digital.totals, exemptCents: 70001, payableCents: 69999 },
+    print: { ...digital.print, qrPayload: "10770681397|03|B001|24|0.00|699.99|2026-10-08|0|-" } };
+  assert.ok(validateFiscalSignedDocument(large).includes("buyer.identificationRequiredBeforeCashRounding"));
+});
+
 test("V1 distingue el ajuste cash versionado de las bases y conserva el documento histórico", () => {
   const amounts = [522, 128, 168, 186, 100];
   const cash: FiscalSignedDocument = { ...document,

@@ -24,6 +24,44 @@ const cashEvidence = (saleId: string, amountCents = 1100): FiscalV1RegisteredCas
   movements: [{ movementId: "movement / α", createdAtMs: NOW, type: "INGRESO", subtype: "VENTA", referenceType: "VENTA",
     referenceId: saleId, cajaId: "caja", currency: "PEN", method: "EFECTIVO", state: "ACTIVO", amountCents }] });
 
+test("snapshot V4 binds a separate global allowance without changing legacy versions or line/tax bases", () => {
+  const source = fixture("SUPPORTED", { documentType: "BOLETA" }), legacy = source.snapshot;
+  const freeze = (value: FiscalV1Snapshot): FiscalV1Snapshot => {
+    const material = { ...value, decisionSha256: fiscalV1CanonicalSha256(value.decision) };
+    return { ...material, snapshotSha256: fiscalV1SnapshotFingerprint(material) };
+  };
+  const line = { ...legacy.decision.lines[0], unitPriceCents: 115, totalCents: 115,
+    legalCategory: "EXONERADA" as const, disclosure: { kind: "ITEMIZED" as const,
+      baseCents: 115, taxCents: 0, appliedRateBasisPoints: 0 } };
+  const globalDiscount = { schemaVersion: 1, amountCents: 10, baseCents: 115, reasonCode: "03", affectsTaxBase: false } as const;
+  const rounding = { schemaVersion: 1, amountCents: -5, policyId: "opaque policy / α", policyVersion: 1,
+    currency: "PEN", stepCents: 10, direction: "A_FAVOR_CLIENTE", application: "EFECTIVO_TOTAL" } as const;
+  const modern = freeze({ ...legacy, schemaVersion: "fiscal-v1-snapshot-v4",
+    decision: { ...legacy.decision, lines: [line], totalCents: 100, baseCents: 115, taxCents: 0,
+      globalDiscount, cashPaymentRounding: rounding } });
+  const bytes = JSON.stringify(legacy), hash = legacy.snapshotSha256;
+  assert.doesNotThrow(() => assertFiscalV1SnapshotForIssuance(modern));
+  assert.equal(modern.decision.lines[0].totalCents, 115); assert.equal(modern.decision.baseCents, 115);
+  assert.equal(modern.decision.totalCents, 100);
+  for (const schemaVersion of ["fiscal-v1-snapshot", "fiscal-v1-snapshot-v2", "fiscal-v1-snapshot-v3"] as const)
+    assert.throws(() => assertFiscalV1Snapshot(freeze({ ...modern, schemaVersion })), /SNAPSHOT_VERSION_INVALID/);
+  const { globalDiscount: _discount, ...withoutGlobal } = modern.decision;
+  assert.throws(() => assertFiscalV1Snapshot(freeze({ ...modern, decision: withoutGlobal })), /SNAPSHOT_VERSION_INVALID/);
+  assert.throws(() => assertFiscalV1Snapshot({ ...modern, decision: { ...modern.decision,
+    globalDiscount: { ...globalDiscount, amountCents: 9 } } }), /SNAPSHOT_HASH_INVALID/);
+  assert.throws(() => assertFiscalV1Snapshot(freeze({ ...modern, decision: { ...modern.decision,
+    globalDiscount: { ...globalDiscount, baseCents: 114 } } })), /GLOBAL_DISCOUNT_INVALID/);
+  assert.throws(() => assertFiscalV1Snapshot(freeze({ ...modern, decision: { ...modern.decision,
+    lines: [{ ...line, legalCategory: "GRAVADA" }] } })), /GLOBAL_DISCOUNT_UNSUPPORTED/);
+  assert.throws(() => assertFiscalV1Snapshot(freeze({ ...modern, paymentTerms: { kind: "CREDITO", netPendingCents: 100,
+    installments: [{ dueOn: "2026-10-16", amountCents: 100 }] } })), /COMMERCIAL_ADJUSTMENT_UNSUPPORTED/);
+  assert.throws(() => prepareFiscalV1CreditNote({ ...source, originalSnapshot: modern,
+    originalDocument: { ...source.document, snapshotSha256: modern.snapshotSha256 }, priorCredits: [],
+    ...source.publication } as never), /CREDIT_NOTE_COMMERCIAL_ADJUSTMENT_UNSUPPORTED/);
+  assertFiscalV1SnapshotForIssuance(legacy);
+  assert.equal(JSON.stringify(legacy), bytes); assert.equal(fiscalV1SnapshotFingerprint(legacy), hash);
+});
+
 test("a valid snapshot hash cannot disguise ordinary basis inconsistent with its frozen line", () => {
   const original = fixture().snapshot;
   const decision = { ...original.decision, lines: original.decision.lines.map(line => ({ ...line,

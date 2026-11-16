@@ -3,6 +3,7 @@ import { fiscalConfigurationCanonicalJson, validateFiscalTaxResolutionSource } f
 import { assertFiscalV1ProviderChannelReceipt, type FiscalV1ProviderChannelReceipt } from "./modulo-fiscal-v1-proveedor.contract";
 import type { FiscalTaxResolutionSource } from "./configuracion-fiscal.contract";
 import { assertFiscalCashPaymentRounding, type FiscalCashPaymentRounding } from "./cash-payment-rounding.contract";
+import { assertFiscalV1GlobalDiscount, type FiscalV1GlobalDiscount } from "./global-discount.contract";
 import { assertFiscalAmazoniaLineDecisions, type FiscalAmazoniaLineDecision } from "./fiscal-amazonia-sale.contract";
 import type { FiscalBuyer, FiscalCurrency, FiscalDocumentIdentity, FiscalLineTax,
   FiscalSaleSnapshot } from "./cpe.contract";
@@ -81,6 +82,7 @@ export interface FiscalSignedDocument {
   /** Snapshot suficiente para reproducir el papel sin red ni catálogo actual. */
   readonly lines: readonly FiscalDocumentLine[];
   readonly totals: FiscalDocumentTotals;
+  readonly globalDiscount?: FiscalV1GlobalDiscount;
   readonly cashPaymentRounding?: FiscalCashPaymentRounding;
   readonly signature: {
     /** Referencia y SHA-256 de los bytes del XML firmado crudo. */
@@ -201,7 +203,7 @@ export function validateFiscalSignedDocument(value: unknown): readonly string[] 
   const errors: string[] = [];
   rejectUnknown(value, ["_id", "_rev", "type", "documentId", "tenantId", "environment", "identity",
     "origin", "issuer", "buyer", "currency", "issueDate", "issuedAt", "signedAt",
-    "lines", "totals", "cashPaymentRounding", "signature", "print"], "", errors);
+    "lines", "totals", "globalDiscount", "cashPaymentRounding", "signature", "print"], "", errors);
   if (value.type !== FISCAL_DOCUMENT_TYPE) errors.push("type");
   for (const key of ["documentId", "tenantId"] as const)
     if (!nonBlank(value[key])) errors.push(key);
@@ -332,6 +334,17 @@ export function validateFiscalSignedDocument(value: unknown): readonly string[] 
       }
     });
   }
+  const lineTotal = sums.payableCents;
+  if (value.globalDiscount !== undefined) {
+    try {
+      assertFiscalV1GlobalDiscount(value.globalDiscount, Number(lineTotal));
+      if (!record(value.origin) || value.origin.kind !== "VENTA_V1" ||
+          !record(value.identity) || value.identity.documentType !== "BOLETA" || value.currency !== "PEN" ||
+          !Array.isArray(value.lines) || value.lines.some(line => !record(line) || !record(line.tax) ||
+            line.tax.category === "GRAVADA" || line.tax.taxAmountCents !== 0)) throw Error();
+      sums.payableCents -= BigInt(value.globalDiscount.amountCents);
+    } catch { errors.push("globalDiscount"); }
+  }
   const preCashTotal = sums.payableCents;
   if (value.cashPaymentRounding !== undefined) {
     try {
@@ -344,8 +357,8 @@ export function validateFiscalSignedDocument(value: unknown): readonly string[] 
   }
   const manualV1 = Array.isArray(value.lines) && value.lines.some(line => record(line) && line.manualGrossTotalCents !== undefined);
   // Technical limit for the initial V3 lane, not an additional identification rule for legacy documents.
-  if ((value.cashPaymentRounding !== undefined || manualV1) && record(value.buyer) &&
-      value.buyer.documentType === "SIN_DOCUMENTO" && preCashTotal > 70_000n)
+  if ((value.globalDiscount !== undefined || value.cashPaymentRounding !== undefined || manualV1) && record(value.buyer) &&
+      value.buyer.documentType === "SIN_DOCUMENTO" && lineTotal > 70_000n)
     errors.push("buyer.identificationRequiredBeforeCashRounding");
   if (!record(value.totals)) errors.push("totals");
   else {

@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import nacl from "tweetnacl";
 import { FiscalV1PublicationProofMemo } from "../contracts/fiscal-v1-publication-proof-memo";
 import * as publicApi from "../../../index";
-import { assertFiscalCashPaymentRounding, assertFiscalV1IssuerAuthority, fiscalV1DecisionFingerprintMaterial,
+import { assertFiscalCashPaymentRounding, assertFiscalV1GlobalDiscount, assertFiscalV1IssuerAuthority, fiscalV1DecisionFingerprintMaterial,
   fiscalV1PublicationArtifactFingerprint, fiscalV1PublicationPayloadFingerprint, fiscalV1PublicationPayloadMaterial,
   prepareFiscalV1Sale as prepareFiscalV1SaleCore,
   verifyFiscalV1PublicationBundle,
@@ -21,6 +21,7 @@ const KEY_PAIR = nacl.sign.keyPair.fromSeed(new Uint8Array(32).fill(7));
 const CASH_ROUNDING: FiscalCashPaymentRounding = { schemaVersion: 1, amountCents: -4,
   policyId: "opaque cash policy / ñ", policyVersion: 1, currency: "PEN", stepCents: 10,
   direction: "A_FAVOR_CLIENTE", application: "EFECTIVO_TOTAL" };
+const GLOBAL_DISCOUNT = { schemaVersion: 1, amountCents: 10, baseCents: 115, reasonCode: "03", affectsTaxBase: false } as const;
 const KEY: FiscalV1TrustedPublisherKey = { keyId: "llave-sintetica-v1",
   publicKeyBase64: Buffer.from(KEY_PAIR.publicKey).toString("base64"), tenantId: "tenant-a", environment: "DEMO",
   validFromMs: Date.UTC(2026, 9, 1), validToMs: Date.UTC(2026, 11, 1) };
@@ -92,6 +93,77 @@ function sale(overrides: Partial<FiscalV1SaleInput> = {}): FiscalV1SaleInput {
 test("el núcleo nuevo queda exportado por la API pública", () => {
   assert.equal(publicApi.prepareFiscalV1Sale, prepareFiscalV1SaleCore);
   assert.equal(publicApi.verifyFiscalV1PublicationBundle, verifyFiscalV1PublicationBundle);
+  assert.equal(publicApi.assertFiscalV1GlobalDiscount, assertFiscalV1GlobalDiscount);
+});
+
+test("global code03 preserves the 115-cent line/tax base and subtracts 10 before cash rounding to 100", () => {
+  const original = sale({ lines: [{ ...sale().lines[0], unitPriceCents: 115 }] });
+  const input = { sale: { ...original, globalDiscount: GLOBAL_DISCOUNT,
+    cashPaymentRounding: { ...CASH_ROUNDING, amountCents: -5 } },
+    profiles: [issuer()], rules: [rule("queso", "EXONERADA")], capabilities: [capability(["EXONERADA"])] };
+  const bytes = JSON.stringify(input), result = prepareFiscalV1Sale(input);
+  const unchanged = prepareFiscalV1Sale({ ...input, sale: original });
+  assert.deepEqual(result.lines, unchanged.lines);
+  assert.equal(result.lines[0].totalCents, 115); assert.equal(result.baseCents, 115); assert.equal(result.taxCents, 0);
+  assert.equal(result.totalCents, 100); assert.deepEqual(result.globalDiscount, GLOBAL_DISCOUNT);
+  assert.notEqual(result.globalDiscount, GLOBAL_DISCOUNT);
+  assert.equal(JSON.stringify(input), bytes);
+  const digital = prepareFiscalV1Sale({ ...input, sale: { ...original, globalDiscount: GLOBAL_DISCOUNT } });
+  assert.equal(digital.totalCents, 105); assert.equal(digital.cashPaymentRounding, undefined);
+  const threeCents = prepareFiscalV1Sale({ ...input, sale: { ...original,
+    globalDiscount: { ...GLOBAL_DISCOUNT, amountCents: 3 }, cashPaymentRounding: { ...CASH_ROUNDING, amountCents: -2 } } });
+  assert.equal(threeCents.totalCents, 110);
+  assert.throws(() => prepareFiscalV1Sale({ ...input, sale: { ...input.sale,
+    globalDiscount: { ...GLOBAL_DISCOUNT, amountCents: 3 } } }), /CASH_PAYMENT_ROUNDING_INVALID/);
+});
+
+test("global allowance validates exact keys, integer limits, matching base and a positive remainder", () => {
+  assert.doesNotThrow(() => assertFiscalV1GlobalDiscount(GLOBAL_DISCOUNT, 115));
+  const invalid: unknown[] = [null, [], {}, { ...GLOBAL_DISCOUNT, extra: true },
+    { ...GLOBAL_DISCOUNT, schemaVersion: 2 }, { ...GLOBAL_DISCOUNT, reasonCode: "02" },
+    { ...GLOBAL_DISCOUNT, affectsTaxBase: true }, { ...GLOBAL_DISCOUNT, baseCents: 114 },
+    ...[0, -1, 115, 116, 0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1].map(amountCents => ({ ...GLOBAL_DISCOUNT, amountCents })),
+    { ...GLOBAL_DISCOUNT, [Symbol("hidden")]: true }];
+  for (const value of invalid) assert.throws(() => assertFiscalV1GlobalDiscount(value, 115), /GLOBAL_DISCOUNT_INVALID/);
+  assert.throws(() => assertFiscalV1GlobalDiscount(GLOBAL_DISCOUNT, Number.MAX_SAFE_INTEGER + 1), /GLOBAL_DISCOUNT_INVALID/);
+});
+
+test("global allowances keep existing line discounts separate and do not relax the cash/line-discount restriction", () => {
+  const source = sale({ lines: [{ ...sale().lines[0], unitPriceCents: 125, discountCents: 10 }], globalDiscount: GLOBAL_DISCOUNT });
+  const input = { sale: source, profiles: [issuer()], rules: [rule("queso", "INAFECTA")], capabilities: [capability(["INAFECTA"])] };
+  const result = prepareFiscalV1Sale(input);
+  assert.equal(result.lines[0].discountCents, 10); assert.equal(result.lines[0].totalCents, 115); assert.equal(result.totalCents, 105);
+  assert.throws(() => prepareFiscalV1Sale({ ...input, sale: { ...source, cashPaymentRounding: { ...CASH_ROUNDING, amountCents: -5 } } }),
+    /COMMERCIAL_ADJUSTMENT_UNSUPPORTED/);
+});
+
+test("global allowance rejects taxable/mixed baskets and invoices without inferring regime from the RUC", () => {
+  const source = sale({ lines: [{ ...sale().lines[0], unitPriceCents: 115 }], globalDiscount: GLOBAL_DISCOUNT });
+  for (const category of ["EXONERADA", "INAFECTA"] as const) {
+    assert.equal(prepareFiscalV1Sale({ sale: source, profiles: [issuer()], rules: [rule("queso", category)], capabilities: [capability([category])] }).totalCents, 105);
+  }
+  assert.throws(() => prepareFiscalV1Sale({ sale: source, profiles: [issuer()], rules: [rule("queso", "GRAVADA")], capabilities: [capability(["GRAVADA"])] }), /GLOBAL_DISCOUNT_UNSUPPORTED/);
+  const mixed = { ...source, lines: [...source.lines, { ...source.lines[0], lineId: "opaque taxed / α", presentationId: "other" }],
+    globalDiscount: { ...GLOBAL_DISCOUNT, baseCents: 230 } };
+  assert.throws(() => prepareFiscalV1Sale({ sale: mixed, profiles: [issuer()], rules: [rule("queso", "EXONERADA"), rule("other", "GRAVADA")],
+    capabilities: [capability(["EXONERADA", "GRAVADA"])] }), /GLOBAL_DISCOUNT_UNSUPPORTED/);
+  assert.throws(() => prepareFiscalV1Sale({ sale: { ...source, documentType: "FACTURA" }, profiles: [issuer()], rules: [rule("queso", "EXONERADA")],
+    capabilities: [capability(["EXONERADA"])] }), /COMMERCIAL_ADJUSTMENT_UNSUPPORTED/);
+  const nrus = { ...source, issuerRuc: "15123456789" };
+  const result = prepareFiscalV1Sale({ sale: nrus, profiles: [issuer({ issuerRuc: nrus.issuerRuc, taxRegime: "NRUS" })],
+    rules: [rule("queso", "EXONERADA")], capabilities: [capability(["EXONERADA"], { taxRegime: "NRUS" })] });
+  assert.equal(result.taxRegime, "NRUS"); assert.equal(result.totalCents, 105); assert.equal(result.taxCents, null);
+  assert.throws(() => prepareFiscalV1Sale({ sale: nrus, profiles: [issuer({ issuerRuc: nrus.issuerRuc, taxRegime: "NRUS" })],
+    rules: [rule("queso", "GRAVADA")], capabilities: [capability(["GRAVADA"], { taxRegime: "NRUS" })] }), /GLOBAL_DISCOUNT_UNSUPPORTED/);
+});
+
+test("global allowance cannot bring an unidentified buyer below the original-line identification threshold", () => {
+  const source = sale({ lines: [{ ...sale().lines[0], unitPriceCents: 70001 }],
+    globalDiscount: { ...GLOBAL_DISCOUNT, amountCents: 2, baseCents: 70001 } });
+  const input = { sale: source, profiles: [issuer()], rules: [rule("queso", "EXONERADA")], capabilities: [capability(["EXONERADA"])] };
+  assert.throws(() => prepareFiscalV1Sale(input), /BUYER_IDENTIFICATION_REQUIRED/);
+  assert.equal(prepareFiscalV1Sale({ ...input, sale: { ...source,
+    buyer: { documentType: "DNI", documentNumber: "12345678", legalName: "SYNTHETIC BUYER" } } }).totalCents, 69999);
 });
 
 function proofFixture(label: string) {

@@ -3,6 +3,7 @@ import { assertFiscalCatalogResolvedTaxSource } from "./catalog-tax-policy.schem
 import { fiscalConfigurationCanonicalJson } from "./configuracion-fiscal";
 import { validateFiscalCivilDate } from "./reglas-tributarias";
 import { assertFiscalCashPaymentRounding } from "./cash-payment-rounding.contract";
+import { assertFiscalV1GlobalDiscount } from "./global-discount.contract";
 import { assertFiscalAmazoniaSaleFacts, assertFiscalAmazoniaLineDecisions,
   FISCAL_AMAZONIA_DEMO_DISTRICTS, type FiscalAmazoniaPreparedSale } from "./fiscal-amazonia-sale.contract";
 import { sha256 as digestSha256 } from "@noble/hashes/sha256";
@@ -30,16 +31,20 @@ export const FISCAL_V1_ANONYMOUS_BOLETA_MAX_CENTS = 70_000;
 /** A missing buyer means an unidentified final consumer, never a fabricated DNI. */
 export function assertFiscalV1BuyerForIssuance(
   decision: Pick<FiscalV1PreparedDecision, "documentType" | "buyer" | "totalCents"> &
-    Partial<Pick<FiscalV1PreparedDecision, "lines" | "cashPaymentRounding">>,
+    Partial<Pick<FiscalV1PreparedDecision, "lines" | "cashPaymentRounding" | "globalDiscount">>,
 ): void {
   const buyer = decision.buyer;
   let identificationTotal = decision.totalCents;
-  if (decision.cashPaymentRounding !== undefined) {
+  if (decision.cashPaymentRounding !== undefined || decision.globalDiscount !== undefined) {
     const lines = decision.lines ?? fail("FISCAL_CASH_PAYMENT_ROUNDING_INVALID");
     if (!Array.isArray(lines) || lines.some(line => !cents(line.totalCents)))
       fail("FISCAL_CASH_PAYMENT_ROUNDING_INVALID");
     identificationTotal = safeNumber(lines.reduce((sum, line) => sum + BigInt(line.totalCents), 0n));
-    assertFiscalCashPaymentRounding(decision.cashPaymentRounding, identificationTotal, decision.totalCents);
+    if (decision.globalDiscount !== undefined) assertFiscalV1GlobalDiscount(decision.globalDiscount, identificationTotal);
+    const preCashTotal = identificationTotal - (decision.globalDiscount?.amountCents ?? 0);
+    if (decision.cashPaymentRounding !== undefined)
+      assertFiscalCashPaymentRounding(decision.cashPaymentRounding, preCashTotal, decision.totalCents);
+    else if (preCashTotal !== decision.totalCents) fail("FISCAL_V1_GLOBAL_DISCOUNT_INVALID");
   }
   if (buyer !== undefined && (!buyer || !text(buyer.legalName) ||
       typeof buyer.documentNumber !== "string" ||
@@ -620,7 +625,7 @@ export function prepareFiscalV1Sale(input: {
       !/^\d{11}$/.test(sale.issuerRuc) || !["DEMO", "PRODUCTION"].includes(sale.environment) || sale.currency !== "PEN" ||
       !["BOLETA", "FACTURA"].includes(sale.documentType) || !Array.isArray(sale.lines) || !sale.lines.length)
     fail("FISCAL_V1_SALE_INVALID");
-  if (sale.documentType !== "BOLETA" && (sale.cashPaymentRounding !== undefined ||
+  if (sale.documentType !== "BOLETA" && (sale.globalDiscount !== undefined || sale.cashPaymentRounding !== undefined ||
       sale.lines.some(line => line?.manualGrossTotalCents !== undefined)))
     fail("FISCAL_V1_COMMERCIAL_ADJUSTMENT_UNSUPPORTED");
   if ((sale.cashPaymentRounding !== undefined || sale.lines.some(line => line?.manualGrossTotalCents !== undefined)) &&
@@ -737,8 +742,15 @@ export function prepareFiscalV1Sale(input: {
   if (selectedCapability.status !== "PUBLISHED" || !usableCapability(selectedCapability))
     fail("FISCAL_V1_CAPABILITY_NOT_SUPPORTED");
   const lineTotalCents = safeNumber(prepared.reduce((sum, line) => sum + BigInt(line.totalCents), 0n));
-  if (sale.cashPaymentRounding !== undefined) assertFiscalCashPaymentRounding(sale.cashPaymentRounding, lineTotalCents);
-  const totalCents = lineTotalCents + (sale.cashPaymentRounding?.amountCents ?? 0);
+  if (sale.globalDiscount !== undefined) {
+    assertFiscalV1GlobalDiscount(sale.globalDiscount, lineTotalCents);
+    if (prepared.some(line => line.legalCategory === "GRAVADA" ||
+        line.disclosure.taxCents !== null && line.disclosure.taxCents !== 0))
+      fail("FISCAL_V1_GLOBAL_DISCOUNT_UNSUPPORTED");
+  }
+  const preCashTotalCents = lineTotalCents - (sale.globalDiscount?.amountCents ?? 0);
+  if (sale.cashPaymentRounding !== undefined) assertFiscalCashPaymentRounding(sale.cashPaymentRounding, preCashTotalCents);
+  const totalCents = preCashTotalCents + (sale.cashPaymentRounding?.amountCents ?? 0);
   const baseCents = selectedProfile.taxRegime === "NRUS" ? null :
     safeNumber(prepared.reduce((sum, line) => sum + BigInt(line.disclosure.baseCents ?? 0), 0n));
   const taxCents = selectedProfile.taxRegime === "NRUS" ? null :
@@ -753,6 +765,7 @@ export function prepareFiscalV1Sale(input: {
       fingerprintSha256: selectedProfile.fingerprintSha256 },
     capabilityRef: { capabilityId: selectedCapability.capabilityId, fingerprintSha256: selectedCapability.fingerprintSha256 },
     lines: prepared, totalCents, baseCents, taxCents,
+    ...(sale.globalDiscount === undefined ? {} : { globalDiscount: { ...sale.globalDiscount } }),
     ...(sale.cashPaymentRounding === undefined ? {} : { cashPaymentRounding: { ...sale.cashPaymentRounding } }),
     ...(amazonia ? { amazonia: JSON.parse(fiscalConfigurationCanonicalJson(amazonia)) } : {}) };
   // Validate the capture itself: a malformed null buyer must not disappear in

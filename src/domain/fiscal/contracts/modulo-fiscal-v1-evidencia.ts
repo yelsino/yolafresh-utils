@@ -1,5 +1,6 @@
 import { validateFiscalCivilDate } from "./reglas-tributarias";
 import { assertFiscalCashPaymentRounding } from "./cash-payment-rounding.contract";
+import { assertFiscalV1GlobalDiscount } from "./global-discount.contract";
 import { assertFiscalV1DocumentGrant, assertFiscalV1TributaryResult } from "./modulo-fiscal-v1-resultados";
 import { assertFiscalV1ProviderChannelReceipt } from "./modulo-fiscal-v1-proveedor.contract";
 import { fiscalV1CanonicalSha256, fiscalV1DecisionFingerprintMaterial,
@@ -36,7 +37,7 @@ export function fiscalV1SnapshotFingerprint(snapshot: FiscalV1Snapshot): string 
 }
 
 export function assertFiscalV1Snapshot(snapshot: FiscalV1Snapshot): void {
-  if (!snapshot || !["fiscal-v1-snapshot", "fiscal-v1-snapshot-v2", "fiscal-v1-snapshot-v3"].includes(snapshot.schemaVersion) || !text(snapshot.snapshotId) ||
+  if (!snapshot || !["fiscal-v1-snapshot", "fiscal-v1-snapshot-v2", "fiscal-v1-snapshot-v3", "fiscal-v1-snapshot-v4"].includes(snapshot.schemaVersion) || !text(snapshot.snapshotId) ||
       !text(snapshot.issuerLegalName) || !snapshot.issuerEstablishment ||
       ![snapshot.issuerEstablishment.establishmentId, snapshot.issuerEstablishment.code,
         snapshot.issuerEstablishment.department, snapshot.issuerEstablishment.province,
@@ -68,18 +69,29 @@ export function assertFiscalV1Snapshot(snapshot: FiscalV1Snapshot): void {
       snapshot.lineDescriptions.some(item => !item || !text(item.lineId) || !text(item.description) ||
         !lineIds.has(item.lineId)) || new Set(snapshot.lineDescriptions.map(item => item.lineId)).size !== lineIds.size)
     fail("FISCAL_V1_SNAPSHOT_LINES_INVALID");
-  const modern = snapshot.schemaVersion === "fiscal-v1-snapshot-v3";
+  const globalDiscount = snapshot.decision.globalDiscount;
+  const version4 = snapshot.schemaVersion === "fiscal-v1-snapshot-v4";
+  const modern = snapshot.schemaVersion === "fiscal-v1-snapshot-v3" || version4;
   const hasManualGross = snapshot.decision.lines.some(line => line.manualGrossTotalCents !== undefined);
   const rounding = snapshot.decision.cashPaymentRounding;
   const registeredCash = snapshot.commercialSource?.kind === "REGISTERED_CASH_SALE";
-  if (modern !== (hasManualGross || rounding !== undefined || registeredCash)) fail("FISCAL_V1_SNAPSHOT_VERSION_INVALID");
+  if (version4 !== (globalDiscount !== undefined) || !version4 && modern !== (hasManualGross || rounding !== undefined || registeredCash))
+    fail("FISCAL_V1_SNAPSHOT_VERSION_INVALID");
   if (modern && (snapshot.decision.documentType !== "BOLETA" || snapshot.decision.currency !== "PEN" ||
-      snapshot.paymentTerms?.kind !== "CONTADO" || snapshot.decision.lines.some(line => line.discountCents !== 0)))
+      snapshot.paymentTerms?.kind !== "CONTADO" || (hasManualGross || rounding !== undefined || registeredCash) &&
+        snapshot.decision.lines.some(line => line.discountCents !== 0)))
     fail("FISCAL_V1_COMMERCIAL_ADJUSTMENT_UNSUPPORTED");
   const lineTotalCents = safeNumber(snapshot.decision.lines.reduce((sum, line) => sum + BigInt(line.totalCents), 0n));
-  if (rounding !== undefined) assertFiscalCashPaymentRounding(rounding, lineTotalCents, snapshot.decision.totalCents);
+  if (globalDiscount !== undefined) {
+    assertFiscalV1GlobalDiscount(globalDiscount, lineTotalCents);
+    if (snapshot.decision.lines.some(line => line.legalCategory === "GRAVADA" ||
+        line.disclosure?.taxCents !== null && line.disclosure?.taxCents !== 0))
+      fail("FISCAL_V1_GLOBAL_DISCOUNT_UNSUPPORTED");
+  }
+  const preCashTotalCents = lineTotalCents - (globalDiscount?.amountCents ?? 0);
+  if (rounding !== undefined) assertFiscalCashPaymentRounding(rounding, preCashTotalCents, snapshot.decision.totalCents);
   if (!positive(snapshot.decision.totalCents) ||
-      lineTotalCents + (rounding?.amountCents ?? 0) !== snapshot.decision.totalCents)
+      preCashTotalCents + (rounding?.amountCents ?? 0) !== snapshot.decision.totalCents)
     fail("FISCAL_V1_SNAPSHOT_TOTAL_INVALID");
   if (snapshot.decision.lines.some(line => !positive(line.quantityMilli) || !positive(line.totalCents) ||
       !positive(line.unitPriceCents) || !cents(line.discountCents) ||
@@ -215,7 +227,7 @@ export function prepareFiscalV1CreditNote(input: {
   if (input.quantityProration !== undefined && input.quantityProration !== "CUMULATIVE" && input.quantityProration !== "LEGACY")
     fail("FISCAL_V1_CREDIT_NOTE_INVALID");
   assertFiscalV1DocumentRecord(originalDocument, originalSnapshot);
-  if (originalSnapshot.schemaVersion === "fiscal-v1-snapshot-v3")
+  if (originalSnapshot.schemaVersion === "fiscal-v1-snapshot-v3" || originalSnapshot.schemaVersion === "fiscal-v1-snapshot-v4")
     fail("FISCAL_V1_CREDIT_NOTE_COMMERCIAL_ADJUSTMENT_UNSUPPORTED");
   const payload = verifyFiscalV1PublicationBundle(bundle, trustedKeys, nowMs);
   if (!draft || ![draft.noteOperationId, draft.noteId, draft.tenantId, draft.issuerId,
