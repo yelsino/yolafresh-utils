@@ -13,6 +13,7 @@ export function fiscalV1RegisteredSaleSource(snapshot: Pick<IVentaSnapshot,
     snapshotSha256: fiscalV1CanonicalSha256({ snapshotId: snapshot.id, saleId: snapshot.ventaId,
       currency: snapshot.moneda, total: snapshot.total,
       lines: snapshot.items.map(item => ({ lineId: item.id, presentationId: item.presentacionId,
+        ...(item.origenProducto === undefined ? {} : { origin: item.origenProducto, unit: item.unidadComercial ?? null, affectsInventory: item.afectaInventario }),
         description: item.nombre, quantity: item.cantidadVendida,
         unitPrice: item.precioUnitario, total: item.total })) }) };
 }
@@ -38,6 +39,7 @@ export function fiscalV1RegisteredCashSaleSource(snapshot: Pick<IVentaSnapshot,
       paymentRounding: snapshot.redondeoPago ?? null, total: snapshot.total, cashCollection: snapshot.cobro ?? null,
       documentSelection: snapshot.fiscalDocumentSelection ?? null,
       lines: snapshot.items.map(item => ({ lineId: item.id, presentationId: item.presentacionId,
+        ...(item.origenProducto === undefined ? {} : { origin: item.origenProducto, unit: item.unidadComercial ?? null, affectsInventory: item.afectaInventario }),
         description: item.nombre, quantity: item.cantidadVendida, unitPrice: item.precioUnitario,
         grossTotal: item.total, manualGross: item.montoModificado ?? null, discount: item.descuento ?? null })) }) };
 }

@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import nacl from "tweetnacl";
 import { FiscalV1PublicationProofMemo } from "../contracts/fiscal-v1-publication-proof-memo";
 import * as publicApi from "../../../index";
+import { unregisteredPolicy } from "./unregistered-goods.fixture";
 import { assertFiscalCashPaymentRounding, assertFiscalV1GlobalDiscount, assertFiscalV1IssuerAuthority, fiscalV1DecisionFingerprintMaterial,
   fiscalV1PublicationArtifactFingerprint, fiscalV1PublicationPayloadFingerprint, fiscalV1PublicationPayloadMaterial,
   prepareFiscalV1Sale as prepareFiscalV1SaleCore,
@@ -47,6 +48,30 @@ function signedBundle(input: FixtureInput): { bundle: FiscalV1SignedPublicationB
 function prepareFiscalV1Sale(input: FixtureInput) {
   return prepareFiscalV1SaleCore({ sale: input.sale, ...signedBundle(input) });
 }
+
+test("unregistered goods share catalogue money calculation and preserve their approved company policy source", () => {
+  const free = { lineId: "opaque free line / ñ", unregisteredGood: { description: "Leche bolsa 1 L", unitCode: "NIU" as const },
+    quantityMilli: 3000, unitPriceCents: 150, discountCents: 0 };
+  const input = { sale: sale({ lines: [sale().lines[0], free] }), profiles: [issuer()],
+    rules: [rule("queso", "GRAVADA")], capabilities: [capability(["GRAVADA"])] };
+  const result = prepareFiscalV1SaleCore({ sale: input.sale, ...signedBundle(input), unregisteredGoodsPolicy: unregisteredPolicy() });
+  assert.equal(result.totalCents, 1630); assert.equal(result.lines[1].totalCents, 450);
+  assert.equal(result.lines[1].presentationId, undefined);
+  assert.deepEqual(result.lines[1].unregisteredGood, free.unregisteredGood);
+  assert.deepEqual(result.lines[1].ruleRef.unregisteredGoodsPolicy, unregisteredPolicy());
+  assert.throws(() => prepareFiscalV1SaleCore({ sale: input.sale, ...signedBundle(input) }), /UNREGISTERED_GOODS_POLICY_REQUIRED/);
+});
+
+test("amount-only unregistered goods preserve the entered total without fabricating a catalogue unit price", () => {
+  const input = { sale: sale({ lines: [{ lineId: "opaque amount line", quantityMilli: 1000,
+    unregisteredGood: { description: "Perejil", unitCode: "NIU" }, unitPriceCents: 0, manualGrossTotalCents: 150, discountCents: 0 }] }),
+    profiles: [issuer()], rules: [], capabilities: [capability(["GRAVADA"])] };
+  const result = prepareFiscalV1SaleCore({ sale: input.sale, ...signedBundle(input), unregisteredGoodsPolicy: unregisteredPolicy() });
+  assert.equal(result.totalCents, 150); assert.equal(result.lines[0].unitPriceCents, 0);
+  assert.equal(result.lines[0].manualGrossTotalCents, 150);
+  const forged = { ...input.sale, lines: [{ ...input.sale.lines[0], presentationId: "fabricated", catalogSemanticFingerprintSha256: HASH }] };
+  assert.throws(() => prepareFiscalV1SaleCore({ sale: forged as any, ...signedBundle(input), unregisteredGoodsPolicy: unregisteredPolicy() }), /CATALOG_REFERENCE_FORBIDDEN/);
+});
 
 function issuer(overrides: Partial<FiscalV1IssuerProfile> = {}): FiscalV1IssuerProfile {
   return { status: "PUBLISHED", effectiveFrom: "2026-10-01", publishedAt: 1,
@@ -143,7 +168,8 @@ test("global allowance rejects taxable/mixed baskets and invoices without inferr
     assert.equal(prepareFiscalV1Sale({ sale: source, profiles: [issuer()], rules: [rule("queso", category)], capabilities: [capability([category])] }).totalCents, 105);
   }
   assert.throws(() => prepareFiscalV1Sale({ sale: source, profiles: [issuer()], rules: [rule("queso", "GRAVADA")], capabilities: [capability(["GRAVADA"])] }), /GLOBAL_DISCOUNT_UNSUPPORTED/);
-  const mixed = { ...source, lines: [...source.lines, { ...source.lines[0], lineId: "opaque taxed / α", presentationId: "other" }],
+  const mixed = { ...source, lines: [...source.lines, { ...source.lines[0], lineId: "opaque taxed / α", presentationId: "other",
+    catalogSemanticFingerprintSha256: HASH, unregisteredGood: undefined }],
     globalDiscount: { ...GLOBAL_DISCOUNT, baseCents: 230 } };
   assert.throws(() => prepareFiscalV1Sale({ sale: mixed, profiles: [issuer()], rules: [rule("queso", "EXONERADA"), rule("other", "GRAVADA")],
     capabilities: [capability(["EXONERADA", "GRAVADA"])] }), /GLOBAL_DISCOUNT_UNSUPPORTED/);
@@ -608,7 +634,8 @@ test("ajuste cash explícito conserva las cinco líneas, el precio de catálogo 
   for (const environment of ["DEMO", "PRODUCTION"] as const) {
     const amounts = [522, 128, 168, 186, 100];
     const lines = amounts.map((amount, index) => ({ ...sale().lines[0], lineId: `opaque line / ${index}`,
-      presentationId: `opaque presentation / ${index}`, unitPriceCents: index === 4 ? 1500 : amount,
+      presentationId: `opaque presentation / ${index}`, catalogSemanticFingerprintSha256: HASH, unregisteredGood: undefined,
+      unitPriceCents: index === 4 ? 1500 : amount,
       ...(index === 4 ? { manualGrossTotalCents: 100 } : {}) }));
     const input = { sale: sale({ environment, lines, cashPaymentRounding: CASH_ROUNDING }),
       profiles: [issuer({ environment })], rules: lines.map(line => rule(line.presentationId, "EXONERADA")),
@@ -726,7 +753,8 @@ test("Amazonía RER RUC10/20 en Producción conserva ApéndiceI, otras exoneraci
       consumption: { status: "CONFIRMED", ubigeo: "120602", evidenceRef: "CASHIER_DECLARATION" } } as const;
     const regionalSale = sale({ environment: "PRODUCTION", issuerRuc, amazoniaFacts: facts,
       buyer: { documentType: "DNI", documentNumber: "12345678", legalName: "Synthetic buyer" },
-      lines: ["g", "e", "o", "i"].map(lineId => ({ ...sale().lines[0], lineId, presentationId: lineId })) });
+      lines: ["g", "e", "o", "i"].map(lineId => ({ ...sale().lines[0], lineId, presentationId: lineId,
+        catalogSemanticFingerprintSha256: HASH, unregisteredGood: undefined })) });
     const rows = [
       { lineId: "g", basis: "LEY_27037_ART_13_1_A", ordinaryCategory: "GRAVADA", ordinaryTaxRateBasisPoints: 1800 },
       { lineId: "e", basis: "APPENDIX_I", ordinaryCategory: "EXONERADA", ordinaryTaxRateBasisPoints: 0 },

@@ -20,6 +20,7 @@ export * from "./nota-credito";
 export * from "./credit-note-commercial.contract";
 export * from "./credit-note-money-facts";
 export * from "./modulo-fiscal-v1.contract";
+export * from "./unregistered-goods";
 export * from "./fiscal-amazonia-sale.contract";
 export * from "./fiscal-amazonia-issuer.contract";
 export * from "./modulo-fiscal-v1";

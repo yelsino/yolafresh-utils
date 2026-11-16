@@ -11,6 +11,8 @@ import { sha256 as digestSha256 } from "@noble/hashes/sha256";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
 import nacl from "tweetnacl";
 import { FiscalV1PublicationProofMemo } from "./fiscal-v1-publication-proof-memo";
+import { assertFiscalV1UnregisteredGood, assertFiscalV1UnregisteredGoodsPolicy,
+  type FiscalV1UnregisteredGoodsPolicy } from "./unregistered-goods";
 import type { FiscalOperationalCajaAssignmentBinding, FiscalResolvedCajaNumberingAssignment } from "./numeracion-caja";
 import { FISCAL_V1_PUBLICATION_DOCUMENT_TYPE } from "./modulo-fiscal-v1.contract";
 import type { FiscalV1Capability, FiscalV1CheckoutContext, FiscalV2CheckoutContext, FiscalV1EffectivePublication, FiscalV1IssuerProfile,
@@ -529,9 +531,14 @@ export function isFiscalV1CapabilityOperational(value: FiscalV1Capability): bool
 const usableCapability = isFiscalV1CapabilityOperational;
 
 function saleLine(value: FiscalV1SaleLineInput): void {
-  if (!value || !text(value.lineId) || !text(value.presentationId) ||
-      !sha256(value.catalogSemanticFingerprintSha256) || !positive(value.quantityMilli) ||
-      !positive(value.unitPriceCents) || !cents(value.discountCents)) fail("FISCAL_V1_LINE_INVALID");
+  if (!value || !text(value.lineId) || !positive(value.quantityMilli) ||
+      !(positive(value.unitPriceCents) || value.unregisteredGood && value.unitPriceCents === 0 && positive(value.manualGrossTotalCents)) ||
+      !cents(value.discountCents)) fail("FISCAL_V1_LINE_INVALID");
+  if (value.unregisteredGood !== undefined) {
+    assertFiscalV1UnregisteredGood(value.unregisteredGood);
+    if (value.presentationId !== undefined || value.catalogSemanticFingerprintSha256 !== undefined)
+      fail("FISCAL_V1_UNREGISTERED_GOOD_CATALOG_REFERENCE_FORBIDDEN");
+  } else if (!text(value.presentationId) || !sha256(value.catalogSemanticFingerprintSha256)) fail("FISCAL_V1_LINE_INVALID");
   if (value.manualGrossTotalCents !== undefined &&
       (!positive(value.manualGrossTotalCents) || value.discountCents !== 0))
     fail("FISCAL_V1_MANUAL_GROSS_TOTAL_INVALID");
@@ -620,8 +627,9 @@ export function prepareFiscalV1Sale(input: {
   readonly nowMs: number;
   /** The server supplies this only after resolving trusted issuer and sale evidence. */
   readonly amazonia?: FiscalAmazoniaPreparedSale;
+  readonly unregisteredGoodsPolicy?: FiscalV1UnregisteredGoodsPolicy;
 }): FiscalV1PreparedDecision {
-  const { sale, bundle, trustedKeys, nowMs, amazonia } = input;
+  const { sale, bundle, trustedKeys, nowMs, amazonia, unregisteredGoodsPolicy } = input;
   if (!sale || ![sale.operationId, sale.saleId, sale.tenantId, sale.issuerId].every(text) ||
       !/^\d{11}$/.test(sale.issuerRuc) || !["DEMO", "PRODUCTION"].includes(sale.environment) || sale.currency !== "PEN" ||
       !["BOLETA", "FACTURA"].includes(sale.documentType) || !Array.isArray(sale.lines) || !sale.lines.length)
@@ -684,13 +692,29 @@ export function prepareFiscalV1Sale(input: {
   const ids = new Set<string>();
   const prepared: FiscalV1PreparedLine[] = sale.lines.map(line => {
     saleLine(line); if (ids.has(line.lineId)) fail("FISCAL_V1_LINE_DUPLICATED"); ids.add(line.lineId);
-    const matches = rules.filter(value => value.presentationId === line.presentationId &&
-      sameContext(value.context, sale.context) && effective(value, date));
-    if (matches.length !== 1) fail("FISCAL_V1_RULE_NOT_UNIQUE_OR_EFFECTIVE");
-    const selected = matches[0];
-    if (selected.status !== "PUBLISHED") fail("FISCAL_V1_RULE_NOT_PUBLISHED");
-    if (selected.catalogSemanticFingerprintSha256 !== line.catalogSemanticFingerprintSha256)
-      fail("FISCAL_V1_CATALOG_RULE_OUTDATED");
+    type LineRule = Pick<FiscalV1PresentationRule, "legalCategory" | "taxRateBasisPoints" | "unitCode" |
+      "configurationDocumentId" | "decisionId" | "ruleId" | "fingerprintSha256" | "ordinaryFiscalTreatment" | "catalogSource">;
+    let selected: LineRule;
+    if (line.unregisteredGood !== undefined) {
+      const policy = unregisteredGoodsPolicy ?? fail("FISCAL_V1_UNREGISTERED_GOODS_POLICY_REQUIRED");
+      assertFiscalV1UnregisteredGoodsPolicy(policy, sale);
+      selected = { legalCategory: policy.legalCategory,
+        taxRateBasisPoints: policy.taxRateBasisPoints, unitCode: line.unregisteredGood.unitCode,
+        configurationDocumentId: policy.policyDocumentId, decisionId: policy.decisionId,
+        ruleId: policy.ruleId, fingerprintSha256: policy.fingerprintSha256,
+        ...(policy.legalCategory === "EXONERADA" ? { ordinaryFiscalTreatment: {
+          basis: "ORDINARY_EXEMPTION" as const, ordinaryCategory: "EXONERADA" as const, ordinaryTaxRateBasisPoints: 0 as const } } :
+          policy.legalCategory === "INAFECTA" ? { ordinaryFiscalTreatment: {
+            basis: "ORDINARY_UNAFFECTED" as const, ordinaryCategory: "INAFECTA" as const, ordinaryTaxRateBasisPoints: 0 as const } } : {}) };
+    } else {
+      const matches = rules.filter(value => value.presentationId === line.presentationId &&
+        sameContext(value.context, sale.context) && effective(value, date));
+      if (matches.length !== 1) fail("FISCAL_V1_RULE_NOT_UNIQUE_OR_EFFECTIVE");
+      selected = matches[0];
+      if (matches[0].status !== "PUBLISHED") fail("FISCAL_V1_RULE_NOT_PUBLISHED");
+      if (matches[0].catalogSemanticFingerprintSha256 !== line.catalogSemanticFingerprintSha256)
+        fail("FISCAL_V1_CATALOG_RULE_OUTDATED");
+    }
     const gross = line.manualGrossTotalCents === undefined
       ? calculateSaleLineGrossCents(line)
       : BigInt(line.manualGrossTotalCents);
@@ -717,13 +741,16 @@ export function prepareFiscalV1Sale(input: {
           return { kind: "ITEMIZED" as const, baseCents: safeNumber(base),
             taxCents: safeNumber(discounted - base), appliedRateBasisPoints: taxRateBasisPoints };
         })();
-    return { lineId: line.lineId, presentationId: line.presentationId, quantityMilli: line.quantityMilli,
+    return { lineId: line.lineId,
+      ...(line.unregisteredGood === undefined ? { presentationId: line.presentationId } :
+        { unregisteredGood: { ...line.unregisteredGood } }), quantityMilli: line.quantityMilli,
       unitPriceCents: line.unitPriceCents, discountCents: line.discountCents, totalCents,
       ...(line.manualGrossTotalCents === undefined ? {} : { manualGrossTotalCents: line.manualGrossTotalCents }),
       unitCode: selected.unitCode, legalCategory,
       ...(selected.ordinaryFiscalTreatment === undefined ? {} : { ordinaryFiscalTreatment: { ...selected.ordinaryFiscalTreatment } }),
       disclosure, ruleRef: { configurationDocumentId: selected.configurationDocumentId, decisionId: selected.decisionId,
         ruleId: selected.ruleId, fingerprintSha256: selected.fingerprintSha256,
+        ...(line.unregisteredGood === undefined ? {} : { unregisteredGoodsPolicy: JSON.parse(JSON.stringify(unregisteredGoodsPolicy)) }),
         ...(selected.catalogSource ? { catalogSource: JSON.parse(JSON.stringify(selected.catalogSource)) } : {}) } };
   });
   const legalCategories = categorySet([...new Set(prepared.map(line => line.legalCategory))]);

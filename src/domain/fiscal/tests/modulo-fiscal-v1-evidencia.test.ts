@@ -14,6 +14,8 @@ import { assertFiscalV1RegisteredCashSaleSnapshot, fiscalV1RegisteredCashEvidenc
   type FiscalV1RegisteredCashEvidence } from "../contracts";
 import { resolveVentaCobro } from "../../ventas/contracts/venta-cobro.contract";
 import type { IVentaSnapshot } from "../../ventas/contracts/venta-snapshot.contract";
+import { resolveFiscalV1UnregisteredGoodsPolicy } from "../contracts";
+import { unregisteredPolicyInput } from "./unregistered-goods.fixture";
 
 const HASH = "a".repeat(64);
 const NOW = Date.UTC(2026, 9, 15, 14);
@@ -26,6 +28,27 @@ const cashEvidence = (saleId: string, amountCents = 1100): FiscalV1RegisteredCas
   schemaVersion: 1, tenantId: "tenant", saleId, cajaId: "caja", currency: "PEN", netAmountCents: amountCents,
   movements: [{ movementId: "movement / α", createdAtMs: NOW, type: "INGRESO", subtype: "VENTA", referenceType: "VENTA",
     referenceId: saleId, cajaId: "caja", currency: "PEN", method: "EFECTIVO", state: "ACTIVO", amountCents }] });
+
+test("V5 freezes non-catalogue origin and description without changing old snapshot versions", () => {
+  const { snapshot } = fixture("SUPPORTED", { documentType: "BOLETA" });
+  const input = unregisteredPolicyInput();
+  const policy = resolveFiscalV1UnregisteredGoodsPolicy({ ...input, tenantId: snapshot.decision.tenantId,
+    issuerRuc: snapshot.decision.issuerRuc, policy: { ...input.policy, tenantId: snapshot.decision.tenantId, issuerRuc: snapshot.decision.issuerRuc } });
+  const { presentationId: _catalogue, ...line } = snapshot.decision.lines[0];
+  const free = { ...line, unitCode: "NIU" as const, unregisteredGood: { description: "Leche bolsa 1 L", unitCode: "NIU" as const },
+    ruleRef: { configurationDocumentId: policy.policyDocumentId, decisionId: policy.decisionId, ruleId: policy.ruleId,
+      fingerprintSha256: policy.fingerprintSha256, unregisteredGoodsPolicy: policy } };
+  const freeze = (value: FiscalV1Snapshot): FiscalV1Snapshot => {
+    const material = { ...value, decisionSha256: fiscalV1CanonicalSha256(value.decision) };
+    return { ...material, snapshotSha256: fiscalV1SnapshotFingerprint(material) };
+  };
+  const value = freeze({ ...snapshot, schemaVersion: "fiscal-v1-snapshot-v5", decision: { ...snapshot.decision, lines: [free] },
+    lineDescriptions: [{ lineId: free.lineId, description: free.unregisteredGood.description }] });
+  assert.doesNotThrow(() => assertFiscalV1SnapshotForIssuance(value));
+  assert.throws(() => assertFiscalV1Snapshot(freeze({ ...value, schemaVersion: "fiscal-v1-snapshot-v4" })), /VERSION_INVALID/);
+  assert.throws(() => assertFiscalV1Snapshot(freeze({ ...value, lineDescriptions: [{ lineId: free.lineId, description: "Another item" }] })), /UNREGISTERED_GOOD_INVALID/);
+  assert.throws(() => assertFiscalV1Snapshot(freeze({ ...value, decision: { ...value.decision, lines: [{ ...free, presentationId: "fabricated" }] } })), /UNREGISTERED_GOOD_INVALID/);
+});
 
 test("snapshot V4 binds a separate global allowance without changing legacy versions or line/tax bases", () => {
   const source = fixture("SUPPORTED", { documentType: "BOLETA" }), legacy = source.snapshot;

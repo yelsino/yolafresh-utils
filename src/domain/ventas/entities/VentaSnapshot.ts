@@ -102,6 +102,8 @@ export interface VentaOfertaComercialSnapshot {
 export interface VentaSnapshotItem {
   id: string;
   presentacionId: string;
+  /** Explicit commercial origin; the technical ID never determines this meaning. */
+  origenProducto?: "NO_REGISTRADO";
   /** Decisión explícita congelada; `false` identifica servicios sin stock. */
   afectaInventario?: boolean;
   /** Snapshot de inventario; `cantidadVendida` continúa siendo cantidad comercial. */
@@ -1085,6 +1087,11 @@ export class VentaSnapshot implements IVentaSnapshot {
         errores.push(
           `VentaSnapshot.items[${index}].afectaInventario debe ser booleano`,
         );
+      }
+
+      if (item.origenProducto !== undefined &&
+          (item.origenProducto !== "NO_REGISTRADO" || item.afectaInventario !== false)) {
+        errores.push(`VentaSnapshot.items[${index}].origenProducto no registrado requiere exclusión explícita de inventario`);
       }
 
       if (

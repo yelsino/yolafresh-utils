@@ -33,6 +33,8 @@ interface CarritoVentaImageSnapshot {
 
 interface CarritoVentaProductSnapshot {
   id: string;
+  origenProducto?: "NO_REGISTRADO";
+  afectaInventario?: boolean;
   type?: string;
   productoBaseId?: string;
   nombre?: string;
@@ -65,6 +67,8 @@ interface CarritoVentaPersonalSnapshot {
 }
 
 type CarritoVentaProductInput = Partial<Presentacion> & {
+  origenProducto?: "NO_REGISTRADO";
+  afectaInventario?: boolean;
   descripcion?: string;
   titulo?: string;
 };
@@ -137,7 +141,7 @@ export interface CarItem {
    * @description Contiene todos los datos del producto (nombre, precio, etc.)
    */
 
-  product: Partial<Presentacion>;
+  product: Partial<Presentacion> & { origenProducto?: "NO_REGISTRADO"; afectaInventario?: boolean };
   
   /**
    * Cantidad comercial de la presentación agregada al carrito.
@@ -375,7 +379,7 @@ export class CarritoVenta implements ICarritoVenta {
   }
 
   private normalizeInputItem(carItem: CarItem): {
-    product: Partial<Presentacion>;
+    product: CarItem["product"];
     quantity: number;
     precioUnitario: number;
     montoTotal?: number;
@@ -943,7 +947,7 @@ export class CarritoVenta implements ICarritoVenta {
     };
 
     const cleanProductForVenta = (
-      product: Partial<Presentacion> | undefined,
+      product: CarItem["product"] | undefined,
     ): CarritoVentaProductSnapshot | undefined => {
       if (!product) return undefined;
       const id = product.id;
@@ -951,6 +955,8 @@ export class CarritoVenta implements ICarritoVenta {
 
       return {
         id,
+        ...(product.origenProducto === undefined ? {} : { origenProducto: product.origenProducto }),
+        ...(product.afectaInventario === undefined ? {} : { afectaInventario: product.afectaInventario }),
         type: product.type,
         productoBaseId: product.productoBaseId,
         nombre: product.nombre,
@@ -1043,7 +1049,11 @@ export class CarritoVenta implements ICarritoVenta {
     carrito.updatedAt = data.updatedAt ? new Date(data.updatedAt) : new Date();
 
     carrito._items = (data.items ?? []).map((item, index): CarItem => {
-      const product = carrito.cleanProduct(item.product ?? {});
+      const source = item.product ?? {};
+      // Explicit legacy commercial boundary: these carts already excluded stock
+      // and never referenced a catalogue owner. No technical ID is interpreted.
+      const product = carrito.cleanProduct(source.origenProducto === undefined && source.afectaInventario === false &&
+        source.type === undefined && source.productoBaseId === undefined ? { ...source, origenProducto: "NO_REGISTRADO" } : source);
       if (!item.id) {
         throw new Error(`CarritoVenta.items[${index}].id es requerido`);
       }
@@ -1137,9 +1147,14 @@ export class CarritoVenta implements ICarritoVenta {
    * Limpia el objeto producto para guardar solo lo necesario
    * @description Elimina propiedades no serializables o innecesarias para reducir tamaño
    */
-  private cleanProduct(producto: Partial<Presentacion>): Partial<Presentacion> {
+  private cleanProduct(producto: CarItem["product"]): CarItem["product"] {
+    if (producto.origenProducto !== undefined &&
+        (producto.origenProducto !== "NO_REGISTRADO" || producto.afectaInventario !== false))
+      throw new Error("CarItem.product.origenProducto requiere exclusión explícita de inventario");
     return {
       id: producto.id,
+      ...(producto.origenProducto === undefined ? {} : { origenProducto: producto.origenProducto }),
+      ...(producto.afectaInventario === undefined ? {} : { afectaInventario: producto.afectaInventario }),
       type: producto.type,
       productoBaseId: producto.productoBaseId,
       nombre: producto.nombre,

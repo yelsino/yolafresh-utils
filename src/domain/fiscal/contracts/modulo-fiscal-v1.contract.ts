@@ -4,6 +4,7 @@ import type { FiscalTaxRegime } from "./cpe.contract";
 import type { FiscalCatalogResolvedTaxSource } from "./catalog-tax-policy.contract";
 import type { FiscalCashPaymentRounding } from "./cash-payment-rounding.contract";
 import type { FiscalV1GlobalDiscount } from "./global-discount.contract";
+import type { FiscalV1UnregisteredGood, FiscalV1UnregisteredGoodsPolicy } from "./unregistered-goods";
 
 export type FiscalV1Environment = "DEMO" | "PRODUCTION";
 export type FiscalV1DocumentType = "BOLETA" | "FACTURA" | "NOTA_CREDITO";
@@ -107,16 +108,18 @@ export interface FiscalV1Capability extends FiscalV1EffectivePublication {
 }
 
 /** Precios finales acordados en céntimos; cantidad con tres decimales exactos. */
-export interface FiscalV1SaleLineInput {
+export interface FiscalV1SaleLineMoney {
   readonly lineId: string;
-  readonly presentationId: string;
-  readonly catalogSemanticFingerprintSha256: string;
   readonly quantityMilli: number;
   readonly unitPriceCents: number;
   /** Explicit operator-captured gross amount; catalogue unit price and quantity stay unchanged. */
   readonly manualGrossTotalCents?: number;
   readonly discountCents: number;
 }
+export type FiscalV1SaleLineInput = FiscalV1SaleLineMoney & (
+  | { readonly presentationId: string; readonly catalogSemanticFingerprintSha256: string; readonly unregisteredGood?: never }
+  | { readonly unregisteredGood: FiscalV1UnregisteredGood; readonly presentationId?: never; readonly catalogSemanticFingerprintSha256?: never }
+);
 
 export interface FiscalV1SaleInput {
   readonly operationId: string;
@@ -214,7 +217,8 @@ export type FiscalV1LineDisclosure =
 
 export interface FiscalV1PreparedLine {
   readonly lineId: string;
-  readonly presentationId: string;
+  readonly presentationId?: string;
+  readonly unregisteredGood?: FiscalV1UnregisteredGood;
   readonly quantityMilli: number;
   readonly unitPriceCents: number;
   readonly manualGrossTotalCents?: number;
@@ -227,6 +231,7 @@ export interface FiscalV1PreparedLine {
   /** El código documental/UBL se define y verifica en el adaptador, nunca a partir de esta categoría. */
   readonly disclosure: FiscalV1LineDisclosure;
   readonly ruleRef: {
+    readonly unregisteredGoodsPolicy?: FiscalV1UnregisteredGoodsPolicy;
     readonly catalogSource?: FiscalCatalogResolvedTaxSource;
     readonly configurationDocumentId: string;
     readonly decisionId: string;

@@ -74,6 +74,7 @@ export interface PedidoChecklist {
 export interface PedidoItemBase {
   id: string;
   presentacionId: string;
+  origenProducto?: "NO_REGISTRADO";
   nombre: string;
   cantidadSolicitada: number;
   cantidadAtendida: number;

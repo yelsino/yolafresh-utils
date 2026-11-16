@@ -8,6 +8,7 @@ import { fiscalV1CanonicalSha256, fiscalV1DecisionFingerprintMaterial,
   verifyFiscalV1PublicationBundle, isFiscalV1CapabilityOperational,
   assertFiscalV1BuyerForIssuance } from "./modulo-fiscal-v1";
 import { assertFiscalV1OrdinaryFiscalTreatment } from "./modulo-fiscal-v1";
+import { assertFiscalV1UnregisteredGood, assertFiscalV1UnregisteredGoodsPolicy } from "./unregistered-goods";
 import type { FiscalV1Capability, FiscalV1SignedPublicationBundle, FiscalV1TrustedPublisherKey } from "./modulo-fiscal-v1.contract";
 import type { FiscalV1CreditNoteDraft, FiscalV1DocumentRecord, FiscalV1PreparedCreditNote,
   FiscalV1PriorCreditNote, FiscalV1Snapshot } from "./modulo-fiscal-v1-evidencia.contract";
@@ -38,7 +39,7 @@ export function fiscalV1SnapshotFingerprint(snapshot: FiscalV1Snapshot): string 
 }
 
 export function assertFiscalV1Snapshot(snapshot: FiscalV1Snapshot): void {
-  if (!snapshot || !["fiscal-v1-snapshot", "fiscal-v1-snapshot-v2", "fiscal-v1-snapshot-v3", "fiscal-v1-snapshot-v4"].includes(snapshot.schemaVersion) || !text(snapshot.snapshotId) ||
+  if (!snapshot || !["fiscal-v1-snapshot", "fiscal-v1-snapshot-v2", "fiscal-v1-snapshot-v3", "fiscal-v1-snapshot-v4", "fiscal-v1-snapshot-v5"].includes(snapshot.schemaVersion) || !text(snapshot.snapshotId) ||
       !text(snapshot.issuerLegalName) || !snapshot.issuerEstablishment ||
       ![snapshot.issuerEstablishment.establishmentId, snapshot.issuerEstablishment.code,
         snapshot.issuerEstablishment.department, snapshot.issuerEstablishment.province,
@@ -71,14 +72,18 @@ export function assertFiscalV1Snapshot(snapshot: FiscalV1Snapshot): void {
         !lineIds.has(item.lineId)) || new Set(snapshot.lineDescriptions.map(item => item.lineId)).size !== lineIds.size)
     fail("FISCAL_V1_SNAPSHOT_LINES_INVALID");
   const globalDiscount = snapshot.decision.globalDiscount;
+  const version5 = snapshot.schemaVersion === "fiscal-v1-snapshot-v5";
+  const unregistered = snapshot.decision.lines.filter(line => line.unregisteredGood !== undefined);
   const version4 = snapshot.schemaVersion === "fiscal-v1-snapshot-v4";
-  const modern = snapshot.schemaVersion === "fiscal-v1-snapshot-v3" || version4;
+  const modern = snapshot.schemaVersion === "fiscal-v1-snapshot-v3" || version4 || version5;
   const hasManualGross = snapshot.decision.lines.some(line => line.manualGrossTotalCents !== undefined);
   const rounding = snapshot.decision.cashPaymentRounding;
   const registeredCash = snapshot.commercialSource?.kind === "REGISTERED_CASH_SALE";
-  if (version4 !== (globalDiscount !== undefined) || !version4 && modern !== (hasManualGross || rounding !== undefined || registeredCash))
+  if (version5 !== (unregistered.length > 0) || !version5 &&
+      (version4 !== (globalDiscount !== undefined) || !version4 && modern !== (hasManualGross || rounding !== undefined || registeredCash)))
     fail("FISCAL_V1_SNAPSHOT_VERSION_INVALID");
-  if (modern && (snapshot.decision.documentType !== "BOLETA" || snapshot.decision.currency !== "PEN" ||
+  if (modern && (!version5 || hasManualGross || rounding !== undefined || registeredCash || globalDiscount !== undefined) &&
+      (snapshot.decision.documentType !== "BOLETA" || snapshot.decision.currency !== "PEN" ||
       snapshot.paymentTerms?.kind !== "CONTADO" || (hasManualGross || rounding !== undefined || registeredCash) &&
         snapshot.decision.lines.some(line => line.discountCents !== 0)))
     fail("FISCAL_V1_COMMERCIAL_ADJUSTMENT_UNSUPPORTED");
@@ -95,7 +100,7 @@ export function assertFiscalV1Snapshot(snapshot: FiscalV1Snapshot): void {
       preCashTotalCents + (rounding?.amountCents ?? 0) !== snapshot.decision.totalCents)
     fail("FISCAL_V1_SNAPSHOT_TOTAL_INVALID");
   if (snapshot.decision.lines.some(line => !positive(line.quantityMilli) || !positive(line.totalCents) ||
-      !positive(line.unitPriceCents) || !cents(line.discountCents) ||
+      !(positive(line.unitPriceCents) || version5 && line.unregisteredGood && line.unitPriceCents === 0 && positive(line.manualGrossTotalCents)) || !cents(line.discountCents) ||
       !["GRAVADA", "EXONERADA", "INAFECTA"].includes(line.legalCategory) ||
       !line.disclosure ||
       (line.disclosure.kind === "ITEMIZED"
@@ -109,6 +114,23 @@ export function assertFiscalV1Snapshot(snapshot: FiscalV1Snapshot): void {
           line.disclosure.appliedRateBasisPoints !== null)))
     fail("FISCAL_V1_SNAPSHOT_TAX_INVALID");
   for (const line of snapshot.decision.lines) {
+    if (line.unregisteredGood !== undefined) {
+      assertFiscalV1UnregisteredGood(line.unregisteredGood);
+      const policy = line.ruleRef.unregisteredGoodsPolicy;
+      if (!version5 || !policy || line.presentationId !== undefined || line.ruleRef.catalogSource !== undefined ||
+          line.unitCode !== line.unregisteredGood.unitCode ||
+          snapshot.lineDescriptions.find(row => row.lineId === line.lineId)?.description !== line.unregisteredGood.description)
+        fail("FISCAL_V1_SNAPSHOT_UNREGISTERED_GOOD_INVALID");
+      assertFiscalV1UnregisteredGoodsPolicy(policy!, snapshot.decision);
+      if (line.ruleRef.configurationDocumentId !== policy!.policyDocumentId || line.ruleRef.decisionId !== policy!.decisionId ||
+          line.ruleRef.ruleId !== policy!.ruleId || line.ruleRef.fingerprintSha256 !== policy!.fingerprintSha256)
+        fail("FISCAL_V1_SNAPSHOT_UNREGISTERED_GOOD_INVALID");
+      const regional = snapshot.decision.amazonia?.lineDecisions?.some(row => row.lineId === line.lineId && row.basis === "LEY_27037_ART_13_1_A");
+      if (line.legalCategory !== (regional ? "EXONERADA" : policy!.legalCategory) ||
+          line.disclosure.kind === "ITEMIZED" && line.disclosure.appliedRateBasisPoints !== (regional ? 0 : policy!.taxRateBasisPoints))
+        fail("FISCAL_V1_SNAPSHOT_UNREGISTERED_GOOD_INVALID");
+    } else if (!text(line.presentationId) || line.ruleRef?.unregisteredGoodsPolicy !== undefined)
+      fail("FISCAL_V1_SNAPSHOT_LINES_INVALID");
     if (modern) {
       if (line.manualGrossTotalCents !== undefined && (!positive(line.manualGrossTotalCents) ||
           line.discountCents !== 0 || line.manualGrossTotalCents !== line.totalCents))
@@ -140,7 +162,7 @@ export function assertFiscalV1Snapshot(snapshot: FiscalV1Snapshot): void {
   if (modern) assertFiscalV1BuyerForIssuance(snapshot.decision);
   if (snapshot.paymentTerms?.kind === "CREDITO") {
     const installments = snapshot.paymentTerms.installments;
-    const current = snapshot.schemaVersion === "fiscal-v1-snapshot-v2";
+    const current = snapshot.schemaVersion === "fiscal-v1-snapshot-v2" || version5;
     const netPending = snapshot.paymentTerms.netPendingCents;
     if (current ? !positive(netPending) || netPending > snapshot.decision.totalCents
       : netPending !== undefined) fail("FISCAL_V1_SNAPSHOT_PAYMENT_INVALID");
@@ -171,7 +193,7 @@ export function assertFiscalV1SnapshotForIssuance(snapshot: FiscalV1Snapshot): v
   assertFiscalV1BuyerForIssuance(snapshot.decision);
   if (snapshot.paymentTerms.kind === "CREDITO" && snapshot.decision.buyer === undefined)
     fail("FISCAL_V1_SNAPSHOT_BUYER_INVALID");
-  if (snapshot.paymentTerms.kind === "CREDITO" && snapshot.schemaVersion !== "fiscal-v1-snapshot-v2")
+  if (snapshot.paymentTerms.kind === "CREDITO" && !["fiscal-v1-snapshot-v2", "fiscal-v1-snapshot-v5"].includes(snapshot.schemaVersion))
     fail("FISCAL_V1_LEGACY_CREDIT_NOT_ADMISSIBLE");
 }
 
@@ -228,7 +250,10 @@ export function prepareFiscalV1CreditNote(input: {
   if (input.quantityProration !== undefined && input.quantityProration !== "CUMULATIVE" && input.quantityProration !== "LEGACY")
     fail("FISCAL_V1_CREDIT_NOTE_INVALID");
   assertFiscalV1DocumentRecord(originalDocument, originalSnapshot);
-  if (originalSnapshot.schemaVersion === "fiscal-v1-snapshot-v3" || originalSnapshot.schemaVersion === "fiscal-v1-snapshot-v4")
+  if (["fiscal-v1-snapshot-v3", "fiscal-v1-snapshot-v4"].includes(originalSnapshot.schemaVersion) ||
+      originalSnapshot.schemaVersion === "fiscal-v1-snapshot-v5" &&
+      (originalSnapshot.decision.globalDiscount !== undefined || originalSnapshot.decision.cashPaymentRounding !== undefined ||
+        originalSnapshot.decision.lines.some(line => line.manualGrossTotalCents !== undefined)))
     fail("FISCAL_V1_CREDIT_NOTE_COMMERCIAL_ADJUSTMENT_UNSUPPORTED");
   const payload = verifyFiscalV1PublicationBundle(bundle, trustedKeys, nowMs);
   if (!draft || ![draft.noteOperationId, draft.noteId, draft.tenantId, draft.issuerId,
