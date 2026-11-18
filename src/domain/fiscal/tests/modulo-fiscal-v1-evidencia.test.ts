@@ -652,7 +652,7 @@ test("crédito histórico conserva hash y recuperación pero no admite una nueva
   assert.doesNotThrow(() => assertFiscalV1SnapshotForIssuance(snapshot));
 });
 
-test("emisión anónima exige boleta al contado y respeta el umbral aun con hashes válidos", () => {
+test("boleta sin documento respeta el mismo umbral al contado y a crédito aun con hashes válidos", () => {
   const { snapshot } = fixture("SUPPORTED", { taxRegime: "NRUS", documentType: "BOLETA" });
   const { buyer: _buyer, ...anonymous } = snapshot.decision;
   const freeze = (totalCents: number, credit = false): FiscalV1Snapshot => {
@@ -664,13 +664,39 @@ test("emisión anónima exige boleta al contado y respeta el umbral aun con hash
           installments: [{ dueOn: "2026-10-16", amountCents: totalCents }] } } : {}) };
     return { ...material, snapshotSha256: fiscalV1SnapshotFingerprint(material) };
   };
-  assert.doesNotThrow(() => assertFiscalV1SnapshotForIssuance(freeze(1100)));
-  assert.doesNotThrow(() => assertFiscalV1SnapshotForIssuance(freeze(70_000)));
-  const overLimit = freeze(70_001), historicalBytes = JSON.stringify(overLimit);
-  assert.throws(() => assertFiscalV1SnapshotForIssuance(overLimit), /FISCAL_BUYER_IDENTIFICATION_REQUIRED/);
-  assert.doesNotThrow(() => assertFiscalV1Snapshot(overLimit));
-  assert.equal(JSON.stringify(overLimit), historicalBytes);
-  assert.throws(() => assertFiscalV1SnapshotForIssuance(freeze(1100, true)), /FISCAL_V1_SNAPSHOT_BUYER_INVALID/);
+  for (const credit of [false, true]) {
+    for (const totalCents of [1100, 48_760, 70_000]) {
+      const value = freeze(totalCents, credit), bytes = JSON.stringify(value);
+      assert.doesNotThrow(() => assertFiscalV1SnapshotForIssuance(value));
+      assert.equal(value.decision.buyer, undefined);
+      assert.equal(value.decision.totalCents, totalCents);
+      if (value.paymentTerms.kind === "CREDITO") {
+        assert.equal(value.paymentTerms.netPendingCents, totalCents);
+        assert.equal(value.paymentTerms.installments[0].amountCents, totalCents);
+      }
+      assert.equal(JSON.stringify(value), bytes);
+    }
+    const overLimit = freeze(70_001, credit), historicalBytes = JSON.stringify(overLimit);
+    assert.throws(() => assertFiscalV1SnapshotForIssuance(overLimit), /FISCAL_BUYER_IDENTIFICATION_REQUIRED/);
+    assert.doesNotThrow(() => assertFiscalV1Snapshot(overLimit));
+    assert.equal(JSON.stringify(overLimit), historicalBytes);
+  }
+});
+
+test("factura a crédito sigue exigiendo RUC aun por debajo del umbral de boleta", () => {
+  const { snapshot } = fixture();
+  const { buyer: _buyer, ...anonymous } = snapshot.decision;
+  const freeze = (decision: typeof snapshot.decision): FiscalV1Snapshot => {
+    const material = { ...snapshot, schemaVersion: "fiscal-v1-snapshot-v2" as const, decision,
+      decisionSha256: fiscalV1CanonicalSha256(decision), paymentTerms: { kind: "CREDITO" as const,
+        netPendingCents: decision.totalCents,
+        installments: [{ dueOn: "2026-10-16", amountCents: decision.totalCents }] } };
+    return { ...material, snapshotSha256: fiscalV1SnapshotFingerprint(material) };
+  };
+  assert.throws(() => assertFiscalV1SnapshotForIssuance(freeze(anonymous)), /FISCAL_V1_SNAPSHOT_BUYER_INVALID/);
+  assert.throws(() => assertFiscalV1SnapshotForIssuance(freeze({ ...anonymous,
+    buyer: { documentType: "DNI", documentNumber: "12345678", legalName: "Comprador sintético" } })),
+  /FISCAL_V1_SNAPSHOT_BUYER_INVALID/);
 });
 
 test("snapshot V3 exige hechos monetarios explícitos y no cambia los bytes de V1 ni V2", () => {

@@ -190,9 +190,9 @@ export function assertFiscalV1SnapshotForIssuance(snapshot: FiscalV1Snapshot): v
       : BigInt(line.manualGrossTotalCents);
     if (gross - BigInt(line.discountCents) !== BigInt(line.totalCents)) fail("FISCAL_V1_SNAPSHOT_TOTAL_INVALID");
   }
+  // Credit identifies its debtor in the commercial account. Fiscal buyer data
+  // follows the same document/amount requirements as a cash sale.
   assertFiscalV1BuyerForIssuance(snapshot.decision);
-  if (snapshot.paymentTerms.kind === "CREDITO" && snapshot.decision.buyer === undefined)
-    fail("FISCAL_V1_SNAPSHOT_BUYER_INVALID");
   if (snapshot.paymentTerms.kind === "CREDITO" && !["fiscal-v1-snapshot-v2", "fiscal-v1-snapshot-v5"].includes(snapshot.schemaVersion))
     fail("FISCAL_V1_LEGACY_CREDIT_NOT_ADMISSIBLE");
 }
