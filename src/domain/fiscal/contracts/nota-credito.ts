@@ -4,8 +4,11 @@ import { fiscalConfigurationCanonicalJson } from "./configuracion-fiscal";
 import { validateFiscalSignedDocument, type FiscalDocumentLine, type FiscalDocumentTotals, type FiscalSignedDocument } from "./comprobante-electronico.contract";
 
 /** Monetary adjustments by quantity; no generic discount/identity correction.
+ * Reason 09 only corrects billed quantities at their historical unit value;
+ * it does not admit an independent price-only or arbitrary monetary reduction.
  * This pure calculation does not authorize issuance or establish CDR eligibility. */
-export type FiscalCreditNoteReason = "01" | "06" | "07";
+export type FiscalCreditNoteReason = "01" | "06" | "07" | "09";
+const partialByQuantity = (reason: FiscalCreditNoteReason): boolean => reason === "07" || reason === "09";
 export interface FiscalCreditNoteCommand {
   readonly operationId: string;
   readonly idempotencyKey: string;
@@ -75,7 +78,7 @@ export function prepareFiscalCreditNote(original: FiscalSignedDocument, command:
     return fail("CREDIT_NOTE_ORIGINAL_INVALID");
   if (original.globalDiscount !== undefined || original.cashPaymentRounding !== undefined || original.lines.some(line => line.manualGrossTotalCents !== undefined))
     return fail("CREDIT_NOTE_COMMERCIAL_ADJUSTMENT_UNSUPPORTED");
-  if (!command || !["01", "06", "07"].includes(command.reasonCode)) return fail("CREDIT_NOTE_REASON_UNSUPPORTED");
+  if (!command || !["01", "06", "07", "09"].includes(command.reasonCode)) return fail("CREDIT_NOTE_REASON_UNSUPPORTED");
   if (!text(command.operationId) || !text(command.idempotencyKey) || command.idempotencyKey.length > 240 ||
       !text(command.reason) || command.reason.length > 500 || !Array.isArray(command.selections)) return fail("CREDIT_NOTE_COMMAND_INVALID");
   const originalLines = new Map(original.lines.map(line => [line.lineId, line]));
@@ -84,7 +87,7 @@ export function prepareFiscalCreditNote(original: FiscalSignedDocument, command:
   const keys = new Set<string>();
   for (const previous of consumingHistory) {
     if (!previous || previous.contractKind !== "YOLAFRESH_CREDIT_NOTE" || previous.schemaVersion !== 1 ||
-        !text(previous.operationId) || !text(previous.idempotencyKey) || !["01", "06", "07"].includes(previous.reasonCode) ||
+        !text(previous.operationId) || !text(previous.idempotencyKey) || !["01", "06", "07", "09"].includes(previous.reasonCode) ||
         !text(previous.reason) || !Array.isArray(previous.lines) || !previous.lines.length ||
         previous.tenantId !== original.tenantId || previous.environment !== original.environment ||
         previous.originalDocumentId !== original.documentId || previous.originalXmlSha256 !== original.signature.signedXml.sha256 ||
@@ -121,9 +124,9 @@ export function prepareFiscalCreditNote(original: FiscalSignedDocument, command:
   }
   if (operations.has(command.operationId)) return fail("CREDIT_NOTE_OPERATION_ALREADY_RESERVED");
   if (keys.has(command.idempotencyKey)) return fail("CREDIT_NOTE_KEY_ALREADY_RESERVED");
-  if (command.reasonCode !== "07" && consumingHistory.length) return fail("CREDIT_NOTE_FULL_AFTER_PARTIAL");
-  if (command.reasonCode !== "07" && command.selections.length) return fail("CREDIT_NOTE_FULL_SELECTIONS_INVALID");
-  const selected = command.reasonCode === "07" ? command.selections : original.lines.map(l => ({ originalLineId: l.lineId, quantity: l.quantity }));
+  if (!partialByQuantity(command.reasonCode) && consumingHistory.length) return fail("CREDIT_NOTE_FULL_AFTER_PARTIAL");
+  if (!partialByQuantity(command.reasonCode) && command.selections.length) return fail("CREDIT_NOTE_FULL_SELECTIONS_INVALID");
+  const selected = partialByQuantity(command.reasonCode) ? command.selections : original.lines.map(l => ({ originalLineId: l.lineId, quantity: l.quantity }));
   if (!selected.length) return fail("CREDIT_NOTE_LINES_REQUIRED");
   const seen = new Set<string>();
   const lines = selected.map(selection => {
@@ -161,7 +164,7 @@ export function assertFiscalCreditNoteSnapshot(raw: FiscalCreditNoteSnapshot, or
   history: readonly FiscalCreditNoteSnapshot[]): void {
   if (!raw || !Array.isArray(raw.lines)) return fail("CREDIT_NOTE_SNAPSHOT_INVALID");
   const expected = prepareFiscalCreditNote(original, { operationId: raw.operationId, idempotencyKey: raw.idempotencyKey,
-    reasonCode: raw.reasonCode, reason: raw.reason, selections: raw.reasonCode === "07" ?
+    reasonCode: raw.reasonCode, reason: raw.reason, selections: partialByQuantity(raw.reasonCode) ?
       raw.lines.map(line => ({ originalLineId: line.lineId, quantity: line.quantity })) : [] }, history);
   if (fiscalConfigurationCanonicalJson(raw) !== fiscalConfigurationCanonicalJson(expected)) return fail("CREDIT_NOTE_SNAPSHOT_MISMATCH");
 }

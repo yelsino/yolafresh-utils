@@ -10,6 +10,18 @@ Este proyecto adopta versionado semántico:
 
 ## [Unreleased]
 
+## [2.7.15-fiscal-v1.50] - 2026-11-18
+
+### Added
+
+- La causal NC09 admite corrección de cantidades facturadas a su precio
+  histórico, comparte reservas y prorrateo con NC07 y valida sus snapshots en
+  el flujo comercial V1. No habilita rebajas monetarias independientes de las
+  unidades ni sustituye la autorización de la capacidad fiscal publicada.
+- Regresión de una línea duplicada de 4 kg/S/20: conserva la línea correcta de
+  1 kg y la afectación amazónica original; el plan de una venta impaga reduce
+  únicamente la deuda, sin reembolso ni devolución física automática.
+
 ## [2.7.15-fiscal-v1.14] - 2026-10-19
 
 ### Added

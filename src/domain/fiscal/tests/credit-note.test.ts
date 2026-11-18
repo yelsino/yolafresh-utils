@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { prepareFiscalCreditNote, planCreditNoteSettlement, fiscalCreditQuantity, FiscalCreditNoteError,
+import { prepareFiscalCreditNote, assertFiscalCreditNoteSnapshot, planCreditNoteSettlement, fiscalCreditQuantity, FiscalCreditNoteError,
   validateFiscalSignedDocument, type FiscalSignedDocument } from "../contracts";
 import { positiveDecimalQuantity, DecimalQuantityError } from "../../shared/value-objects/DecimalQuantity";
 
@@ -45,6 +45,66 @@ test("partial credit preserves historical price, buyer, emitter and actual tax",
   assert.equal(note.originalDocumentId, doc.documentId);
   assert.deepEqual(note.buyer, doc.buyer);
   assert.equal(JSON.stringify(doc), before);
+});
+
+test("09 corrects only an erroneous billed quantity and preserves the original sale and Amazonia treatment", () => {
+  const source = originalFixture();
+  const treatment = { basis: "LEY_27037_ART_13_1_A" as const,
+    ordinaryCategory: "GRAVADA" as const, ordinaryTaxRateBasisPoints: 1800 };
+  const line = (lineId: string, description: string, quantity: string, unitPriceCents: number, totalCents: number) => ({
+    ...source.lines[0], lineId, description, quantity, unitCode: "KGM", unitPriceCents,
+    grossCents: totalCents, totalCents, fiscalTreatment: treatment,
+    tax: { category: "EXONERADA" as const, affectationCode: "20" as const, taxScheme: "NONE" as const,
+      taxRateBasisPoints: 0 as const, taxableBaseCents: totalCents, taxAmountCents: 0 as const },
+  });
+  const doc: FiscalSignedDocument = { ...source,
+    origin: { kind: "VENTA_V1", saleId: "venta opaca / 454", operationId: "operación fiscal / 454",
+      fiscalSnapshotId: "snapshot fiscal opaco / 454", fiscalSnapshotSha256: "b".repeat(64) },
+    lines: [line("rocoto correcto / opaque", "ROCOTO", "1", 500, 500),
+      line("rocoto facturado por error / opaque", "ROCOTO", "4", 500, 2000),
+      line("otros / opaque", "OTROS BIENES", "1", 46480, 46480)],
+    totals: { taxableBaseCents: 0, exemptCents: 48980, unaffectedCents: 0, taxCents: 0, payableCents: 48980 },
+    print: { ...source.print, qrPayload: source.print.qrPayload.replace("|0.54|3.54|", "|0.00|489.80|") },
+  };
+  assert.deepEqual(validateFiscalSignedDocument(doc), []);
+  const originalBefore = JSON.stringify(doc);
+  const correction = { ...command(), reasonCode: "09" as const, reason: "Corrección de cantidad facturada por duplicación",
+    selections: [{ originalLineId: "rocoto facturado por error / opaque", quantity: "4" }] };
+  const note = prepareFiscalCreditNote(doc, correction, []);
+  assert.equal(note.reasonCode, "09");
+  assert.equal(note.lines.length, 1);
+  assert.equal(note.lines[0].lineId, "rocoto facturado por error / opaque");
+  assert.equal(note.lines[0].quantity, "4");
+  assert.equal(note.totals.payableCents, 2000);
+  assert.equal(note.totals.exemptCents, 2000);
+  assert.equal(note.totals.taxCents, 0);
+  assert.deepEqual(note.lines[0].fiscalTreatment, treatment);
+  assert.equal(doc.totals.payableCents - note.totals.payableCents, 46980);
+  assert.equal(JSON.stringify(doc), originalBefore);
+  assert.doesNotThrow(() => assertFiscalCreditNoteSnapshot(note, doc, []));
+  assert.throws(() => prepareFiscalCreditNote(doc, { ...correction, selections: [] }, []), /LINES_REQUIRED/);
+  assert.throws(() => prepareFiscalCreditNote(doc, { ...correction,
+    operationId: "another operation", idempotencyKey: "another key" }, [note]), /QUANTITY_EXCEEDED/);
+  assert.throws(() => assertFiscalCreditNoteSnapshot({ ...note,
+    lines: [{ ...note.lines[0], totalCents: 1999 }], totals: { ...note.totals, payableCents: 1999 } }, doc, []), /SNAPSHOT_MISMATCH/);
+  assert.deepEqual(planCreditNoteSettlement({ adjustmentCents: 2000, outstandingDebtCents: 48980,
+    refundablePaidCents: 0, refundRequestedCents: 0, fiscalDuplicateOnly: false }),
+  { debtReductionCents: 2000, refundCents: 0, refundDueCents: 0 });
+});
+
+test("07 and quantity-based 09 share reservations and cumulative cent allocation", () => {
+  const doc = originalFixture();
+  const first = prepareFiscalCreditNote(doc, { ...command(), reasonCode: "09" }, []);
+  const second = prepareFiscalCreditNote(doc, { ...command(), operationId: "next operation",
+    idempotencyKey: "next key" }, [first]);
+  const third = prepareFiscalCreditNote(doc, { ...command(), reasonCode: "09", operationId: "last operation",
+    idempotencyKey: "last key" }, [first, second]);
+  assert.equal(first.totals.payableCents + second.totals.payableCents + third.totals.payableCents, doc.totals.payableCents);
+  assert.doesNotThrow(() => assertFiscalCreditNoteSnapshot(third, doc, [first, second]));
+  assert.throws(() => prepareFiscalCreditNote(doc, { ...command(), operationId: "excess operation",
+    idempotencyKey: "excess key" }, [first, second, third]), /QUANTITY_EXCEEDED/);
+  assert.throws(() => prepareFiscalCreditNote(doc, { ...command(), reasonCode: "01", operationId: "full operation",
+    idempotencyKey: "full key", selections: [] }, [first]), /FULL_AFTER_PARTIAL/);
 });
 
 test("la proyección V3 no amplía notas a importes manuales ni redondeo de cobro", () => {
